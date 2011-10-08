@@ -1,8 +1,10 @@
 /*
 
     $Id: sopen_hl7aecg.c,v 1.36 2009/04/09 13:54:04 schloegl Exp $
-    Copyright (C) 2006,2007,2009,2011 Alois Schloegl <a.schloegl@ieee.org>
+    Copyright (C) 2006,2007,2009,2011 Alois Schloegl <alois.schloegl@gmail.com>
     Copyright (C) 2007 Elias Apostolopoulos
+    Copyright (C) 2011 Stoyan Mihaylov
+
     This file is part of the "BioSig for C/C++" repository 
     (biosig4c++) at http://biosig.sf.net/ 
 
@@ -17,13 +19,10 @@
 
 
 #include <stdio.h>             // system includes
-#include <string>
-#include <sstream>
+#include <string.h>
 
 #include "../biosig-dev.h"
 #include "../XMLParser/tinyxml.h"
-
-
 
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -230,9 +229,9 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 
 				hc->LeadIdCode	= 0;
 				size_t j;
-				for (j=0; strcmpi(hdr->CHANNEL[k].Label, LEAD_ID_TABLE[j]) && LEAD_ID_TABLE[j][0]; j++) {}; 
+				for (j=0; strcmpi(hc->Label, LEAD_ID_TABLE[j]) && LEAD_ID_TABLE[j][0]; j++) {}; 
 				if (LEAD_ID_TABLE[j][0])	
-					hdr->CHANNEL[k].LeadIdCode = j;
+					hc->LeadIdCode = j;
 
 				hc->LowPass	= LP;
 				hc->HighPass	= HP;
@@ -482,13 +481,13 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 					strncpy(hdr->Patient.Name, Name1, MAX_LENGTH_NAME);
 				}
 */
-				}	
-			}	
+				}
+			}
 			else {
 				hdr->Patient.Name[0] = 0;
 				fprintf(stderr,"Warning: Patient Name not available could not be read.\n");
-			}	
-		}		
+			}
+		}
 
 		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"hl7r: [414]\n"); 
@@ -630,8 +629,8 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
        		hdr->EVENT.N = N;
 
 		TiXmlHandle channel = channels.Child("component", 1).FirstChild("sequence");
-		for(hdr->NS = 0; channel.Element(); ++(hdr->NS), channel = channels.Child("component", hdr->NS+1).FirstChild("sequence")) {};
-		hdr->CHANNEL = (CHANNEL_TYPE*) calloc(hdr->NS,sizeof(CHANNEL_TYPE));
+		for (hdr->NS = 0; channel.Element(); ++(hdr->NS), channel = channels.Child("component", hdr->NS+1).FirstChild("sequence")) {};
+ 		hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
 
 		channel = channels.Child("component", 1).FirstChild("sequence");
 		hdr->AS.bpb = 0; 
@@ -1064,6 +1063,9 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
     sequenceValue->LinkEndChild(valueIncrement);
 
     TiXmlText *digitsText;
+	float*Dat;
+	char *S;
+	char *pS;
 
 #ifdef NO_BI
     size_t bi = 0; 
@@ -1121,24 +1123,31 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
 	TiXmlElement *valueDigits = new TiXmlElement("digits");
 	sequenceValue->LinkEndChild(valueDigits);
 
-	std::stringstream digitsStream;
-
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[967] %i %f\n",i,*(float*)(hdr->AS.rawdata + hdr->CHANNEL[i].bi));
 
-	size_t sz = GDFTYP_BITS[hdr->CHANNEL[i].GDFTYP]>>3;
-	for (unsigned int j=0; j<hdr->CHANNEL[i].SPR; ++j) {
 #ifndef NO_BI
-	    	digitsStream << (*(float*)(hdr->AS.rawdata + hdr->CHANNEL[i].bi + (j*sz))) << " ";
-	}
+	Dat=(float*)(hdr->AS.rawdata + hdr->CHANNEL[i].bi);
 #else
-	    	digitsStream << (*(float*)(hdr->AS.rawdata + bi + (j*sz))) << " ";
+	Dat=(float*)(hdr->AS.rawdata + bi);
+#endif
+
+	size_t sz = GDFTYP_BITS[hdr->CHANNEL[i].GDFTYP]>>3;
+
+	S=new char[32*hdr->CHANNEL[i].SPR];
+	S[0]=0;
+	pS=S;
+
+	for (unsigned int j=0; j<hdr->CHANNEL[i].SPR; ++j) {
+		pS+=sprintf(pS,"%g ",Dat[j]);
 	}
+#ifdef NO_BI
 	bi += hdr->CHANNEL[i].SPR*sz;
 #endif
 	if (VERBOSE_LEVEL>8) fprintf(stdout,"970 %i \n",i);
 //	if (VERBOSE_LEVEL>8) fprintf(stdout,"<%s>\n",digitsStream.str().c_str());
 
-	digitsText = new TiXmlText(digitsStream.str().c_str());
+	digitsText = new TiXmlText(S);
+	delete []S;
 	valueDigits->LinkEndChild(digitsText);
     }
 

@@ -33,13 +33,13 @@ fn = dir('/tmp/t1.*');
 clear s HDR
 for k=1:length(fn), 
 try
-	%[s{k},H]=sload(fn(k).name,0,'UCAL','ON'); 
-	[H]=sopen(fullfile('/tmp',fn(k).name),'r',0);
+	[s{k},H]=sload(fullfile('/tmp',fn(k).name),0,'UCAL','ON','OVERFLOWDETECTION','OFF'); 
+	%[H]=sopen(fullfile('/tmp',fn(k).name),'r',0);
 	%[H]=sopen(fn(k).name,'r',0);
 	%H.FLAG.UCAL=1;
-	H.FLAG.OVERFLOWDETECTION=0; 
-	[s{k},H]=sread(H);
-	H = sclose(H); 
+	%H.FLAG.OVERFLOWDETECTION=0; 
+	%[s{k},H]=sread(H);
+	%H = sclose(H); 
 	HDR{k}=H; 
 	[t,scale]=physicalunits(H.PhysDimCode);
 	s{k} = s{k}*diag(scale);

@@ -1,6 +1,6 @@
 /*
 % $Id: biosig.h,v 1.140 2009/04/09 15:06:55 schloegl Exp $
-% Copyright (C) 2005,2006,2007,2008,2009,2010 Alois Schloegl <a.schloegl@ieee.org>
+% Copyright (C) 2005,2006,2007,2008,2009,2010,2011 Alois Schloegl <alois.schloegl@gmail.com>
 % This file is part of the "BioSig for C/C++" repository
 % (biosig4c++) at http://biosig.sf.net/
 
@@ -155,7 +155,7 @@ enum FileFormat {
 	TIFF, TMS32, TMSiLOG, TRC, UNIPRO, VRML, VTK,
 	WAV, WinEEG, WMF, XML, XPM,
 	Z, ZIP, ZIP2, 
-	SQLite, NeuroLoggerHEX
+	SQLite, NeuroLoggerHEX, BESA
 };
 
 

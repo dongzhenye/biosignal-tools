@@ -1,7 +1,8 @@
 /*
 
     $Id: sopen_scp_read.c,v 1.66 2009/04/09 15:08:14 schloegl Exp $
-    Copyright (C) 2005,2006,2007 Alois Schloegl <a.schloegl@ieee.org>
+    Copyright (C) 2005,2006,2007,2011 Alois Schloegl <alois.schloegl@gmail.com>
+    Copyright (C) 2011 Stoyan Mihaylov
 
     This file is part of the "BioSig for C/C++" repository 
     (biosig4c++) at http://biosig.sf.net/ 
@@ -36,7 +37,9 @@ static const uint8_t _NUM_SECTION = 12U;	//consider first 11 sections of SCP
 static bool add_filter = true;             // additional filtering gives better shape, but use with care
 
 #ifndef WITHOUT_SCP_DECODE
-int scp_decode(HDRTYPE* hdr, struct pointer_section *section, struct DATA_DECODE , struct DATA_RECORD , struct DATA_INFO , bool );
+int scp_decode(HDRTYPE*, pointer_section*, DATA_DECODE&, DATA_RECORD&, DATA_INFO&, bool&);
+//int scp_decode(HDRTYPE* hdr, struct pointer_section *section, struct DATA_DECODE , struct DATA_RECORD , struct DATA_INFO , bool );
+void sopen_SCP_clean(DATA_DECODE&, DATA_RECORD&, DATA_INFO&);
 #endif
 
 // Huffman Tables         	
@@ -190,7 +193,9 @@ int checkTree(htree_t *T) {
 	v2 = (T->idxTable == 0) && (T->child0 != NULL) && checkTree(T->child0);
 	v3 = (T->idxTable == 0) && (T->child1 != NULL) && checkTree(T->child1);
 	v = v1 || v2 || v3;
+#ifndef __ARM__
 	if (!v) fprintf(stderr,"Warning: Invalid Node in Huffman Tree: %i %p %p\n",T->idxTable,T->child0,T->child1);
+#endif 
 	return(v);
 }
 
@@ -311,6 +316,11 @@ void deallocEN1064(en1064_t en1064) {
 	if (en1064.Section5.datablock != NULL) 	free(en1064.Section5.datablock);
 	if (en1064.Section6.inlen != NULL) 	free(en1064.Section6.inlen);
 //	if (en1064.Section6.datablock != NULL) 	free(en1064.Section6.datablock);
+ 	en1064.Section5.inlen = NULL;
+ 	en1064.Section5.datablock = NULL;
+ 	en1064.Section3.lead = NULL;
+ 	en1064.Section4.beat = NULL;
+ 	en1064.Section6.inlen = NULL;
 }
 
 EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {	
@@ -348,6 +358,11 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 	*/	
 
 	aECG_TYPE* aECG;
+ 	en1064.Section5.inlen = NULL;
+ 	en1064.Section5.datablock = NULL;
+ 	en1064.Section3.lead = NULL;
+ 	en1064.Section4.beat = NULL;
+ 	en1064.Section6.inlen = NULL;
 	if (hdr->aECG == NULL) {
 		hdr->aECG = malloc(sizeof(aECG_TYPE));
 		aECG = (aECG_TYPE*)hdr->aECG;
@@ -470,23 +485,32 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		fprintf(stdout,"SCP Section %i %i len=%i secStart=%i HeaderLength=%i\n",K,curSect,len,(int)sectionStart,hdr->HeadLen);
 
 	if (len==0) continue;	 /***** empty section *****/
+	 	if (sectionStart + len > hdr->HeadLen) {
+	 		B4C_ERRNUM = B4C_INCOMPLETE_FILE;
+	 		B4C_ERRMSG = "SOPEN(SCP-READ): Section length + start of section is more then total length of header.";
+	 		// serror();	// TODO: serror is usually called from calling function to check for errors. 
+	 		break;
+	 	}
+
 		PtrCurSect = ptr+sectionStart;
 		crc 	   = leu16p(PtrCurSect);
 		uint16_t tmpcrc = CRCEvaluate((uint8_t*)(PtrCurSect+2),len-2); 
+#ifndef __ARM__
 		if ((crc != 0xffff) && (crc != tmpcrc))
 			fprintf(stderr,"Warning SOPEN(SCP-READ): faulty CRC in section %i: crc=%x, %x\n" ,curSect,crc,tmpcrc);
 		if (curSect != leu16p(PtrCurSect+2))
 			fprintf(stderr,"Warning SOPEN(SCP-READ): Current Section No does not match field in sections (%i %i)\n",curSect,leu16p(PtrCurSect+2)); 
 		if (len != leu32p(PtrCurSect+4))
 			fprintf(stderr,"Warning SOPEN(SCP-READ): length field in pointer section (%i) does not match length field in sections (%i %i)\n",K,len,leu32p(PtrCurSect+4)); 
-
+#endif
 		uint8_t versionSection  = *(ptr+sectionStart+8);
 		uint8_t versionProtocol = *(ptr+sectionStart+9);
+#ifndef __ARM__
 		if (versionSection != 13)
 			fprintf(stderr,"Warning SOPEN(SCP-READ): Version of section is not 13 but %i. This is not tested.\n", versionSection);
 		if (versionProtocol != 13)
 			fprintf(stderr,"Warning SOPEN(SCP-READ): Version of Protocol is not 13 but %i. This is not tested.\n", versionProtocol);
-
+#endif
 		curSectPos = 16;
 
 		/**** SECTION 0 ****/
@@ -509,7 +533,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			hdr->Patient.Birthday = 0;
 			uint32_t len1;
  
- 			while (*(PtrCurSect+curSectPos) < 255) {
+ 			while ((curSectPos<=len) && (*(PtrCurSect+curSectPos) < 255)) {
 				tag = *(PtrCurSect+curSectPos);
 				len1 = leu16p(PtrCurSect+curSectPos+1);
 				if (VERBOSE_LEVEL>8)
@@ -517,7 +541,9 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 				curSectPos += 3;
 				if (curSectPos+len1 > len) {
+#ifndef __ARM__
 					fprintf(stdout,"Warning SCP(read): section 1 corrupted (exceeds file length)\n");
+#endif
 			break;
 				} 	 
 				if (tag==0) {
@@ -529,7 +555,9 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				}
 				else if (tag==2) {
 					if (len1 > MAX_LENGTH_PID) {
+#ifndef __ARM__
 						fprintf(stdout,"Warning SCP(read): length of Patient Id (section1 tag2) exceeds %i>%i\n",len1,MAX_LENGTH_PID); 
+#endif
 					}
 					strncpy(hdr->Patient.Id,(char*)(PtrCurSect+curSectPos),min(len1,MAX_LENGTH_PID));
 					hdr->Patient.Id[MAX_LENGTH_PID] = 0;
@@ -576,8 +604,10 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					aECG->Diagnosis = (char*)(PtrCurSect+curSectPos);
 				}
 				else if (tag==14) {
+#ifndef __ARM__
 					if (len1>85)
 						fprintf(stderr,"Warning SCP(r): length of tag14 %i>40\n",len1);
+#endif 
 					memcpy(hdr->ID.Manufacturer._field,(char*)PtrCurSect+curSectPos,min(len1,MAX_LENGTH_MANUF)); 
 					hdr->ID.Manufacturer._field[min(len1,MAX_LENGTH_MANUF)] = 0;
 					hdr->ID.Manufacturer.Model = hdr->ID.Manufacturer._field+8;  
@@ -743,11 +773,13 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				Huffman[0].Table = DefaultTable;
 				HTrees [0] = makeTree(Huffman[0]);
 				k2 = 0; 
+#ifndef __ARM__
 				if (VERBOSE_LEVEL==9)
 					for (k1=0; k1<Huffman[k2].NCT; k1++) 
 					fprintf(stdout,"%3i: %2i %2i %1i %3i %6u \n",k1,Huffman[k2].Table[k1].PrefixLength,Huffman[k2].Table[k1].CodeLength,Huffman[k2].Table[k1].TableModeSwitch,Huffman[k2].Table[k1].BaseValue,Huffman[k2].Table[k1].BaseCode); 
 				if (!checkTree(HTrees[0])) // ### OPTIONAL, not needed ### 
 					fprintf(stderr,"Warning: invalid Huffman Tree\n");
+#endif 
 			}
 			else {
 				en1064.FLAG.HUFFMAN = NHT; 
@@ -764,8 +796,10 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 						Huffman[k2].Table[k1].BaseValue  = lei16p(PtrCurSect+curSectPos+3);  
 						Huffman[k2].Table[k1].BaseCode   = leu32p(PtrCurSect+curSectPos+5);
 						curSectPos += 9;
+#ifndef __ARM__
 						if (VERBOSE_LEVEL==9)
 							fprintf(stdout,"%3i %3i: %2i %2i %1i %3i %6u \n",k2,k1,Huffman[k2].Table[k1].PrefixLength,Huffman[k2].Table[k1].CodeLength,Huffman[k2].Table[k1].TableModeSwitch,Huffman[k2].Table[k1].BaseValue,Huffman[k2].Table[k1].BaseCode);
+#endif
 					}
 					HTrees[k2] = makeTree(Huffman[k2]); 
 					if (!checkTree(HTrees[k2])) {
@@ -785,12 +819,16 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			en1064.FLAG.REF_BEAT = (*(PtrCurSect+curSectPos+1) & 0x01);
 			en1064.Section3.flags = *(PtrCurSect+curSectPos+1);
 			if (en1064.FLAG.REF_BEAT && !section[4].length) {
+#ifndef __ARM__
 				fprintf(stderr,"Warning (SCP): Reference Beat but no Section 4\n");
+#endif
 				aECG->FLAG.REF_BEAT  = 0;
 				en1064.FLAG.REF_BEAT = 0;
 			}
+#ifndef __ARM__
 			if (!(en1064.Section3.flags & 0x04) || ((en1064.Section3.flags>>3) != hdr->NS)) 
 				fprintf(stderr,"Warning (SCP): channels are not simultaneously recorded! %x %i\n",en1064.Section3.flags,hdr->NS);
+#endif
 
 			curSectPos += 2;
 			hdr->CHANNEL = (CHANNEL_TYPE *) calloc(hdr->NS, sizeof(CHANNEL_TYPE));
@@ -811,8 +849,10 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				hdr->CHANNEL[i].Notch 	= Notch; 
 				curSectPos += 9;
 
+#ifndef __ARM__
 				if (en1064.Section3.lead[i].start != startindex0)
 					fprintf(stderr,"Warning SCP(read): starting sample %i of #%i differ to %x in #1\n",en1064.Section3.lead[i].start,*(PtrCurSect+curSectPos+8),startindex0);
+#endif
 			}
 		}
 		/**** SECTION 4 ****/
@@ -858,9 +898,12 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			}
 			if (!section[4].length && en1064.FLAG.HUFFMAN) {
 				 en1064.Section5.Length *= 5; // decompressed data might need more space 
+#ifndef __ARM__
 				 fprintf(stderr,"Warning SCPOPEN: Section 4 not defined - size of Sec5 can be only guessed (%i allocated)\n",(int)en1064.Section5.Length);
+#endif
 			}
 
+			en1064.Section5.datablock = NULL;
 			if (en1064.FLAG.REF_BEAT) {
 				en1064.Section5.datablock = (int32_t*)malloc(4 * hdr->NS * en1064.Section5.Length); 
 
@@ -1132,6 +1175,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			curSectPos += 9;
 			uint8_t k=0;
 			for (; k<aECG->Section8.NumberOfStatements;k++) {
+				if (curSectPos+3 > len) break;
 				aECG->Section8.Statements[k] = (char*)(PtrCurSect+curSectPos+3);
 				curSectPos += 3+leu16p(PtrCurSect+curSectPos+1);
 			}
@@ -1149,6 +1193,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 		/**** SECTION 11 ****/
 		else if (curSect==11)  {
+ 			if(len<curSectPos+9) continue; //Something is very wrong
 			aECG->Section11.Confirmed = *(char*)(PtrCurSect+curSectPos);
 			aECG->Section11.t.tm_year = leu16p(PtrCurSect+curSectPos+1)-1900;
 			aECG->Section11.t.tm_mon  = *(uint8_t*)(PtrCurSect+curSectPos+3)-1;
@@ -1161,21 +1206,22 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			curSectPos += 9;
 			uint8_t k=0;
 			for (; k<aECG->Section11.NumberOfStatements;k++) {
+ 				if (curSectPos+4 > len) break;
 				aECG->Section11.Statements[k] = (char*)(PtrCurSect+curSectPos+4);
 				curSectPos += 3+leu16p(PtrCurSect+curSectPos+1);
 			}
 		}
 
-		/**** SECTION 9 ****/
-		else if (curSect==9)  {
+		/**** SECTION 12 ****/
+		else if (curSect==12)  {
 		}
 
-		/**** SECTION 10 ****/
-		else if (curSect==10)  {
+		/**** SECTION 13 ****/
+		else if (curSect==13)  {
 		}
 
-		/**** SECTION 11 ****/
-		else if (curSect==11)  {
+		/**** SECTION 14 ****/
+		else if (curSect==14)  {
 		}
 		else {
 		}
@@ -1184,7 +1230,6 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 	/* free allocated memory */ 
 	deallocEN1064(en1064);	
 
-return(0);
 
 #ifndef WITHOUT_SCP_DECODE
    	if (AS_DECODE==0) return(0); 
@@ -1217,7 +1262,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 		- defines intermediate data structure
 	*/	
 
+#ifndef __ARM__
 	fprintf(stdout, "\nUse SCP_DECODE (Huffman=%i RefBeat=%i Bimodal=%i)\n", aECG->FLAG.HUFFMAN, aECG->FLAG.REF_BEAT, aECG->FLAG.BIMODAL);
+#endif
 
 	textual.des.acquiring.protocol_revision_number = aECG->Section1.Tag14.VERSION;
 	textual.des.analyzing.protocol_revision_number = aECG->Section1.Tag15.VERSION; 
@@ -1237,6 +1284,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	}
 	
 	 // end of fall back method 
+/*
+ 	decode.Reconstructed = NULL;
+ 	sopen_SCP_clean(&decode, &record, &textual);
+*/
 	return(1);
 #endif 
 };

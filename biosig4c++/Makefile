@@ -339,7 +339,7 @@ win32/sopen_scp_read.obj: t210/sopen_scp_read.c biosig-dev.h biosig.h t210/struc
 	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
 
 win32/scp-decode.obj: t210/scp-decode.cpp biosig-dev.h biosig.h t210/structures.h t210/codes.h
-	$(MinGWCXX) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
+	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
 
 win32/sopen_hl7aecg.obj: t230/sopen_hl7aecg.c biosig-dev.h biosig.h XMLParser/tinyxml.h XMLParser/tinystr.h
 	$(MinGWCXX) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
@@ -364,7 +364,7 @@ win64/sopen_scp_read.obj: t210/sopen_scp_read.c biosig-dev.h biosig.h t210/struc
 	$(MinGW64CC) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
 
 win64/scp-decode.obj: t210/scp-decode.cpp biosig-dev.h biosig.h t210/structures.h t210/codes.h
-	$(MinGW64CXX) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
+	$(MinGW64CC) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
 
 win64/sopen_hl7aecg.obj: t230/sopen_hl7aecg.c biosig-dev.h biosig.h XMLParser/tinyxml.h XMLParser/tinystr.h
 	$(MinGW64CXX) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"

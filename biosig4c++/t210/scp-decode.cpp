@@ -1,6 +1,8 @@
 /*
     $Id: scp-decode.cpp,v 1.24 2008-07-12 20:46:58 schloegl Exp $
-    This function is part of the "BioSig for C/C++" repository 
+   Copyright (C) 2011 Alois Schloegl <alois.schloegl@gmail.com>
+   Copyright (C) 2011 Stoyan Mihaylov
+   This function is part of the "BioSig for C/C++" repository 
     (biosig4c++) at http://biosig.sf.net/ 
 
 Modifications by Alois Schloegl 
@@ -97,7 +99,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //______________________________________________________________________________
 
-#include <iostream>
+//#include <iostream>
 #include <cstring>    //strcat, strcpy
 #include <cstdio>
 #include <stdlib.h>
@@ -145,7 +147,7 @@ void            Opt_Filter(int_L*, int_L*, f_Res, f_lead, lead*, Protected_Area*
 //______________________________________________________________________________
 //                             INTERNAL FUNCTIONS
 char*           ReadString(char*,U_int_M);                          //read a string
-char            *FindString(U_int_M);                         // calculate the length of a string and write it down
+char            *FindString(char*,U_int_M);                         // calculate the length of a string and write it down
 int_M           Look(alfabetic*,U_int_M,U_int_M,U_int_M);      //look at a number in alfabetic and give the position of the array
 
 //______________________________________________________________________________
@@ -218,6 +220,13 @@ void            section_6(pointer_section,DATA_DECODE&,bool);   //read section 6
 void            Decode_Data(pointer_section*,DATA_DECODE&,bool&);
 
 //______________________________________________________________________________
+#define STR_NULL StrNull()
+void *FreeWithCare(void*P){
+//Stoyan - else I got problems with some scp files - prestandart or so
+	if(P) 
+		free(P);
+	return NULL;
+}
 
 void *mymalloc(size_t size)            // by E.C. 07.11.2003    this is a workaround for a bug
 {                                      // present somewhere in memory allocation.
@@ -228,6 +237,13 @@ void *mymalloc(size_t size)            // by E.C. 07.11.2003    this is a workar
 //        void *res=malloc(size*2);      // this way each time a doubled memory is requested. And it works!!
 	void *res=malloc(size);
 	return res;
+}
+const int StrNullLen=strlen(" unspecified/unknown ");
+char * StrNull(){
+//Stoyan this way we can release everything 
+	char*Ret=(char*)mymalloc(StrNullLen+4);
+	strcpy(Ret," unspecified/unknown ");
+	return Ret;
 }
 
 /* moved by MB
@@ -263,6 +279,67 @@ void ReadByte(t1 &number)
 }//end ReadByte
 
 //                      MAIN
+
+void sopen_SCP_clean(struct DATA_DECODE *decode, struct DATA_RECORD *record, struct DATA_INFO *textual) {
+	FreeWithCare(decode->length_BdR0);
+	FreeWithCare(decode->samples_BdR0);
+	FreeWithCare(decode->length_Res);
+	FreeWithCare(decode->samples_Res);
+	FreeWithCare(decode->t_Huffman);
+	FreeWithCare(decode->flag_Huffman);
+	FreeWithCare(decode->data_lead);
+	FreeWithCare(decode->data_protected);
+	FreeWithCare(decode->data_subtraction);
+	FreeWithCare(decode->Median);
+	FreeWithCare(decode->Residual);
+	FreeWithCare(decode->Reconstructed);
+
+	FreeWithCare(record->data_spike);
+	FreeWithCare(record->type_BdR);
+	FreeWithCare(record->data_BdR);
+	FreeWithCare(record->data_additional);
+	FreeWithCare(record->lead_block);
+	FreeWithCare(textual->text_dim);
+	FreeWithCare(textual->data_statement);
+	FreeWithCare(textual->text_statement);
+
+	
+	FreeWithCare(textual->ana.last_name);
+	FreeWithCare(textual->ana.first_name);
+	FreeWithCare(textual->ana.ID);
+	FreeWithCare(textual->ana.second_last_name);
+	FreeWithCare(textual->cli.text_drug);
+	FreeWithCare(textual->cli.text_diagnose);
+	FreeWithCare(textual->cli.referring_physician);
+	FreeWithCare(textual->cli.latest_confirming_physician);
+	FreeWithCare(textual->cli.technician_description);
+	FreeWithCare(textual->cli.text_free_text);
+	FreeWithCare(textual->cli.text_free_medical_hystory);
+	FreeWithCare(textual->cli.medical_hystory);
+	FreeWithCare(textual->cli.free_text);
+	FreeWithCare(textual->cli.drug);
+
+	FreeWithCare(textual->des.acquiring.model_description);
+	FreeWithCare(textual->des.acquiring.analysing_program_revision_number);
+	FreeWithCare(textual->des.acquiring.serial_number_device);
+	FreeWithCare(textual->des.acquiring.device_system_software);
+	FreeWithCare(textual->des.acquiring.device_SCP_implementation_software);
+	FreeWithCare(textual->des.acquiring.manifacturer_trade_name);
+	FreeWithCare(textual->des.analyzing.model_description);
+	FreeWithCare(textual->des.analyzing.analysing_program_revision_number);
+	FreeWithCare(textual->des.analyzing.serial_number_device);
+	FreeWithCare(textual->des.analyzing.device_system_software);
+	FreeWithCare(textual->des.analyzing.device_SCP_implementation_software);
+	FreeWithCare(textual->des.analyzing.manifacturer_trade_name);
+	FreeWithCare(textual->des.acquiring_institution);
+	FreeWithCare(textual->des.analyzing_institution);
+	FreeWithCare(textual->des.acquiring_department);
+	FreeWithCare(textual->des.analyzing_department);
+	FreeWithCare(textual->des.room);
+	FreeWithCare(textual->dev.sequence_number);
+	FreeWithCare((char*)textual->dev.TZ.description);
+
+}
 
 int scp_decode(HDRTYPE* hdr, pointer_section *section, DATA_DECODE &decode, DATA_RECORD &info_recording, DATA_INFO &info_textual, bool &add_filter)
 {
@@ -326,6 +403,8 @@ char *ReadString(char *temp_string, U_int_M num)
 //the first extracted byte is written for fist.
 //each byte read from the stream is first "transformed" in char.
 {
+	if(temp_string)
+		free(temp_string);
 	if((temp_string=(char*)mymalloc(sizeof(char)*(num+2)))==NULL)    // by E.C. 26.02.2004 one more byte
 	{
 		fprintf(stderr,"Not enough memory");  // no, exit //
@@ -359,10 +438,13 @@ int_M Look(alfabetic *code_, U_int_M a, U_int_M b, U_int_M key_)
 		return Look(code_,a,middle-1,key_);
 }//end Look
 
-char *FindString(U_int_M max)
+char *FindString(char *temp_string,U_int_M max)
 //read bytes until NULL
+//Stoyan - there were memory leaks
 {
-	char *temp_string, c;
+	if(temp_string)
+		free(temp_string);
+	char c;
 	U_int_M num=0;
 	//fpos_t
 	long filepos;
@@ -755,7 +837,6 @@ void section_0(pointer_section *info, int size_max)
 //______________________________________________________________________________
 //                              section 1
 //______________________________________________________________________________
-
 void Init_S1(DATA_INFO &inf)
 {
 	inf.ana.last_name=STR_NULL;
@@ -785,6 +866,9 @@ void Init_S1(DATA_INFO &inf)
 	inf.cli.number_hystory=0;
 	inf.cli.number_free_hystory=0;
 	inf.cli.text_free_medical_hystory=STR_NULL;
+	inf.cli.free_text=NULL;
+	inf.cli.medical_hystory=NULL;
+	inf.cli.drug=NULL;
 
 	inf.des.acquiring.institution_number=0;
 	inf.des.acquiring.department_number=0;
@@ -888,7 +972,7 @@ void section_1(pointer_section info_sections, DATA_INFO &inf)
 				if(!inf.cli.number_drug)
 				{
 					inf.cli.drug=NULL;
-					inf.cli.text_drug=NULL;
+					inf.cli.text_drug=(char*)FreeWithCare(inf.cli.text_drug);
 					dim=0;
 				}
 				section_1_10(inf.cli,dim); break;
@@ -900,7 +984,7 @@ void section_1(pointer_section info_sections, DATA_INFO &inf)
 				if(!inf.cli.number_diagnose)
 				{
 					inf.cli.diagnose=NULL;
-					inf.cli.text_diagnose=NULL;
+					inf.cli.text_diagnose=(char*)FreeWithCare(inf.cli.text_diagnose);
 					dim=0;
 				}
 				section_1_13(inf.cli,dim); break;
@@ -939,8 +1023,7 @@ void section_1(pointer_section info_sections, DATA_INFO &inf)
 			case 30:
 				if(!inf.cli.number_text)
 				{
-					inf.cli.free_text=NULL;
-					inf.cli.text_free_text=NULL;
+					inf.cli.text_free_text=(char*)FreeWithCare(inf.cli.text_free_text);
 					dim=0;
 				}
 				section_1_30(inf.cli,dim); break;
@@ -961,7 +1044,7 @@ void section_1(pointer_section info_sections, DATA_INFO &inf)
 				if(!inf.cli.number_free_hystory)
 				{
 					inf.cli.free_medical_hystory=NULL;
-					inf.cli.text_free_medical_hystory=NULL;
+					inf.cli.text_free_medical_hystory=(char*)FreeWithCare(inf.cli.text_free_medical_hystory);
 					dim=0;
 				}
 				section_1_35(inf.cli,dim); break;
@@ -983,7 +1066,7 @@ void section_1_0(demographic &ana)
 	U_int_M dim;
 
 	ReadByte(dim);
-	ana.last_name=ReadString(ana.last_name=NULL,dim);
+	ana.last_name=ReadString(ana.last_name,dim);
 }//end section_1_0
 
 void section_1_1(demographic &ana)
@@ -992,7 +1075,7 @@ void section_1_1(demographic &ana)
 	U_int_M dim;
 
 	ReadByte(dim);
-	ana.first_name=ReadString(ana.first_name=NULL,dim);
+	ana.first_name=ReadString(ana.first_name,dim);
 }//end section_1_1
 
 void section_1_2(demographic &ana)
@@ -1001,7 +1084,7 @@ void section_1_2(demographic &ana)
 	U_int_M dim;
 
 	ReadByte(dim);
-	ana.ID=ReadString(ana.ID=NULL,dim);
+	ana.ID=ReadString(ana.ID,dim);
 }//end section_1_2
 
 void section_1_3(demographic &ana)
@@ -1010,7 +1093,7 @@ void section_1_3(demographic &ana)
 	U_int_M dim;
 
 	ReadByte(dim);
-	ana.second_last_name=ReadString(ana.second_last_name=NULL,dim);
+	ana.second_last_name=ReadString(ana.second_last_name,dim);
 }//end section_1_3
 
 void section_1_4(demographic &ana)
@@ -1140,7 +1223,7 @@ void section_1_10(clinic &cli, U_int_M &dim)
 		cli.drug[cli.number_drug].length=val-3;        //string length + NULL
 		if(cli.drug[cli.number_drug].length)
 		{
-			temp_string=ReadString(temp_string=NULL,cli.drug[cli.number_drug].length);
+			temp_string=ReadString(temp_string,cli.drug[cli.number_drug].length);
 			strcat(temp_string,STR_END);
 			dim+=strlen(temp_string);
 			if((cli.text_drug=(char*)realloc(cli.text_drug,sizeof(char)*(dim+1)))==NULL)
@@ -1197,7 +1280,7 @@ void section_1_13(clinic &cli, U_int_M &dim)
 		}
 		cli.diagnose[cli.number_diagnose].unit=cli.number_diagnose+1;
 		cli.diagnose[cli.number_diagnose].value=val;
-		temp_string=ReadString(temp_string=NULL,cli.diagnose[cli.number_diagnose].value);
+		temp_string=ReadString(temp_string,cli.diagnose[cli.number_diagnose].value);
 		strcat(temp_string,STR_END);
 		dim+=strlen(temp_string);
 		if((cli.text_diagnose=(char*)realloc(cli.text_diagnose,dim+1))==NULL)
@@ -1237,7 +1320,7 @@ void section_1_14(descriptive &des)
 	ReadByte(des.acquiring.manifacturer);
 	if(des.acquiring.manifacturer>20 && des.acquiring.manifacturer!=255)
 		des.acquiring.manifacturer=0;
-	des.acquiring.model_description=ReadString(des.acquiring.model_description=NULL,6);
+	des.acquiring.model_description=ReadString(des.acquiring.model_description,6);
 	ReadByte(des.acquiring.protocol_revision_number);
 	ReadByte(des.acquiring.category);
 	pos=Look(compatibility,0,3,des.acquiring.category);
@@ -1270,29 +1353,29 @@ void section_1_14(descriptive &des)
 	if(des.acquiring.AC>2)
 		des.acquiring.AC=0;
 	Skip(16);
-	des.acquiring.analysing_program_revision_number=NULL;
-	des.acquiring.serial_number_device=NULL;
-	des.acquiring.device_system_software=NULL;
-	des.acquiring.device_SCP_implementation_software=NULL;
-	des.acquiring.manifacturer_trade_name=NULL;
+	des.acquiring.analysing_program_revision_number=(char*)FreeWithCare(des.acquiring.analysing_program_revision_number);
+	des.acquiring.serial_number_device=(char*)FreeWithCare(des.acquiring.serial_number_device);
+	des.acquiring.device_system_software=(char*)FreeWithCare(des.acquiring.device_system_software);
+	des.acquiring.device_SCP_implementation_software=(char*)FreeWithCare(des.acquiring.device_SCP_implementation_software);
+	des.acquiring.manifacturer_trade_name=(char*)FreeWithCare(des.acquiring.manifacturer_trade_name);
 	ReadByte(i);
 	if(!i)
-		des.acquiring.analysing_program_revision_number=NULL;
+		des.acquiring.analysing_program_revision_number=(char*)FreeWithCare(des.acquiring.analysing_program_revision_number);
 	else
-		des.acquiring.analysing_program_revision_number=ReadString(des.acquiring.analysing_program_revision_number=NULL,i);
+		des.acquiring.analysing_program_revision_number=ReadString(des.acquiring.analysing_program_revision_number,i);
 
 	filepos = iftell(in); //FGETPOS(in,&filepos);
-	des.acquiring.serial_number_device=FindString(dim-filepos COMPAT);
+	des.acquiring.serial_number_device=FindString(des.acquiring.serial_number_device,dim-filepos COMPAT);
 	if ((des.acquiring.protocol_revision_number==10) || (des.acquiring.protocol_revision_number==11))
 													 // by E.C. may 2004 CARDIOLINE 1.0 & ESAOTE 1.1
 		ifseek(in,filepos_iniz COMPAT +dim_to_skip,0);   //  reposition file pointer
 	else {
 		filepos = iftell(in); //FGETPOS(in,&filepos);
-		des.acquiring.device_system_software=FindString(dim-filepos COMPAT);
+		des.acquiring.device_system_software=FindString(des.acquiring.device_system_software,dim-filepos COMPAT);
 		filepos = iftell(in); //FGETPOS(in,&filepos);
-		des.acquiring.device_SCP_implementation_software=FindString(dim-filepos COMPAT);
+		des.acquiring.device_SCP_implementation_software=FindString(des.acquiring.device_SCP_implementation_software,dim-filepos COMPAT);
 		filepos = iftell(in); //FGETPOS(in,&filepos);
-		des.acquiring.manifacturer_trade_name=FindString(dim-filepos COMPAT);
+		des.acquiring.manifacturer_trade_name=FindString(des.acquiring.manifacturer_trade_name,dim-filepos COMPAT);
 	}
 }//end section_1_14
 
@@ -1317,7 +1400,7 @@ void section_1_15(descriptive &des)
 	ReadByte(des.analyzing.manifacturer);
 	if(des.analyzing.manifacturer>20 && des.analyzing.manifacturer!=255)
 		des.analyzing.manifacturer=0;
-	des.analyzing.model_description=ReadString(des.analyzing.model_description=NULL,6);
+	des.analyzing.model_description=ReadString(des.analyzing.model_description,6);
 	ReadByte(des.analyzing.protocol_revision_number);
 	ReadByte(des.analyzing.category);
 	pos=Look(compatibility,0,3,des.analyzing.category);
@@ -1350,26 +1433,26 @@ void section_1_15(descriptive &des)
 	if(des.analyzing.AC>2)
 		des.analyzing.AC=0;
 	Skip(16);
-	des.analyzing.analysing_program_revision_number=NULL;
-	des.analyzing.serial_number_device=NULL;
-	des.analyzing.device_system_software=NULL;
-	des.analyzing.device_SCP_implementation_software=NULL;
-	des.analyzing.manifacturer_trade_name=NULL;
+	des.analyzing.analysing_program_revision_number=(char*)FreeWithCare(des.analyzing.analysing_program_revision_number);
+	des.analyzing.serial_number_device=(char*)FreeWithCare(des.analyzing.serial_number_device);
+	des.analyzing.device_system_software=(char*)FreeWithCare(des.analyzing.device_system_software);
+	des.analyzing.device_SCP_implementation_software=(char*)FreeWithCare(des.analyzing.device_SCP_implementation_software);
+	des.analyzing.manifacturer_trade_name=(char*)FreeWithCare(des.analyzing.manifacturer_trade_name);
 
 	ReadByte(i);
 	if(!i)
-		des.analyzing.analysing_program_revision_number=NULL;
+		des.analyzing.analysing_program_revision_number=(char*)FreeWithCare(des.analyzing.analysing_program_revision_number);
 	else
-		des.analyzing.analysing_program_revision_number=ReadString(des.analyzing.analysing_program_revision_number=NULL,i);
+		des.analyzing.analysing_program_revision_number=ReadString(des.analyzing.analysing_program_revision_number,i);
 
 	filepos = iftell(in); //FGETPOS(in,&filepos);
-	des.analyzing.serial_number_device=FindString(dim-filepos COMPAT);
+	des.analyzing.serial_number_device=FindString(des.analyzing.serial_number_device,dim-filepos COMPAT);
 	filepos = iftell(in); //FGETPOS(in,&filepos);
-	des.analyzing.device_system_software=FindString(dim-filepos COMPAT);
+	des.analyzing.device_system_software=FindString(des.analyzing.device_system_software,dim-filepos COMPAT);
 	filepos = iftell(in); //FGETPOS(in,&filepos);
-	des.analyzing.device_SCP_implementation_software=FindString(dim-filepos COMPAT);
+	des.analyzing.device_SCP_implementation_software=FindString(des.analyzing.device_SCP_implementation_software,dim-filepos COMPAT);
 	filepos = iftell(in); //FGETPOS(in,&filepos);
-	des.analyzing.manifacturer_trade_name=FindString(dim-filepos COMPAT);
+	des.analyzing.manifacturer_trade_name=FindString(des.analyzing.manifacturer_trade_name,dim-filepos COMPAT);
 }//end section_1_15
 
 void section_1_16(descriptive &des)
@@ -1378,7 +1461,7 @@ void section_1_16(descriptive &des)
 	U_int_M dim;
 
 	ReadByte(dim);
-	des.acquiring_institution=ReadString(des.acquiring_institution=NULL,dim);
+	des.acquiring_institution=ReadString(des.acquiring_institution,dim);
 }//end section_1_16
 
 void section_1_17(descriptive &des)
@@ -1387,7 +1470,7 @@ void section_1_17(descriptive &des)
 	U_int_M dim;
 
 	ReadByte(dim);
-	des.analyzing_institution=ReadString(des.analyzing_institution=NULL,dim);
+	des.analyzing_institution=ReadString(des.analyzing_institution,dim);
 }//end section_1_17
 
 void section_1_18(descriptive &des)
@@ -1396,7 +1479,7 @@ void section_1_18(descriptive &des)
 	U_int_M dim;
 
 	ReadByte(dim);
-	des.acquiring_department=ReadString(des.acquiring_department=NULL,dim);
+	des.acquiring_department=ReadString(des.acquiring_department,dim);
 }//end section_1_18
 
 void section_1_19(descriptive &des)
@@ -1405,7 +1488,7 @@ void section_1_19(descriptive &des)
 	U_int_M dim;
 
 	ReadByte(dim);
-	des.analyzing_department=ReadString(des.analyzing_department=NULL,dim);
+	des.analyzing_department=ReadString(des.analyzing_department,dim);
 }//end section_1_19
 
 void section_1_20(clinic &cli)
@@ -1414,7 +1497,7 @@ void section_1_20(clinic &cli)
 	U_int_M dim;
 
 	ReadByte(dim);
-	cli.referring_physician=ReadString(cli.referring_physician=NULL,dim);
+	cli.referring_physician=ReadString(cli.referring_physician,dim);
 }//end section_1_20
 
 void section_1_21(clinic &cli)
@@ -1423,7 +1506,7 @@ void section_1_21(clinic &cli)
 	U_int_M dim;
 
 	ReadByte(dim);
-	cli.latest_confirming_physician=ReadString(cli.latest_confirming_physician=NULL,dim);
+	cli.latest_confirming_physician=ReadString(cli.latest_confirming_physician,dim);
 }//end section_1_21
 
 void section_1_22(clinic &cli)
@@ -1432,7 +1515,7 @@ void section_1_22(clinic &cli)
 	U_int_M dim;
 
 	ReadByte(dim);
-	cli.technician_description=ReadString(cli.technician_description=NULL,dim);
+	cli.technician_description=ReadString(cli.technician_description,dim);
 }//end section_1_22
 
 void section_1_23(descriptive &des)
@@ -1441,7 +1524,7 @@ void section_1_23(descriptive &des)
 	U_int_M dim;
 
 	ReadByte(dim);
-	des.room=ReadString(des.room=NULL,dim);
+	des.room=ReadString(des.room,dim);
 }//end section_1_23
 
 void section_1_24(descriptive &des)
@@ -1534,7 +1617,7 @@ void section_1_30(clinic &cli, U_int_M &dim)
 // section 1 tag 30
 {
 	U_int_M val;
-	char *temp_string, *pos_char;
+	char *temp_string=0, *pos_char;
 
 	ReadByte(val);
 	if(val)
@@ -1546,7 +1629,7 @@ void section_1_30(clinic &cli, U_int_M &dim)
 		}
 		cli.free_text[cli.number_text].unit=cli.number_text+1;
 		cli.free_text[cli.number_text].value=val;
-		temp_string=ReadString(temp_string=NULL,cli.free_text[cli.number_text].value);
+		temp_string=ReadString(temp_string,cli.free_text[cli.number_text].value);
 		strcat(temp_string,STR_END);
 		dim+=strlen(temp_string);
 		if((cli.text_free_text=(char*)realloc(cli.text_free_text,dim+1))==NULL)
@@ -1569,9 +1652,11 @@ void section_1_31(device &dev)
 
 	ReadByte(dim);
 	if(dim)
-		dev.sequence_number=ReadString(dev.sequence_number=NULL,dim);
-	else
+		dev.sequence_number=ReadString(dev.sequence_number,dim);
+	else{
+		dev.sequence_number=(char*)FreeWithCare(dev.sequence_number);
 		dev.sequence_number=STR_NULL;
+	}
 }//end section_1_31
 
 void section_1_32(clinic &cli, U_int_M &dim, int_S version)
@@ -1634,16 +1719,18 @@ void section_1_34(device &dev)
 	ReadByte(dev.TZ.offset); //complemented if negative
 	ReadByte(dev.TZ.index);
 	if(dim-4)
-		dev.TZ.description = FindString(dim-4);
-	else
-		dev.TZ.description = "-";
+		dev.TZ.description = FindString((char*)dev.TZ.description,dim-4);
+	else{
+		dev.TZ.description = (const char*)realloc((char*)dev.TZ.description,4);
+		strcpy((char*)dev.TZ.description,"-");
+	}
 }//end section_1_34
 
 void section_1_35(clinic &cli, U_int_M &dim)
 // section 1 tag 35
 {
 	U_int_M val;
-	char *temp_string, *pos_char;
+	char *temp_string=NULL, *pos_char;
 
 	ReadByte(val);
 	if(val)
@@ -1655,7 +1742,7 @@ void section_1_35(clinic &cli, U_int_M &dim)
 		}
 		cli.free_medical_hystory[cli.number_free_hystory].unit=cli.number_free_hystory+1;
 		cli.free_medical_hystory[cli.number_free_hystory].value=val;
-		temp_string=ReadString(temp_string=NULL,cli.free_medical_hystory[cli.number_free_hystory].value);
+		temp_string=ReadString(temp_string,cli.free_medical_hystory[cli.number_free_hystory].value);
 		strcat(temp_string,STR_END);
 		dim+=strlen(temp_string);
 		if((cli.text_free_medical_hystory=(char*)realloc(cli.text_free_medical_hystory,dim+1))==NULL)
@@ -2204,7 +2291,7 @@ void section_8(pointer_section info_sections,DATA_INFO &data)
 		for(i=0;i<data.flag_report.number;i++)
 		{
 			Skip(3);
-			temp_string=ReadString(temp_string=NULL,data.text_dim[i].value);
+			temp_string=ReadString(temp_string,data.text_dim[i].value);
 			strcat(temp_string,STR_END);
 			strcpy(c,temp_string);
 			c+=strlen(temp_string);
@@ -2354,14 +2441,14 @@ void section_10(pointer_section info_sections, DATA_RECORD &data, int_S version)
 void section_11(pointer_section info_sections,DATA_INFO &data)
 /*
 	expressions (ASCII) should be either:
- 		1) diagnostic statement_probability _modifiers;
-		2) diagnostic statement_probability _modifier_conjunctive term_diagnostic statement_probability _modifier...;
+ 		1) diagnostic statement_probability_modifiers;
+		2) diagnostic statement_probability_modifier_conjunctive term_diagnostic statement_probability_modifier...;
 	in the test files I found only 1 diagnostic statement per expression, ending with a NULL.
 */
 {
 	U_int_S m, g, h, s, i, j;
 	U_int_M a, dim;
-	char *temp_string, *punt, c;
+	char *temp_string=0, *punt, c;
 	//fpos_t filepos;
 	long filepos;
 	int_S version;
@@ -2438,7 +2525,7 @@ void section_11(pointer_section info_sections,DATA_INFO &data)
 				dim=data.data_statement[i].length;
 				for(j=0;j<data.data_statement[i].number_field;j++)
 				{
-					temp_string=FindString(dim);
+					temp_string=FindString(temp_string,dim);
 					strcat(temp_string,STR_END);
 					strcpy(punt,temp_string);
 					punt+=strlen(temp_string);
@@ -2448,7 +2535,7 @@ void section_11(pointer_section info_sections,DATA_INFO &data)
 			}
 			else
 			{
-				temp_string=ReadString(temp_string=NULL,data.data_statement[i].length);
+				temp_string=ReadString(temp_string,data.data_statement[i].length);
 				strcat(temp_string,STR_END);
 				strcpy(punt,temp_string);
 				punt+=strlen(temp_string);
@@ -2726,6 +2813,7 @@ void Huffman(int_L *out_data, U_int_M *length, U_int_S *in_data, U_int_M &n_samp
 		}
 		decompress(tree,in_data,pos_in,length[i],out_data,pos_out,n_samples,t_Huffman,flag_Huffman,pos_tH);
 	}
+	Tree_Destroy(tree);
 }//end Huffman
 
 void Decode_Data(pointer_section *section, DATA_DECODE &data, bool &add_filter)
@@ -2748,14 +2836,15 @@ void Decode_Data(pointer_section *section, DATA_DECODE &data, bool &add_filter)
 			}
 			Huffman(data.Median,data.length_BdR0,data.samples_BdR0,data.flag_BdR0.number_samples,data.flag_lead.number,data.t_Huffman,data.flag_Huffman);
 			free(data.samples_BdR0);
-			free(data.length_BdR0);
+			data.samples_BdR0=NULL;
 		}
 		else
 		{
 			dim_B=data.flag_BdR0.number_samples*sizeof(int_M)*data.flag_lead.number;   //number of samples of all leads
 			//they shuld be equal!!!
-			free(data.length_BdR0);
 		}
+		free(data.length_BdR0);
+		data.length_BdR0=NULL;
 		if(data.flag_BdR0.encoding)
 			Differences(data.Median,data.flag_BdR0,data.flag_lead.number);
 
@@ -2778,6 +2867,8 @@ void Decode_Data(pointer_section *section, DATA_DECODE &data, bool &add_filter)
 		dim_R=data.flag_Res.number_samples*sizeof(int_L)*data.flag_lead.number;   //number of bytes of all leads before interpolation (also, data.flag_Res.number_samples has been changed to the number of samples from HUffman)
 		free(data.samples_Res);
 		free(data.length_Res);
+		data.samples_Res=NULL;
+		data.length_Res=NULL;
 
 		if(data.flag_Res.encoding)
 		Differences(data.Residual,data.flag_Res,data.flag_lead.number);
