@@ -37,9 +37,8 @@ static const uint8_t _NUM_SECTION = 12U;	//consider first 11 sections of SCP
 static bool add_filter = true;             // additional filtering gives better shape, but use with care
 
 #ifndef WITHOUT_SCP_DECODE
-int scp_decode(HDRTYPE*, pointer_section*, DATA_DECODE&, DATA_RECORD&, DATA_INFO&, bool&);
-//int scp_decode(HDRTYPE* hdr, struct pointer_section *section, struct DATA_DECODE , struct DATA_RECORD , struct DATA_INFO , bool );
-void sopen_SCP_clean(DATA_DECODE&, DATA_RECORD&, DATA_INFO&);
+EXTERN_C int scp_decode(HDRTYPE* hdr, struct pointer_section *section, struct DATA_DECODE, struct DATA_RECORD, struct DATA_INFO, bool );
+EXTERN_C void sopen_SCP_clean(struct DATA_DECODE*, struct DATA_RECORD*, struct DATA_INFO*);
 #endif
 
 // Huffman Tables         	
@@ -1284,10 +1283,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	}
 	
 	 // end of fall back method 
-/*
+
  	decode.Reconstructed = NULL;
  	sopen_SCP_clean(&decode, &record, &textual);
-*/
+
 	return(1);
 #endif 
 };

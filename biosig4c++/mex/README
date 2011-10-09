@@ -2,6 +2,8 @@ This provides a language binding of libbiosig to Matlab and Octave.
 Basically, mex-files for loading biosig data are provided.
 - mexSLOAD.mex* loads the whole file (header and data). 
 - mexSOPEN.mex* reads only the header information. 
+- mexSSAVE.mex* saves data into various biosig format 
+   the list of supported formats is shown here: http://pub.ist.ac.at/~schloegl/biosig/TESTED
 
 
 COMPILATION: 
@@ -19,18 +21,6 @@ Prerequisites:
 Edit Makefile and set the correct path to Matlab:
 The mex files for Matlab are generated with 
 	make mex4m
-
-
-== Matlab (v7.0 - v7.6) on Win32 =========
-For Matlab (v7.0 - v7.6) on MS-Windows, MinGW and GNUMEX are recommended. 
-After setup of MinGW and GNUMEX, mexSLOAD can be compiled in the following way
-
-   - start matlab
-   - change directory to .../biosig4c++ 
-   - and run this command: 
-   mex mexSLOAD.cpp win32/libbiosig.lib win32/zlib/lib/zdll.lib c:\MinGWtdm\lib\libws2_32.a -output matlab/mexSLOAD
-
-The procedure does not work on v7.11 because gnumex was not compatible. (It is not clear when between 7.6 and 7.11 gnumex did not work anymore)
 
 
 == Matlab v7.11 for Win32 ================

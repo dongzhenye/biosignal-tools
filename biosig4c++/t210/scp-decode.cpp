@@ -280,7 +280,7 @@ void ReadByte(t1 &number)
 
 //                      MAIN
 
-void sopen_SCP_clean(struct DATA_DECODE *decode, struct DATA_RECORD *record, struct DATA_INFO *textual) {
+EXTERN_C void sopen_SCP_clean(struct DATA_DECODE *decode, struct DATA_RECORD *record, struct DATA_INFO *textual) {
 	FreeWithCare(decode->length_BdR0);
 	FreeWithCare(decode->samples_BdR0);
 	FreeWithCare(decode->length_Res);
@@ -341,7 +341,7 @@ void sopen_SCP_clean(struct DATA_DECODE *decode, struct DATA_RECORD *record, str
 
 }
 
-int scp_decode(HDRTYPE* hdr, pointer_section *section, DATA_DECODE &decode, DATA_RECORD &info_recording, DATA_INFO &info_textual, bool &add_filter)
+EXTERN_C int scp_decode(HDRTYPE* hdr, pointer_section *section, struct DATA_DECODE decode, struct DATA_RECORD info_recording, struct DATA_INFO info_textual, bool add_filter)
 {
 	U_int_M CRC;
 	U_int_L pos;
