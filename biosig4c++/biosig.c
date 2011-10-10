@@ -1460,7 +1460,7 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->FLAG.CNT32 = 0; 		// assume 16-bit CNT format
 
        	// define variable header
-	hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
+	hdr->CHANNEL = (CHANNEL_TYPE*)calloc(hdr->NS, sizeof(CHANNEL_TYPE));
 	BitsPerBlock = 0;
 	for (k=0;k<hdr->NS;k++)	{
 		uint32_t nbits;
