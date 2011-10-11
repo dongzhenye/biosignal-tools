@@ -1778,7 +1778,9 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    	hdr->TYPE = EGIS;
 	    	hdr->FILE.LittleEndian = 1;
     	}
-    	else if ((beu32p(hdr->AS.Header) > 1) && (beu32p(hdr->AS.Header) < 8)) {
+
+    	else if ((beu32p(hdr->AS.Header) > 1) && (beu32p(hdr->AS.Header) < 8) && !hdr->AS.Header[6]  && !hdr->AS.Header[8]  && !hdr->AS.Header[10]  && !hdr->AS.Header[12]  && !hdr->AS.Header[14]  && !hdr->AS.Header[26] ) {
+		/* sanity check: the high byte of month, day, hour, min, sec and bits must be zero */
 	    	hdr->TYPE = EGI;
 	    	hdr->VERSION = hdr->AS.Header[3];
     	}
@@ -3615,7 +3617,7 @@ if (!strncmp(MODE,"r",1))
 		size_t BitsPerBlock = 0;
 		for (k=0, hdr->SPR = 1; k<hdr->NS; k++)	{
 			CHANNEL_TYPE *hc = hdr->CHANNEL+k;
-			if (VERBOSE_LEVEL>8)
+			if (VERBOSE_LEVEL>7)
 				fprintf(stdout,"[EDF 213] #%i/%i\n",(int)k,hdr->NS);
 
 			strncpy(hc->Label,Header2 + 16*k,min(MAX_LENGTH_LABEL,16));
@@ -3627,25 +3629,25 @@ if (!strncmp(MODE,"r",1))
 			for (k1=strlen(hc->Transducer)-1; isspace(hc->Transducer[k1]) && k1; k1--)
 				hc->Transducer[k1]='\0'; 	// deblank
 
-			if (VERBOSE_LEVEL>8)
+			if (VERBOSE_LEVEL>7)
 				fprintf(stdout,"[EDF 214] #%i/%i\n",(int)k,hdr->NS);
 
 			// PhysDim -> PhysDimCode
 			memcpy(p,Header2 + 8*k + 96*hdr->NS,8);
 
-			if (VERBOSE_LEVEL>8)
+			if (VERBOSE_LEVEL>7)
 				fprintf(stdout,"[EDF 215-] #%i/%i\n",(int)k,hdr->NS);
 
 			p[8] = 0; // remove trailing blanks
 			for (k1=7; (k1>0) && isspace(p[k1]); p[k1--]=0) {};
 
-			if (VERBOSE_LEVEL>8)
+			if (VERBOSE_LEVEL>7)
 				fprintf(stdout,"[EDF 215] #%i/%i\n",(int)k,hdr->NS);
 
 			hc->PhysDimCode = PhysDimCode(p);
 			tmp[8] = 0;
 
-			if (VERBOSE_LEVEL>8)
+			if (VERBOSE_LEVEL>7)
 				fprintf(stdout,"[EDF 215a] #%i/%i\n",(int)k,hdr->NS);
 
 			hc->PhysMin = atof(strncpy(tmp,Header2 + 8*k + 104*hdr->NS,8));
@@ -3653,16 +3655,16 @@ if (!strncmp(MODE,"r",1))
 			hc->DigMin  = atof(strncpy(tmp,Header2 + 8*k + 120*hdr->NS,8));
 			hc->DigMax  = atof(strncpy(tmp,Header2 + 8*k + 128*hdr->NS,8));
 
-			if (VERBOSE_LEVEL>8)
+			if (VERBOSE_LEVEL>7)
 				fprintf(stdout,"[EDF 215b] #%i/%i\n",(int)k,hdr->NS);
 
 			hc->Cal     = (hc->PhysMax - hc->PhysMin) / (hc->DigMax-hc->DigMin);
 			hc->Off     =  hc->PhysMin - hc->Cal*hc->DigMin;
 
-			if (VERBOSE_LEVEL>8)
-				fprintf(stdout,"[EDF 215c] #%i/%i\n",(int)k,hdr->NS);
+			if (VERBOSE_LEVEL>7)
+				fprintf(stdout,"[EDF 215c] #%i: NS=%i NRec=%i \n",(int)k,hdr->NS,hdr->NRec);
 
-			hc->SPR     	= atol(strncpy(tmp, Header2 + 8*k + 216*hdr->NS,8));
+			hc->SPR     	= atol(strncpy(tmp, Header2 + 8*k + 216*hdr->NS, 8));
 			hc->GDFTYP  	= ((hdr->TYPE != BDF) ? 3 : 255+24);
 			hc->OnOff   	= 1;
 			hdr->SPR 	= lcm(hdr->SPR, hc->SPR);
