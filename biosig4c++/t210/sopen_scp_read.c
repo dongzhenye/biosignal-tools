@@ -486,8 +486,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 	if (len==0) continue;	 /***** empty section *****/
 	 	if (sectionStart + len > hdr->HeadLen) {
 	 		B4C_ERRNUM = B4C_INCOMPLETE_FILE;
-	 		B4C_ERRMSG = "SOPEN(SCP-READ): Section length + start of section is more then total length of header.";
-	 		// serror();	// TODO: serror is usually called from calling function to check for errors. 
+	 		B4C_ERRMSG = "SOPEN(SCP-READ): File inclomplete - Section length + start of section is more then total length of header.";
 	 		break;
 	 	}
 
@@ -506,7 +505,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		uint8_t versionProtocol = *(ptr+sectionStart+9);
 #ifndef __ARM__
 		if (versionSection != 13)
-			fprintf(stderr,"Warning SOPEN(SCP-READ): Version of section is not 13 but %i. This is not tested.\n", versionSection);
+			fprintf(stderr,"Warning SOPEN(SCP-READ): Version of section %i is not 13 but %i. This is not tested.\n", curSect, versionSection);
 		if (versionProtocol != 13)
 			fprintf(stderr,"Warning SOPEN(SCP-READ): Version of Protocol is not 13 but %i. This is not tested.\n", versionProtocol);
 #endif
