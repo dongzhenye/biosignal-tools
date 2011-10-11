@@ -10456,7 +10456,7 @@ HDR.EVENT.CHN=HDR.EVENT.CHN(ix);
 % Calibration matrix
 if any(HDR.FILE.PERMISSION=='r') && (HDR.NS>0);
         if isempty(ReRefMx)     % CHAN==0,
-                ReRefMx = eye(max(1,HDR.NS));
+                ReRefMx = speye(max(1,HDR.NS));
         end;
         sz = size(ReRefMx);
         if (HDR.NS > 0) && (sz(1) > HDR.NS),

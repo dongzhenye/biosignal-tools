@@ -439,7 +439,8 @@ else
                         HDR.TYPE='LABVIEW';
                 elseif strncmp(ss,'IAvSFo',6); 
                         HDR.TYPE='SIGIF';
-                elseif any(s(4)==(2:7)) && all(s(1:3)==0); % [int32] 2...7
+                elseif any(s(4)==(2:7)) && all(s([1:3,6:2:14,26])==0) ; % [int32] 2...7
+			%% high byte of month, day, hour, min, sec and bits must be zero.			
                         HDR.TYPE='EGI';
                         
                 elseif FLAG.IS_UFF,

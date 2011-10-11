@@ -232,6 +232,8 @@ elseif ischar(arg1) || iscell(arg1)
               		Code(k) = 4416;
 		elseif strcmp(unit,'°C')
               		Code(k) = 6048;
+		elseif strcmp(unit,'m/s²')
+              		Code(k) = 6624
 		elseif strcmp(unit,'dyne*s*m²/cm^5')
               		Code(k) = 65440;
 		elseif strcmp(unit,'l/m²')
