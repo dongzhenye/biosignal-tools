@@ -3990,7 +3990,7 @@ if (!strncmp(MODE,"r",1))
 
 		// define channel specific header information
 		hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
-		uint32_t* ACQ_NoSamples = (uint32_t*) realloc(hdr->CHANNEL, hdr->NS * sizeof(uint32_t));
+		uint32_t* ACQ_NoSamples = (uint32_t*) calloc(hdr->NS, sizeof(uint32_t));
 		uint16_t CHAN;
     		POS = leu32p(hdr->AS.Header+6);
     		size_t minBufLenXVarDiv = -1;	// maximum integer value
@@ -4023,6 +4023,7 @@ if (!strncmp(MODE,"r",1))
 
 			POS += leu32p((uint8_t*)Header2);
 		}
+		hdr->NRec = minBufLenXVarDiv;
 
 		/// foreign data section - skip
 		POS += leu16p(hdr->AS.Header+POS);
@@ -4052,7 +4053,7 @@ if (!strncmp(MODE,"r",1))
 			};
 			hc->PhysMax = hc->DigMax * hc->Cal + hc->Off;
 			hc->PhysMin = hc->DigMin * hc->Cal + hc->Off;
-					      	hc->bi 	  = hdr->AS.bpb;
+			hc->bi 	  = hdr->AS.bpb;
 		      	hdr->AS.bpb += (GDFTYP_BITS[hc->GDFTYP]*hc->SPR)>>3;
 			POS +=4;
 		}
