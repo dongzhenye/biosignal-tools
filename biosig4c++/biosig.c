@@ -1626,6 +1626,7 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[GETFILETYPE 101]!\n");
 
+	const char* MAGIC_NUMBER_EPRIME   = "ExperimentName\tSubject\tSession\tClock.Information\tDisplay.RefreshRate\tGroup\tRandomSeed\tSessionDate\tSessionTime\tBlock\tBlocklist\tBlocklist.Cycle";
    	const uint8_t MAGIC_NUMBER_FEF1[] = {67,69,78,13,10,0x1a,4,0x84};
 	const uint8_t MAGIC_NUMBER_FEF2[] = {67,69,78,0x13,0x10,0x1a,4,0x84};
 	const uint8_t MAGIC_NUMBER_Z[]    = {31,157,144};
@@ -1788,6 +1789,8 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    	hdr->TYPE = ELF;
     	else if (!memcmp(Header1,"Embla data file",15))
 	    	hdr->TYPE = EMBLA;
+    	else if (!strncmp(Header1,MAGIC_NUMBER_EPRIME,strlen(MAGIC_NUMBER_EPRIME)))
+	    	hdr->TYPE = ePrime;
     	else if (!memcmp(Header1,"[Header]",8))
 	    	hdr->TYPE = ET_MEG;
     	else if (!memcmp(Header1,"Header\r\nFile Version'",20))
@@ -2087,6 +2090,7 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ EGIS,    	"EGIS" },
 	{ ELF,    	"ELF" },
 	{ EMBLA,    	"EMBLA" },
+	{ ePrime,    	"ePrime" },
 	{ ET_MEG,    	"ET-MEG" },
 	{ ETG4000,    	"ETG4000" },
 	{ EVENT,    	"EVENT" },
@@ -6954,6 +6958,114 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	}
 #endif
 
+    	else if (hdr->TYPE==ePrime) {
+
+#if WORK_IN_PROGRESS
+
+		/* read file */
+		while (!ifeof(hdr)) {
+			size_t bufsiz = max(2*count,1<<16);
+		    	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header, bufsiz+1);
+		    	count  += ifread(hdr->AS.Header+count, 1, bufsiz-count, hdr);
+		}
+		hdr->AS.Header[count]=0;
+		hdr->HeadLen = count;
+		ifclose(hdr);
+
+		int colSubject = -1, colSampleRate = -1, colDate = -1, colTime = -1, colOnsetTime = -1, colResponseTime = -1, colStimulus = -1; 
+		size_t N_EVENTS = 0; 
+	
+		size_t pos = 0, col=0, row=0, len; 
+		char *f = hdr->AS.Header;
+		while (*f != 0) {
+			len = strcspn(f,"\t\n\r");
+			if (f[len]==9) {
+				col++;
+			}
+			else if (f[len]==10 || f[len]==13 ) {
+				col==0;
+				row++;
+			}
+			f[len] = 0;
+
+			if (row > N_EVENTS) {
+				N_EVENTS = max(128, N_EVENTS*2);
+		 		hdr->EVENT.POS = (uint32_t*) realloc(hdr->EVENT.POS, N_EVENTS * sizeof(*hdr->EVENT.POS) );
+				hdr->EVENT.TYP = (uint16_t*) realloc(hdr->EVENT.TYP, N_EVENTS * sizeof(*hdr->EVENT.TYP) );
+				hdr->EVENT.DUR = (uint32_t*) realloc(hdr->EVENT.DUR, N_EVENTS * sizeof(*hdr->EVENT.DUR) );
+				hdr->EVENT.CHN = (uint16_t*) realloc(hdr->EVENT.CHN, N_EVENTS * sizeof(*hdr->EVENT.CHN) );
+			}
+
+			if (row==0) {
+				// decode header line 
+				if (!strcmp(f,"Subject")) {
+					colSubject = col; 	
+				}
+				else if (!strcmp(f,"Display.RefreshRate")) {
+					colSampleRate = col; 	
+				}
+				else if (!strcmp(f,"SessionDate")) {
+					colDate = col; 	
+				}
+				else if (!strcmp(f,"SessionTime")) {
+					colTime = col; 	
+				}
+				else if (!strcmp(f,"PictureTarget.OnsetTime")) {
+					colOnsetTime = col; 	
+				}
+				else if (!strcmp(f,"PictureTarget.RT")) {
+					colResponseTime = col; 	
+				}
+				else if (!strcmp(f,"Stimulus")) {
+					colStimulus = col; 	
+				}
+			}
+			else {
+
+				// decode line of body
+				if (row==1) {
+					if (col==colTime) {
+					}
+					else if (col==colDate) {
+					}
+					else if (col==colSubject) {
+					}
+					else if (col==colSampleRate) {
+					}
+				}
+				
+				if (col==0) {
+					hdr->EVENT.TYP[hdr->EVENT.N] = 0; 
+					hdr->EVENT.POS[hdr->EVENT.N] = 0; 
+					hdr->EVENT.CHN[hdr->EVENT.N] = 0; 
+					hdr->EVENT.DUR[hdr->EVENT.N] = 0; 
+				}
+				
+				if (col==colOnsetTime) {
+					hdr->EVENT.POS[hdr->EVENT.N] = atoi(f);
+				}
+				else if (col==colResponseTime) {
+					hdr->EVENT.DUR[hdr->EVENT.N] = atoi(f);
+				}
+				else if (col==colStimulus) {
+					FreeTextEvent(hdr, hdr->EVENT.N, f);
+				}
+								
+			}
+
+			f += len+1;
+			f += strspn(f,"\t\n\r");
+		}; 
+		hdr->EVENT.N = row;
+#else
+
+		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+		B4C_ERRMSG = "ePrime format not supported, yet - coming soon.";
+
+#endif
+		
+	}
+
     	else if (hdr->TYPE==ET_MEG) {
 		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
 		B4C_ERRMSG = "FLT/ET-MEG format not supported";
@@ -6962,9 +7074,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	else if (hdr->TYPE==ETG4000) {
 		/* read file */
 		while (!ifeof(hdr)) {
-			size_t bufsiz = 1<<16;
-		    	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,count+bufsiz+1);
-		    	count  += ifread(hdr->AS.Header+count,1,bufsiz,hdr);
+			size_t bufsiz = max(2*count,1<<16);
+		    	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header, bufsiz+1);
+		    	count  += ifread(hdr->AS.Header+count, 1, bufsiz-count, hdr);
 		}
 		hdr->AS.Header[count]=0;
 		hdr->HeadLen = count;
