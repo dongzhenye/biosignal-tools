@@ -6959,9 +6959,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 #endif
 
     	else if (hdr->TYPE==ePrime) {
-
-#if WORK_IN_PROGRESS
-
 		/* read file */
 		while (!ifeof(hdr)) {
 			size_t bufsiz = max(2*count,1<<16);
@@ -6983,10 +6980,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 				col++;
 			}
 			else if (f[len]==10 || f[len]==13 ) {
-				col==0;
+				col=0;
 				row++;
 			}
 			f[len] = 0;
+
+		if (VERBOSE_LEVEL>8) fprintf(stdout,"r%i\tc%i\t%s\t%i\t%i\t%i\t%i\t%i\t%i\t%i\n",row,col,f,colSubject, colSampleRate, colDate, colTime, colOnsetTime, colResponseTime, colStimulus);
 
 			if (row > N_EVENTS) {
 				N_EVENTS = max(128, N_EVENTS*2);
@@ -7034,36 +7033,26 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 					}
 				}
 				
-				if (col==0) {
-					hdr->EVENT.TYP[hdr->EVENT.N] = 0; 
-					hdr->EVENT.POS[hdr->EVENT.N] = 0; 
-					hdr->EVENT.CHN[hdr->EVENT.N] = 0; 
-					hdr->EVENT.DUR[hdr->EVENT.N] = 0; 
-				}
-				
 				if (col==colOnsetTime) {
-					hdr->EVENT.POS[hdr->EVENT.N] = atoi(f);
+					hdr->EVENT.POS[row-1] = atoi(f);
 				}
 				else if (col==colResponseTime) {
-					hdr->EVENT.DUR[hdr->EVENT.N] = atoi(f);
+					hdr->EVENT.DUR[row-1] = atoi(f);
+					hdr->EVENT.CHN[row-1] = 0;
 				}
 				else if (col==colStimulus) {
-					FreeTextEvent(hdr, hdr->EVENT.N, f);
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"r%i\tc%i\t%s\t%i\t%i\t%i\t%i\t%i\t%i\t%i\n",row,col,f,colSubject, colSampleRate, colDate, colTime, colOnsetTime, colResponseTime, colStimulus);
+
+					FreeTextEvent(hdr, row-1, f);
 				}
 								
 			}
 
 			f += len+1;
-			f += strspn(f,"\t\n\r");
+			f += strspn(f,"\n\r");
 		}; 
-		hdr->EVENT.N = row;
-#else
-
-		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-		B4C_ERRMSG = "ePrime format not supported, yet - coming soon.";
-
-#endif
-		
+		hdr->EVENT.N = row-1;
 	}
 
     	else if (hdr->TYPE==ET_MEG) {
