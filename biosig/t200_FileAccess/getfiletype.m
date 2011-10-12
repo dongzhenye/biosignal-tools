@@ -130,6 +130,7 @@ else
 			mat4.flag = all((mat4.matrixname>='0' && mat4.matrixname<='9') || (mat4.matrixname>='_' && mat4.matrixname<='z'));
 			mat4.flag = mat4.flag && all(any(mat4.type(ones(6,1),:)==[0,0:4;zeros(1,6);0:5;0:2,0,0,0]'));
 		end;
+		MAGIC.ePrime = 'ExperimentName	Subject	Session	Clock.Information	Display.RefreshRate	Group	RandomSeed	SessionDate	SessionTime	Block	Blocklist	Blocklist.Cycle';
 
 		pos1_ascii10 = min(find(s==10));
 		FLAG.FS3 = any(s==10); 
@@ -228,6 +229,9 @@ else
                         HDR.TYPE='EMBLA';
                 elseif strcmp(ss(1:20),['Header',13,10,'File Version'])  
                         HDR.TYPE='ETG4000';
+                elseif strncmp(ss, MAGIC.ePrime, length(MAGIC.ePrime))  
+                        HDR.TYPE='ePrime';
+
                 elseif strncmp(ss,'GALILEO EEG TRACE FILE',22)     % Galilea EEG (from ESAOTE, EBNeuro spa) 
                         HDR.TYPE='GTF';
                 elseif strcmp(ss(3:11),'COHERENCE') && strcmp(ss(43+[1:length(HDR.FILE.Name)]),HDR.FILE.Name); 
