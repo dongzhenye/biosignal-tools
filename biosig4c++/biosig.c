@@ -3673,6 +3673,7 @@ if (!strncmp(MODE,"r",1))
 			if (VERBOSE_LEVEL>7)
 				fprintf(stdout,"[EDF 215c] #%i: NS=%i NRec=%i \n",(int)k,hdr->NS,hdr->NRec);
 
+			hc->LeadIdCode  = 0;
 			hc->SPR     	= atol(strncpy(tmp, Header2 + 8*k + 216*hdr->NS, 8));
 			hc->GDFTYP  	= ((hdr->TYPE != BDF) ? 3 : 255+24);
 			hc->OnOff   	= 1;
@@ -4007,6 +4008,7 @@ if (!strncmp(MODE,"r",1))
 			CHANNEL_TYPE *hc = hdr->CHANNEL+k;
 
 	    		uint8_t* Header2 = hdr->AS.Header+POS;
+			hc->LeadIdCode = 0; 
 			hc->Transducer[0] = '\0';
 			CHAN = leu16p(Header2+4);
 			strncpy(hc->Label,(char*)Header2+6,min(MAX_LENGTH_LABEL,40));
@@ -5443,6 +5445,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n
 				in addition, the strings are \0 terminated.
 			*/
 			hc->OnOff = 1;
+			hc->LeadIdCode = 0; 
 
 			uint8_t len = min(21, MAX_LENGTH_LABEL);
 			strncpy(hc->Label, H2 + 1 + k*H2LEN, len);
@@ -6402,6 +6405,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			hc->PhysMax = hc->DigMax*hc->Cal;
 			hc->PhysMin = hc->DigMin*hc->Cal;
 			hc->Transducer[0] = 0;
+			hc->LeadIdCode = 0; 
 			hc->Notch = NaN;
 			hc->Impedance = INF;
 		      	hc->fZ        = NaN;
@@ -7033,19 +7037,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 					char *eptr; 
 					if (col==colTime) {
 						t.tm_hour = strtol(f, &eptr, 10);
-						t.tm_min  = strtol(eptr+1, eptr, 10);
-						t.tm_sec  = strtol(eptr+1, eptr, 10);
+						t.tm_min  = strtol(eptr+1, &eptr, 10);
+						t.tm_sec  = strtol(eptr+1, &eptr, 10);
 					}
 					else if (col==colDate) {
 						t.tm_mon  = strtol(f, &eptr, 10)-1;
-						t.tm_mday = strtol(eptr+1, eptr, 10);
-
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"date: %s %s\n",f,eptr);
-						// FIXME: decoding of Year			
-						t.tm_year = strtol(eptr+1, eptr, 10)-1900;
-	
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"date: %s %s\n",f,eptr);
-
+						t.tm_mday = strtol(eptr+1, &eptr, 10);
+						t.tm_year = strtol(eptr+1, &eptr, 10)-1900;
 					}
 					else if (col==colSubject) {
 						strncpy(hdr->Patient.Id, f, MAX_LENGTH_PID);
@@ -7750,9 +7748,11 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 				hdr->NS = *(int64_t*) mfer_swap8b(buf, len, SWAP);
 				hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL, hdr->NS*sizeof(CHANNEL_TYPE));
 				for (k=0; k<hdr->NS; k++) {
-					hdr->CHANNEL[k].SPR = 0;
-					hdr->CHANNEL[k].PhysDimCode = 0;
-					hdr->CHANNEL[k].Cal = 1.0;
+					CHANNEL_TYPE *hc = hdr->CHANNEL+k;
+					hc->SPR = 0;
+					hc->PhysDimCode = 0;
+					hc->Cal = 1.0;
+					hc->LeadIdCode = 0; 
 				}
 			}
 			else if (tag==6) 	// 0x06 "number of sequences"
@@ -8552,6 +8552,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 					strncpy(hdr->rerefCHANNEL[ch-1].Label, line, MAX_LENGTH_LABEL);
 					hdr->rerefCHANNEL[ch-1].OnOff = 1;
 					hdr->rerefCHANNEL[ch-1].Label[MAX_LENGTH_LABEL] = 0;
+					hdr->rerefCHANNEL[ch-1].LeadIdCode = 0;
+					
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"[MM 027] %i <%s>\n",(int)ch,line);
 				}
 			}
@@ -8832,6 +8834,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			CHANNEL_TYPE *hc = hdr->CHANNEL + k;
 			hc->OnOff = 1;
 			strncpy(hc->Label,(char*)(hdr->AS.Header+32+24+8*k),8);
+			hc->LeadIdCode = 0; 
 		}
 
     		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
@@ -8950,6 +8953,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	      		hc->XYZ[0]    = 0.0;
 		      	hc->XYZ[1]    = 0.0;
 		      	hc->XYZ[2]    = 0.0;
+			hc->LeadIdCode = 0; 
 
 			unsigned k1;
 			for (k1 = sizeof(p)/sizeof(p[0]); k1>0; ) {
