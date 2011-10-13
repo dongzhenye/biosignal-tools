@@ -6971,6 +6971,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
 		int colSubject = -1, colSampleRate = -1, colDate = -1, colTime = -1, colOnsetTime = -1, colResponseTime = -1, colStimulus = -1; 
 		size_t N_EVENTS = 0; 
+		struct tm t; 
 	
 		size_t pos = 0, col=0, row=0, len; 
 		char *f = hdr->AS.Header;
@@ -7023,13 +7024,29 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
 				// decode line of body
 				if (row==1) {
+					t.tm_isdst = 0;
+					char *eptr; 
 					if (col==colTime) {
+						t.tm_hour = strtol(f, &eptr, 10);
+						t.tm_min  = strtol(eptr+1, eptr, 10);
+						t.tm_sec  = strtol(eptr+1, eptr, 10);
 					}
 					else if (col==colDate) {
+						t.tm_mon  = strtol(f, &eptr, 10)-1;
+						t.tm_mday = strtol(eptr+1, eptr, 10);
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"date: %s %s\n",f,eptr);
+						// FIXME: decoding of Year			
+						t.tm_year = strtol(eptr+1, eptr, 10)-1900;
+	
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"date: %s %s\n",f,eptr);
+
 					}
 					else if (col==colSubject) {
+						strncpy(hdr->Patient.Id, f, MAX_LENGTH_PID);
 					}
 					else if (col==colSampleRate) {
+						hdr->EVENT.SampleRate = atof(f);
 					}
 				}
 				
@@ -7052,6 +7069,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			f += len+1;
 			f += strspn(f,"\n\r");
 		}; 
+		hdr->T0 = tm_time2gdf_time(&t); 
 		hdr->EVENT.N = row-1;
 	}
 
