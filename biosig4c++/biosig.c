@@ -2709,10 +2709,15 @@ int gdfbin2struct(HDRTYPE *hdr)
 		for (k=0; k<hdr->NS; k++)	{
 			CHANNEL_TYPE *hc = hdr->CHANNEL+k;
 
-			if (VERBOSE_LEVEL>8) fprintf(stdout,"[GDF 212] #=%i/%i\n",k,hdr->NS);
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"[GDF 212] #=%i/%i\n",k,hdr->NS);
 
+			hc->LeadIdCode = 0;
 			strncpy(hc->Label,(char*)Header2 + 16*k,min(16,MAX_LENGTH_LABEL));
+			hc->Label[min(16,MAX_LENGTH_LABEL)] = 0;
 			strncpy(hc->Transducer,(char*)Header2 + 16*hdr->NS + 80*k,min(MAX_LENGTH_TRANSDUCER,80));
+			hc->Transducer[min(MAX_LENGTH_TRANSDUCER,80)] = 0;
+
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"[GDF 212] #=%i/%i %s\n",k,hdr->NS,hc->Label);
 
 			hc->PhysMin = lef64p(Header2+ 8*k + 104*hdr->NS);
 			hc->PhysMax = lef64p(Header2+ 8*k + 112*hdr->NS);
