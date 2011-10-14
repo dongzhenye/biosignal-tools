@@ -57,9 +57,13 @@
 0x0131	SSVEP
 0x0132	SSAEP
 0x0133	SSSEP
-### 0x014_	Response
-0x0144	Go
-0x0145	NoGo
+### 0x014_	Response code
+0x0140	response code 0, or no response or false
+0x0141	response code 1, or correct response
+0x0142	response code 2
+0x0143	response code 3
+0x0144	Go, or response code 4
+0x0145	NoGo, or response code 5
 ### 0x02__	Neural spikes, and spike trains
 0x0201	Spike onset, action potential 
 0x0202	Burst 
