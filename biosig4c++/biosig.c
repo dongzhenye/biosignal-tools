@@ -1456,7 +1456,7 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->FLAG.UCAL = 0; 		// un-calibration OFF (auto-scaling ON)
 	hdr->FLAG.OVERFLOWDETECTION = 1; 	// overflow detection ON
 	hdr->FLAG.ANONYMOUS = 1; 	// <>0: no personal names are processed
-	hdr->FLAG.TARGETSEGMENT = 1;   // read 1st segment
+	hdr->FLAG.TARGETSEGMENT = 1;	// read 1st segment
 	hdr->FLAG.CNT32 = 0; 		// assume 16-bit CNT format
 
        	// define variable header
@@ -1626,7 +1626,6 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[GETFILETYPE 101]!\n");
 
-	const char* MAGIC_NUMBER_EPRIME   = "ExperimentName\tSubject\tSession\tClock.Information\tDisplay.RefreshRate\tGroup\tRandomSeed\tSessionDate\tSessionTime\tBlock\tBlocklist\tBlocklist.Cycle";
    	const uint8_t MAGIC_NUMBER_FEF1[] = {67,69,78,13,10,0x1a,4,0x84};
 	const uint8_t MAGIC_NUMBER_FEF2[] = {67,69,78,0x13,0x10,0x1a,4,0x84};
 	const uint8_t MAGIC_NUMBER_Z[]    = {31,157,144};
@@ -1789,7 +1788,7 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    	hdr->TYPE = ELF;
     	else if (!memcmp(Header1,"Embla data file",15))
 	    	hdr->TYPE = EMBLA;
-    	else if (!strncmp(Header1,MAGIC_NUMBER_EPRIME,strlen(MAGIC_NUMBER_EPRIME)))
+    	else if (strstr(Header1,"Subject") && strstr(Header1,"Target.OnsetTime") && strstr(Header1,"Target.RTTime") && strstr(Header1,"Target.RESP"))
 	    	hdr->TYPE = ePrime;
     	else if (!memcmp(Header1,"[Header]",8))
 	    	hdr->TYPE = ET_MEG;
@@ -3309,8 +3308,8 @@ if (!strncmp(MODE,"r",1))
     		B4C_ERRMSG = "Error SOPEN(READ); Cannot open file.";
     		return(hdr);
 	}
-    	hdr->AS.Header = (uint8_t*)malloc(353);
-	count = ifread(Header1,1,352,hdr);
+    	hdr->AS.Header = (uint8_t*)malloc(513);
+	count = ifread(Header1, 1, 512, hdr);
 	hdr->AS.Header[count]=0;
 
 	if (!memcmp(Header1,MAGIC_NUMBER_GZIP,sizeof(MAGIC_NUMBER_GZIP))) {
@@ -3327,8 +3326,8 @@ if (!strncmp(MODE,"r",1))
 			B4C_ERRMSG = "Error SOPEN(GZREAD); Cannot open file.";
 	    		return(hdr);
 	    	}
-		count = ifread(Header1,1,352,hdr);
-        	hdr->AS.Header[352]=0;
+		count = ifread(Header1,1,512,hdr);
+        	hdr->AS.Header[512]=0;
 #else
 		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
 	    	B4C_ERRMSG = "Error SOPEN(READ); *.gz file not supported because not linked with zlib.";
@@ -6978,32 +6977,76 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		hdr->HeadLen = count;
 		ifclose(hdr);
 
-		int colSubject = -1, colSampleRate = -1, colDate = -1, colTime = -1, colOnsetTime = -1, colResponseTime = -1, colStimulus = -1; 
+		struct Target {
+			size_t OnsetTime; 
+			size_t RTTime; 
+			size_t RT; 
+			size_t TrigTarget; 
+			uint8_t RESP; 
+			char *Stimulus; 
+		} Target; 
+
+
+		int colSubject      = -1, colSampleRate = -1, colDate = -1, colTime = -1, colOnsetTime = -1;
+		int colResponseTime = -1, colRTTime = -1, colStimulus = -1, colTrigTarget = -1, colRESP = -1;
 		size_t N_EVENTS = 0; 
 		struct tm t; 
+		char nextRow = 0;
 	
 		size_t pos = 0, col=0, row=0, len; 
 		char *f = hdr->AS.Header;
 		while (*f != 0) {
 			len = strcspn(f,"\t\n\r");
+			col++;
 			if (f[len]==9) {
-				col++;
+				nextRow = 0;
 			}
-			else if (f[len]==10 || f[len]==13 ) {
-				col=0;
-				row++;
+			else if ( f[len]==10 || f[len]==13 || f[len]==0 ) {
+				nextRow = 1;
+				if (row>0) {
+					if (hdr->EVENT.N+2 >= N_EVENTS) {
+						// memory allocation if needed
+						N_EVENTS = max(128, N_EVENTS*2);
+				 		hdr->EVENT.POS = (uint32_t*) realloc(hdr->EVENT.POS, N_EVENTS * sizeof(*hdr->EVENT.POS) );
+						hdr->EVENT.TYP = (uint16_t*) realloc(hdr->EVENT.TYP, N_EVENTS * sizeof(*hdr->EVENT.TYP) );
+						hdr->EVENT.DUR = (uint32_t*) realloc(hdr->EVENT.DUR, N_EVENTS * sizeof(*hdr->EVENT.DUR) );
+						hdr->EVENT.CHN = (uint16_t*) realloc(hdr->EVENT.CHN, N_EVENTS * sizeof(*hdr->EVENT.CHN) );
+					}
+
+					// add trigger event
+					if (Target.Stimulus != NULL || Target.TrigTarget > 0) {
+						if (Target.Stimulus) 
+							FreeTextEvent(hdr, hdr->EVENT.N, Target.Stimulus);
+						else 
+							hdr->EVENT.TYP[hdr->EVENT.N] = Target.TrigTarget;
+						hdr->EVENT.POS[hdr->EVENT.N] = Target.OnsetTime;
+						hdr->EVENT.DUR[hdr->EVENT.N] = Target.RT;
+						hdr->EVENT.CHN[hdr->EVENT.N] = 0;
+						hdr->EVENT.N++;
+					}
+
+					if (Target.RESP < 0x0f) {
+						// add response event 
+						hdr->EVENT.TYP[hdr->EVENT.N] = Target.RESP + 0x0140;	// eventcodes.txt: response codes are in the range between 0x0140 to 0x014f
+						hdr->EVENT.POS[hdr->EVENT.N] = Target.OnsetTime + Target.RT;
+						hdr->EVENT.CHN[hdr->EVENT.N] = 0;
+						hdr->EVENT.DUR[hdr->EVENT.N] = 0;
+						hdr->EVENT.N++;
+					};
+				}
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"=======%i: %i\t%s\t%i\t%i\t%i\t%i\n", hdr->EVENT.N-1, Target.TrigTarget, Target.Stimulus, Target.OnsetTime, Target.RT, Target.RTTime, Target.RESP);
+
+				Target.RESP = 0xff;
+				Target.Stimulus = NULL; 
+				Target.OnsetTime = 0; 
+				Target.RTTime = 0; 
+				Target.RT = 0; 
+				Target.TrigTarget = 0; 
 			}
 			f[len] = 0;
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"r%i\tc%i\t%s\t%i\t%i\t%i\t%i\t%i\t%i\t%i\n",row,col,f,colSubject, colSampleRate, colDate, colTime, colOnsetTime, colResponseTime, colStimulus);
-
-			if (row > N_EVENTS) {
-				N_EVENTS = max(128, N_EVENTS*2);
-		 		hdr->EVENT.POS = (uint32_t*) realloc(hdr->EVENT.POS, N_EVENTS * sizeof(*hdr->EVENT.POS) );
-				hdr->EVENT.TYP = (uint16_t*) realloc(hdr->EVENT.TYP, N_EVENTS * sizeof(*hdr->EVENT.TYP) );
-				hdr->EVENT.DUR = (uint32_t*) realloc(hdr->EVENT.DUR, N_EVENTS * sizeof(*hdr->EVENT.DUR) );
-				hdr->EVENT.CHN = (uint16_t*) realloc(hdr->EVENT.CHN, N_EVENTS * sizeof(*hdr->EVENT.CHN) );
-			}
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"r%i\tc%i\t%s\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\n",row,col,f,colSubject, colSampleRate, colDate, colTime, colOnsetTime, colResponseTime, colStimulus, colRTTime);
 
 			if (row==0) {
 				// decode header line 
@@ -7019,14 +7062,23 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 				else if (!strcmp(f,"SessionTime")) {
 					colTime = col; 	
 				}
-				else if (!strcmp(f,"PictureTarget.OnsetTime")) {
+				else if (strstr(f,"Target.OnsetTime")) {
 					colOnsetTime = col; 	
 				}
-				else if (!strcmp(f,"PictureTarget.RT")) {
+				else if (strstr(f,"Target.RTTime")) {
+					colRTTime = col; 	
+				}
+				else if (strstr(f,"Target.RT")) {
 					colResponseTime = col; 	
 				}
 				else if (!strcmp(f,"Stimulus")) {
 					colStimulus = col; 	
+				}
+				else if (!strcmp(f,"TrigTarget")) {
+					colTrigTarget = col; 	
+				}
+				else if (strstr(f,"Target.RESP")) {
+					colRESP = col; 	
 				}
 			}
 			else {
@@ -7054,26 +7106,34 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 				}
 				
 				if (col==colOnsetTime) {
-					hdr->EVENT.POS[row-1] = atoi(f);
+					Target.OnsetTime = atol(f);
 				}
 				else if (col==colResponseTime) {
-					hdr->EVENT.DUR[row-1] = atoi(f);
-					hdr->EVENT.CHN[row-1] = 0;
+					Target.RT = atoi(f);
+				}
+				else if (col==colRTTime) {
+					Target.RTTime = atol(f);
 				}
 				else if (col==colStimulus) {
-
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"r%i\tc%i\t%s\t%i\t%i\t%i\t%i\t%i\t%i\t%i\n",row,col,f,colSubject, colSampleRate, colDate, colTime, colOnsetTime, colResponseTime, colStimulus);
-
-					FreeTextEvent(hdr, row-1, f);
+					Target.Stimulus = f; 
+				}
+				else if (col==colTrigTarget) {
+					Target.TrigTarget = atoi(f);
+				}
+				else if ((col==colRESP) && strlen(f)) {
+					Target.RESP = atoi(f);
 				}
 								
 			}
 
 			f += len+1;
-			f += strspn(f,"\n\r");
+			if (nextRow) {
+				f   += strspn(f,"\n\r");
+				row += nextRow;
+				col = 0; 
+			}
 		}; 
 		hdr->T0 = tm_time2gdf_time(&t); 
-		hdr->EVENT.N = row-1;
 	}
 
     	else if (hdr->TYPE==ET_MEG) {
@@ -8688,7 +8748,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	}
 
 	else if (hdr->TYPE==NIFTI) {
-	    	count += ifread(hdr->AS.Header+count, 1, 352-count, hdr);
+		if (count<352) 
+		    	count += ifread(hdr->AS.Header+count, 1, 352-count, hdr);
+
 	    	// nifti_1_header *NIFTI_HDR = (nifti_1_header*)hdr-AS.Header;
 	    	char SWAP = *(int16_t*)(Header1+40) > 7;
 #if   (__BYTE_ORDER == __BIG_ENDIAN)
