@@ -34,7 +34,6 @@
 /**                 DEFINITIONS, TYPEDEFS AND MACROS                       **/
 /**                                                                        **/
 /****************************************************************************/
-
 #ifndef __BIOSIG_EXT_H__
 #define __BIOSIG_EXT_H__
 
@@ -434,12 +433,12 @@ typedef struct {
 struct etd_t {
         uint16_t typ;		// used in HDR.EVENT.TYP
         uint16_t groupid;	// defines the group id as used in EventCodeGroups below
-        char*    desc;		// name/description of event code
+        const char*    desc;		// name/description of event code // const decrease signifitiantly number of warning
 }; 
 // Groups of event codes 
 struct event_groups_t {
         uint16_t groupid;	
-        char*   GroupDescription;
+        const char*   GroupDescription; // const decrease signifitiantly number of warning
 };  
 struct FileFormatStringTable_t {
 	enum FileFormat	fmt;

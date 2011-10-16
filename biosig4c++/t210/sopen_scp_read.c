@@ -37,7 +37,7 @@ static const uint8_t _NUM_SECTION = 12U;	//consider first 11 sections of SCP
 static bool add_filter = true;             // additional filtering gives better shape, but use with care
 
 #ifndef WITHOUT_SCP_DECODE
-EXTERN_C int scp_decode(HDRTYPE* hdr, struct pointer_section *section, struct DATA_DECODE, struct DATA_RECORD, struct DATA_INFO, bool );
+EXTERN_C int scp_decode(HDRTYPE* hdr, struct pointer_section *section, struct DATA_DECODE*, struct DATA_RECORD*, struct DATA_INFO*, bool );
 EXTERN_C void sopen_SCP_clean(struct DATA_DECODE*, struct DATA_RECORD*, struct DATA_INFO*);
 #endif
 
@@ -192,7 +192,7 @@ int checkTree(htree_t *T) {
 	v2 = (T->idxTable == 0) && (T->child0 != NULL) && checkTree(T->child0);
 	v3 = (T->idxTable == 0) && (T->child1 != NULL) && checkTree(T->child1);
 	v = v1 || v2 || v3;
-#ifndef __ARM__
+#ifndef ANDROID
 	if (!v) fprintf(stderr,"Warning: Invalid Node in Huffman Tree: %i %p %p\n",T->idxTable,T->child0,T->child1);
 #endif 
 	return(v);
@@ -493,7 +493,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		PtrCurSect = ptr+sectionStart;
 		crc 	   = leu16p(PtrCurSect);
 		uint16_t tmpcrc = CRCEvaluate((uint8_t*)(PtrCurSect+2),len-2); 
-#ifndef __ARM__
+#ifndef ANDROID
 		if ((crc != 0xffff) && (crc != tmpcrc))
 			fprintf(stderr,"Warning SOPEN(SCP-READ): faulty CRC in section %i: crc=%x, %x\n" ,curSect,crc,tmpcrc);
 		if (curSect != leu16p(PtrCurSect+2))
@@ -503,7 +503,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 #endif
 		uint8_t versionSection  = *(ptr+sectionStart+8);
 		uint8_t versionProtocol = *(ptr+sectionStart+9);
-#ifndef __ARM__
+#ifndef ANDROID
 		if (versionSection != 13)
 			fprintf(stderr,"Warning SOPEN(SCP-READ): Version of section %i is not 13 but %i. This is not tested.\n", curSect, versionSection);
 		if (versionProtocol != 13)
@@ -539,7 +539,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 				curSectPos += 3;
 				if (curSectPos+len1 > len) {
-#ifndef __ARM__
+#ifndef ANDROID
 					fprintf(stdout,"Warning SCP(read): section 1 corrupted (exceeds file length)\n");
 #endif
 			break;
@@ -553,7 +553,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				}
 				else if (tag==2) {
 					if (len1 > MAX_LENGTH_PID) {
-#ifndef __ARM__
+#ifndef ANDROID
 						fprintf(stdout,"Warning SCP(read): length of Patient Id (section1 tag2) exceeds %i>%i\n",len1,MAX_LENGTH_PID); 
 #endif
 					}
@@ -602,7 +602,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					aECG->Diagnosis = (char*)(PtrCurSect+curSectPos);
 				}
 				else if (tag==14) {
-#ifndef __ARM__
+#ifndef ANDROID
 					if (len1>85)
 						fprintf(stderr,"Warning SCP(r): length of tag14 %i>40\n",len1);
 #endif 
@@ -771,7 +771,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				Huffman[0].Table = DefaultTable;
 				HTrees [0] = makeTree(Huffman[0]);
 				k2 = 0; 
-#ifndef __ARM__
+#ifndef ANDROID
 				if (VERBOSE_LEVEL==9)
 					for (k1=0; k1<Huffman[k2].NCT; k1++) 
 					fprintf(stdout,"%3i: %2i %2i %1i %3i %6u \n",k1,Huffman[k2].Table[k1].PrefixLength,Huffman[k2].Table[k1].CodeLength,Huffman[k2].Table[k1].TableModeSwitch,Huffman[k2].Table[k1].BaseValue,Huffman[k2].Table[k1].BaseCode); 
@@ -794,7 +794,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 						Huffman[k2].Table[k1].BaseValue  = lei16p(PtrCurSect+curSectPos+3);  
 						Huffman[k2].Table[k1].BaseCode   = leu32p(PtrCurSect+curSectPos+5);
 						curSectPos += 9;
-#ifndef __ARM__
+#ifndef ANDROID
 						if (VERBOSE_LEVEL==9)
 							fprintf(stdout,"%3i %3i: %2i %2i %1i %3i %6u \n",k2,k1,Huffman[k2].Table[k1].PrefixLength,Huffman[k2].Table[k1].CodeLength,Huffman[k2].Table[k1].TableModeSwitch,Huffman[k2].Table[k1].BaseValue,Huffman[k2].Table[k1].BaseCode);
 #endif
@@ -817,19 +817,19 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			en1064.FLAG.REF_BEAT = (*(PtrCurSect+curSectPos+1) & 0x01);
 			en1064.Section3.flags = *(PtrCurSect+curSectPos+1);
 			if (en1064.FLAG.REF_BEAT && !section[4].length) {
-#ifndef __ARM__
+#ifndef ANDROID
 				fprintf(stderr,"Warning (SCP): Reference Beat but no Section 4\n");
 #endif
 				aECG->FLAG.REF_BEAT  = 0;
 				en1064.FLAG.REF_BEAT = 0;
 			}
-#ifndef __ARM__
+#ifndef ANDROID
 			if (!(en1064.Section3.flags & 0x04) || ((en1064.Section3.flags>>3) != hdr->NS)) 
 				fprintf(stderr,"Warning (SCP): channels are not simultaneously recorded! %x %i\n",en1064.Section3.flags,hdr->NS);
 #endif
 
 			curSectPos += 2;
-			hdr->CHANNEL = (CHANNEL_TYPE *) calloc(hdr->NS, sizeof(CHANNEL_TYPE));
+			hdr->CHANNEL = (CHANNEL_TYPE *) realloc(hdr->CHANNEL,hdr->NS* sizeof(CHANNEL_TYPE));
 			en1064.Section3.lead = (typeof(en1064.Section3.lead))malloc(hdr->NS*sizeof(*en1064.Section3.lead));
 
 			uint32_t startindex0; 
@@ -847,7 +847,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				hdr->CHANNEL[i].Notch 	= Notch; 
 				curSectPos += 9;
 
-#ifndef __ARM__
+#ifndef ANDROID
 				if (en1064.Section3.lead[i].start != startindex0)
 					fprintf(stderr,"Warning SCP(read): starting sample %i of #%i differ to %x in #1\n",en1064.Section3.lead[i].start,*(PtrCurSect+curSectPos+8),startindex0);
 #endif
@@ -896,7 +896,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			}
 			if (!section[4].length && en1064.FLAG.HUFFMAN) {
 				 en1064.Section5.Length *= 5; // decompressed data might need more space 
-#ifndef __ARM__
+#ifndef ANDROID
 				 fprintf(stderr,"Warning SCPOPEN: Section 4 not defined - size of Sec5 can be only guessed (%i allocated)\n",(int)en1064.Section5.Length);
 #endif
 			}
@@ -941,7 +941,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 			en1064.Section6.inlen	= (typeof(en1064.Section6.inlen))malloc(hdr->NS*sizeof(*en1064.Section6.inlen));
 			uint16_t gdftyp 	= 5;	// int32: internal raw data type   
-			hdr->AS.rawdata = (uint8_t*)malloc(4 * hdr->NS * hdr->SPR * hdr->NRec); 
+			hdr->AS.rawdata = (uint8_t*)realloc(hdr->AS.rawdata,4 * hdr->NS * hdr->SPR * hdr->NRec); 
 			data = (int32_t*)hdr->AS.rawdata;
 
 			en1064.Section6.AVM	= leu16p(PtrCurSect+curSectPos);
@@ -1260,7 +1260,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 		- defines intermediate data structure
 	*/	
 
-#ifndef __ARM__
+#ifndef ANDROID
 	fprintf(stdout, "\nUse SCP_DECODE (Huffman=%i RefBeat=%i Bimodal=%i)\n", aECG->FLAG.HUFFMAN, aECG->FLAG.REF_BEAT, aECG->FLAG.BIMODAL);
 #endif
 
@@ -1270,7 +1270,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	decode.flag_Res.bimodal = (aECG->Section1.Tag14.VERSION > 10 ? aECG->FLAG.BIMODAL : 0);  
 	decode.Reconstructed    = (int32_t*) hdr->AS.rawdata; 
 
-	if (scp_decode(hdr, section, decode, record, textual, add_filter)) {
+	if (scp_decode(hdr, section, &decode, &record, &textual, add_filter)) {
 		if (Cal0>1)
 			for (i=0; i < hdr->NS * hdr->SPR * hdr->NRec; ++i)
 				data[i] /= Cal0;
@@ -1282,7 +1282,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	}
 	
 	 // end of fall back method 
-
  	decode.Reconstructed = NULL;
  	sopen_SCP_clean(&decode, &record, &textual);
 

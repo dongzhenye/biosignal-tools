@@ -630,7 +630,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 
 		TiXmlHandle channel = channels.Child("component", 1).FirstChild("sequence");
 		for (hdr->NS = 0; channel.Element(); ++(hdr->NS), channel = channels.Child("component", hdr->NS+1).FirstChild("sequence")) {};
- 		hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
+		hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
 
 		channel = channels.Child("component", 1).FirstChild("sequence");
 		hdr->AS.bpb = 0; 
@@ -644,6 +644,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 		    const char *code = channel.FirstChild("code").Element()->Attribute("code");
 		    
   		    CHANNEL_TYPE *hc = hdr->CHANNEL+i;
+			hc->LeadIdCode = 0;
   		    if (VERBOSE_LEVEL>8)
 				fprintf(stdout,"hl7r: [420] %i\n",i); 
 
@@ -655,11 +656,15 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 			hc->DigMin	=  1.0/0.0; 
 
 			char *s = (char*) channel.FirstChild("value").FirstChild("digits").Element()->GetText();
-			const char *delim = " \t\n";
 			size_t spr = 0; 	
+			char *ps=s+strlen(s);//end of s
 			while (1) {
 				if (*s == 0) break;
-				s += strspn(s, delim);	//skip kommas
+				if(s>=ps)break;//end of string if we jump bewaond 0; Using original delimiter wents out of buffer and causes runtime errors
+				if(isspace(*s)){
+					s++;
+					continue;
+				}
 				if (*s == 0) break;
 				if (SPR+spr+1 >= szRawData) {
 					szRawData *= 2;

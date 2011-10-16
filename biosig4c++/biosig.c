@@ -976,7 +976,7 @@ long int iftell(HDRTYPE* hdr) {
 }
 
 int ifsetpos(HDRTYPE* hdr, size_t *pos) {
-#if __sparc__ || __APPLE__ || __MINGW32__ || __ARM__
+#if __sparc__ || __APPLE__ || __MINGW32__ || ANDROID
 	fpos_t p = *pos;
 #else
 	fpos_t p;
@@ -994,7 +994,7 @@ int ifsetpos(HDRTYPE* hdr, size_t *pos) {
 #endif
 	{
 	int c= fsetpos(hdr->FILE.FID,&p);
-#if __sparc__ || __APPLE__ || __MINGW32__ || __ARM__
+#if __sparc__ || __APPLE__ || __MINGW32__ || ANDROID
 	*pos = p;
 #else
 	*pos = p.__pos;
@@ -1017,7 +1017,7 @@ int ifgetpos(HDRTYPE* hdr, size_t *pos) {
 	{
 		fpos_t p;
 		int c = fgetpos(hdr->FILE.FID, &p);
-#if __sparc__ || __APPLE__ || __MINGW32__ || __ARM__
+#if __sparc__ || __APPLE__ || __MINGW32__ || ANDROID
 		*pos = p;
 #else
 		*pos = p.__pos;	// ugly hack but working
@@ -1252,7 +1252,7 @@ void LoadGlobalEventCodeTable()
 	Global.CodeDesc  = (char**)realloc(Global.CodeDesc, N*sizeof(char*));
 
 	while (ETD[Global.LenCodeDesc].desc != NULL) {
-		Global.CodeDesc[Global.LenCodeDesc]  = ETD[Global.LenCodeDesc].desc;
+		Global.CodeDesc[Global.LenCodeDesc]  =(char*) ETD[Global.LenCodeDesc].desc;
 		Global.CodeIndex[Global.LenCodeDesc] = ETD[Global.LenCodeDesc].typ;
 		Global.LenCodeDesc++;
 	}
@@ -1366,7 +1366,7 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 
 	hdr->FILE.OPEN = 0;
 	hdr->FILE.FID = 0;
-    	hdr->FILE.POS = 0;
+	hdr->FILE.POS = 0;
 	hdr->FILE.Des = 0;
 	hdr->FILE.COMPRESSION = 0;
 #ifdef ZLIB_H
@@ -1378,47 +1378,58 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->AS.auxBUF = NULL;
 	hdr->AS.bpb    = 0;
 
-      	hdr->TYPE = noFile;
-      	hdr->VERSION = 2.0;
-      	hdr->AS.rawdata = NULL; 		//(uint8_t*) malloc(0);
+	hdr->TYPE = noFile;
+	hdr->VERSION = 2.0;
+	hdr->AS.rawdata = NULL; 		//(uint8_t*) malloc(0);
 	hdr->AS.flag_collapsed_rawdata = 0;	// is rawdata not collapsed
 	hdr->AS.first = 0;
 	hdr->AS.length  = 0;  			// no data loaded
 	memset(hdr->AS.SegSel,0,sizeof(hdr->AS.SegSel)); 
 	hdr->Calib = NULL;
-        hdr->rerefCHANNEL = NULL;
+	hdr->rerefCHANNEL = NULL;
 
-      	hdr->NRec = 0;
+	hdr->NRec = 0;
 	hdr->SPR  = 0;
-      	hdr->NS = NS;
+	hdr->NS = NS;
 	hdr->SampleRate = 4321.5;
-      	hdr->Patient.Id[0]=0;
-      	strcpy(hdr->ID.Recording,"00000000");
+	hdr->Patient.Id[0]=0;
+	strcpy(hdr->ID.Recording,"00000000");
 	hdr->data.size[0] = 0; 	// rows
 	hdr->data.size[1] = 0;  // columns
 	hdr->data.block = NULL;
-      	hdr->T0 = (gdf_time)0;
-      	hdr->tzmin = 0;
-      	hdr->ID.Equipment = *(uint64_t*) & "b4c_0.95";
-      	hdr->ID.Manufacturer._field[0]    = 0;
-      	hdr->ID.Manufacturer.Name         = NULL;
-      	hdr->ID.Manufacturer.Model        = NULL;
-      	hdr->ID.Manufacturer.Version      = NULL;
-      	hdr->ID.Manufacturer.SerialNumber = NULL;
+	hdr->T0 = (gdf_time)0;
+	hdr->tzmin = 0;
+	hdr->ID.Equipment = *(uint64_t*) & "b4c_0.95";
+	hdr->ID.Manufacturer._field[0]    = 0;
+	hdr->ID.Manufacturer.Name         = NULL;
+	hdr->ID.Manufacturer.Model        = NULL;
+	hdr->ID.Manufacturer.Version      = NULL;
+	hdr->ID.Manufacturer.SerialNumber = NULL;
 	hdr->ID.Technician[0] 	= 0;
 	hdr->ID.Hospital 	= "\x00";
 	memset(hdr->IPaddr, 0, 16);
-
 #ifndef WITHOUT_NETWORK
 #ifdef _WIN32
 	WSADATA wsadata;
 	WSAStartup(MAKEWORD(1,1), &wsadata);
 #endif
+#ifndef ANDROID
+	// set default technician name to local IP address 
+	getlogin_r(hdr->ID.Technician, MAX_LENGTH_TECHNICIAN-2);//NB! max cause buffer overflow
+#endif
+/*
+This line of code eats no less then 300 bytes and I have no idea how to fix it. I just comment it in Android application
+==9547== 300 (60 direct, 240 indirect) bytes in 1 blocks are definitely lost in loss record 11 of 11
+==9547==    at 0x4C28F9F: malloc (vg_replace_malloc.c:236)
+==9547==    by 0x58DB855: nss_parse_service_list (nsswitch.c:626)
+==9547==    by 0x58DBE39: __nss_database_lookup (nsswitch.c:167)
+==9547==    by 0x5F8B823: ???
+==9547==    by 0x58948AC: getpwuid_r@@GLIBC_2.2.5 (getXXbyYY_r.c:256)
+==9547==    by 0x58B6B0B: __getlogin_r_loginuid (getlogin_r.c:68)
+==9547==    by 0x58B6C58: getlogin_r (getlogin_r.c:117)
+ */
 
-      	// set default technician name to local IP address
-	getlogin_r(hdr->ID.Technician, max(MAX_LENGTH_TECHNICIAN,LOGIN_NAME_MAX));
-	//hdr->ID.Technician[MAX_LENGTH_TECHNICIAN]=0;
-
+	hdr->ID.Technician[MAX_LENGTH_TECHNICIAN-2]=0;
 	if (!gethostname(localhostname,HOST_NAME_MAX+1)) {
 		// TODO: replace gethostbyname by getaddrinfo (for IPv6)
 		struct hostent *host = gethostbyname(localhostname);
@@ -1458,7 +1469,7 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->FLAG.ANONYMOUS = 1; 	// <>0: no personal names are processed
 	hdr->FLAG.TARGETSEGMENT = 1;	// read 1st segment
 	hdr->FLAG.CNT32 = 0; 		// assume 16-bit CNT format
-
+	hdr->FLAG.ROW_BASED_CHANNELS=0;
        	// define variable header
 	hdr->CHANNEL = (CHANNEL_TYPE*)calloc(hdr->NS, sizeof(CHANNEL_TYPE));
 	BitsPerBlock = 0;
@@ -1557,10 +1568,10 @@ void destructHDR(HDRTYPE* hdr) {
 
 	if (VERBOSE_LEVEL>7)  fprintf(stdout,"destructHDR: free HDR.AS.rawdata @%p\n",hdr->AS.rawdata);
 
-	if ((hdr->AS.rawdata != NULL) && (hdr->TYPE != SCP_ECG))
+	if (hdr->AS.rawdata != NULL) 
 	{	// for SCP: hdr->AS.rawdata uses memory allocated/managed by hdr->AS.Header
-        	free(hdr->AS.rawdata);
-        }
+		free(hdr->AS.rawdata);
+	}
 
 	if (VERBOSE_LEVEL>7)  fprintf(stdout,"destructHDR: free HDR.data.block @%p\n",hdr->data.block);
 
@@ -2700,8 +2711,8 @@ int gdfbin2struct(HDRTYPE *hdr)
 			return(B4C_ERRNUM);
 		}
 
-	    	hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
-	    	uint8_t *Header2 = hdr->AS.Header+256;
+		hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
+		uint8_t *Header2 = hdr->AS.Header+256;
 
 		hdr->AS.bpb=0;
 		size_t bpb8 = 0;
@@ -3197,8 +3208,8 @@ HDRTYPE* sopen(const char* FileName, const char* MODE, HDRTYPE* hdr)
  */
 {
 
-    	const char*	GENDER = "XMFX";
-    	const uint16_t	CFWB_GDFTYP[] = {17,16,3};
+	const char*	GENDER = "XMFX";
+	const uint16_t	CFWB_GDFTYP[] = {17,16,3};
 	const float	CNT_SETTINGS_NOTCH[] = {0.0, 50.0, 60.0};
 	const float	CNT_SETTINGS_LOWPASS[] = {30, 40, 50, 70, 100, 200, 500, 1000, 1500, 2000, 2500, 3000};
 	const float	CNT_SETTINGS_HIGHPASS[] = {NaN, 0, .05, .1, .15, .3, 1, 5, 10, 30, 100, 150, 300};
@@ -3223,7 +3234,6 @@ HDRTYPE* sopen(const char* FileName, const char* MODE, HDRTYPE* hdr)
 		B4C_ERRMSG = "no filename specified";
 		return (hdr); 
 	}
-
 	if (hdr==NULL)
 		hdr = constructHDR(0,0);	// initializes fields that may stay undefined during SOPEN
 
@@ -4250,7 +4260,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 					duration = atof(val);
 				//else if (!strncmp(line,"NumberOfChannels"))
 				else if (!strcmp(line,"Patient.Id"))
-					strncpy(hdr->Patient.Id,val,MAX_LENGTH_NAME);
+					strncpy(hdr->Patient.Id,val,MAX_LENGTH_PID);
 				else if (!strcmp(line,"Patient.Birthday")) {
 					struct tm t;
 					sscanf(val,"%04i-%02i-%02i %02i:%02i:%02i",&t.tm_year,&t.tm_mon,&t.tm_mday,&t.tm_hour,&t.tm_min,&t.tm_sec);
@@ -6994,7 +7004,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		char nextRow = 0;
 	
 		size_t pos = 0, col=0, row=0, len; 
-		char *f = hdr->AS.Header;
+		char *f = (char*)hdr->AS.Header;
 		while (*f != 0) {
 			len = strcspn(f,"\t\n\r");
 			col++;
@@ -7643,9 +7653,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
                 hdr->Patient.Sex = lei16p(hdr->AS.Header+128);
                 // Race = lei16p(hdr->AS.Header+128);
 
-                t.tm_mday  = lei16p(hdr->AS.Header+132);
-                t.tm_mon   = lei16p(hdr->AS.Header+134)-1;
-                t.tm_year  = lei16p(hdr->AS.Header+136)-1900;
+                t.tm_mday  = abs(lei16p(hdr->AS.Header+132));
+                t.tm_mon   = abs(lei16p(hdr->AS.Header+134)-1);
+                t.tm_year  = abs(lei16p(hdr->AS.Header+136)-1900);
                 t.tm_hour  = 12;
                 t.tm_min   = 0;
                 t.tm_sec   = 0;
@@ -8906,14 +8916,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	else if (hdr->TYPE==SCP_ECG) {
 		hdr->HeadLen   = leu32p(hdr->AS.Header+2);
 		hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen);
-	    	count += ifread(hdr->AS.Header+count, 1, hdr->HeadLen-count, hdr);
-	    	uint16_t crc   = CRCEvaluate(hdr->AS.Header+2,hdr->HeadLen-2);
-
-	    	if ( leu16p(hdr->AS.Header) != crc) {
-	    		B4C_ERRNUM = B4C_CRC_ERROR;
-	    		B4C_ERRMSG = "Warning SOPEN(SCP-READ): Bad CRC!";
+		count += ifread(hdr->AS.Header+count, 1, hdr->HeadLen-count, hdr);
+		uint16_t crc   = CRCEvaluate(hdr->AS.Header+2,hdr->HeadLen-2);
+    	if ( leu16p(hdr->AS.Header) != crc) {
+			B4C_ERRNUM = B4C_CRC_ERROR;
+			B4C_ERRMSG = "Warning SOPEN(SCP-READ): Bad CRC!";
 		}
-
 		sopen_SCP_read(hdr);
 		serror();	// report and reset error, but continue
 		// hdr->FLAG.SWAP = 0; 	// no swapping
@@ -10586,7 +10594,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 }	// end of branch "write"
 
 
-#ifndef __ARM__
+#ifndef ANDROID
 	 //There is a way to send messages in Android to log, but I dont know it yet. Stoyan
  	//There is problem with some files printing deubg info.
  	//And debug in NDK is bad idea in Android
@@ -10905,7 +10913,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 	if (VERBOSE_LEVEL>7)
 		fprintf(stdout,"SREAD: count=%i pos=[%i,%i,%i,%i], size of data = %ix%ix%ix%i = %i\n",(int)count,(int)start,(int)length,(int)POS,(int)hdr->FILE.POS,(int)hdr->SPR, (int)count, (int)NS, (int)sizeof(biosig_data_type), (int)(hdr->SPR * count * NS * sizeof(biosig_data_type)));
 
-#ifndef __ARM__ 
+#ifndef ANDROID 
 //Stoyan: Arm has some problem with log2 - or I dont know how to fix it - it exists but do not work.
         if (log2(hdr->SPR) + log2(count) + log2(NS) + log2(sizeof(biosig_data_type)) + 1 >= sizeof(size_t)*8) {
                 // used to check the 2GByte limit on 32bit systems

@@ -161,7 +161,7 @@ bool            Check_CRC(U_int_M,U_int_L,U_int_L);     // CRC check
 //______________________________________________________________________________
 
 U_int_L         ID_section(U_int_L, int_S &version);              //read section ID header
-void            sectionsOptional(pointer_section*,DATA_DECODE&,DATA_RECORD&,DATA_INFO&);       //handles optional sections
+void            sectionsOptional(pointer_section*,DATA_DECODE &,DATA_RECORD&,DATA_INFO&);       //handles optional sections
 
 #ifdef WITH_OBSOLETE_PARTS
 void            section_0(pointer_section*, int size_max);                    //read section 0
@@ -340,12 +340,11 @@ EXTERN_C void sopen_SCP_clean(struct DATA_DECODE *decode, struct DATA_RECORD *re
 	FreeWithCare((char*)textual->dev.TZ.description);
 
 }
-
-EXTERN_C int scp_decode(HDRTYPE* hdr, pointer_section *section, struct DATA_DECODE decode, struct DATA_RECORD info_recording, struct DATA_INFO info_textual, bool add_filter)
+//There is serious problem if we try to transfer whole structures between c and c++. I am not sure were exactly it is, but using pointers - solve it. extern C is not enough. Stoyan
+EXTERN_C int scp_decode(HDRTYPE* hdr, pointer_section *section, struct DATA_DECODE *decode, struct DATA_RECORD *info_recording, struct DATA_INFO *info_textual, bool add_filter)
 {
 	U_int_M CRC;
 	U_int_L pos;
-
 	if (hdr->FILE.OPEN) {
 		ifseek(hdr,0,SEEK_SET);
 	}
@@ -369,28 +368,27 @@ EXTERN_C int scp_decode(HDRTYPE* hdr, pointer_section *section, struct DATA_DECO
 //mandatory sections
 #ifdef WITH_OBSOLETE_PARTS
 	section_0(section, _DIM_FILE);                 // by E.C. may 2004 check file size
-	section_1(section[1],info_textual);
-
-	sectionsOptional(section,decode,info_recording,info_textual);
+	section_1(section[1],*info_textual);
+	sectionsOptional(section,*decode,*info_recording,*info_textual);
 #else 
 
 	if (section[2].length>0)	
-		section_2(section[2],decode);       //HUFFMAN
+		section_2(section[2],*decode);       //HUFFMAN
 	if (section[3].length>0)	
-		section_3(section[3],decode,hdr->aECG->Section1.Tag14.VERSION);      //lead
+		section_3(section[3],*decode,hdr->aECG->Section1.Tag14.VERSION);      //lead
 	if (section[4].length) 
-		section_4(section[4],decode,hdr->aECG->Section1.Tag15.VERSION);       // fiducial locations
+		section_4(section[4],*decode,hdr->aECG->Section1.Tag15.VERSION);       // fiducial locations
 	if (section[5].length)
-		if (!section_5(section[5],decode,section[2].length)) 
+		if (!section_5(section[5],*decode,section[2].length)) 
 			section[5].length=0 ;       //type 0 median beat
 	if (section[6].length)
-		section_6(section[6],decode,section[2].length);       //rhythm compressed data
+		section_6(section[6],*decode,section[2].length);       //rhythm compressed data
 
 #endif
  
 	ifclose(in);
 
-	Decode_Data(section,decode,add_filter);
+	Decode_Data(section,*decode,add_filter);
 	return TRUE;              // by E.C. 15.10.2003    now return TRUE
 }
 //______________________________________________________________________________
@@ -405,15 +403,13 @@ char *ReadString(char *temp_string, U_int_M num)
 {
 	if(temp_string)
 		free(temp_string);
+	if(!num)
+		return NULL;//before alocating memory, which will be loosed in case of num=0
 	if((temp_string=(char*)mymalloc(sizeof(char)*(num+2)))==NULL)    // by E.C. 26.02.2004 one more byte
 	{
 		fprintf(stderr,"Not enough memory");  // no, exit //
 		exit(2);
 	}
-
-	if(!num)
-		return NULL;
-
 	_COUNT_BYTE+=num;
 
 	ifread(temp_string,sizeof(char),num,in);
@@ -671,7 +667,6 @@ void sectionsOptional(pointer_section *section, DATA_DECODE &block1, DATA_RECORD
 //handles optional sections
 {
 	U_int_S i=0, bimodal;
-
 //initialization
 	block1.t_Huffman=NULL;
 	block1.flag_Huffman=NULL;
@@ -2822,7 +2817,9 @@ void Decode_Data(pointer_section *section, DATA_DECODE &data, bool &add_filter)
 	U_int_L dim_B, dim_R, dim_R_, number_samples_;
 
 	int_L *dati_Res_ = NULL;
-
+	if(!data.flag_Huffman){//Or we will get crash 
+		return;
+	}
 	//Decode the reference beat
 	if(section[5].length)
 	{
