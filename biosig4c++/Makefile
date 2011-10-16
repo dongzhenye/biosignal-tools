@@ -422,6 +422,7 @@ win32/libbiosig.lib: win32/libbiosig.a
 win32/libbiosig.a: $(MinGWOBJECTS) win32/libcnsfef.a biosig.h biosig-dev.h
 	-$(DELETE) "$@"
 	$(CROSS)-$(AR) "$@" $(MinGWOBJECTS) t240/*.obj
+	-touch ../sigviewer4win32/src/file_context.cpp	# trigger to rebuild sigviewer
 
 win32/libcnsfef.a:
 	$(MAKE) CROSS=$(CROSS) -C t240 ../win32/libcnsfef.a 
@@ -449,6 +450,7 @@ win64/libbiosig.lib: win64/libbiosig.a
 win64/libbiosig.a: $(MinGW64OBJECTS) win64/libcnsfef.a biosig.h biosig-dev.h
 	-$(DELETE) "$@"
 	$(CROSS64)-$(AR) "$@" $(MinGW64OBJECTS) t240/*.o64
+	-touch ../sigviewer4win64/src/file_context.cpp	# trigger to rebuild sigviewer
 
 win64/libcnsfef.a:
 	$(MAKE) CROSS64=$(CROSS64) -C t240 ../win64/libcnsfef.a 
@@ -477,6 +479,7 @@ t240/libcnsfef.a:
 libbiosig.a: $(OBJECTS) t240/libcnsfef.a biosig.h biosig-dev.h
 	-$(DELETE) libbiosig.a
 	$(AR) libbiosig.a $(OBJECTS) t240/*.o
+	-touch ../sigviewer/src/file_context.cpp	# trigger to rebuild sigviewer
 
 libbiosig.so: $(OBJECTS) t240/libcnsfef.a biosig.h biosig-dev.h
 	$(CXX) -shared -fPIC -Wl,-soname,libbiosig.so.${MAJOR_VERSION} $(LDLIBS) \
