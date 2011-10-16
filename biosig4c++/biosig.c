@@ -1415,21 +1415,10 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 #endif
 #ifndef ANDROID
 	// set default technician name to local IP address 
-	getlogin_r(hdr->ID.Technician, MAX_LENGTH_TECHNICIAN-2);//NB! max cause buffer overflow
-#endif
-/*
-This line of code eats no less then 300 bytes and I have no idea how to fix it. I just comment it in Android application
-==9547== 300 (60 direct, 240 indirect) bytes in 1 blocks are definitely lost in loss record 11 of 11
-==9547==    at 0x4C28F9F: malloc (vg_replace_malloc.c:236)
-==9547==    by 0x58DB855: nss_parse_service_list (nsswitch.c:626)
-==9547==    by 0x58DBE39: __nss_database_lookup (nsswitch.c:167)
-==9547==    by 0x5F8B823: ???
-==9547==    by 0x58948AC: getpwuid_r@@GLIBC_2.2.5 (getXXbyYY_r.c:256)
-==9547==    by 0x58B6B0B: __getlogin_r_loginuid (getlogin_r.c:68)
-==9547==    by 0x58B6C58: getlogin_r (getlogin_r.c:117)
- */
-
+	getlogin_r(hdr->ID.Technician, min(MAX_LENGTH_TECHNICIAN,LOGIN_NAME_MAX));//NB! max cause buffer overflow
+#else
 	hdr->ID.Technician[MAX_LENGTH_TECHNICIAN-2]=0;
+#endif
 	if (!gethostname(localhostname,HOST_NAME_MAX+1)) {
 		// TODO: replace gethostbyname by getaddrinfo (for IPv6)
 		struct hostent *host = gethostbyname(localhostname);
@@ -1470,6 +1459,7 @@ This line of code eats no less then 300 bytes and I have no idea how to fix it. 
 	hdr->FLAG.TARGETSEGMENT = 1;	// read 1st segment
 	hdr->FLAG.CNT32 = 0; 		// assume 16-bit CNT format
 	hdr->FLAG.ROW_BASED_CHANNELS=0;
+	
        	// define variable header
 	hdr->CHANNEL = (CHANNEL_TYPE*)calloc(hdr->NS, sizeof(CHANNEL_TYPE));
 	BitsPerBlock = 0;
@@ -1568,10 +1558,7 @@ void destructHDR(HDRTYPE* hdr) {
 
 	if (VERBOSE_LEVEL>7)  fprintf(stdout,"destructHDR: free HDR.AS.rawdata @%p\n",hdr->AS.rawdata);
 
-	if (hdr->AS.rawdata != NULL) 
-	{	// for SCP: hdr->AS.rawdata uses memory allocated/managed by hdr->AS.Header
-		free(hdr->AS.rawdata);
-	}
+	if (hdr->AS.rawdata != NULL) free(hdr->AS.rawdata);
 
 	if (VERBOSE_LEVEL>7)  fprintf(stdout,"destructHDR: free HDR.data.block @%p\n",hdr->data.block);
 
@@ -7653,9 +7640,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
                 hdr->Patient.Sex = lei16p(hdr->AS.Header+128);
                 // Race = lei16p(hdr->AS.Header+128);
 
-                t.tm_mday  = abs(lei16p(hdr->AS.Header+132));
-                t.tm_mon   = abs(lei16p(hdr->AS.Header+134)-1);
-                t.tm_year  = abs(lei16p(hdr->AS.Header+136)-1900);
+                t.tm_mday  = leu16p(hdr->AS.Header+132);
+                t.tm_mon   = leu16p(hdr->AS.Header+134)-1;
+                t.tm_year  = leu16p(hdr->AS.Header+136)-1900;
                 t.tm_hour  = 12;
                 t.tm_min   = 0;
                 t.tm_sec   = 0;
@@ -8918,7 +8905,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen);
 		count += ifread(hdr->AS.Header+count, 1, hdr->HeadLen-count, hdr);
 		uint16_t crc   = CRCEvaluate(hdr->AS.Header+2,hdr->HeadLen-2);
-    	if ( leu16p(hdr->AS.Header) != crc) {
+		if ( leu16p(hdr->AS.Header) != crc) {
 			B4C_ERRNUM = B4C_CRC_ERROR;
 			B4C_ERRMSG = "Warning SOPEN(SCP-READ): Bad CRC!";
 		}
@@ -11964,6 +11951,7 @@ int sclose(HDRTYPE* hdr)
 		uint16_t 	crc;
 		uint8_t*	ptr; 	// pointer to memory mapping of the file layout
 
+		hdr->AS.rawdata = NULL;
 		aECG_TYPE* aECG = (aECG_TYPE*)hdr->aECG;
 		if (aECG->Section5.Length>0) {
 			// compute CRC for Section 5

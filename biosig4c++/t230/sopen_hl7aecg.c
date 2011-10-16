@@ -644,7 +644,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 		    const char *code = channel.FirstChild("code").Element()->Attribute("code");
 		    
   		    CHANNEL_TYPE *hc = hdr->CHANNEL+i;
-			hc->LeadIdCode = 0;
+                    hc->LeadIdCode = 0;
   		    if (VERBOSE_LEVEL>8)
 				fprintf(stdout,"hl7r: [420] %i\n",i); 
 
