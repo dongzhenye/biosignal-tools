@@ -272,7 +272,7 @@ static uint8_t GLOBAL_EVENTCODES_ISLOADED = 0;
 struct global_t {
 	uint16_t LenCodeDesc;
 	uint16_t *CodeIndex;
-	char 	 **CodeDesc;
+	const char **CodeDesc;
 	char  	 *EventCodesTextBuffer;
 
 } Global;

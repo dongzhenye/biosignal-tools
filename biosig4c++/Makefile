@@ -112,7 +112,7 @@ endif
 # Octave - global install  (e.g. from debian package)
 OCTAVE_VERSION = 
 # Octave - local install (e.g. compiled from sources) 
-OCTAVE_VERSION = -3.4.2
+OCTAVE_VERSION = -3.4.3
 
 OCT           = mkoctfile$(OCTAVE_VERSION)
 ##########################################################
@@ -301,11 +301,30 @@ win64/%.obj: XMLParser/%.cpp
 
 biosig.o win32/biosig.obj win32/biosig.obj: eventcodes.i eventcodegroups.i units.i biosig.c biosig.h biosig-dev.h
 
+have_biosig_doc := $(wildcard ../biosig/doc/eventcodes.txt)
+.PHONY: eventcodes.txt units.csv
+
+# eventcodes.txt and units.csv are included in biosig4octmat not in biosig4c++
+eventcodes.txt : 
+	-wget -O "$@" http://biosig.svn.sourceforge.net/viewvc/biosig/trunk/biosig/doc/eventcodes.txt
+units.csv : 
+	-wget -O "$@" http://biosig.svn.sourceforge.net/viewvc/biosig/trunk/biosig/doc/units.csv
+
+ifeq ($(strip $(have_biosig_doc)),)
+eventcodes.i eventcodegroups.i : eventcodes.txt
+	./eventcodes.awk "$<"
+
+units.i : units.csv
+	echo $(have_biosig_doc)
+	./units.awk "$<" > "$@"
+else 
 eventcodes.i eventcodegroups.i : ../biosig/doc/eventcodes.txt
 	./eventcodes.awk "$<"
 
 units.i : ../biosig/doc/units.csv
-	awk "-F," '/^[^#,]/ { split( $$0, a, "\""); sub(/\[.*\]/, "",a[2]); sub(/ *$$/, "",a[2]); print "\t{ "$$1", \"" a[2] "\"}, "}' "$<" > units.i
+	./units.awk "$<" > "$@"
+
+endif 
 
 #############################################################
 #	Compilation: exceptions, explicit rules
@@ -563,6 +582,8 @@ save2aecg: save2gdf
 #############################################################
 #	INSTALL and DE-INSTALL
 #############################################################
+
+.PHONY: clean distclean install remove install_sigviewer install_octave asc bin testscp testhl7 testbin test test6 zip 
 
 distclean:
 	-$(DELETE) *.a
