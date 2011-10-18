@@ -296,10 +296,10 @@ win64/%.obj: XMLParser/%.cpp
 
 
 #############################################################
-#	event table: conversion from ascii to C code
+#	eventcodes and units: conversion from ascii to C code
 #############################################################
 
-biosig.o win32/biosig.obj win32/biosig.obj: eventcodes.i eventcodegroups.i units.i biosig.c biosig.h biosig-dev.h
+biosig.o win32/biosig.obj win64/biosig.obj: eventcodes.i eventcodegroups.i units.i biosig.c biosig.h biosig-dev.h
 
 have_biosig_doc := $(wildcard ../biosig/doc/eventcodes.txt)
 .PHONY: eventcodes.txt units.csv
@@ -315,8 +315,8 @@ eventcodes.i eventcodegroups.i : eventcodes.txt
 	./eventcodes.awk "$<"
 
 units.i : units.csv
-	echo $(have_biosig_doc)
 	./units.awk "$<" > "$@"
+
 else 
 eventcodes.i eventcodegroups.i : ../biosig/doc/eventcodes.txt
 	./eventcodes.awk "$<"
