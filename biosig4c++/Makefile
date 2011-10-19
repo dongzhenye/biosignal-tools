@@ -366,7 +366,13 @@ win32/sopen_hl7aecg.obj: t230/sopen_hl7aecg.c biosig-dev.h biosig.h XMLParser/ti
 win32/getlogin_r.obj: win32/getlogin_r.c
 	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
 
-win32/sigviewer.exe: win32/libbiosig.a win32/libbiosig.dll 
+$(PathToSigViewerWIN32): 
+	svn co https://sigviewer.svn.sourceforge.net/svnroot/sigviewer/trunk ../sigviewer4win32
+
+$(PathToSigViewerWIN64)/src/src.pro: $(PathToSigViewerWIN32)
+	svn up ../sigviewer4win32
+
+win32/sigviewer.exe: win32/libbiosig.a win32/libbiosig.dll $(PathToSigViewerWIN32)
 	#-$(COPY) ../biosig/doc/eventcodes.txt $(PathToSigViewerWIN32)/src/
 	-$(DELETE) $(PathToSigViewerWIN32)/extern/include/*.h
 	-$(COPY) biosig.h $(PathToSigViewerWIN32)/extern/include
@@ -390,6 +396,12 @@ win64/sopen_hl7aecg.obj: t230/sopen_hl7aecg.c biosig-dev.h biosig.h XMLParser/ti
 
 win64/getlogin_r.obj: win32/getlogin_r.c
 	$(MinGW64CC) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
+
+$(PathToSigViewerWIN64): 
+	svn co https://sigviewer.svn.sourceforge.net/svnroot/sigviewer/trunk ../sigviewer4win64
+
+$(PathToSigViewerWIN64)/src/src.pro: $(PathToSigViewerWIN64) 
+	svn up ../sigviewer4win64
 
 win64/sigviewer.exe: win64/libbiosig.a win64/libbiosig.dll 
 	#-$(COPY) ../biosig/doc/eventcodes.txt $(PathToSigViewerWIN64)/src/

@@ -4918,7 +4918,7 @@ if (VERBOSE_LEVEL>8)
 	else if (hdr->TYPE==BNI) {
 		// BNI-1-Baltimore/Nicolet
 		char *line = strtok((char*)hdr->AS.Header,"\x0a\x0d");
-		fprintf(stdout,"Warning SOPEN: BNI not implemented - experimental code!\n");
+		fprintf(stderr,"Warning SOPEN: BNI not implemented - experimental code!\n");
 		double cal=0,age;
 		char *Label=NULL;
 		struct tm t;
@@ -6180,7 +6180,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
 	else if (hdr->TYPE==EBS) {
 
-		fprintf(stdout,"Warning SOPEN(EBS): support for EBS format is experimental\n");
+		fprintf(stderr,"Warning SOPEN(EBS): support for EBS format is experimental\n");
 
 		/**  Fixed Header (32 bytes)  **/
 		uint32_t EncodingID = beu32p(Header1+8);
@@ -7613,6 +7613,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	}
 
     	else if (hdr->TYPE==ISHNE) {
+
+		fprintf(stderr,"Warning SOPEN(ISHNE): support for ISHNE format is experimental\n");
+
                    // unknown, generic, X,Y,Z, I-VF, V1-V6, ES, AS, AI
     	        uint16_t Table1[] = {0,0,16,17,18,1,2,87,88,89,90,3,4,5,6,7,8,131,132,133};
     	        size_t len;
@@ -7624,37 +7627,52 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		}
 		hdr->HeadLen = count;
 
+                if (VERBOSE_LEVEL>6) {
+                	fprintf(stdout,"SOPEN(ISNHE): @%p %i\n",hdr->AS.Header,hdr->HeadLen);
+                	fprintf(stdout,"SOPEN(ISNHE): @%p %x %x %x %x %x %x\n",hdr->AS.Header,hdr->AS.Header[132],hdr->AS.Header[133],hdr->AS.Header[134],hdr->AS.Header[135],hdr->AS.Header[136],hdr->AS.Header[137]);
+                	for (k=0;k<522;k++) {
+				fprintf(stdout,"%02x ",hdr->AS.Header[k]);
+				if (k%32==0) fputc('\n',stdout);
+			}
+                }	
 		//int offsetVarHdr = lei32p(hdr->AS.Header+18);
 		int offsetData = lei32p(hdr->AS.Header+22);
 		hdr->VERSION = (float)lei16p(hdr->AS.Header+26);
 
 		if (!hdr->FLAG.ANONYMOUS) {
-			len = max(80,MAX_LENGTH_NAME);
+			len = min(80,MAX_LENGTH_NAME);
 			strncpy(hdr->Patient.Name, (char*)(hdr->AS.Header+28), len);
 			hdr->Patient.Name[len] = 0;
 		}
-                len = max(20, MAX_LENGTH_PID);
+                len = min(20, MAX_LENGTH_PID);
 		strncpy(hdr->Patient.Id, (char*)(hdr->AS.Header+108), len);
 		hdr->Patient.Id[len] = 0;
 
                 hdr->Patient.Sex = lei16p(hdr->AS.Header+128);
                 // Race = lei16p(hdr->AS.Header+128);
 
-                t.tm_mday  = leu16p(hdr->AS.Header+132);
-                t.tm_mon   = leu16p(hdr->AS.Header+134)-1;
-                t.tm_year  = leu16p(hdr->AS.Header+136)-1900;
+/*
+		TODO: 
+		decoding of Birthday and Recording Date is very exeripmental, the current solution is based on reverse engineering of a single file
+		The decoding used previously did not work of that specific file (S1123.ecg). 
+		If anyone has an official documentation of the format, or can test this part, it would be very helpful. 
+*/
+                t.tm_mday  = lei16p(hdr->AS.Header + 138);
+                t.tm_mon   = lei16p(hdr->AS.Header + 140) - 1;
+                t.tm_year  = lei16p(hdr->AS.Header + 142) - 1900;
                 t.tm_hour  = 12;
                 t.tm_min   = 0;
                 t.tm_sec   = 0;
                 t.tm_isdst = 0;
+                if (VERBOSE_LEVEL>6) {
+                	fprintf(stdout,"SOPEN(ISNHE): Birthday: %04i-%02i-%02i %02i:%02i:%02i\n",t.tm_year,t.tm_mon,t.tm_mday,t.tm_hour,t.tm_min,t.tm_sec);
+                	fprintf(stdout,"SOPEN(ISNHE): @%p %x %x %x %x %x %x\n",hdr->AS.Header,hdr->AS.Header[132],hdr->AS.Header[133],hdr->AS.Header[134],hdr->AS.Header[135],hdr->AS.Header[136],hdr->AS.Header[137]);
+                }	
                 hdr->Patient.Birthday = tm_time2gdf_time(&t);
 
-                t.tm_mday  = lei16p(hdr->AS.Header + 138);
-                t.tm_mon   = lei16p(hdr->AS.Header + 140) - 1;
-                t.tm_year  = lei16p(hdr->AS.Header + 142) - 1900;
-                //t.tm_hour  = lei16p(hdr->AS.Header + 144);
-                //t.tm_min   = lei16p(hdr->AS.Header + 146);
-                //t.tm_sec   = lei16p(hdr->AS.Header + 148);
+                t.tm_mday  = leu16p(hdr->AS.Header+144);
+                t.tm_mon   = leu16p(hdr->AS.Header+146)-1;
+                t.tm_year  = leu16p(hdr->AS.Header+148)-1900;
                 t.tm_hour  = lei16p(hdr->AS.Header + 150);
                 t.tm_min   = lei16p(hdr->AS.Header + 152);
                 t.tm_sec   = lei16p(hdr->AS.Header + 154);
@@ -9590,7 +9608,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
 #ifdef WITH_DICOM
 	else if (hdr->TYPE==DICOM) {
-		fprintf(stdout,"DICOM support is very (!!!) experimental!\n");
+		fprintf(stderr,"DICOM support is very (!!!) experimental!\n");
 
 		hdr->HeadLen = count;
 		sopen_dicom_read(hdr);
