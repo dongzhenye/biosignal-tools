@@ -3625,7 +3625,9 @@ if (!strncmp(MODE,"r",1))
 			if (VERBOSE_LEVEL>7)
 				fprintf(stdout,"[EDF 213] #%i/%i\n",(int)k,hdr->NS);
 
+			hc->LeadIdCode = 0; 
 			strncpy(hc->Label,Header2 + 16*k,min(MAX_LENGTH_LABEL,16));
+			hc->Label[min(MAX_LENGTH_LABEL,16)]=0;
 			int k1;
 			for (k1=strlen(hc->Label)-1; isspace(hc->Label[k1]) && k1; k1--)
 				hc->Label[k1] = 0;	// deblank
