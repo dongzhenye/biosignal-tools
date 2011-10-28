@@ -7,12 +7,16 @@
 :End:
 
 
-:Evaluate: sload::usage = "sload[filename, {ne,ng,ns}] load data sweeps into mathematica workspace.
+:Evaluate: sload::usage = "data = sload[filename, {ne,ng,ns}] load data sweeps into mathematica workspace.
  ne, ng, and ns are the number of the experiment, the number of the series from this experiment and
  the number of the sweep from this series sweep, respectivly. 0 can be used as wildcard to select all
  sweeps.\nExamples: sload(\"abc.dat\",{1,5,0}) selects all sweeps from 5th series of first experiment; {0,0,0} selects
- all sweeps from file \"abc.dat\".\nNOTE: If sweeps were sampled with different sampling rates, all data is converted to the
- least common multiple of the various sampling rates. (e.g. loading a 20kHz and a 25kHz sweep simultaneously, both sweeps are converted to 100kHz)." 
+ all sweeps from file \"abc.dat\".\n
+ The output ist a list with two elements, the first containing the 2-dim array of data samples, the second contains the time axis in seconds.\n
+ \nNOTE: If sweeps were sampled with different sampling rates, all data is converted to the
+ least common multiple of the various sampling rates. (e.g. loading a 20kHz and a 25kHz sweep simultaneously, both sweeps are converted to 100kHz)."
+
+
  
 
 

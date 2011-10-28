@@ -44,7 +44,7 @@ win win32 : sload.exe
 	${CC} -c -I${INCDIR} $<
 
 sloadtm.c : sload.tm
-	${MPREP} $? -o $@
+	${MPREP} $< -o $@
 
 sload : sload.o sloadtm.o ../libbiosig.a
 	${CC} sloadtm.o sload.o -L${LIBDIR} -l${MLLIB} ${EXTRALIBS} -o $@

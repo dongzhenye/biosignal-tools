@@ -21,6 +21,7 @@
 
 #include "mathlink.h"
 #include "../biosig.h"
+#include <stdlib.h>
 
 #define VERBOSE_LEVEL 0
 
@@ -32,7 +33,7 @@ if (VERBOSE_LEVEL > 5)
 	fprintf(stdout,"=== start sload ===\n");
 
 // contains [experiment,series,sweep,trace] numbers for selecting data. 
-	int k = 0;
+	size_t k = 0;
 	while (k < SZlen && k < 5) { 
 		hdr->AS.SegSel[k] = (uint32_t)SZ[k];
 		k++;
@@ -60,13 +61,23 @@ if (VERBOSE_LEVEL > 5)
 #endif
 	sz[0] = hdr->data.size[1];
 	sz[1] = hdr->data.size[0];
-	if (!MLPutRealArray(stdlink, hdr->data.block, sz, NULL, 2))	
-		fprintf(stdout,"unable to send the double array\n");
+	MLPutFunction(stdlink, "List", 2);
+		// write data matrix 
+		MLPutRealArray(stdlink, hdr->data.block, sz, NULL, 2);
+
+		// generate and write time axis
+		double *t = (double*)malloc(hdr->NRec*hdr->SPR*sizeof(double));
+		for (k=0; k<hdr->NRec*hdr->SPR;) {
+			t[k] = (++k)/hdr->SampleRate;
+		}
+		MLPutRealList(stdlink, t, hdr->NRec*hdr->SPR);
+		free(t); 
+
 
 if (VERBOSE_LEVEL > 5) {
 	for (k=0;k<hdr->NS;k++)
 		fprintf(stdout,"%f ",hdr->data.block[k]);
-	fprintf(stdout,"\n\nopen filename <%s>@%p sz=[%i,%i]\n", fn, hdr->data.block, hdr->data.size[0], hdr->data.size[1]);
+		fprintf(stdout,"\n\nopen filename <%s>@%p sz=[%i,%i]\n", fn, hdr->data.block, hdr->data.size[0], hdr->data.size[1]);
 	}
 
 	// *********** close file *********************
