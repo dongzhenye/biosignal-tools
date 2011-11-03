@@ -1,0 +1,55 @@
+
+
+
+- Investigate whether and/or which rules should be applied to biosig 
+This posting http://0pointer.de/blog/projects/libabc.html suggests to follow 
+these rules: 
+https://git.kernel.org/?p=linux/kernel/git/kay/libabc.git;a=blob_plain;f=README
+
+- use of autotools: 
+  perhaps a good idea, if it simplifies Makefile, it should be done 
+
+- avoid using global variables
+  B4C_ERRNUM, B4C_ERRMSG for error handling
+  VERBOSE_LEVEL 	for debugging messages
+  Global 		holds table of Event code description
+	
+- use prefix for exported functions 
+   sopen -> biosig_sopen
+   sread -> biosig_sread
+   seof
+   swrite
+   stell
+   sseek
+   ...
+
+- hide symbols of external libraries
+   tinyxml 
+
+- do not expose complex structures in the API, avoid fixed-sized strings in structs:
+  CHANNEL_TYPE
+  HDRTYPE
+
+  use biosig_new(), biosig_free(), biosig_ref(), biosig_unref(), get(), set() instead
+
+- do not call exit()
+
+- functions should return int and negative numbers for errors
+
+- provide pkgconfig files
+	? 
+
+- hide all internal symbols 
+	
+- provide logging/debugging, do not use stdout/stderr 
+
+- make distcheck
+	? 
+
+- use ./autogen.sh to bootstrap git repo 
+	? 
+
+- do not expose fixed size strings in api 
+    Label, Transducer, PhysDim , PID, RID, NAME, MANUF, TECHNICIAN   
+
+  

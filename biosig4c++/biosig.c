@@ -72,8 +72,6 @@
 #define HOST_NAME_MAX 256
 #endif
 
-int errnum;
-int B4C_STATUS  = 0;
 int B4C_ERRNUM  = 0;
 const char *B4C_ERRMSG;
 
@@ -318,7 +316,8 @@ uint32_t lcm(uint32_t A, uint32_t B)
 	A64 *= B/gcd(A,B);
 	if (A64 > 0x00000000ffffffffllu) {
 		fprintf(stderr,"Error: HDR.SPR=LCM(%u,%u) overflows and does not fit into uint32.\n",(unsigned)A,(unsigned)B);
-		exit(-4);
+		B4C_ERRNUM = B4C_UNSPECIFIC_ERROR;
+		B4C_ERRMSG = "Computing LCM failed.";
 	}
 	return((uint32_t)A64);
 };
@@ -1038,6 +1037,7 @@ int ifeof(HDRTYPE* hdr) {
 int iferror(HDRTYPE* hdr) {
 #ifdef ZLIB_H
 	if (hdr->FILE.COMPRESSION) {
+		int errnum;
 		const char *tmp = gzerror(hdr->FILE.gzFID,&errnum);
 		fprintf(stderr,"GZERROR: %i %s \n",errnum, tmp);
 		return(errnum);
@@ -1356,12 +1356,12 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	if  ((LittleEndian) && (__BYTE_ORDER == __BIG_ENDIAN))	{
 		B4C_ERRNUM = B4C_ENDIAN_PROBLEM;
 		B4C_ERRMSG = "Panic: mixed results on Endianity test.";
-		exit(-1);
+		return(NULL);
 	}
 	if  ((!LittleEndian) && (__BYTE_ORDER == __LITTLE_ENDIAN))	{
 		B4C_ERRNUM = B4C_ENDIAN_PROBLEM;
 		B4C_ERRMSG = "Panic: mixed results on Endianity test.";
-		exit(-1);
+		return(NULL);
 	}
 
 	hdr->FILE.OPEN = 0;
@@ -11197,7 +11197,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 
 			B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
 			B4C_ERRMSG = "Error SREAD: datatype not supported";
-			exit(-1);
+			return(-1);
 		}	// end switch
 
 		// overflow and saturation detection
@@ -11313,7 +11313,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 			else {
 				B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
 				B4C_ERRMSG = "Error SREAD: datatype not supported";
-				exit(-1);
+				return(0);
 			}
 
 			// overflow and saturation detection
@@ -11504,7 +11504,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 		if (ptr==NULL) {
 			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
 			B4C_ERRMSG = "SWRITE: memory allocation failed.";
-			exit(-1);
+			return(0);
 		}
 		else
 			hdr->AS.rawdata = (uint8_t*)ptr;
@@ -11705,7 +11705,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 			default:
 				B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
 				B4C_ERRMSG = "SWRITE: datatype not supported";
-				exit(-1);
+				return(0);
 			}
 		}        // end for k5
 		}        // end for k4
