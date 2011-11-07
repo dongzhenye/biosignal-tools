@@ -191,9 +191,8 @@ Fs = 20000; 	% assumed samplerate
 
 	for ch = chan(:)';	% look for each channel	
 		% only voltage channels are considered
-	if (HDR.PhysDimCode(ch) & hex2dec('ffe0')) == 4256, %% physicalunits('V'),	
+	if (bitand(HDR.PhysDimCode(ch), hex2dec('ffe0')) == 4256), %% physicalunits('V'),	
 		%%%%%%%	Spike Detection %%%%%%%%%%%%%%%%%%%
-
 		[unit, scale] = physicalunits(HDR.PhysDimCode(ch))
 		tmp = scale * filter(B, dT, s(:,ch));
 		OnsetSpike = find( diff (tmp > slopeThreshold) > 0); 	%% spike onset time [samples]
