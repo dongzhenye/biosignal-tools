@@ -213,11 +213,7 @@ if ~isfield(HDR.FLAG,'OUTPUT')
 end; 
 FLAG.BDF.status2event = regexp (MODE, '(^BDF:|[ \t;,]BDF:)(\d*)([ \t;,]|$)','tokens');
 if ~isempty(FLAG.BDF.status2event)
-	if exist('OCTAVE_VERSION','builtin')
-		FLAG.BDF.status2event = num2int(FLAG.BDF.status2event{1}{2})
-	else
-		FLAG.BDF.status2event = num2int(FLAG.BDF.status2event{2})
-	end; 
+	FLAG.BDF.status2event = num2int(FLAG.BDF.status2event{1}{2})
 end; 
 
 if ~isfield(HDR,'EVENT');

@@ -124,6 +124,17 @@ case 7,
  		TYP = [TYP; repmat(k,sum(ix2>0),1); repmat(k+hex2dec('8000'),sum(ix2<0),1)];
  		HDR.EVENT.CodeDesc{k} = sprintf('bit %i',k);
 	end;
+case 8,
+	%% bit-based decoding with only high-active 
+	POS = [];
+	TYP = [];
+	for k=1:16,
+		t = bitand(HDR.BDF.ANNONS,2^(k-1));
+		ix2 = diff(double([0;t])); 
+		POS = [POS; find(ix2>0)];
+		TYP = [TYP; repmat(k,sum(ix2>0),1)];
+		HDR.EVENT.CodeDesc{k} = sprintf('bit %i',k);
+	end;
 	
 case 99,
 	% not recommended, because it could break some functionality in BioSig 
