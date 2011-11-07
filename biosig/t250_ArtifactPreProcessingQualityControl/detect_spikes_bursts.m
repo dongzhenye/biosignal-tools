@@ -193,7 +193,7 @@ Fs = 20000; 	% assumed samplerate
 		% only voltage channels are considered
 	if (bitand(HDR.PhysDimCode(ch), hex2dec('ffe0')) == 4256), %% physicalunits('V'),	
 		%%%%%%%	Spike Detection %%%%%%%%%%%%%%%%%%%
-		[unit, scale] = physicalunits(HDR.PhysDimCode(ch))
+		[unit, scale] = physicalunits(HDR.PhysDimCode(ch));
 		tmp = scale * filter(B, dT, s(:,ch));
 		OnsetSpike = find( diff (tmp > slopeThreshold) > 0); 	%% spike onset time [samples]
 		% --- remove double detections < 1 ms
