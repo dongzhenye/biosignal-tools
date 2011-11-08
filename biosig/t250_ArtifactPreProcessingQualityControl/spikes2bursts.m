@@ -166,9 +166,9 @@ end;
 		%%%%%%% Burst Detection %%%%%%%%%%%%%%%%%%%
 		OnsetBurst = OnsetSpike ( [1; 1 + find( diff(OnsetSpike) > Fs * dT_Burst ) ] );
 
-		OnsetBurst(end+1) = HDR.SPR*HDR.NRec + 1;
 		DUR        = repmat(NaN, size(OnsetBurst));
 		BurstTable = repmat(NaN, length(OnsetBurst), 6);
+		OnsetBurst(end+1) = HDR.SPR * HDR.NRec + 1;
 
 		m2    = 0;
 		t0    = [1; EVENT.POS(EVENT.TYP==hex2dec('7ffe'))];
@@ -189,13 +189,12 @@ end;
 
 		% remove single spike bursts 
 		HDR.BurstTable = [HDR.BurstTable; BurstTable];
-		
-		EVENT.TYP = [EVENT.TYP; repmat(hex2dec('0202'), size(OnsetBurst))];
-		EVENT.POS = [EVENT.POS; OnsetBurst];
+
+		EVENT.TYP = [EVENT.TYP; repmat(hex2dec('0202'), size(DUR))];
+		EVENT.POS = [EVENT.POS; OnsetBurst(1:end-1)];
 		EVENT.DUR = [EVENT.DUR; DUR];
 		EVENT.CHN = [EVENT.CHN; repmat(ch, size(DUR,1), 1) ];
 	end; 
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %	Output 

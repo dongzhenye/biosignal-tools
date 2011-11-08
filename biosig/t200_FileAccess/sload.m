@@ -1383,6 +1383,13 @@ if STATE.FLAG_NUM_NAN,
 			signal(ix(k) + (k-1) * winlen + [-winlen:-1], :) = NaN;
 		end; 
 	end;
+	if H.SPR * H.NRec ~= size(signal,1),
+		H.SPR = H.SPR + winlen * (n - 1);
+	end;
+	if H.SPR * H.NRec ~= size(signal,1),
+		warning('Undefined state: HDR.SPR*HDR.NRec does not match size of data - if you see this message contact <alois.schloegl@gmail.com> and provide the details'); 
+	end; 
+	% [HDR.SPR, HDR.NRec, size(signal)]
 end;
 
 
