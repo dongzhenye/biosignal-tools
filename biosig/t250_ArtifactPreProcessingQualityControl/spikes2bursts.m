@@ -168,7 +168,7 @@ end;
 
 		DUR        = repmat(NaN, size(OnsetBurst));
 		BurstTable = repmat(NaN, length(OnsetBurst), 6);
-		OnsetBurst(end+1) = HDR.SPR * HDR.NRec + 1;
+		OnsetBurst(end+1) = inf;
 
 		m2    = 0;
 		t0    = [1; EVENT.POS(EVENT.TYP==hex2dec('7ffe'))];
