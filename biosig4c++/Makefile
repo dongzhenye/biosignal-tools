@@ -46,7 +46,7 @@ LIBEXT        = a
 
 ### User-specified options: its likely you want to change this
 # settings for cross compiler: tested with mingw-cross-env and mce-w64 with make suitesparse zlib qt ; 
-CROSS   = /usr/local/src/mingw-cross-env/usr/bin/i686-pc-mingw32
+CROSS   = $HOME/src/mingw-cross-env/usr/bin/i686-pc-mingw32
 ## local mingw-cross-env 
 ifeq "$(wildcard $(CROSS)-gcc)" ""
 CROSS         = $(shell pwd)/../mingw-cross-env/usr/bin/i686-pc-mingw32
@@ -54,7 +54,13 @@ endif
 ifeq "$(wildcard $(CROSS)-gcc)" ""
 CROSS         = /usr/local/src/mingw-cross-env/usr/bin/i686-pc-mingw32
 endif
-CROSS64       = $(shell pwd)/../mce-w64/usr/bin/x86_64-w64-mingw32
+CROSS64       = $(HOME)/src/mce-w64/usr/bin/x86_64-w64-mingw32
+ifeq "$(wildcard $(CROSS64)-gcc)" ""
+CROSS64       = $(shell pwd)/../mce-w64/usr/bin/i686-pc-mingw32
+endif
+ifeq "$(wildcard $(CROSS64)-gcc)" ""
+CROSS64       = /usr/local/src/mce-w64/usr/bin/i686-pc-mingw32
+endif
 # settings for mex files
 MEX_OPTION    = -largeArrayDims # turn on for 64 bit Matlab, otherwise empty
 # directory for sources of sigviewer
@@ -112,7 +118,7 @@ endif
 # Octave - global install  (e.g. from debian package)
 OCTAVE_VERSION = 
 # Octave - local install (e.g. compiled from sources) 
-OCTAVE_VERSION = -3.4.3
+#OCTAVE_VERSION = -3.4.3
 
 OCT           = mkoctfile$(OCTAVE_VERSION)
 ##########################################################
