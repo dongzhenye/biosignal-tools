@@ -96,10 +96,10 @@ else
   LIBS        = $(LIBS_static)
 endif
 ifneq (,$(findstring WITH_ZLIB, $(DEFINES)))
-  LDLIBS     += -lcholmod
+  LDLIBS     += -lz
 endif
 ifneq (,$(findstring WITH_CHOLMOD, $(DEFINES)))
-  LDLIBS     += -lz
+  LDLIBS     += -lcholmod
 endif
 LIBS          += $(LDLIBS)
 
