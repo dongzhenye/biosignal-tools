@@ -368,42 +368,48 @@ int16_t lei16p(uint8_t* i) {
 uint32_t leu32p(uint8_t* i) {
 	// decode little endian uint32 pointer
 	uint32_t o=0;
-	for (char k=0; k<4; k++)
+	char k;
+	for (k=0; k<4; k++)
 		o += ((uint32_t)*(i+k))<<(k*8);
 	return(o);
 }
 int32_t lei32p(uint8_t* i) {
 	// decode little endian int32 pointer
 	uint32_t o=0;
-	for (char k=0; k<4; k++)
+	char k;
+	for (k=0; k<4; k++)
 		o += ((uint32_t)*(i+k))<<(k*8);
 	return(*(int32_t*)(&o));
 }
 uint64_t leu64p(uint8_t* i) {
 	// decode little endian uint64 pointer
 	uint64_t o=0;
-	for (char k=0; k<8; k++)
+	char k;
+	for (k=0; k<8; k++)
 		o += ((uint64_t)*(i+k))<<(k*8);
 	return(o);
 }
 int64_t lei64p(uint8_t* i) {
 	// decode little endian int64 pointer
 	uint64_t o=0;
-	for (char k=0; k<8; k++)
+	char k; 
+	for (k=0; k<8; k++)
 		o += ((uint64_t)*(i+k))<<(k*8);
 	return(*(int64_t*)(&o));
 }
 float lef32p(uint8_t* i) {
 	// decode little endian float pointer
 	uint32_t o;
-	for (char k=0, o=0; k<4; k++)
+	char k; 
+	for (k=0, o=0; k<4; k++)
 		o += ((uint32_t)*(i+k))<<(k*8);
 	return(*(float*)(&o));
 }
 double lef64p(uint8_t* i) {
 	// decode little endian double pointer
 	uint64_t o=0;
-	for (char k=0; k<8; k++)
+	char k; 
+	for (k=0; k<8; k++)
 		o += ((uint64_t)*(i+k))<<(k*8);
 	return(*(double*)(&o));
 }
@@ -420,7 +426,8 @@ int16_t bei16p(uint8_t* i) {
 uint32_t beu32p(uint8_t* i) {
 	// decode big endian uint32 pointer
 	uint32_t o=0;
-	for (char k=0; k<4; k++) {
+	char k; 
+	for (k=0; k<4; k++) {
 		o<<=8;
 		o += *(i+k);
 	}
@@ -429,7 +436,8 @@ uint32_t beu32p(uint8_t* i) {
 int32_t bei32p(uint8_t* i) {
 	// decode big endian int32 pointer
 	uint32_t o=0;
-	for (char k=0; k<4; k++) {
+	char k; 
+	for (k=0; k<4; k++) {
 		o<<=8;
 		o += *(i+k);
 	}
@@ -438,7 +446,8 @@ int32_t bei32p(uint8_t* i) {
 uint64_t beu64p(uint8_t* i) {
 	// decode big endian uint64 pointer
 	uint64_t o=0;
-	for (char k=0; k<8; k++) {
+	char k;
+	for (k=0; k<8; k++) {
 		o<<=8;
 		o += *(i+k);
 	}
@@ -447,7 +456,8 @@ uint64_t beu64p(uint8_t* i) {
 int64_t bei64p(uint8_t* i) {
 	// decode big endian int64 pointer
 	uint64_t o=0;
-	for (char k=0; k<8; k++){
+	char k; 
+	for (k=0; k<8; k++){
 		o<<=8;
 		o += *(i+k);
 	}
@@ -456,7 +466,8 @@ int64_t bei64p(uint8_t* i) {
 float bef32p(uint8_t* i) {
 	// decode big endian float pointer
 	uint32_t o=0;
-	for (char k=0; k<4; k++) {
+	char k; 
+	for (k=0; k<4; k++) {
 		o<<=8;
 		o += *(i+k);
 	}
@@ -465,7 +476,8 @@ float bef32p(uint8_t* i) {
 double bef64p(uint8_t* i) {
 	// decode big endian double pointer
 	uint64_t o=0;
-	for (char k=0; k<8; k++) {
+	char k; 
+	for (k=0; k<8; k++) {
 		o<<=8;
 		o += *(i+k);
 	}
@@ -550,7 +562,8 @@ void* mfer_swap8b(uint8_t *buf, int8_t len, char FLAG_SWAP)
 	typedef uint64_t iType;
 #if __BYTE_ORDER == __BIG_ENDIAN
         if (FLAG_SWAP) {
-                for (unsigned k=len; k < sizeof(iType); buf[k++]=0);
+        	unsigned k;
+                for (k=len; k < sizeof(iType); buf[k++]=0);
                 *(iType*)buf = bswap_64(*(iType*)buf);
         }
         else
@@ -975,7 +988,10 @@ long int iftell(HDRTYPE* hdr) {
 }
 
 int ifsetpos(HDRTYPE* hdr, size_t *pos) {
-#if __sparc__ || __APPLE__ || __MINGW32__ || ANDROID
+#if __GNUC__
+	fpos_t p;
+	p.__pos = *pos;
+#elif __sparc__ || __APPLE__ || __MINGW32__ || ANDROID
 	fpos_t p = *pos;
 #else
 	fpos_t p;
@@ -993,7 +1009,9 @@ int ifsetpos(HDRTYPE* hdr, size_t *pos) {
 #endif
 	{
 	int c= fsetpos(hdr->FILE.FID,&p);
-#if __sparc__ || __APPLE__ || __MINGW32__ || ANDROID
+#if __GNUC__
+	*pos = p.__pos;
+#elif __sparc__ || __APPLE__ || __MINGW32__ || ANDROID
 	*pos = p;
 #else
 	*pos = p.__pos;
@@ -1016,7 +1034,9 @@ int ifgetpos(HDRTYPE* hdr, size_t *pos) {
 	{
 		fpos_t p;
 		int c = fgetpos(hdr->FILE.FID, &p);
-#if __sparc__ || __APPLE__ || __MINGW32__ || ANDROID
+#if __GNUC__
+		*pos = p.__pos;	// ugly hack but working
+#elif __sparc__ || __APPLE__ || __MINGW32__ || ANDROID
 		*pos = p;
 #else
 		*pos = p.__pos;	// ugly hack but working
