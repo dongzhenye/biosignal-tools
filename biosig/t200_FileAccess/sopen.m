@@ -5370,8 +5370,8 @@ elseif strcmp(HDR.TYPE,'MIT')
 	                        for k0 = 1:7,
 	                                [tmp,z] = strtok(z);
 	                                if k0 == 1, 
-	                                        [tmp, tmp1] = strtok(tmp,'x:');
-	                                        [tmp, status] = str2double(tmp); 
+	                                        [tmp, tmp1] = strtok(tmp,'x:+');
+	                                        [tmp, status] = str2double(tmp);
 	                                        HDR.MIT.dformat(k,1) = tmp;
                                                 HDR.AS.SPR(k) = 1; 
 	                                        if isempty(tmp1)

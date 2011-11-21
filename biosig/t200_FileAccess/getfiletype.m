@@ -180,7 +180,7 @@ else
                         HDR.TYPE='EBS';
                 %elseif all(s(1:4) == [hex2dec(['5f';'09';'a7';'82'])]'); 
                         %HDR.TYPE='ASN.1';
-                elseif strncmp(ss,'CEN',3) && all(s(6:8)==hex2dec(['1A';'04';'84'])') && (all(s(4:5)==hex2dec(['13';'10'])') || all(s(4:5)==hex2dec(['0D';'0A'])')); 
+                elseif (c>31) && strncmp(ss,'CEN',3) && all(s(6:8)==hex2dec(['1A';'04';'84'])') && (all(s(4:5)==hex2dec(['13';'10'])') || all(s(4:5)==hex2dec(['0D';'0A'])')); 
                         HDR.TYPE='FEF';
                         HDR.VERSION   = str2double(ss(9:16))/100;
                         HDR.Encoding  = str2double(ss(17:24));
@@ -201,7 +201,7 @@ else
                         HDR.TYPE='CTF';
                 elseif strncmp(ss,'MEG4',4); 
                         HDR.TYPE='CTF';
-                elseif strncmp(ss,'CTF_MRI_FORMAT VER 2.2',22); 
+                elseif (c>21) && strncmp(ss,'CTF_MRI_FORMAT VER 2.2',22); 
                         HDR.TYPE='CTF';
                 elseif 0, strncmp(ss,'PATH OF DATASET:',16); 
                         HDR.TYPE='CTF';
@@ -225,7 +225,7 @@ else
                         HDR.TYPE='EEG-1100-';
                         HDR.VERSION = ss(11:16);
                         
-                elseif strncmp(ss,'Embla data file',15) && strcmp(HDR.FILE.Name,ss(279:278+length(HDR.FILE.Name))),
+                elseif (c>278) && strncmp(ss,'Embla data file',15) && strcmp(HDR.FILE.Name,ss(279:278+length(HDR.FILE.Name))),
                         HDR.TYPE='EMBLA';
                 elseif strcmp(ss(1:20),['Header',13,10,'File Version'])  
                         HDR.TYPE='ETG4000';
@@ -239,7 +239,7 @@ else
                         
                 elseif strcmp(ss(1:8),'@  MFER '); 
                         HDR.TYPE='MFER';
-                elseif strcmp(ss(1:28),'FileFormat = BNI-1-BALTIMORE'); 
+                elseif (c>27) && strcmp(ss(1:28),'FileFormat = BNI-1-BALTIMORE'); 
                         HDR.TYPE='Nicolet';	%%% see also Nicolet
                 elseif strcmp(ss(1:6),'@ MFR '); 
                         HDR.TYPE='MFER';
@@ -247,30 +247,30 @@ else
                         HDR.TYPE='PathFinder710_HighResolutionECG';
 
 		%% general SCP 
-                elseif all(s([9,10,12:14,17:24,26:34])==[0,0,0,0,0,abs('SCPECG'),0,0,0,0,0,7,0,0,0,1,0]) && (s(11)==s(25)); 
+                elseif (c>33) && all(s([9,10,12:14,17:24,26:34])==[0,0,0,0,0,abs('SCPECG'),0,0,0,0,0,7,0,0,0,1,0]) && (s(11)==s(25)); 
                         HDR.TYPE = 'SCP';
                         HDR.VERSION = s(15)/10; 
-                elseif all(s([9,10,12:14,17:24,26:34])==[0,0,0,0,0, 0,0,0,0,0,0, 0,0,0,0,0,7,0,0,0,1,0]) && (s(11)==s(25)); 
+                elseif (c>33) && all(s([9,10,12:14,17:24,26:34])==[0,0,0,0,0, 0,0,0,0,0,0, 0,0,0,0,0,7,0,0,0,1,0]) && (s(11)==s(25)); 
                         HDR.TYPE = 'SCP';
                         HDR.VERSION = s(15)/10; 
 
 		%% special SCP
-                elseif all(s([9:23])==[0,0,136,0,0,0, 13,13, 6,abs('SCPECG')]); 
+                elseif (c>23) && all(s([9:23])==[0,0,136,0,0,0, 13,13, 6,abs('SCPECG')]); 
                         HDR.TYPE = 'SCP';
                         HDR.VERSION = -1; 
-                elseif all(s([9:34])==[0,0,136,0,0,0, 10,205,205,205,205,205,205,205,0,0, 136,0,0,0,7,0,0,0,1,0]); 
+                elseif (c>33) && all(s([9:34])==[0,0,136,0,0,0, 10,205,205,205,205,205,205,205,0,0, 136,0,0,0,7,0,0,0,1,0]); 
                         HDR.TYPE = 'SCP';
                         HDR.VERSION = -2; 
-                elseif all(s([9:34])==[0,0,136,0,0,0, 10,11, 0,0,0,0,0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0]); 
+                elseif (c>33) && all(s([9:34])==[0,0,136,0,0,0, 10,11, 0,0,0,0,0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0]); 
                         HDR.TYPE = 'SCP';
                         HDR.VERSION = -3; 
-                elseif all(s([9:34])==[0,0,136,0,0,0, 13,13, abs('SCPEGC'),0,0, 136,0,0,0, 7,0,0,0, 1,0]); 
+                elseif (c>33) && all(s([9:34])==[0,0,136,0,0,0, 13,13, abs('SCPEGC'),0,0, 136,0,0,0, 7,0,0,0, 1,0]); 
                         HDR.TYPE = 'SCP';
                         HDR.VERSION = -4; 
-                elseif all(s([9:34])==[0,0,136,0,0,0, 10,0, 144,128,0,0,120,128,0,0, 136,0,0,0, 7,0,0,0, 1,0]); 
+                elseif (c>33) && all(s([9:34])==[0,0,136,0,0,0, 10,0, 144,128,0,0,120,128,0,0, 136,0,0,0, 7,0,0,0, 1,0]); 
                         HDR.TYPE = 'SCP';
                         HDR.VERSION = -5; 
-                elseif all(s([9:34])==[0,0,136,0,0,0, 10,11, 37,1,153,1,231,73 ,0,0, 136,0,0,0, 7,0,0,0, 1,0]); 
+                elseif (c>33) && all(s([9:34])==[0,0,136,0,0,0, 10,11, 37,1,153,1,231,73 ,0,0, 136,0,0,0, 7,0,0,0, 1,0]); 
                         HDR.TYPE = 'SCP';
                         HDR.VERSION = -6; 
 
@@ -296,10 +296,10 @@ else
                                 end;
                         end;
                         return;
-                elseif strncmp(ss,'ATES MEDICA SOFT. EEG for Windows',32);	% ATES MEDICA SOFTWARE, NeuroTravel 
+                elseif (c>41) && strncmp(ss,'ATES MEDICA SOFT. EEG for Windows',32);	% ATES MEDICA SOFTWARE, NeuroTravel 
                         HDR.TYPE='ATES';
                         HDR.VERSION = ss(35:42);
-                elseif strncmp(ss,'V3.0            ',16) && strncmp(ss(33:41),'[PatInfo]',9); 
+                elseif (c>40) && strncmp(ss,'V3.0            ',16) && strncmp(ss(33:41),'[PatInfo]',9); 
                         HDR.TYPE='Sigma';	%% SigmaPLpro
                         HDR.HeadLen = s(17:20)*(256.^[0:3]');
                 elseif all(s([1:24,29:31])==[abs('POLY SAMPLE FILEversion '),13,10,26]) && (str2double(ss(25:28))==(s([32:33])*[1;256]/100)); % Poly5/TMS32 sample file format.
@@ -315,7 +315,7 @@ else
                         HDR.TYPE='MIT';
                 elseif strncmp(ss,'DEMG',4);	% www.Delsys.com
                         HDR.TYPE='DEMG';
-                elseif strcmp(ss(35:38),'BLSC') % CeeGraph, Bio-Logic Systems Corp. 
+                elseif (c>37) && strcmp(ss(35:38),'BLSC') % CeeGraph, Bio-Logic Systems Corp. 
                         if strcmpi(ss(44+[0:length(HDR.FILE.Name)+length(HDR.FILE.Ext)]),[HDR.FILE.Name,'.',HDR.FILE.Ext]);
                         else
                                 warning('BLSC: ????');
@@ -324,15 +324,15 @@ else
 
                 elseif all(s([1:2,4:8])==[3,17,0,8,9,176,2]) && any(s(3)==[240:249])	% v2.40 - v2.49
                         HDR.TYPE='BLSC2';
-                elseif all(ss(308:318)==['E',zeros(1,7),'DAT']) % CeeGraph, Bio-Logic Systems Corp. 
+                elseif (c>317) && all(ss(308:318)==['E',zeros(1,7),'DAT']) % CeeGraph, Bio-Logic Systems Corp. 
                         HDR.TYPE='BLSC2';
                 elseif all(s([129,130,132:136])==[3,17,0,8,9,176,2]) && any(s(3)==[240:249])	% v2.40 - v2.49
                         HDR.TYPE='BLSC2-128';
-                elseif strncmp(ss(436:446),[HDR.FILE.Name,0,HDR.FILE.Ext],length(HDR.FILE.Name)+length(HDR.FILE.Ext)+1) % CeeGraph, Bio-Logic Systems Corp. 
+                elseif (c>445) && strncmp(ss(436:446),[HDR.FILE.Name,0,HDR.FILE.Ext],length(HDR.FILE.Name)+length(HDR.FILE.Ext)+1) % CeeGraph, Bio-Logic Systems Corp. 
                         HDR.TYPE='BLSC2';
-                elseif strncmp(ss(436:446),[HDR.FILE.Name,0,HDR.FILE.Ext],length(HDR.FILE.Name)+length(HDR.FILE.Ext)+1) % CeeGraph, Bio-Logic Systems Corp. 
+                elseif (c>445) && strncmp(ss(436:446),[HDR.FILE.Name,0,HDR.FILE.Ext],length(HDR.FILE.Name)+length(HDR.FILE.Ext)+1) % CeeGraph, Bio-Logic Systems Corp. 
                         HDR.TYPE='BLSC2';
-                elseif strncmp(ss(436:446),[HDR.FILE.Name,0,0,0,0],length(HDR.FILE.Name)+4) % CeeGraph, Bio-Logic Systems Corp. 
+                elseif (c>445) && strncmp(ss(436:446),[HDR.FILE.Name,0,0,0,0],length(HDR.FILE.Name)+4) % CeeGraph, Bio-Logic Systems Corp. 
                         HDR.TYPE='BLSC2';
                         
                 elseif any(s(1)==[100:103]) && all(s([2:8])==[0,0,0,176,1,0,0]) && strcmpi(HDR.FILE.Ext,'DDT'); 
@@ -359,7 +359,7 @@ else
                         HDR.TYPE='AON4';
                 elseif all(s(3:7)==abs('-lh5-')); 
                         HDR.TYPE='LHA';
-                elseif strncmp(ss,'PSID',4); 
+                elseif (c>117) && strncmp(ss,'PSID',4); 
                         HDR.TYPE='SID';
 			HDR.Title = ss(23:54);    
 			HDR.Author = ss(55:86);    
@@ -371,22 +371,22 @@ else
                 elseif strncmp(ss,'dns.',4); 
                         HDR.TYPE='SND';
                         HDR.Endianity = 'ieee-le';
-                elseif strcmp(ss([1:4,9:12]),'RIFFWAVE'); 
+                elseif (c>11) && strcmp(ss([1:4,9:12]),'RIFFWAVE'); 
                         HDR.TYPE='WAV';
                         HDR.Endianity = 'ieee-le';
-                elseif strcmp(ss([1:4,9:11]),'FORMAIF'); 
+                elseif (c>10) && strcmp(ss([1:4,9:11]),'FORMAIF'); 
                         HDR.TYPE='AIF';
                         HDR.Endianity = 'ieee-be';
-                elseif strcmp(ss([1:4,9:12]),'RIFFAVI '); 
+                elseif (c>11) && strcmp(ss([1:4,9:12]),'RIFFAVI '); 
                         HDR.TYPE='AVI';
                         HDR.Endianity = 'ieee-le';
-                elseif all(s([1:4,9:21])==[abs('RIFFRMIDMThd'),0,0,0,6,0]); 
+                elseif (c>20) && all(s([1:4,9:21])==[abs('RIFFRMIDMThd'),0,0,0,6,0]); 
                         HDR.TYPE='RMID';
                         HDR.Endianity = 'ieee-be';
                 elseif all(s(1:9)==[abs('MThd'),0,0,0,6,0]) && any(s(10)==[0:2]); 
                         HDR.TYPE='MIDI';
 			HDR.Endianity = 'ieee-be';
-                elseif ~isempty(findstr(ss(1:16),'8SVXVHDR')); 
+                elseif (c>15) && ~isempty(findstr(ss(1:16),'8SVXVHDR')); 
                         HDR.TYPE='8SVX';
                 elseif strcmp(ss([1:4,9:12]),'RIFFILBM'); 
                         HDR.TYPE='ILBM';
@@ -404,23 +404,23 @@ else
                         HDR.TYPE='IMA ADPCM';
                 elseif all(s([1:8])==[abs('NIST_1A'),0]); 
                         HDR.TYPE='NIST';
-                elseif strcmp(ss(1:78),'HEADER RECORD*******LIBRARY HEADER RECORD!!!!!!!000000000000000000000000000000'); 
+                elseif (c>77) && strcmp(ss(1:78),'HEADER RECORD*******LIBRARY HEADER RECORD!!!!!!!000000000000000000000000000000'); 
                         HDR.TYPE='SAS_XPORT';
-                elseif strncmp(ss(1:23),'$FL2@(#) SPSS DATA FILE',8); 
+                elseif (c>22) && strncmp(ss(1:23),'$FL2@(#) SPSS DATA FILE',8); 
                         HDR.TYPE='SPSS';
                         if all(s(66:68)==0) 		HDR.Endianity = 'ieee-le';
                         elseif all(s(65:67)==0) 	HDR.Endianity = 'ieee-be';
 			end
-		elseif strcmp(ss(1:16),['SQLite format 3',char(0)]) && s(22)==64 && s(23)==32 && all(s(69:92)==0),
+		elseif (c>15) && strcmp(ss(1:16),['SQLite format 3',char(0)]) && s(22)==64 && s(23)==32 && all(s(69:92)==0),
 			HDR.TYPE = 'SQLite';
 		elseif all(s(3:4)==[1,0]) && any(s(1)==[113,114]) && any(s(2)==[1:2]),
 			HDR.TYPE = 'STATA';
 			
                 elseif all(s([1:7])==[abs('SOUND'),0,13]); 
                         HDR.TYPE='SNDT';
-                elseif strcmp(ss([1:18]),'SOUND SAMPLE DATA '); 
+                elseif (c>17) && strcmp(ss([1:18]),'SOUND SAMPLE DATA '); 
                         HDR.TYPE='SMP';
-                elseif strcmp(ss([1:19]),'Creative Voice File'); 
+                elseif (c>18) && strcmp(ss([1:19]),'Creative Voice File'); 
                         HDR.TYPE='VOC';
                 elseif strcmp(ss([5:8]),'moov'); 	% QuickTime movie 
                         HDR.TYPE='QTFF';
@@ -447,7 +447,7 @@ else
 			%% high byte of month, day, hour, min, sec and bits must be zero.			
                         HDR.TYPE='EGI';
                         
-                elseif FLAG.IS_UFF,
+                elseif (c>160) && FLAG.IS_UFF,
                 	K = strfind(ss(81:161),'    ')+80; K = K(1); 
                         HDR.TYPE=['UFF',deblank(ss(K+[0:6]))];
 
@@ -467,7 +467,7 @@ else
                         HDR.TYPE    = 'BCI2000'; 
                         HDR.VERSION = 1.1;
                         
-                elseif strcmp(ss([1:4,9:12]),'RIFFCNT ')
+                elseif (c>11) && strcmp(ss([1:4,9:12]),'RIFFCNT ')
                         HDR.TYPE='EEProbe-CNT';     % continuous EEG in EEProbe format, ANT Software (NL) and MPI Leipzig (DE)
                 elseif all(s(1:4)==[38 0 16 0])
                         HDR.TYPE='EEProbe-AVR';     % averaged EEG in EEProbe format, ANT Software (NL) and MPI Leipzig (DE)
