@@ -43,6 +43,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 	double 		AVM, avm; 
 	aECG_TYPE*	aECG;		
 
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN_SCP_WRITE 101\n");
+
 	if ((fabs(hdr->VERSION - 1.3)<0.01) && (fabs(hdr->VERSION-2.0)<0.01))  
 		fprintf(stderr,"Warning SOPEN (SCP-WRITE): Version %f not supported\n",hdr->VERSION);
 		
@@ -97,6 +99,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 	aECG->FLAG.BIMODAL = 0;
 
 
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN_SCP_WRITE 111\n");
+
 	ptr = (uint8_t*)hdr->AS.Header;
 
 	int NSections = 12; 
@@ -111,7 +115,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 		curSectLen = 0; // current section length
 		//ptr = (uint8_t*)realloc(ptr,sectionStart+curSectLen); 
 
-// fprintf(stdout,"Section %i %x\n",curSect,ptr);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"Section %i %x\n",curSect,ptr);
 
 		if (curSect==0)  // SECTION 0 
 		{
@@ -130,6 +134,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			PtrCurSect = ptr+sectionStart; 
 			curSectLen = 16; // current section length
 
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"Section 1 Tag 0 \n");
+
 			// Tag 0 (max len = 64)
 			if (!hdr->FLAG.ANONYMOUS && (hdr->Patient.Name != NULL)) 
 			{
@@ -139,6 +145,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 				strncpy((char*)ptr+sectionStart+curSectLen+3,hdr->Patient.Name,len);	// field
 				curSectLen += len+3; 
 			}
+
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"Section 1 Tag 1 \n");
 
 			// Tag 1 (max len = 64) Firstname 
 /*
@@ -150,6 +158,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 */	
 		
 			// Tag 2 (max len = 64) Patient ID 
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"Section 1 Tag 2 \n");
+
 //			if (hdr->Patient.Id != NULL) {
 			if (strlen(hdr->Patient.Id)>0) {
 				*(ptr+sectionStart+curSectLen) = 2;	// tag
@@ -235,6 +245,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			};	 
 
 			// Tag 14 (max len = 2 + 2 + 2 + 1 + 1 + 6 + 1 + 1 + 1 + 1 + 1 + 16 + 1 + 25 + 25 + 25 + 25 + 25)
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"Section 1 Tag 14 \n");
+
 			// Total = 161 (max value)
 			*(ptr+sectionStart+curSectLen) = 14;	// tag
 			//len = 41; 	// minimum length
@@ -287,6 +299,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			curSectLen += len1; 
 
 			// Tag 16 (max len = 80)
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"Section 1 Tag 16 \n");
+
 			len = strlen(hdr->ID.Hospital); 
 			if (len>0) {
 				*(ptr+sectionStart+curSectLen) = 16;	// tag
@@ -297,7 +311,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			};	 
 
 			// Tag 20 (max len = 64 ) 
-			len = strlen(aECG->ReferringPhysician);
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"Section 1 Tag 20 \n");
+			len = aECG->ReferringPhysician ? strlen(aECG->ReferringPhysician) : 0;
 			if (len>0) {
 				*(ptr+sectionStart+curSectLen) = 20;	// tag
 				len = min(64,len+1);
@@ -307,7 +322,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			};	 
 
 			// Tag 21 (max len = 64 )
-			len = strlen(aECG->MedicationDrugs); 
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"Section 1 Tag 21 \n");
+			len = aECG->MedicationDrugs ? strlen(aECG->MedicationDrugs) : 0; 
 			if (len>0) {
 				*(ptr+sectionStart+curSectLen) = 21;	// tag
 				len = min(64,len+1);
@@ -318,6 +334,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 
 			// Tag 22 (max len = 40 )
 			len = strlen(hdr->ID.Technician); 
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"Section 1 Tag 22 \n");
 			if (len>0) {
 				*(ptr+sectionStart+curSectLen) = 22;	// tag
 				len = min(64,len+1);
@@ -327,12 +344,15 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			};	 
 
 			// Tag 24 ( len = 1 ) 
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"Section 1 Tag 24 \n");
 			*(ptr+sectionStart+curSectLen) = 24;	// tag
 			*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(1);	// length
 			*(ptr+sectionStart+curSectLen+3) = aECG->EmergencyLevel;
 			curSectLen += 4;
 
 			// Tag 25 (len = 4)
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"Section 1 Tag 25 \n");
+
 			gdf_time T1 = hdr->T0;
 #ifndef __APPLE__
 			T1 += (int32_t)ldexp(timezone/86400.0,32);			
@@ -383,6 +403,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			}
 			
 			// Tag 32 (len = 5)
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"Section 1 Tag 32 \n");
+
 			*(ptr+sectionStart+curSectLen) = 32;	// tag
 			*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(2);	// length
 			if (hdr->Patient.Impairment.Heart==1) {
@@ -420,6 +442,9 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			if (curSectLen & 1) {
 				*(ptr+sectionStart+curSectLen++) = 0; 
 			}
+
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"End-of-Section %i %x\n",curSect,ptr);
+
 		}
 		else if (curSect==2)  // SECTION 2 
 		{
@@ -580,10 +605,15 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 		sectionStart += curSectLen;	// offset for next section
 	}
 	
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN_SCP_WRITE 300\n");
+
 	// Prepare filling the data block with the ECG samples by SWRITE
 	hdr->AS.rawdata = ptr+aECG->Section6.StartPtr+16+6+2*hdr->NS;
 	
 	hdr->AS.Header = ptr; 
+
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN_SCP_WRITE 400\n");
+
 	return(0);
 }
 
