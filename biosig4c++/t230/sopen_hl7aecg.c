@@ -257,9 +257,8 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 
 
 			C = H.FirstChild("WaveformData").Element();
-			size_t szRawData = 5000 * hdr->NS; 
+			size_t szRawData = 0; 
 			size_t SPR = 0;	
-			hdr->AS.rawdata = (uint8_t*) realloc(hdr->AS.rawdata, szRawData*sizeof(int16_t));
 			for (k=0; k<hdr->NS; k++) {
 
 				if (VERBOSE_LEVEL>8) fprintf(stdout,"hl7r: [415] %i\n",k); 
@@ -275,11 +274,10 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 				char *s = (char*)C->GetText();
 				const char *delim = ",";
 				size_t spr = 0; 	
-				while (1) {
-					if (*s == 0) break;
+				while (s && *s) {
 					s += strspn(s, delim);	//skip kommas
 					if (SPR+spr+1 >= szRawData) {
-						szRawData *= 2;
+						szRawData = max(5000,2*szRawData);
 						hdr->AS.rawdata = (uint8_t*) realloc(hdr->AS.rawdata, szRawData * sizeof(int16_t));
 					}	
 					double d = strtod(s,&s);
@@ -541,7 +539,8 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 			hdr->Patient.Sex = 1;
 		    else
 			hdr->Patient.Sex = 0;
-		}else{
+		} 
+		else {
 		    hdr->Patient.Sex = 0;
 		}
 
@@ -635,60 +634,70 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 		channel = channels.Child("component", 1).FirstChild("sequence");
 		hdr->AS.bpb = 0; 
 
-		size_t szRawData = 5000 * hdr->NS; 
+		size_t szRawData = 0; 
 		size_t SPR = 0;	
 		hdr->SPR = 1;
-		hdr->AS.rawdata = (uint8_t*) realloc(hdr->AS.rawdata, szRawData*sizeof(float));
+
 		for(int i = 0; channel.Element(); ++i, channel = channels.Child("component", i+1).FirstChild("sequence")){
 
-		    const char *code = channel.FirstChild("code").Element()->Attribute("code");
+			const char *code = channel.FirstChild("code").Element()->Attribute("code");
 		    
-  		    CHANNEL_TYPE *hc = hdr->CHANNEL+i;
-                    hc->LeadIdCode = 0;
-  		    if (VERBOSE_LEVEL>8)
-				fprintf(stdout,"hl7r: [420] %i\n",i); 
+  			CHANNEL_TYPE *hc = hdr->CHANNEL+i;
+                	hc->LeadIdCode = 0;
+  			
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [420] %i\n",i); 
 
-		    	strncpy(hc->Label,code,min(40,MAX_LENGTH_LABEL));
+		    	strncpy(hc->Label, code, min(40, MAX_LENGTH_LABEL));
 		    	hc->Label[MAX_LENGTH_LABEL] = '\0';
 		    	hc->Transducer[0] = '\0';
 		    	hc->GDFTYP = 16;	// float32
    		    	hc->DigMax	= -1.0/0.0; 
 			hc->DigMin	=  1.0/0.0; 
 
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [420] %i\n",i); 
+
 			char *s = (char*) channel.FirstChild("value").FirstChild("digits").Element()->GetText();
 			size_t spr = 0; 	
-			char *ps=s+strlen(s);//end of s
-			while (1) {
-				if (*s == 0) break;
-				if(s>=ps)break;//end of string if we jump bewaond 0; Using original delimiter wents out of buffer and causes runtime errors
-				if(isspace(*s)){
-					s++;
-					continue;
-				}
-				if (*s == 0) break;
+			char *ps = s ? s+strlen(s) : NULL; //end of s
+
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [420] %i %p <%s>\n",i,s,s); 
+
+			while (s && *s) {
 				if (SPR+spr+1 >= szRawData) {
-					szRawData *= 2;
+					szRawData = max(5000, 2*szRawData);
 					hdr->AS.rawdata = (uint8_t*) realloc(hdr->AS.rawdata, szRawData * sizeof(float));
 				}	
+
 				double d = strtod(s,&s);
 				((float*)(hdr->AS.rawdata))[SPR + spr++] = d;				
 				/* get Min/Max */
 				if(d > hc->DigMax) hc->DigMax = d;
 				if(d < hc->DigMin) hc->DigMin = d;
 			}
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [420] %i %i\n",i,spr); 
+
 	   	    	hc->bi = hdr->AS.bpb;
 			SPR += spr;		 	
 			hc->SPR	= spr;
-			hdr->SPR = lcm(hdr->SPR,spr); 
+			if (spr>0) hdr->SPR = lcm(hdr->SPR,spr); 
 
 			hc->OnOff = 1;
+			hc->LeadIdCode = 0;
   			hdr->AS.bpb += hc->SPR * sizeof(float);
 
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [420+] %i\n",i); 
+
 			/* scaling factors */ 
-			hc->Cal  = atof(channel.FirstChild("value").FirstChild("scale").Element()->Attribute("value"));
-			hc->Off  = atof(channel.FirstChild("value").FirstChild("origin").Element()->Attribute("value"));
+			const char *tmpchar; 
+			tmpchar = channel.FirstChild("value").FirstChild("scale").Element()->Attribute("value");
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [420] <%s>\n",tmpchar); 
+			hc->Cal = atof(tmpchar);
+			tmpchar = channel.FirstChild("value").FirstChild("origin").Element()->Attribute("value");
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [420] <%s>\n",tmpchar); 
+			hc->Off = atof(tmpchar);
 			hc->DigMax += 1;
 			hc->DigMin -= 1;
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [420] Cal: %f Off: %f\n",hc->Cal,hc->Off); 
 			hc->PhysMax = hc->DigMax*hc->Cal + hc->Off;
 			hc->PhysMin = hc->DigMin*hc->Cal + hc->Off;
 
@@ -696,6 +705,8 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 			strncpy(tmp, channel.FirstChild("value").FirstChild("origin").Element()->Attribute("unit"),20);
  			hc->PhysDimCode = PhysDimCode(tmp);
  		    
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [420] %i\n",i); 
+
 			hc->LowPass  = LowPass;
 			hc->HighPass = HighPass;
 			hc->Notch    = Notch;
@@ -707,10 +718,12 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 
 //		    hc->Impedance = INF;
 //		    for(int k1=0; k1<3; hdr->CHANNEL[index].XYZ[k1++] = 0.0);
+
+
 		}
 		hdr->FLAG.OVERFLOWDETECTION = 0;
 
-		if (VERBOSE_LEVEL>8) {
+		if (VERBOSE_LEVEL>7) {
 			fprintf(stdout,"hl7r: [430] %i\n",B4C_ERRNUM); 
 			hdr2ascii(hdr,stdout,3);
 			fprintf(stdout,"hl7r: [431] %i\n",B4C_ERRNUM); 
@@ -1143,12 +1156,15 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
 	pS=S;
 
 	for (unsigned int j=0; j<hdr->CHANNEL[i].SPR; ++j) {
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"969: %i %i %f \n",i, j, Dat [j]);
 		pS+=sprintf(pS,"%g ",Dat[j]);
 	}
 #ifdef NO_BI
 	bi += hdr->CHANNEL[i].SPR*sz;
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"970 %i %i \n%s \n",i, bi, pS);
+#else
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"970 %i %i \n%s \n",i, hdr->CHANNEL[i].bi, pS);
 #endif
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"970 %i \n",i);
 //	if (VERBOSE_LEVEL>8) fprintf(stdout,"<%s>\n",digitsStream.str().c_str());
 
 	digitsText = new TiXmlText(S);
@@ -1156,10 +1172,10 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
 	valueDigits->LinkEndChild(digitsText);
     }
 
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"980 [%i]\n", hdr->FILE.COMPRESSION);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"980 [%i]\n", hdr->FILE.COMPRESSION);
 	doc.SaveFile(hdr->FileName, hdr->FILE.COMPRESSION);
 //	doc.SaveFile(hdr);
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"989\n");
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"989\n");
 
     return(0);
 };
