@@ -3251,8 +3251,8 @@ HDRTYPE* sopen(const char* FileName, const char* MODE, HDRTYPE* hdr)
 
 	setlocale(LC_NUMERIC,"C");
 
-// hdr->FLAG.SWAP = (__BYTE_ORDER == __BIG_ENDIAN); 	// default: most data formats are little endian
-hdr->FILE.LittleEndian = 1;
+	// hdr->FLAG.SWAP = (__BYTE_ORDER == __BIG_ENDIAN); 	// default: most data formats are little endian
+	hdr->FILE.LittleEndian = 1;
 
 if (!strncmp(MODE,"r",1))
 {
@@ -9752,8 +9752,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 }
 else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 {
+
 	hdr->FILE.COMPRESSION = hdr->FILE.COMPRESSION || strchr(MODE,'z');
-	if (!strlen(hdr->Patient.Id))
+	if ( (hdr->Patient.Id==NULL) || !strlen(hdr->Patient.Id))
 		strcpy(hdr->Patient.Id,"00000000");
 
 #ifdef __sparc__
@@ -9793,7 +9794,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 			if (hdr->CHANNEL[k].OnOff) NS++;
 	}		
 
-	if (VERBOSE_LEVEL>8)
+	if (VERBOSE_LEVEL>7)
 		fprintf(stdout,"sopen-W ns=%i (%s)\n",NS,GetFileTypeString(hdr->TYPE));
 
     	if ((hdr->TYPE==ASCII) || (hdr->TYPE==BIN)) {
@@ -10503,7 +10504,9 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 	}
 
     	else if (hdr->TYPE==SCP_ECG) {
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN_SCP_WRITE -111\n");
     		hdr->FileName = FileName;
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN_SCP_WRITE -112\n");
     		sopen_SCP_write(hdr);
     		if (serror()) return(hdr);
 	}
