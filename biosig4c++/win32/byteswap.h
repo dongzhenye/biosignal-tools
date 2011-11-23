@@ -141,21 +141,6 @@
 
 #endif
 
-/***** #include <byteswap.h> ********************************************/
-
-/* The following definitions must all be macros since otherwise some
-   of the possible optimizations are not possible.  */
-
-/* Return a value with all bytes in the 16 bit argument swapped.  */
-#define bswap_16(x) __bswap_16 (x)
-
-/* Return a value with all bytes in the 32 bit argument swapped.  */
-#define bswap_32(x) __bswap_32 (x)
-
-#if defined __GNUC__ && __GNUC__ >= 2
-/* Return a value with all bytes in the 64 bit argument swapped.  */
-# define bswap_64(x) __bswap_64 (x)
-#endif
 
 
 

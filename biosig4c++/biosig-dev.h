@@ -83,13 +83,15 @@
 #if defined(__MINGW32__) 
    /* use local version because MINGW does not provide byteswap.h */
 #  include "win32/byteswap.h"
+#elif defined(__NetBSD__)
+#  include <sys/bswap.h>
 #elif defined(__GNUC__) 
    /* use byteswap macros from the host system, hopefully optimized ones ;-) */
 #  include <byteswap.h>
-#  define bswap_16(x) __bswap_16 (x)
-#  define bswap_32(x) __bswap_32 (x)
-#  define bswap_64(x) __bswap_64 (x)
 #endif 
+#define bswap_16(x) __bswap_16 (x)
+#define bswap_32(x) __bswap_32 (x)
+#define bswap_64(x) __bswap_64 (x)
 
 
 #if 1

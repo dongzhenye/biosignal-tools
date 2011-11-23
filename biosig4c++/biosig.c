@@ -992,7 +992,7 @@ int ifsetpos(HDRTYPE* hdr, size_t *pos) {
 	// gnu linux on sparc needs this 
 	fpos_t p;
 	p.__pos = *pos;
-#elif __sparc__ || __APPLE__ || __MINGW32__ || ANDROID
+#elif __sparc__ || __APPLE__ || __MINGW32__ || ANDROID || __NetBSD__
 	fpos_t p = *pos;
 #else
 	fpos_t p;
@@ -1013,7 +1013,7 @@ int ifsetpos(HDRTYPE* hdr, size_t *pos) {
 #if __gnu_linux__
 	// gnu linux on sparc needs this 
 	*pos = p.__pos;
-#elif __sparc__ || __APPLE__ || __MINGW32__ || ANDROID
+#elif __sparc__ || __APPLE__ || __MINGW32__ || ANDROID || __NetBSD__
 	*pos = p;
 #else
 	*pos = p.__pos;
@@ -1039,7 +1039,7 @@ int ifgetpos(HDRTYPE* hdr, size_t *pos) {
 #if __gnu_linux__
 		// gnu linux on sparc needs this 
 		*pos = p.__pos;	// ugly hack but working
-#elif __sparc__ || __APPLE__ || __MINGW32__ || ANDROID
+#elif __sparc__ || __APPLE__ || __MINGW32__ || ANDROID || __NetBSD__
 		*pos = p;
 #else
 		*pos = p.__pos;	// ugly hack but working
