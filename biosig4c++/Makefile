@@ -307,30 +307,12 @@ win64/%.obj: XMLParser/%.cpp
 
 biosig.o win32/biosig.obj win64/biosig.obj: eventcodes.i eventcodegroups.i units.i biosig.c biosig.h biosig-dev.h
 
-have_biosig_doc := $(wildcard ../biosig/doc/eventcodes.txt)
-.PHONY: eventcodes.txt units.csv
-
-# eventcodes.txt and units.csv are included in biosig4octmat not in biosig4c++
-eventcodes.txt : 
-	-wget -O "$@" http://biosig.svn.sourceforge.net/viewvc/biosig/trunk/biosig/doc/eventcodes.txt
-units.csv : 
-	-wget -O "$@" http://biosig.svn.sourceforge.net/viewvc/biosig/trunk/biosig/doc/units.csv
-
-ifeq ($(strip $(have_biosig_doc)),)
-eventcodes.i eventcodegroups.i : eventcodes.txt
+eventcodes.i eventcodegroups.i : extern/eventcodes.txt
 	./eventcodes.awk "$<"
 
-units.i : units.csv
+units.i : extern/units.csv
 	./units.awk "$<" > "$@"
 
-else 
-eventcodes.i eventcodegroups.i : ../biosig/doc/eventcodes.txt
-	./eventcodes.awk "$<"
-
-units.i : ../biosig/doc/units.csv
-	./units.awk "$<" > "$@"
-
-endif 
 
 #############################################################
 #	Compilation: exceptions, explicit rules
@@ -605,7 +587,7 @@ save2aecg: save2gdf
 
 distclean:
 	-$(DELETE) *.a
-	-$(DELETE) eventcodes.i
+	-$(DELETE) *.i
 	-$(DELETE) *.o
 	-$(DELETE) *.lib
 	-$(DELETE) *.so
@@ -632,7 +614,7 @@ distclean:
 clean:
 	-$(DELETE) *~
 	-$(DELETE) *.a
-	-$(DELETE) eventcodes.i
+	-$(DELETE) *.i
 	-$(DELETE) *.o
 	-$(DELETE) *.so
 	-$(DELETE) *.so.*
