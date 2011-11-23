@@ -235,7 +235,7 @@ MinGW64OBJECTS  = $(patsubst win32/%.obj, win64/%.obj, $(MinGWOBJECTS))
 TARGET = save2gdf libbiosig.a
 
 first: $(TARGET)
-all:   $(TARGET) mex4o biosig4python win32 win64 #biosig_client biosig_server mma java tcl perl php ruby #sigviewer 
+all:   $(TARGET) mex4o biosig4python sigviewer win32 win64 win32/sigviewer.exe win64/sigviewer.exe #biosig_client biosig_server mma java tcl perl php ruby #sigviewer 
 lib:	libbiosig.a win32/libbiosig.dll win32/libbiosig.a win64/libbiosig.a
 
 #############################################################
@@ -375,7 +375,7 @@ win32/getlogin_r.obj: win32/getlogin_r.c
 $(PathToSigViewerWIN32): 
 	svn co https://sigviewer.svn.sourceforge.net/svnroot/sigviewer/trunk ../sigviewer4win32
 
-$(PathToSigViewerWIN64)/src/src.pro: $(PathToSigViewerWIN32)
+$(PathToSigViewerWIN32)/src/src.pro: $(PathToSigViewerWIN32)
 	svn up ../sigviewer4win32
 
 win32/sigviewer.exe: win32/libbiosig.a win32/libbiosig.dll $(PathToSigViewerWIN32)
@@ -557,15 +557,15 @@ win64mma: win64/libbiosig.a
 #############################################################
 #	MEX-files for Octave and Matlab
 #############################################################
-mex mex4m mex4o oct %.mex %.$(MEX_EXT): libbiosig.a
+mex mex4m mex4o oct: libbiosig.a
 	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) OCTAVE_VERSION=$(OCTAVE_VERSION) $@
 	-cp mex/*.mex* ../biosig/t200_FileAccess/
 
-mexw32 %.mexw32: win32/libbiosig.a
+mexw32: win32/libbiosig.a
 	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) $(@F)
 	-cp mex/*.mexw32 ../biosig/t200_FileAccess/
 	
-mexw64 %.mexw64: win64/libbiosig.a
+mexw64: win64/libbiosig.a
 	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) $(@F)
 	-cp mex/*.mexw64 ../biosig/t200_FileAccess/
 
