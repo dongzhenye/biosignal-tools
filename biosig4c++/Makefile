@@ -580,6 +580,15 @@ save2aecg: save2gdf
 
 
 #############################################################
+#	TTL2TRIG
+#############################################################
+
+ttl2trig : src/ttl2trig.c libbiosig.a
+	$(CXX) $(INCPATH) $(DEFINES) src/ttl2trig.c -Wall -Wextra -lasound -lz -lcholmod libbiosig.a -o bin/ttl2trig
+
+
+
+#############################################################
 #	INSTALL and DE-INSTALL
 #############################################################
 

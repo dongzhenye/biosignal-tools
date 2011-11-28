@@ -20,15 +20,19 @@ If some libraries are not available on your system, remove the corresponding DEF
 
 
 Prerequisites: 
-----------------
+--------------
 P1) for building libbiosig, save2gdf, mma (mathematica) and mex (matlab)  
-	sudo apt-get install subversion libz-dev libsuitsparse-dev 
+	sudo apt-get install subversion libz-dev libsuitesparse-dev gawk g++ gcc 
 	svn co https://biosig.svn.sourceforge.net/svnroot/biosig/trunk/biosig4c++ 
-	svn co https://biosig.svn.sourceforge.net/svnroot/biosig/trunk/biosig/
+
+        For ttl2trig, also the package 
+           libasound-dev 
+        is required. 
 
 P2) for building SigViewer  
-	sudo apt-get install qt4-dev-tools  libqt4-dev  libqt4-qt3support
+	sudo apt-get install qt4-dev-tools  libqt4-dev  libqt4-qt3support 
 	svn co https://sigviewer.svn.sourceforge.net/svnroot/sigviewer/trunk sigviewer
+
 
 P3) Cross-compilation on Linux for Win32-target:   
 	aptitude install -R autoconf automake bash bison bzip2 \
@@ -42,6 +46,7 @@ P3) Cross-compilation on Linux for Win32-target:
 	make zlib suitesparse libgomp qt 
 	patch -p0 <biosig4c++/patches/patch_mingw_io_h.diff
 
+
 P4) Cross-compilation on GNU/Linux for Win64-target:   
 	hg clone https://bitbucket.org/tonyt/mce-w64
 	cd mce-win64
@@ -49,7 +54,7 @@ P4) Cross-compilation on GNU/Linux for Win64-target:
 	patch ../mce-w64/usr/x86_64-w64-mingw32/include/io.h biosig4c++/patches/patch_mce-w64_io_h.diff
 
 
-P5) Host=Win32 platform: 
+P5) Host=Win32 platform (this solution is currently not maintained): 
 	MinGW32 (with g++)  
 	You need to use Makefile.win32 like this 
 	make -f Makefile.win32  	
