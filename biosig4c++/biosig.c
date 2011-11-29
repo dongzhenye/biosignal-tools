@@ -8291,13 +8291,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
 		int fmt=0,FMT=0;
 		size_t MUL=1;
-		char **DatFiles = (char**)realloc(hdr->CHANNEL, hdr->NS * sizeof(char*));
-		size_t *ByteOffset = (size_t*)realloc(hdr->CHANNEL, hdr->NS * sizeof(size_t));
+		char **DatFiles = (char**)calloc(hdr->NS, sizeof(char*));
+		size_t *ByteOffset = (size_t*)calloc(hdr->NS, sizeof(size_t));
 		size_t nDatFiles = 0;
 		uint16_t gdftyp,NUM=1,DEN=1;
 		hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
 		hdr->AS.bpb8 = 0;
-		hdr->AS.bpb=0;
+		hdr->AS.bpb  = 0;
 		for (k=0; k < hdr->NS; k++) {
 
 			double skew=0;
@@ -8312,8 +8312,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			CHANNEL_TYPE* hc = hdr->CHANNEL+k;
 		    	do line = strtok(NULL,"\x0d\x0a"); while (line[0]=='#'); // read next line
 
-			if (VERBOSE_LEVEL>8)
-				fprintf(stdout,"[MIT 111] #%i <%s>\n",(int)k, line);
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 111] #%i/%i <%s>\n",(int)k, hdr->NS, line);
 
 			for (ptr=line; !isspace(ptr[0]); ptr++) {}; 	// skip 1st field
 			ptr[0]=0;
@@ -8331,12 +8330,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
 			size_t DIV=1;
 			if (ptr[0]=='x') {
-				DIV = (size_t)strtod(ptr+1,&ptr);
+				DIV = (size_t)strtod(ptr+1, &ptr);
 				hdr->CHANNEL[k].SPR *= DIV;
-				MUL = lcm(MUL,DIV);
+				MUL = lcm(MUL, DIV);
 			}
 			hdr->CHANNEL[k].SPR = DIV;
-
+	
 			if (ptr[0]==':') skew = strtod(ptr+1,&ptr);
 			if (ptr[0]=='+') ByteOffset[k] = (size_t)strtod(ptr+1,&ptr);
 
@@ -8354,8 +8353,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			}
 
 			if (ptr != NULL) ADCresolution = strtod(ptr+1,&ptr);
-			if (ptr != NULL) ADCzero = strtod(ptr+1,&ptr);
-			if (ptr != NULL) InitialValue = strtod(ptr+1,&ptr);
+			if (ptr != NULL) ADCzero       = strtod(ptr+1,&ptr);
+			if (ptr != NULL) InitialValue  = strtod(ptr+1,&ptr);
 			else InitialValue = ADCzero;
 
 			double checksum;
@@ -8438,9 +8437,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	 		hc->bi = hdr->AS.bpb;
 			hdr->AS.bpb += hdr->AS.bpb8>>3;
 
-			if (VERBOSE_LEVEL>8)
-			    	fprintf(stdout,"[MIT 150] #%i: FMT=%i bi8=%i\n",(int)k+1,fmt,hc->bi8);
-
 		}
 		hdr->SampleRate *= MUL;
 		hdr->SPR 	*= MUL;
@@ -8483,18 +8479,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		strcpy(f1,hdr->FileName);
 		strcpy(strrchr(f1,'.')+1,"atr");
 		hdr->FileName = f1;
+
 		hdr   = ifopen(hdr,"r");
-
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 178] <%s> %i\n",hdr->FileName,hdr->FILE.OPEN);
-
 		if (!hdr->FILE.OPEN) {
 			// if no *.atr file, try *.qrs
 			strcpy(strrchr(f1,'.')+1,"qrs");
 			hdr   = ifopen(hdr,"r");
 		}
-
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 178] <%s> %i\n",hdr->FileName,hdr->FILE.OPEN);
-
 		if (!hdr->FILE.OPEN) {
 			// *.ecg
 			strcpy(strrchr(f1,'.')+1,"ecg");
@@ -8508,26 +8499,14 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
         		count = 0;
 
 		    	while (!ifeof(hdr)) {
-
-                	if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 180] <%s> %i %i\n",hdr->FileName,(int)count,(int)bufsiz);
-
                                 if (bufsiz<1024) bufsiz = 1024;
                                 bufsiz *= 2; 
-
-                	if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 181] <%s> %i %i %p\n",hdr->FileName,(int)count,(int)bufsiz, Marker);
-
 				void *tmp = realloc(Marker, 2 * bufsiz );
-                	if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 182] <%s> %i %i\n",hdr->FileName,(int)count,(int)bufsiz);
                                 Marker = (uint16_t*) tmp;
-
 			    	count += ifread (Marker+count, 2, bufsiz-count, hdr);
-                	if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 183] <%s> %i %i\n",hdr->FileName,(int)count,(int)bufsiz);
-
 		    	}
 		    	ifclose(hdr);
                         Marker[count]=0;
-
-        		if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 181] <%s> %i\n",hdr->FileName,count);
 
                         /* define user specified events according to http://www.physionet.org/physiotools/wfdb/lib/ecgcodes.h */
         		hdr->EVENT.CodeDesc = (typeof(hdr->EVENT.CodeDesc)) realloc(hdr->EVENT.CodeDesc,257*sizeof(*hdr->EVENT.CodeDesc));
@@ -8559,7 +8538,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 				uint16_t A   = a16 >> 10;
 				uint16_t len = a16 & 0x03ff;
 
-//				if (VERBOSE_LEVEL>8) fprintf(stdout,"[MIT 183] k=%i/%i N=%i A=%i l=%i\n", k, N, hdr->EVENT.N, a16>>10, len);
+				if (VERBOSE_LEVEL>8) fprintf(stdout,"[MIT 183] k=%i/%i N=%i A=%i l=%i\n", k, N, hdr->EVENT.N, a16>>10, len);
 
 				switch (A) {
 				case 59:	// SKIP
@@ -8594,9 +8573,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			free(Marker);
 		}
 		free(f1);
+
 		hdr->FileName = f0;
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[MIT 185] \n");
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 185] \n");
 
 		/* MIT: open data file */
 		if (nDatFiles == 1) {
@@ -8608,7 +8588,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			char *f1 = (char*) malloc(strlen(hdr->FileName)+strlen(DatFiles[0])+2);
 			strcpy(f1,hdr->FileName);
 			hdr->FileName = f1;
-			char *ptr = (char*) strrchr(hdr->FileName,FILESEP);
+			char *ptr = strrchr(f1,FILESEP);
 			if (ptr != NULL)
 				strcpy(ptr+1,DatFiles[0]);
 			else
@@ -8618,17 +8598,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			hdr = ifopen(hdr,"rb");
 			ifseek(hdr, hdr->HeadLen, SEEK_SET);
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[MIT 186] %s\n",hdr->FileName);
-
 			count  = 0;
                         bufsiz = 1024;
 		    	while (!ifeof(hdr)) {
                                 bufsiz *= 2; 
-
-        	      	if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 181] <%s> %i %i\n", hdr->FileName, (int)count, (int)bufsiz);
-				hdr->AS.rawdata = (uint8_t*) realloc(Marker, bufsiz + 1 );
-        	      	if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 182] <%s> %i %i\n", hdr->FileName, (int)count, (int)bufsiz);
-			    	count += ifread (hdr->AS.rawdata+count, 2, bufsiz-count, hdr);
+				void *tmpptr = realloc(hdr->AS.rawdata, bufsiz + 1 );
+				hdr->AS.rawdata = (uint8_t*) tmpptr;
+			    	count += ifread (hdr->AS.rawdata+count, 1, bufsiz-count, hdr);
 		    	}
 		    	ifclose(hdr);
 
