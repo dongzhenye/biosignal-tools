@@ -1807,13 +1807,13 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
     	}
     	else if (*(uint32_t*)(Header1) == b_endian_u32(0x7f454c46))
 	    	hdr->TYPE = ELF;
-    	else if (!memcmp(Header1,"Embla data file",15))
+    	else if ( (hdr->HeadLen > 14) && !memcmp(Header1,"Embla data file",15))
 	    	hdr->TYPE = EMBLA;
     	else if (strstr(Header1,"Subject") && strstr(Header1,"Target.OnsetTime") && strstr(Header1,"Target.RTTime") && strstr(Header1,"Target.RESP"))
 	    	hdr->TYPE = ePrime;
     	else if (!memcmp(Header1,"[Header]",8))
 	    	hdr->TYPE = ET_MEG;
-    	else if (!memcmp(Header1,"Header\r\nFile Version'",20))
+    	else if ( (hdr->HeadLen > 19) && !memcmp(Header1,"Header\r\nFile Version'",20))
 	    	hdr->TYPE = ETG4000;
     	else if (!memcmp(Header1,"|CF,",4))
 	    	hdr->TYPE = FAMOS;
@@ -1837,7 +1837,7 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    	hdr->TYPE = GIF;
     	else if (!memcmp(Header1,"GIF89a",6))
 	    	hdr->TYPE = GIF;
-    	else if (!memcmp(Header1,"GALILEO EEG TRACE FILE",22))
+    	else if ( (hdr->HeadLen > 21) && !memcmp(Header1,"GALILEO EEG TRACE FILE",22))
 	    	hdr->TYPE = GTF;
 	else if (!memcmp(Header1,MAGIC_NUMBER_GZIP,sizeof(MAGIC_NUMBER_GZIP)))  {
 		hdr->TYPE = GZIP;
@@ -1874,17 +1874,18 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
     	else if (!memcmp(Header1,"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x3E\x00\x03\x00\xFE\xFF\x09\x00\x06",0x21))
 	    	hdr->TYPE = MSI;
 
-    	else if ( (Header1[344]=='n') && (Header1[347]=='\0') && \
+    	else if ( (hdr->HeadLen>346) && 
+                  (Header1[344]=='n') && (Header1[347]=='\0') && \
     		  ((Header1[345]=='i') || (Header1[345]=='+') ) && \
     		   (Header1[346]>'0') && (Header1[346]<='9') ) {
 	    	hdr->TYPE = NIFTI;
 	    	hdr->VERSION = Header1[346]-'0';
 		}
-    	else if (!memcmp(Header1+344,"ni1",4) || !memcmp(Header1+344,"n+1",4) )
+    	else if ( (hdr->HeadLen > 344) && (!memcmp(Header1+344,"ni1",4) || !memcmp(Header1+344,"n+1",4) ) )
 	    	hdr->TYPE = NIFTI;
     	else if (!memcmp(Header1,"NEX1",4))
 	    	hdr->TYPE = NEX1;
-    	else if (!memcmp(Header1,"Logging Start\x0aLogger SW Version: ",31))
+    	else if ( (hdr->HeadLen > 31) && !memcmp(Header1,"Logging Start\x0aLogger SW Version: ",31))
 	    	hdr->TYPE = NeuroLoggerHEX;
     	else if (!memcmp(Header1,"Neuron",6))
 	    	hdr->TYPE = NEURON;
@@ -1910,7 +1911,8 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    		hdr->TYPE = AVI;
 	}
 	// general SCP
-	else if (  ( MAGIC_EN1064_Section0Length    >  120)
+	else if (  (hdr->HeadLen>32) && 
+                   ( MAGIC_EN1064_Section0Length    >  120)
 		&& ( MAGIC_EN1064_Section0Length    <  250)
 		&& ((MAGIC_EN1064_Section0Length%10)== 6)
 		&& (*(uint16_t*)(hdr->AS.Header+ 8) == 0x0000)
@@ -1976,7 +1978,7 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	}
 */
 
-	else if (!memcmp(Header1,"HEADER RECORD*******LIBRARY HEADER RECORD!!!!!!!000000000000000000000000000000",78))
+	else if ((hdr->HeadLen > 78) && !memcmp(Header1,"HEADER RECORD*******LIBRARY HEADER RECORD!!!!!!!000000000000000000000000000000",78))
 		hdr->TYPE = SASXPT;	// SAS Transport file format (XPORT)
 	else if (!memcmp(Header1,"$FL2@(#) SPSS DATA FILE",8)) {
 		hdr->TYPE = SPSS;	// SPSS file format
@@ -1995,18 +1997,18 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 		hdr->TYPE = STATA;
 	else if (!memcmp(Header1,"IAvSFo",6))
 		hdr->TYPE = SIGIF;
-	else if (!memcmp(Header1,"SQLite format 3\000",16) && Header1[21]==64 && Header1[22]==32 && Header1[23]==32 )
+	else if ((hdr->HeadLen>23) && !memcmp(Header1,"SQLite format 3\000",16) && Header1[21]==64 && Header1[22]==32 && Header1[23]==32 )
 		hdr->TYPE = SQLite;
-	else if (!memcmp(Header1,"\"Snap-Master Data File\"",24))
+	else if ((hdr->HeadLen>23) && !memcmp(Header1,"\"Snap-Master Data File\"",24))
 	    	hdr->TYPE = SMA;
 	else if (!memcmp(Header1,".snd",5))
 		hdr->TYPE = SND;
 	else if (!memcmp(Header1,".snd",5))
 		hdr->TYPE = SND;
 
-	else if (!memcmp(Header1,"POLY SAMPLE FILEversion ",24) && !memcmp(Header1+28, "\x0d\x0a\x1a",3))
+	else if ((hdr->HeadLen>30) && !memcmp(Header1,"POLY SAMPLE FILEversion ",24) && !memcmp(Header1+28, "\x0d\x0a\x1a",3))
 		hdr->TYPE = TMS32;
-	else if (!memcmp(Header1,"FileId=TMSi PortiLab sample log file\x0a\x0dVersion=",35))
+	else if ((hdr->HeadLen>35) && !memcmp(Header1,"FileId=TMSi PortiLab sample log file\x0a\x0dVersion=",35))
 		hdr->TYPE = TMSiLOG;
 	else if (!memcmp(Header1,MAGIC_NUMBER_TIFF_l32,4))
 		hdr->TYPE = TIFF;
@@ -2018,9 +2020,9 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 		hdr->TYPE = TIFF;
 	else if (!memcmp(Header1,"#VRML",5))
 		hdr->TYPE = VRML;
-	else if (!memcmp(hdr->AS.Header+4,MAGIC_NUMBER_UNIPRO,14))
+	else if ((hdr->HeadLen > 17) && !memcmp(hdr->AS.Header+4,MAGIC_NUMBER_UNIPRO,14))
 		hdr->TYPE = UNIPRO;
-	else if (!memcmp(Header1,"# vtk DataFile Version ",23)) {
+	else if ((hdr->HeadLen > 23) && !memcmp(Header1,"# vtk DataFile Version ",23)) {
 		hdr->TYPE = VTK;
 		char tmp[4];
 		strncpy(tmp,(char*)Header1+23,3);
@@ -2038,7 +2040,7 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 		hdr->TYPE = MSVCLIB;
 	else if (!strncmp(Header1,"ZIP2",4))
 		hdr->TYPE = ZIP2;
-	else if (!memcmp(Header1,"<?xml version",13))
+	else if ((hdr->HeadLen>13) && !memcmp(Header1,"<?xml version",13))
 		hdr->TYPE = HL7aECG;
 	else if ( (leu32p(hdr->AS.Header) & 0x00FFFFFFL) == 0x00BFBBEFL
 		&& !memcmp(Header1+3,"<?xml version",13))
@@ -2051,7 +2053,7 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	{	hdr->TYPE = XML; // UTF16 LittleEndian
 		hdr->FILE.LittleEndian = 1;
     	}
-	else if (!memcmp(hdr->AS.Header,"V3.0            ",16) && !memcmp(hdr->AS.Header+32,"[PatInfo]",9)) {
+	else if ((hdr->HeadLen>40) && !memcmp(hdr->AS.Header,"V3.0            ",16) && !memcmp(hdr->AS.Header+32,"[PatInfo]",9)) {
 		hdr->TYPE = Sigma;
 		hdr->VERSION = 3.0;
 	}
@@ -2064,7 +2066,7 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 		hdr->FILE.LittleEndian = 1;
  	}
 
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"[228] %i %s %s \n",hdr->TYPE,GetFileTypeString(hdr->TYPE),hdr->FileName);
+	if (VERBOSE_LEVEL>9) fprintf(stdout,"[228] %i %s %s \n",hdr->TYPE,GetFileTypeString(hdr->TYPE),hdr->FileName);
 
 	return(hdr);
 }
@@ -3235,9 +3237,7 @@ HDRTYPE* sopen(const char* FileName, const char* MODE, HDRTYPE* hdr)
 	uint16_t	BCI2000_StatusVectorLength=0;	// specific for BCI2000 format
 
 
-	if (VERBOSE_LEVEL>7)
-		fprintf(stdout,"SOPEN( %s, %s) \n",FileName, MODE);
-
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN( %s, %s) \n",FileName, MODE);
 
 	if (FileName == NULL) {
 		B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
@@ -3267,6 +3267,8 @@ if (!strncmp(MODE,"r",1))
 
 	const char *FileExt  = hdr->FileName+ext;
 	const char *FileName = hdr->FileName+name;
+
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN 101: <%s>\n",hdr->FileName);
 
 	/* AINF */
 	if (!strcmp(FileExt, "ainf")) {
@@ -3332,6 +3334,8 @@ if (!strncmp(MODE,"r",1))
 	count = ifread(Header1, 1, 512, hdr);
 	hdr->AS.Header[count]=0;
 
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN 101:\n");
+
 	if (!memcmp(Header1,MAGIC_NUMBER_GZIP,sizeof(MAGIC_NUMBER_GZIP))) {
 #ifdef ZLIB_H
 		ifclose(hdr);
@@ -3355,7 +3359,7 @@ if (!strncmp(MODE,"r",1))
     	}
 	hdr->HeadLen = count;
 	getfiletype(hdr);
-//		fprintf(stdout,"[201] FMT=%s Ver=%4.2f\n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"[201] FMT=%s Ver=%4.2f\n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
 
 	if (hdr->TYPE != unknown)
 		;
@@ -3448,6 +3452,9 @@ if (!strncmp(MODE,"r",1))
 		}
 		else if (FileBuf.st_size > hdr->HeadLen + hdr->AS.bpb*hdr->NRec + 8)
 		{
+			if (VERBOSE_LEVEL > 7) 
+				fprintf(stdout,"GDF EVENT: %i,%i %i,%i,%i\n",FileBuf.st_size, hdr->HeadLen + hdr->AS.bpb*hdr->NRec + 8, hdr->HeadLen, hdr->AS.bpb,hdr->NRec); 
+
 			ifseek(hdr, hdr->HeadLen + hdr->AS.bpb*hdr->NRec, SEEK_SET);
 			// READ EVENTTABLE
 			hdr->AS.rawEventData = (uint8_t*)realloc(hdr->AS.rawEventData,8);
@@ -3471,6 +3478,10 @@ if (!strncmp(MODE,"r",1))
 				hdr->EVENT.N = buf[1] + (buf[2] + buf[3]*256)*256;
 				hdr->EVENT.SampleRate = lef32p(buf + 4);
 			}
+
+			if (VERBOSE_LEVEL > 7) 
+				fprintf(stdout,"EVENT.N = %i,%i\n",hdr->EVENT.N,c); 
+
 			int sze = (buf[0]>1) ? 12 : 6;
 			hdr->AS.rawEventData = (uint8_t*)realloc(hdr->AS.rawEventData,8+hdr->EVENT.N*sze);
 			c = ifread(hdr->AS.rawEventData+8, sze, hdr->EVENT.N, hdr);
@@ -8210,7 +8221,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	else if (hdr->TYPE==MIT) {
 		if (VERBOSE_LEVEL>8) fprintf(stdout,"[MIT 111]: %i \n",VERBOSE_LEVEL);
 
-    		int bufsiz = 1024;
+    		size_t bufsiz = 1024;
 	    	while (!ifeof(hdr)) {
 			hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,count+bufsiz);
 		    	count += ifread(hdr->AS.Header+count, 1, bufsiz, hdr);
@@ -8276,6 +8287,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			hdr->T0 = tm_time2gdf_time(&t);
 		}
 
+                if (VERBOSE_LEVEL>7) hdr2ascii(hdr,stdout,4);                 
 
 		int fmt=0,FMT=0;
 		size_t MUL=1;
@@ -8433,6 +8445,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		hdr->SampleRate *= MUL;
 		hdr->SPR 	*= MUL;
 
+                if (VERBOSE_LEVEL>7) hdr2ascii(hdr,stdout,4);                 
+
 		if (!hdr->NRec)
 			hdr->NRec = (hdr->HeadLen + count)/hdr->AS.bpb;
 
@@ -8461,39 +8475,66 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			}
 		}
 
-		if (VERBOSE_LEVEL>8)
-		    	fprintf(stdout,"[MIT 177] #%i: (%i) %s FMT=%i+%i\n",(int)k+1,(int)nDatFiles,DatFiles[0],fmt,(int)ByteOffset[0]);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 177] #%i: (%i) %s FMT=%i + %i\n",(int)k+1,(int)nDatFiles,DatFiles[0],fmt,(int)ByteOffset[0]);
 
 		/* MIT: read ATR annotation file */
-		uint16_t *Marker=NULL;
-		count = 0;
-
 		const char *f0 = hdr->FileName;
 		char *f1 = (char*) malloc(strlen(hdr->FileName)+5);
 		strcpy(f1,hdr->FileName);
 		strcpy(strrchr(f1,'.')+1,"atr");
 		hdr->FileName = f1;
 		hdr   = ifopen(hdr,"r");
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 178] <%s> %i\n",hdr->FileName,hdr->FILE.OPEN);
+
 		if (!hdr->FILE.OPEN) {
 			// if no *.atr file, try *.qrs
 			strcpy(strrchr(f1,'.')+1,"qrs");
 			hdr   = ifopen(hdr,"r");
 		}
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 178] <%s> %i\n",hdr->FileName,hdr->FILE.OPEN);
+
 		if (!hdr->FILE.OPEN) {
 			// *.ecg
 			strcpy(strrchr(f1,'.')+1,"ecg");
 			hdr   = ifopen(hdr,"r");
 		}
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 179] <%s> %i %li\n",hdr->FileName,hdr->FILE.OPEN,bufsiz);
+
 		if (hdr->FILE.OPEN) {
+        		uint16_t *Marker=NULL;
+        		count = 0;
+
 		    	while (!ifeof(hdr)) {
-				Marker = (uint16_t*)realloc(Marker,(count+bufsiz)*2);
-			    	count += ifread(Marker+count, 2, bufsiz, hdr);
+
+                	if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 180] <%s> %i %i\n",hdr->FileName,(int)count,(int)bufsiz);
+
+                                if (bufsiz<1024) bufsiz = 1024;
+                                bufsiz *= 2; 
+
+                	if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 181] <%s> %i %i %p\n",hdr->FileName,(int)count,(int)bufsiz, Marker);
+
+				void *tmp = realloc(Marker, 2 * bufsiz );
+                	if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 182] <%s> %i %i\n",hdr->FileName,(int)count,(int)bufsiz);
+                                Marker = (uint16_t*) tmp;
+
+			    	count += ifread (Marker+count, 2, bufsiz-count, hdr);
+                	if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 183] <%s> %i %i\n",hdr->FileName,(int)count,(int)bufsiz);
+
 		    	}
 		    	ifclose(hdr);
+                        Marker[count]=0;
+
+        		if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 181] <%s> %i\n",hdr->FileName,count);
 
                         /* define user specified events according to http://www.physionet.org/physiotools/wfdb/lib/ecgcodes.h */
         		hdr->EVENT.CodeDesc = (typeof(hdr->EVENT.CodeDesc)) realloc(hdr->EVENT.CodeDesc,257*sizeof(*hdr->EVENT.CodeDesc));
         		for (k=0; strlen(MIT_EVENT_DESC[k])>0; k++) {
+
+        			if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 182] %i\n",k);
+
                                 //hdr->EVENT.CodeDesc[k+1] = MIT_EVENT_DESC[k];
                                 hdr->EVENT.CodeDesc[k+1] = (char*)MIT_EVENT_DESC[k];   // hack to satisfy MinGW (gcc version 4.2.1-sjlj)
         		        if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 182] %i %s %s\n",(int)k,MIT_EVENT_DESC[k],hdr->EVENT.CodeDesc[k]);
@@ -8559,6 +8600,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
 		/* MIT: open data file */
 		if (nDatFiles == 1) {
+        		uint8_t *Marker=NULL;
+        		count = 0;
+
+
 			const char *f0 = hdr->FileName;
 			char *f1 = (char*) malloc(strlen(hdr->FileName)+strlen(DatFiles[0])+2);
 			strcpy(f1,hdr->FileName);
@@ -8576,10 +8621,14 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		if (VERBOSE_LEVEL>8) fprintf(stdout,"[MIT 186] %s\n",hdr->FileName);
 
 			count  = 0;
-			bufsiz = 1<<20;
+                        bufsiz = 1024;
 		    	while (!ifeof(hdr)) {
-				hdr->AS.rawdata = (uint8_t*)realloc(hdr->AS.rawdata,(count+bufsiz));
-			    	count += ifread(hdr->AS.rawdata+count, 1, bufsiz, hdr);
+                                bufsiz *= 2; 
+
+        	      	if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 181] <%s> %i %i\n", hdr->FileName, (int)count, (int)bufsiz);
+				hdr->AS.rawdata = (uint8_t*) realloc(Marker, bufsiz + 1 );
+        	      	if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 182] <%s> %i %i\n", hdr->FileName, (int)count, (int)bufsiz);
+			    	count += ifread (hdr->AS.rawdata+count, 2, bufsiz-count, hdr);
 		    	}
 		    	ifclose(hdr);
 

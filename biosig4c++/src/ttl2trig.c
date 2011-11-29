@@ -129,7 +129,8 @@ int main(int argc, const char* argv[]) {
 		" -i	<hwparams> or \n" 
 		" --hwparams=<hwparams> where <hwparams> is the input channel like hw:2,0 \n" 
 		" The later arguments have higher precedence than the earlier ones.\n" 
-		" Specifically -c overrides -r and -f; and -r and -f override -c. \n\n" 
+		" Specifically -c overrides -r and -f; and -r and -f override -c. \n\n"
+		" Example:\n\t./bin/ttl2trig -c \"date\" -i hw:2,0 --chan=0 --Threshold=.25 \n\n" 
 	;	
 	if (argc<2) {
 		fprintf(stdout,"%s",help); 
