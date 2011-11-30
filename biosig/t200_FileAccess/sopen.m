@@ -548,6 +548,7 @@ end;
                                 HDR.AS.SPR=ones(HDR.NS,1);
                                 HDR.ErrNum=[1028,HDR.ErrNum];
                         end;
+
                 elseif (HDR.NS>0)
                         if (ftell(HDR.FILE.FID)~=256),
                                 error('position error');
@@ -926,8 +927,8 @@ end;
                                 HDR.EVENT.VAL(ix) = HDR.EVENT.DUR(ix);
                         end;
 
-                elseif (length(strmatch('EDF Annotations',HDR.Label))==1),
-                        % EDF+/BDF+: 
+                elseif strcmp(HDR.TYPE,'EDF') && (length(strmatch('EDF Annotations',HDR.Label))==1),
+                        % EDF+: 
                         tmp = strmatch('EDF Annotations',HDR.Label);
                         HDR.EDF.Annotations = tmp;
                         if 0,isempty(ReRefMx)
@@ -939,30 +940,19 @@ end;
                         t = fread(HDR.FILE.FID,inf,[int2str(HDR.AS.SPR(HDR.EDF.Annotations)*2),'*uchar=>uchar'],HDR.AS.bpb-HDR.AS.SPR(HDR.EDF.Annotations)*2);
                         HDR.EDF.ANNONS = char(t');
                         
-                        N = 0; 
-                        onset = []; dur=[]; Desc = {};
-			[s,t] = strtok(HDR.EDF.ANNONS,0);
-    			while 0, ~isempty(s)
-    				N  = N + 1; 
-    				ix = find(s==20);
-    				[s1,s2] = strtok(s(1:ix(1)-1),21);
-    				s1;
-    				tmp = str2double(s1);
-    				onset(N,1) = tmp;
-   				tmp = str2double(s2(2:end));
-   				if  ~isempty(tmp)
-   					dur(N,1) = tmp; 	
-   				else 
-   					dur(N,1) = 0; 	
-   				end;
-    				Desc{N} = char(s(ix(1)+1:end-1));
-				[s,t] = strtok(t,0);
-	                        HDR.EVENT.TYP(N,1) = length(Desc{N});
-    			end;		
-                        HDR.EVENT.POS = round(onset * HDR.SampleRate);
-                        HDR.EVENT.DUR = dur * HDR.SampleRate;
-                        HDR.EVENT.CHN = zeros(N,1); 
-                        [HDR.EVENT.CodeDesc, CodeIndex, HDR.EVENT.TYP] = unique(Desc(1:N)');
+
+                elseif strcmp(HDR.TYPE,'BDF') && (length(strmatch('BDF Annotations',HDR.Label))==1),
+                        % BDF+: 
+                        tmp = strmatch('BDF Annotations',HDR.Label);
+                        HDR.EDF.Annotations = tmp;
+                        if 0,isempty(ReRefMx)
+                        	ReRefMx = sparse(1:HDR.NS,1:HDR.NS,1);
+                        	ReRefMx(:,tmp) = [];
+                        end;	
+                        
+                        status = fseek(HDR.FILE.FID,HDR.HeadLen+HDR.AS.bi(HDR.EDF.Annotations)*3,'bof');
+                        t = fread(HDR.FILE.FID,inf,[int2str(HDR.AS.SPR(HDR.EDF.Annotations)*3),'*uchar=>uchar'],HDR.AS.bpb-HDR.AS.SPR(HDR.EDF.Annotations)*3);
+                        HDR.EDFplus.ANNONS = char(t');
 
 
                 elseif strcmp(HDR.TYPE,'EDF') && (length(strmatch('ANNOTATION',HDR.Label))==1),
@@ -975,7 +965,7 @@ end;
                         t = fread(HDR.FILE.FID,inf,[int2str(HDR.AS.SPR(HDR.EDF.Annotations)*2),'*uchar=>uchar'],HDR.AS.bpb-HDR.AS.SPR(HDR.EDF.Annotations)*2);
                         t = reshape(t,HDR.AS.SPR(HDR.EDF.Annotations)*2,HDR.NRec)'; 
                         t = t(any(t,2),1:max(find(any(t,1))));
-                        HDR.EDF.ANNONS = char(t);
+                        HDR.EDFplus.ANNONS = char(t);
 
                         N = 0;
                         [t,r] = strtok(char(reshape(t',[1,prod(size(t))])),[0,64]);
@@ -1035,6 +1025,34 @@ end;
                         
                 end;
                 
+		if isfield(HDR,'EDFplus') && isfield(HDR.EDFplus,'ANNONS'),
+			%% decode EDF+/BDF+ annotations
+                        N = 0; 
+                        onset = []; dur=[]; Desc = {};
+			[s,t] = strtok(HDR.EDFplus.ANNONS,0);
+    			while ~isempty(s)
+    				N  = N + 1; 
+    				ix = find(s==20);
+    				[s1,s2] = strtok(s(1:ix(1)-1),21);
+    				s1;
+    				tmp = str2double(s1);
+    				onset(N,1) = tmp;
+   				tmp = str2double(s2(2:end));
+   				if  ~isempty(tmp)
+   					dur(N,1) = tmp; 	
+   				else 
+   					dur(N,1) = 0; 	
+   				end;
+    				Desc{N} = char(s(ix(1)+1:end-1));
+				[s,t] = strtok(t,0);
+	                        HDR.EVENT.TYP(N,1) = length(Desc{N});
+    			end;		
+                        HDR.EVENT.POS = round(onset * HDR.SampleRate);
+                        HDR.EVENT.DUR = dur * HDR.SampleRate;
+                        HDR.EVENT.CHN = zeros(N,1); 
+                        [HDR.EVENT.CodeDesc, CodeIndex, HDR.EVENT.TYP] = unique(Desc(1:N)');
+		end
+
                 status = fseek(HDR.FILE.FID, HDR.HeadLen, 'bof');
                 HDR.FILE.POS  = 0;
                 HDR.FILE.OPEN = 1;
