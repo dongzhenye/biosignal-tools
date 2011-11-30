@@ -1308,10 +1308,7 @@ void FreeTextEvent(HDRTYPE* hdr,size_t N_EVENT, char* annotation) {
 	if (!GLOBAL_EVENTCODES_ISLOADED) LoadGlobalEventCodeTable();
 	for (k=0; k<Global.LenCodeDesc; k++) {
 		if (Global.CodeIndex[k]>255) {
-			// compare description only up last non-space character before '#'
-			int len = strcspn(Global.CodeDesc[k],"#");
-			while ((len>=0) && isspace(Global.CodeDesc[k][len-1])) len--;
-			if (!strncmp(Global.CodeDesc[k],annotation,len)) {
+			if (!strcmp(Global.CodeDesc[k], annotation)) {
 				// annotation is already a globally defined event
 				hdr->EVENT.TYP[N_EVENT] = Global.CodeIndex[k];
 				return;
