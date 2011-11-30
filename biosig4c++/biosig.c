@@ -3649,6 +3649,7 @@ if (!strncmp(MODE,"r",1))
                 char FLAG_BUGGY_NEUROLOGGER_EDF = !strncmp(Header1+236," 1       0       8   ",21) && Header1[0x180]==' ' 
 						&& Header1[0x7c0]==' ' && Header1[0x400]==' ' && Header1[0x440]==' ' 
 						&& Header1[0x480]==' ' && Header1[0x4c0]==' ' && Header1[0x500]==' ';
+
                 if (FLAG_BUGGY_NEUROLOGGER_EDF) for (k=236; k<9*256; k++) Header1[k-1]=Header1[k];
 
 		char p[9];
@@ -3745,7 +3746,7 @@ if (!strncmp(MODE,"r",1))
 			if (VERBOSE_LEVEL>8)
 				fprintf(stdout,"#%i# HP: %fHz  LP:%fHz NOTCH=%f\n",(int)k,hc->HighPass,hc->LowPass,hc->Notch);
 				
-			if ((hdr->TYPE==EDF) && !strncmp(Header1+192,"EDF+",4) && !strcmp(hc->Label,"EDF Annotations")) {
+			if (!strncmp(Header1+192,"EDF+",4) && !strcmp(hc->Label,"EDF Annotations")) {
 				hc->OnOff = 0;
 				EventChannel = k+1;
 			}
