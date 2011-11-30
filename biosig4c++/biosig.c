@@ -3506,7 +3506,9 @@ if (!strncmp(MODE,"r",1))
                         return(hdr);
                 }
 
-		size_t	EventChannel = 0;
+		typeof(hdr->NS)	AnnotationChannel = 0;
+		typeof(hdr->NS)	StatusChannel = 0;
+
     		strncpy(hdr->Patient.Id,Header1+8,min(MAX_LENGTH_PID,80));
     		memcpy(hdr->ID.Recording,Header1+88,min(80,MAX_LENGTH_RID));
 		hdr->ID.Recording[MAX_LENGTH_RID]=0;
@@ -3746,17 +3748,20 @@ if (!strncmp(MODE,"r",1))
 			if (VERBOSE_LEVEL>8)
 				fprintf(stdout,"#%i# HP: %fHz  LP:%fHz NOTCH=%f\n",(int)k,hc->HighPass,hc->LowPass,hc->Notch);
 				
-			if (!strncmp(Header1+192,"EDF+",4) && !strcmp(hc->Label,"EDF Annotations")) {
+			if ((hdr->TYPE==EDF) && !strncmp(Header1+192,"EDF+",4) && !strcmp(hc->Label,"EDF Annotations")) {
 				hc->OnOff = 0;
-				EventChannel = k+1;
+				AnnotationChannel = k+1;
 			}
-			else if ((hdr->TYPE==BDF) && !strcmp(hc->Label,"Status")) {
+			else if ((hdr->TYPE==BDF) && !strncmp(Header1+192,"BDF+",4) && !strcmp(hc->Label,"BDF Annotations")) {
+				hc->OnOff = 0;
+				AnnotationChannel = k+1;
+			}
+			if ((hdr->TYPE==BDF) && !strcmp(hc->Label,"Status")) {
 				hc->OnOff = 1;
-				EventChannel = k+1;
+				StatusChannel = k+1;
 			}
 
-			if (VERBOSE_LEVEL>8)
-				fprintf(stdout,"[EDF 219] #%i/%i/%i\n",(int)k,hdr->NS,hdr->SPR);
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 219] #%i/%i/%i\n",(int)k,hdr->NS,hdr->SPR);
 
 		}
 		hdr->FLAG.OVERFLOWDETECTION = 0; 	// EDF does not support automated overflow and saturation detection
@@ -3772,9 +3777,9 @@ if (!strncmp(MODE,"r",1))
 			hdr->NRec = (FileBuf.st_size - hdr->HeadLen)/hdr->AS.bpb;
 		}
 
-		if (EventChannel) {
+		if (AnnotationChannel) {
 			/* read Annotation and Status channel and extract event information */
-			CHANNEL_TYPE *hc = hdr->CHANNEL+EventChannel-1;
+			CHANNEL_TYPE *hc = hdr->CHANNEL+AnnotationChannel-1;
 
 			size_t sz   	= GDFTYP_BITS[hc->GDFTYP]>>3;
 			size_t len 	= hc->SPR * hdr->NRec * sz;
@@ -3789,8 +3794,7 @@ if (!strncmp(MODE,"r",1))
 			size_t N_EVENT  = 0;
 			hdr->EVENT.SampleRate = hdr->SampleRate;
 
-			if (hdr->TYPE==EDF) {
-			/* convert EDF+ annotation channel into event table */
+			/* convert EDF+/BDF+ annotation channel into event table */
 
 				char *p0,*p1,*p2;
 				N_EVENT=0;
@@ -3851,30 +3855,25 @@ if (!strncmp(MODE,"r",1))
 					hdr->EVENT.CHN = NULL;
 				}
 				hdr->AS.auxBUF = Marker;	// contains EVENT.CodeDesc strings
-/*
-                        N  = 0;
-			[s,t] = strtok(HDR.EDF.ANNONS,0);
-			while ~isempty(s)
-				N  = N + 1;
-				ix = find(s==20);
-				[s1,s2] = strtok(s(1:ix(1)-1),21);
-				onset(N,1) = str2double(s1);
-				tmp = str2double(s2(2:end));
-				if  ~isempty(tmp)
-					dur(N,1) = tmp;
-				else
-					dur(N,1) = 0;
-				end;
-				TeegType{N} = char(s(ix(1)+1:end-1));
-				[s,t] = strtok(t,0);
-			end;
-                        HDR.EVENT.TYP = ones(N,1);
-                        HDR.EVENT.POS = round(onset * HDR.SampleRate);
-                        HDR.EVENT.DUR = dur * HDR.SampleRate;
-                        HDR.EVENT.CHN = zeros(N,1);
-*/
-			}
-			else if (hdr->TYPE==BDF) {
+				
+		}	/* End reading if Annotation channel */ 
+			
+		if (StatusChannel) {
+				/* read Status channel and extract event information */
+				CHANNEL_TYPE *hc = hdr->CHANNEL+StatusChannel-1;
+
+				size_t sz   	= GDFTYP_BITS[hc->GDFTYP]>>3;
+				size_t len 	= hc->SPR * hdr->NRec * sz;
+				uint8_t *Marker = (uint8_t*)malloc(len + 1);
+				size_t skip 	= hdr->AS.bpb - hc->SPR * sz;
+				ifseek(hdr, hdr->HeadLen + hc->bi, SEEK_SET);
+				nrec_t k3;
+				for (k3=0; k3<hdr->NRec; k3++) {
+				    	ifread(Marker+k3*hc->SPR * sz, 1, hc->SPR * sz, hdr);
+					ifseek(hdr, skip, SEEK_CUR);
+				}
+				size_t N_EVENT  = 0;
+				hdr->EVENT.SampleRate = hdr->SampleRate;
 
 				/* convert BDF status channel into event table*/
 				uint32_t d1, d0 = ((uint32_t)Marker[2]<<16) + ((uint32_t)Marker[1]<<8) + (uint32_t)Marker[0];
@@ -3885,12 +3884,18 @@ if (!strncmp(MODE,"r",1))
 					d0 = d1;
 				}
 
-				hdr->EVENT.N = N_EVENT+1;
+				size_t N = hdr->EVENT.N;	
+				hdr->EVENT.N += N_EVENT+1;
 				hdr->EVENT.SampleRate = hdr->SampleRate;
-				hdr->EVENT.POS = (uint32_t*) calloc(hdr->EVENT.N,sizeof(*hdr->EVENT.POS));
-				hdr->EVENT.TYP = (uint16_t*) calloc(hdr->EVENT.N,sizeof(*hdr->EVENT.TYP));
-				hdr->EVENT.DUR = NULL;
-				hdr->EVENT.CHN = NULL;
+				hdr->EVENT.POS = (uint32_t*) realloc(hdr->EVENT.POS, hdr->EVENT.N * sizeof(*hdr->EVENT.POS));
+				hdr->EVENT.TYP = (uint16_t*) realloc(hdr->EVENT.TYP, hdr->EVENT.N * sizeof(*hdr->EVENT.TYP));
+				if (hdr->EVENT.DUR && hdr->EVENT.CHN) {
+					hdr->EVENT.DUR = (uint32_t*) realloc(hdr->EVENT.DUR, hdr->EVENT.N * sizeof(*hdr->EVENT.DUR));
+					hdr->EVENT.CHN = (uint16_t*) realloc(hdr->EVENT.CHN, hdr->EVENT.N * sizeof(*hdr->EVENT.DUR));
+					memset(hdr->EVENT.DUR + N, 0, (N_EVENT+1)*sizeof(*hdr->EVENT.DUR) );
+					memset(hdr->EVENT.CHN + N, 0, (N_EVENT+1)*sizeof(*hdr->EVENT.CHN) );	
+				}	
+				
 				d0 = ((uint32_t)Marker[2]<<16) + ((uint32_t)Marker[1]<<8) + (uint32_t)Marker[0];
 				hdr->EVENT.POS[0] = 0;        // 0-based indexing
 				hdr->EVENT.TYP[0] = d0 & 0x00ffff;
@@ -3916,9 +3921,8 @@ if (!strncmp(MODE,"r",1))
 				}
 
 				free(Marker);
-			}
 
-		}	/* End reading EDF/BDF Status channel */
+		}	/* End reading BDF Status channel */
 
 		ifseek(hdr, hdr->HeadLen, SEEK_SET);
 	}
