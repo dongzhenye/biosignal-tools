@@ -926,8 +926,8 @@ end;
                                 HDR.EVENT.VAL(ix) = HDR.EVENT.DUR(ix);
                         end;
 
-                elseif strcmp(HDR.TYPE,'EDF') && (length(strmatch('EDF Annotations',HDR.Label))==1),
-                        % EDF+: 
+                elseif (length(strmatch('EDF Annotations',HDR.Label))==1),
+                        % EDF+/BDF+: 
                         tmp = strmatch('EDF Annotations',HDR.Label);
                         HDR.EDF.Annotations = tmp;
                         if 0,isempty(ReRefMx)
