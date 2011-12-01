@@ -115,7 +115,7 @@ Index: src/file_handling_impl/biosig_reader.cpp
      Copyright (C) Oliver Terbu    2008
      This file is part of the "SigViewer" repository
      at http://biosig.sf.net/
-@@ -57,6 +57,11 @@
+@@ -57,6 +57,12 @@
  FILE_SIGNAL_READER_REGISTRATION(cnt, BioSigReader);
  FILE_SIGNAL_READER_REGISTRATION(vhdr, BioSigReader);
  FILE_SIGNAL_READER_REGISTRATION(bkr, BioSigReader);
@@ -124,10 +124,11 @@ Index: src/file_handling_impl/biosig_reader.cpp
 +FILE_SIGNAL_READER_REGISTRATION(rec, BioSigReader);
 +FILE_SIGNAL_READER_REGISTRATION(acq, BioSigReader);
 +FILE_SIGNAL_READER_REGISTRATION(bva, BioSigReader);
++FILE_SIGNAL_READER_REGISTRATION(hea, BioSigReader);
  
  FILE_SIGNAL_READER_REGISTRATION(evt, BioSigReader);
  
-@@ -101,10 +106,8 @@
+@@ -101,10 +107,8 @@
  void BioSigReader::doClose () const
  {
      if (biosig_header_)
@@ -139,7 +140,7 @@ Index: src/file_handling_impl/biosig_reader.cpp
      biosig_header_ = 0;
  }
  
-@@ -181,7 +184,7 @@
+@@ -181,7 +185,7 @@
              destructHDR(biosig_header_);
              biosig_header_ = 0;
              delete c_file_name;
@@ -148,7 +149,7 @@ Index: src/file_handling_impl/biosig_reader.cpp
      }
  
      // (C) 2008 AS: EVENT.DUR and EVENT.CHN are optional in SOPEN, but SigViewer needs them.
-@@ -281,10 +284,10 @@
+@@ -281,10 +285,10 @@
  void BioSigReader::bufferAllEvents () const
  {
      unsigned number_events = biosig_header_->EVENT.N;
@@ -161,7 +162,7 @@ Index: src/file_handling_impl/biosig_reader.cpp
          QSharedPointer<SignalEvent> event (new SignalEvent (biosig_header_->EVENT.POS[index] * rate_transition,
                                                              biosig_header_->EVENT.TYP[index],
                                                              biosig_header_->EVENT.SampleRate * rate_transition));
-@@ -295,7 +298,12 @@
+@@ -295,7 +299,12 @@
              else
                  event->setChannel (biosig_header_->EVENT.CHN[index] - 1);
              event->setDuration (biosig_header_->EVENT.DUR[index] * rate_transition);
@@ -930,6 +931,19 @@ Index: src/base/signal_channel.h
      bool notch_;
  };
  
+Index: src/base/math_utils.h
+===================================================================
+--- src/base/math_utils.h	(revision 556)
++++ src/base/math_utils.h	(working copy)
+@@ -42,7 +42,7 @@
+ 
+ //-----------------------------------------------------------------------------
+ /// @return number of decimals needed to display time intervals correctly
+-int sampleRateToDecimalPrecision (float sample_rate);
++int sampleRateToDecimalPrecision (float64 sample_rate);
+ 
+ }
+ 
 Index: src/base/signal_event.cpp
 ===================================================================
 --- src/base/signal_event.cpp	(revision 556)
@@ -966,39 +980,6 @@ Index: src/base/signal_event.cpp
  }
  
  //-----------------------------------------------------------------------------
-Index: src/base/math_utils.h
-===================================================================
---- src/base/math_utils.h	(revision 556)
-+++ src/base/math_utils.h	(working copy)
-@@ -42,7 +42,7 @@
- 
- //-----------------------------------------------------------------------------
- /// @return number of decimals needed to display time intervals correctly
--int sampleRateToDecimalPrecision (float sample_rate);
-+int sampleRateToDecimalPrecision (float64 sample_rate);
- 
- }
- 
-Index: src/base/signal_event.h
-===================================================================
---- src/base/signal_event.h	(revision 556)
-+++ src/base/signal_event.h	(working copy)
-@@ -24,12 +24,12 @@
- 
-     int32 getId() const;
-     uint32 getPosition() const;
--    float32 getPositionInSec() const;
-+    float64 getPositionInSec() const;
-     uint16 getType() const;
-     ChannelID getChannel() const;
-     uint32 getDuration() const;
--    float32 getDurationInSec() const;
--    float32 getEndInSec () const;
-+    float64 getDurationInSec() const;
-+    float64 getEndInSec () const;
-     float64 getSampleRate () const;
- 
-     void setId (EventID id);
 Index: src/base/data_block.cpp
 ===================================================================
 --- src/base/data_block.cpp	(revision 556)
@@ -1021,6 +1002,26 @@ Index: src/base/data_block.cpp
  {
      return sample_rate_per_unit_;
  }
+Index: src/base/signal_event.h
+===================================================================
+--- src/base/signal_event.h	(revision 556)
++++ src/base/signal_event.h	(working copy)
+@@ -24,12 +24,12 @@
+ 
+     int32 getId() const;
+     uint32 getPosition() const;
+-    float32 getPositionInSec() const;
++    float64 getPositionInSec() const;
+     uint16 getType() const;
+     ChannelID getChannel() const;
+     uint32 getDuration() const;
+-    float32 getDurationInSec() const;
+-    float32 getEndInSec () const;
++    float64 getDurationInSec() const;
++    float64 getEndInSec () const;
+     float64 getSampleRate () const;
+ 
+     void setId (EventID id);
 Index: src/base/data_block.h
 ===================================================================
 --- src/base/data_block.h	(revision 556)
