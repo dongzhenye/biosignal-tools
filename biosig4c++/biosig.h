@@ -161,14 +161,14 @@ enum FileFormat {
 extern int B4C_ERRNUM;
 extern const char *B4C_ERRMSG;
 
-#define BIOSIG_VERSION_MAJOR 0
-#define BIOSIG_VERSION_MINOR 98
-#define BIOSIG_VERSION_STEPPING 0
+#define BIOSIG_VERSION_MAJOR 1
+#define BIOSIG_VERSION_MINOR 1
+#define BIOSIG_VERSION_STEPPING 1
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR+0.01*BIOSIG_VERSION_MINOR)
 
-//extern int VERBOSE_LEVEL; 	// used for debugging
+extern int VERBOSE_LEVEL; 	// used for debugging
 //#define VERBOSE_LEVEL 7		// turn on debugging information
-#define VERBOSE_LEVEL 0		// turn off debugging information
+//#define VERBOSE_LEVEL 0		// turn off debugging information
 
 
 /****************************************************************************/
