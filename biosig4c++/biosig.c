@@ -8445,9 +8445,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
                 if (VERBOSE_LEVEL>7) hdr2ascii(hdr,stdout,4);                 
 
-		if (!hdr->NRec)
-			hdr->NRec = (hdr->HeadLen + count)/hdr->AS.bpb;
-
 		/* read age, sex etc. */
 		line = strtok(NULL,"\x0d\x0a");
 		if (line != NULL) {
