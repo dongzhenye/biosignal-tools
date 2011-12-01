@@ -1,10 +1,10 @@
-function RES = burst_onset_phase(fn, ch, band, EVT, varargin)
+function [RES, HDR] = burst_onset_phase(fn, ch, band, EVT, varargin)
 % BURST_ONSET_PHASE computes the phase of burst onsets 
 %
 % ... = burst_onset_phase(fn, ch, [f1, f2], EVT)
 % ... = burst_onset_phase(..., '-o', outputFilename)
 % ... = burst_onset_phase(s, HDR, [f1, f2], EVT)
-% [RES] = burst_onset_phase(...)
+% [RES, HDR] = burst_onset_phase(...)
 % 
 % Input: 
 %  fn	filename 
@@ -17,9 +17,10 @@ function RES = burst_onset_phase(fn, ch, band, EVT, varargin)
 %       start of new segments (0x7ffe)	
 %
 % Output:
-%  RES  a complex matrix containing Amplitude and Phase 
+%  RES  a complex matrix containing normalized Amplitude and Phase 
 %	for each burst onset (number of rows) and for 
-%	each channel (number of columns). 
+%	each channel (number of columns). The amplitude is 
+% 	normalized with the rms of the filtered signal. 
 %  angle(RES) returns the phase at burst onset
 
 %	$Id$
@@ -120,7 +121,7 @@ end;
 
 %%% return output: extract phase at burst onset time 
 tix = EVT.EVENT.POS( EVT.EVENT.TYP==hex2dec('0202') );
-RES = s( tix( tix < size(s,1) ), :);
+RES = s( tix( tix < size(s,1) ), :) * diag(1/rms(s,1));
 
 
 
@@ -133,6 +134,7 @@ if ~isempty(outFile)
 	HDR2.T0    = HDR.T0; 
 	HDR2.NS    = length(ch)*2; 
 	HDR2.SPR   = 1; 
+	HDR2.NRec  = size(s0,1);
 	HDR2.SampleRate = HDR.SampleRate; 
 	HDR2.Label = {HDR.Label{ch}; HDR.Label{ch}};	
 	HDR2.DigMax  = [HDR.DigMax(ch);  HDR.DigMax(ch)];
