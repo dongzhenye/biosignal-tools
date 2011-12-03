@@ -5484,6 +5484,8 @@ elseif strcmp(HDR.TYPE,'MIT')
 			GDFTYP = repmat(NaN,HDR.NS,1);
 			GDFTYP(HDR.MIT.dformat==80) = 2;
 			GDFTYP(HDR.MIT.dformat==16) = 3;
+			GDFTYP(HDR.MIT.dformat==24) = 255+24;
+			GDFTYP(HDR.MIT.dformat==32) = 5;
 			GDFTYP(HDR.MIT.dformat==61) = 3;
 			GDFTYP(HDR.MIT.dformat==160)= 4;
 			GDFTYP(HDR.MIT.dformat==212)= 255+12;
