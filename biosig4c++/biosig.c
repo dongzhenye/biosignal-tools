@@ -8394,6 +8394,18 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 				hc->DigMax = ldexp( 1.0,15)-1.0;
 				hc->DigMin = ldexp(-1.0,15);
 				break;
+			case 24:
+			 	gdftyp = 255+24;
+				NUM = 3; DEN = 1;
+				hc->DigMax = ldexp( 1.0,23)-1.0;
+				hc->DigMin = ldexp(-1.0,23);
+				break;
+			case 32:
+			 	gdftyp = 5;
+				NUM = 4; DEN = 1;
+				hc->DigMax = ldexp( 1.0,31)-1.0;
+				hc->DigMin = ldexp(-1.0,31);
+				break;
 			case 61:
 				gdftyp = 3;
 				// hdr->FLAG.SWAP = !(__BYTE_ORDER == __BIG_ENDIAN);
