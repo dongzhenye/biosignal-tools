@@ -31,6 +31,9 @@
 
 #ifdef WITH_BIOSIG
 #include "biosig.h" 
+extern int VERBOSE_LEVEL;
+#else
+int VERBOSE_LEVEL=3;
 #endif
 
 
@@ -59,7 +62,6 @@ int is_key_pressed(void)
 #endif 
 
 
-extern int VERBOSE_LEVEL;
 
 int main(int argc, const char* argv[]) {
 

@@ -583,9 +583,14 @@ save2aecg: save2gdf
 #	TTL2TRIG
 #############################################################
 
-ttl2trig : src/ttl2trig.c libbiosig.a
-	$(CXX) $(INCPATH) $(DEFINES) src/ttl2trig.c -Wall -Wextra -lasound -lz -lcholmod libbiosig.a -o bin/ttl2trig
-
+ifeq (1,0)
+### for debugging 
+bin/ttl2trig : src/ttl2trig.c libbiosig.a
+	$(CXX) $(INCPATH) $(DEFINES) -D=WITH_BIOSIG "$<" -Wall -Wextra -lasound -lz -lcholmod libbiosig.a -o "$@"
+else
+bin/ttl2trig : src/ttl2trig.c 
+	$(CXX) $(INCPATH) $(DEFINES) "$<" -Wall -Wextra -lasound -lz -lcholmod  -o "$@"
+endif
 
 
 #############################################################
@@ -650,6 +655,9 @@ clean:
 install_sigviewer: sigviewer
 	install $(PathToSigViewer)/bin/release/sigviewer $(BIN)
 
+install_ttl2trig: bin/ttl2trig
+	install bin/ttl2trig $(BIN)
+
 install_octave: mexSLOAD.mex 
 	mkdir -p  		$(DESTDIR)/usr/local/share/octave/site-m/
 	install mex/mexSLOAD.mex* 	$(DESTDIR)/usr/local/share/octave/site-m/
@@ -661,6 +669,7 @@ install: save2gdf libbiosig.a libbiosig.so doc/save2gdf.1
 	install heka2itx 	$(BIN)
 	install save2aecg 	$(BIN)
 	install save2scp  	$(BIN)
+	install bin/tt2trig  	$(BIN)
 	#install rec2bin  	$(BIN)
 	#install bin2rec  	$(BIN)
 	install -d		$(LIB) $(DESTDIR)/usr/include
@@ -680,6 +689,7 @@ remove:
 	rm $(BIN)/heka2itx
 	rm $(BIN)/save2scp
 	rm $(BIN)/save2aecg
+	rm $(BIN)/ttl2trig
 	#rm $(BIN)/rec2bin
 	#rm $(BIN)/bin2rec
 	rm $(BIN)/sigviewer
