@@ -30,12 +30,12 @@
 
 
 #ifdef WITH_BIOSIG
-#include "biosig.h" 
+#include "../biosig.h" 
 extern int VERBOSE_LEVEL;
 #else
 int VERBOSE_LEVEL=3;
 #endif
-
+    
 
 #define TO_STOP_PRESS_ANY_KEY
 
@@ -60,7 +60,6 @@ int is_key_pressed(void)
 	return FD_ISSET(STDIN_FILENO, &fds);
 }
 #endif 
-
 
 
 int main(int argc, const char* argv[]) {
@@ -88,7 +87,6 @@ int main(int argc, const char* argv[]) {
 
 	const float WINLEN = 0.001; 	// window lengths for computing steepness: default is 1 ms
 	float TH = 0.0/0.0; 
-	const char *outFile = NULL; 
 
 #ifdef TO_STOP_PRESS_ANY_KEY
 	/* initialization for IS_KEY_PRESSED() */	
@@ -108,6 +106,7 @@ int main(int argc, const char* argv[]) {
 
 
 #ifdef WITH_BIOSIG
+	const char *outFile = NULL; 
 	HDRTYPE *hdr = NULL; 
 #endif
 

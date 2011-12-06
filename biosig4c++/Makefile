@@ -589,7 +589,7 @@ bin/ttl2trig : src/ttl2trig.c libbiosig.a
 	$(CXX) $(INCPATH) $(DEFINES) -D=WITH_BIOSIG "$<" -Wall -Wextra -lasound -lz -lcholmod libbiosig.a -o "$@"
 else
 bin/ttl2trig : src/ttl2trig.c 
-	$(CXX) $(INCPATH) $(DEFINES) "$<" -Wall -Wextra -lasound -lz -lcholmod  -o "$@"
+	$(CXX) $(INCPATH) $(DEFINES) "$<" -Wall -Wextra -lasound -o "$@"
 endif
 
 
