@@ -13,7 +13,7 @@ function bp = bandpower(s,arg2,arg3,arg4,mode)
 %               mode == 2 uses Butterworth IIR filter and log10
 %               mode == 3 udes FIR filter and ln
 %               mode == 4 uses Butterworth IIR filter and ln
-%               the default value is mode == 2 (Butterworth filter and log10)
+%               the default value is mode == 4 (Butterworth filter and ln)
 % 
 % OUTPUT:
 %    bp is log(bandpower) of s
@@ -42,50 +42,49 @@ function bp = bandpower(s,arg2,arg3,arg4,mode)
 % Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
-if ischar(s) 
-        [s,HDR]=sload(s);
+if ischar(s)
+    [s,HDR]=sload(s);
 else
-        if size(s,1)<size(s,2),
-                error('signal data must be ordered in columns')
-        end;
-        HDR.SampleRate = arg2;
+    if size(s,1)<size(s,2),
+        error('signal data must be ordered in columns')
+    end;
+    HDR.SampleRate = arg2;
 end;
 
-if nargin<3     
-        F = [10,12;16,24];
+if nargin<3
+    F = [10,12;16,24];
 else
-        F = arg3;
+    F = arg3;
 end;
-if nargin<4     
-        W = 1; 
+if nargin<4
+    W = 1;
 else
-        W = arg4;
+    W = arg4;
 end;
 if nargin<5
     mode = 4;
 end;
 
 bp = [];
-tmp = s; tmp(isnan(tmp))=0;         
+tmp = double(s); tmp(isnan(tmp))=0;
 if mode == 1  % FIR and log10
-        for k=1:size(F,1),
-                B  = fir1(HDR.SampleRate,F(k,:)/HDR.SampleRate*2);
-                bp = [bp,log10(filter(ones(W*HDR.SampleRate,1),W*HDR.SampleRate,filter(B,1,tmp).^2 ))];
-        end;
+    for k=1:size(F,1),
+        B  = fir1(HDR.SampleRate,F(k,:)/HDR.SampleRate*2);
+        bp = [bp,log10(filter(ones(W*HDR.SampleRate,1),W*HDR.SampleRate,filter(B,1,tmp).^2 ))];
+    end;
 elseif mode == 2  % Butterworth and log10
-        for k=1:size(F,1),
-                [B,A] = butter(5,F(k,:)/HDR.SampleRate*2);
-                bp = [bp,log10(filter(ones(W*HDR.SampleRate,1),W*HDR.SampleRate,filter(B,A,tmp).^2 ))];
-        end;
+    for k=1:size(F,1),
+        [B,A] = butter(4,F(k,:)/HDR.SampleRate*2);
+        bp = [bp,log10(filter(ones(W*HDR.SampleRate,1),W*HDR.SampleRate,filter(B,A,tmp).^2 ))];
+    end;
 elseif mode == 3  % FIR and ln
-        for k=1:size(F,1),
-                B  = fir1(HDR.SampleRate,F(k,:)/HDR.SampleRate*2);
-                bp = [bp,log(filter(ones(W*HDR.SampleRate,1),W*HDR.SampleRate,filter(B,1,tmp).^2 ))];
-        end;       
+    for k=1:size(F,1),
+        B  = fir1(HDR.SampleRate,F(k,:)/HDR.SampleRate*2);
+        bp = [bp,log(filter(ones(W*HDR.SampleRate,1),W*HDR.SampleRate,filter(B,1,tmp).^2 ))];
+    end;
 elseif mode == 4  % Butterworth and ln
-        for k=1:size(F,1),
-                [B,A] = butter(5,F(k,:)/HDR.SampleRate*2);
-                bp = [bp,log(filter(ones(W*HDR.SampleRate,1),W*HDR.SampleRate,filter(B,A,tmp).^2 ))];
-        end;        
+    for k=1:size(F,1),
+        [B,A] = butter(4,F(k,:)/HDR.SampleRate*2);
+        bp = [bp,log(filter(ones(W*HDR.SampleRate,1),W*HDR.SampleRate,filter(B,A,tmp).^2 ))];
+    end;
 end;
-
