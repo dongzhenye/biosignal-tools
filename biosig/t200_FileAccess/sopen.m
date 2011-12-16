@@ -938,7 +938,7 @@ end;
                         
                         status = fseek(HDR.FILE.FID,HDR.HeadLen+HDR.AS.bi(HDR.EDF.Annotations)*2,'bof');
                         t = fread(HDR.FILE.FID,inf,[int2str(HDR.AS.SPR(HDR.EDF.Annotations)*2),'*uchar=>uchar'],HDR.AS.bpb-HDR.AS.SPR(HDR.EDF.Annotations)*2);
-                        HDR.EDF.ANNONS = char(t');
+                        HDR.EDFplus.ANNONS = char(t');
                         
 
                 elseif strcmp(HDR.TYPE,'BDF') && (length(strmatch('BDF Annotations',HDR.Label))==1),
@@ -965,7 +965,7 @@ end;
                         t = fread(HDR.FILE.FID,inf,[int2str(HDR.AS.SPR(HDR.EDF.Annotations)*2),'*uchar=>uchar'],HDR.AS.bpb-HDR.AS.SPR(HDR.EDF.Annotations)*2);
                         t = reshape(t,HDR.AS.SPR(HDR.EDF.Annotations)*2,HDR.NRec)'; 
                         t = t(any(t,2),1:max(find(any(t,1))));
-                        HDR.EDFplus.ANNONS = char(t);
+                        HDR.EDF.ANNONS = char(t);
 
                         N = 0;
                         [t,r] = strtok(char(reshape(t',[1,prod(size(t))])),[0,64]);
