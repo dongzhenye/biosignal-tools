@@ -3205,6 +3205,126 @@ int RerefCHANNEL(HDRTYPE *hdr, void *arg2, char Mode)
 #endif
 }
 
+
+
+/****************************************************************************
+ *                     READ_HEADER_1
+ *
+ *
+ ****************************************************************************/
+int read_header(HDRTYPE *hdr) {
+/*
+	input:
+		hdr must be an open file able to read from
+		hdr->TYPE must be unknown, otherwise no FileFormat evaluation is performed
+		hdr->FILE.size
+	output:
+		defines whole header structure and event table 			
+	return value:	
+	0	no error
+	-1	error reading header 1
+	-2	error reading header 2
+	-3	error reading event table
+ */
+
+	size_t count = hdr->HeadLen;
+	if (hdr->HeadLen<512) {
+	    	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header, 513);
+		count += ifread(hdr->AS.Header+hdr->HeadLen, 1, 512-count, hdr);
+		getfiletype(hdr);
+	}
+    	char tmp[6];
+    	strncpy(tmp,(char*)hdr->AS.Header+3,5); tmp[5]=0;
+    	hdr->VERSION 	= strtod(tmp,NULL);
+
+	// currently, only GDF is supported	
+	if ( (hdr->TYPE != GDF) || (hdr->VERSION < 0.01) )
+		return ( -1 );
+
+    	if (hdr->VERSION > 1.90)
+	    	hdr->HeadLen = leu16p(hdr->AS.Header+184)<<8;
+	else
+	    	hdr->HeadLen = leu64p(hdr->AS.Header+184);
+
+	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen);
+        if (count < hdr->HeadLen)
+	    	count += ifread(hdr->AS.Header+count, 1, hdr->HeadLen-count, hdr);
+
+        if (count < hdr->HeadLen) {
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"ambigous GDF header size: %i %i\n",(int)count,hdr->HeadLen);
+                B4C_ERRNUM = B4C_INCOMPLETE_FILE;
+                B4C_ERRMSG = "reading GDF header failed";
+                return(-2);
+	}
+
+	if ( gdfbin2struct(hdr) )
+		return(-2);
+
+	hdr->EVENT.N   = 0;
+	hdr->EVENT.POS = NULL;
+	hdr->EVENT.TYP = NULL;
+	hdr->EVENT.DUR = NULL;
+	hdr->EVENT.CHN = NULL;
+
+	if (hdr->NRec < 0) {
+		hdr->NRec = (hdr->FILE.size - hdr->HeadLen)/hdr->AS.bpb;
+		if (hdr->AS.rawEventData!=NULL) {
+			free(hdr->AS.rawEventData);
+			hdr->AS.rawEventData=NULL;
+		}
+	}
+	else if (hdr->FILE.size > hdr->HeadLen + hdr->AS.bpb*hdr->NRec + 8)
+	{
+			if (VERBOSE_LEVEL > 7) 
+				fprintf(stdout,"GDF EVENT: %i,%i %i,%i,%i\n",hdr->FILE.size, hdr->HeadLen + hdr->AS.bpb*hdr->NRec + 8, hdr->HeadLen, hdr->AS.bpb,hdr->NRec); 
+
+			ifseek(hdr, hdr->HeadLen + hdr->AS.bpb*hdr->NRec, SEEK_SET);
+			// READ EVENTTABLE
+			hdr->AS.rawEventData = (uint8_t*)realloc(hdr->AS.rawEventData,8);
+			size_t c = ifread(hdr->AS.rawEventData, sizeof(uint8_t), 8, hdr);
+    			uint8_t *buf = hdr->AS.rawEventData;
+
+			if (c<8) {
+				hdr->EVENT.SampleRate = hdr->SampleRate;
+				hdr->EVENT.N = 0;
+			}
+			else if (hdr->VERSION < 1.94) {
+				if (buf[1] | buf[2] | buf[3])
+					hdr->EVENT.SampleRate = buf[1] + (buf[2] + buf[3]*256.0)*256.0;
+				else {
+					fprintf(stdout,"Warning GDF v1: SampleRate in Eventtable is not set in %s !!!\n",hdr->FileName);
+					hdr->EVENT.SampleRate = hdr->SampleRate;
+				}
+				hdr->EVENT.N = leu32p(buf + 4);
+			}
+			else {
+				hdr->EVENT.N = buf[1] + (buf[2] + buf[3]*256)*256;
+				hdr->EVENT.SampleRate = lef32p(buf + 4);
+			}
+
+			if (VERBOSE_LEVEL > 7) 
+				fprintf(stdout,"EVENT.N = %i,%i\n",hdr->EVENT.N,c); 
+
+			int sze = (buf[0]>1) ? 12 : 6;
+			hdr->AS.rawEventData = (uint8_t*)realloc(hdr->AS.rawEventData,8+hdr->EVENT.N*sze);
+			c = ifread(hdr->AS.rawEventData+8, sze, hdr->EVENT.N, hdr);
+			ifseek(hdr, hdr->HeadLen, SEEK_SET);
+			if (c < hdr->EVENT.N) {
+                                B4C_ERRNUM = B4C_INCOMPLETE_FILE;
+                                B4C_ERRMSG = "reading GDF eventtable failed";
+                                return(-3);
+			}
+			rawEVT2hdrEVT(hdr);
+		}
+		else
+			hdr->EVENT.N = 0;
+
+		if (VERBOSE_LEVEL>8) fprintf(stdout,"[228] FMT=%s Ver=%4.2f\n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
+
+	return (0); 
+}
+
+
 /****************************************************************************/
 /**                     SOPEN                                              **/
 /****************************************************************************/
@@ -3254,7 +3374,35 @@ HDRTYPE* sopen(const char* FileName, const char* MODE, HDRTYPE* hdr)
 	// hdr->FLAG.SWAP = (__BYTE_ORDER == __BIG_ENDIAN); 	// default: most data formats are little endian
 	hdr->FILE.LittleEndian = 1;
 
-if (!strncmp(MODE,"r",1))
+if (!strncmp(MODE,"a",1))
+{
+	hdr = ifopen(hdr,"ab");
+	if (!hdr->FILE.OPEN) {
+		B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
+    		B4C_ERRMSG = "Error SOPEN(APPEND); Cannot open file.";
+    		return(hdr);
+	}
+	hdr->FILE.size = iftell(hdr);
+	if (hdr->FILE.size==0) {
+		return( sopen(FileName, "w", hdr) );
+	} 
+	else if (hdr->FILE.size<256) {
+		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+    		B4C_ERRMSG = "Error SOPEN(APPEND);  file not supported.";
+		return (NULL);
+	} 
+
+	ifseek(hdr,0,SEEK_SET);
+	hdr->HeadLen = 0;
+    	if ( read_header(hdr) ) {
+		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+    		B4C_ERRMSG = "Error SOPEN(APPEND);  file not supported.";
+		return (NULL);
+	}
+
+
+}
+else if (!strncmp(MODE,"r",1))
 {
 	size_t k,name=0,ext=0;
 	for (k=0; hdr->FileName[k]; k++) {
@@ -3413,87 +3561,13 @@ if (!strncmp(MODE,"r",1))
 
 	if (hdr->TYPE == GDF) {
 
-	    	if (hdr->VERSION > 1.90)
-		    	hdr->HeadLen = leu16p(hdr->AS.Header+184)<<8;
-		else
-		    	hdr->HeadLen = leu64p(hdr->AS.Header+184);
-
-	    	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen);
-                if (count < hdr->HeadLen)
-		    	count += ifread(hdr->AS.Header+count, 1, hdr->HeadLen-count, hdr);
-
-                if (count < hdr->HeadLen) {
-			if (VERBOSE_LEVEL>7) fprintf(stdout,"ambigous GDF header size: %i %i\n",(int)count,hdr->HeadLen);
-                        B4C_ERRNUM = B4C_INCOMPLETE_FILE;
-                        B4C_ERRMSG = "reading GDF header failed";
-                        return(hdr);
-		}
-
-		gdfbin2struct(hdr);
-
-		hdr->EVENT.N   = 0;
-		hdr->EVENT.POS = NULL;
-		hdr->EVENT.TYP = NULL;
-		hdr->EVENT.DUR = NULL;
-		hdr->EVENT.CHN = NULL;
-
 		struct stat FileBuf;
 		stat(hdr->FileName,&FileBuf);
+		hdr->FILE.size = FileBuf.st_size; 
 
-		if (hdr->NRec < 0) {
-			hdr->NRec = (FileBuf.st_size - hdr->HeadLen)/hdr->AS.bpb;
-			if (hdr->AS.rawEventData!=NULL) {
-				free(hdr->AS.rawEventData);
-				hdr->AS.rawEventData=NULL;
-			}
+	    	if ( read_header(hdr) ) {
+			return (hdr);
 		}
-		else if (FileBuf.st_size > hdr->HeadLen + hdr->AS.bpb*hdr->NRec + 8)
-		{
-			if (VERBOSE_LEVEL > 7) 
-				fprintf(stdout,"GDF EVENT: %i,%i %i,%i,%i\n",FileBuf.st_size, hdr->HeadLen + hdr->AS.bpb*hdr->NRec + 8, hdr->HeadLen, hdr->AS.bpb,hdr->NRec); 
-
-			ifseek(hdr, hdr->HeadLen + hdr->AS.bpb*hdr->NRec, SEEK_SET);
-			// READ EVENTTABLE
-			hdr->AS.rawEventData = (uint8_t*)realloc(hdr->AS.rawEventData,8);
-			size_t c = ifread(hdr->AS.rawEventData, sizeof(uint8_t), 8, hdr);
-    			uint8_t *buf = hdr->AS.rawEventData;
-
-			if (c<8) {
-				hdr->EVENT.SampleRate = hdr->SampleRate;
-				hdr->EVENT.N = 0;
-			}
-			else if (hdr->VERSION < 1.94) {
-				if (buf[1] | buf[2] | buf[3])
-					hdr->EVENT.SampleRate = buf[1] + (buf[2] + buf[3]*256.0)*256.0;
-				else {
-					fprintf(stdout,"Warning GDF v1: SampleRate in Eventtable is not set in %s !!!\n",hdr->FileName);
-					hdr->EVENT.SampleRate = hdr->SampleRate;
-				}
-				hdr->EVENT.N = leu32p(buf + 4);
-			}
-			else {
-				hdr->EVENT.N = buf[1] + (buf[2] + buf[3]*256)*256;
-				hdr->EVENT.SampleRate = lef32p(buf + 4);
-			}
-
-			if (VERBOSE_LEVEL > 7) 
-				fprintf(stdout,"EVENT.N = %i,%i\n",hdr->EVENT.N,c); 
-
-			int sze = (buf[0]>1) ? 12 : 6;
-			hdr->AS.rawEventData = (uint8_t*)realloc(hdr->AS.rawEventData,8+hdr->EVENT.N*sze);
-			c = ifread(hdr->AS.rawEventData+8, sze, hdr->EVENT.N, hdr);
-			ifseek(hdr, hdr->HeadLen, SEEK_SET);
-			if (c < hdr->EVENT.N) {
-                                B4C_ERRNUM = B4C_INCOMPLETE_FILE;
-                                B4C_ERRMSG = "reading GDF eventtable failed";
-                                return(hdr);
-			}
-			rawEVT2hdrEVT(hdr);
-		}
-		else
-			hdr->EVENT.N = 0;
-
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[228] FMT=%s Ver=%4.2f\n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
 
     	}
     	else if ((hdr->TYPE == EDF) || (hdr->TYPE == BDF))	{

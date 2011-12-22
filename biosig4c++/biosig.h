@@ -63,7 +63,7 @@ typedef char			int8_t;
 
 #ifdef __cplusplus
 #define EXTERN_C extern "C"
-#else
+#else    
 #define EXTERN_C
 #endif
 
@@ -112,6 +112,7 @@ enum B4C_ERROR {
 	B4C_FORMAT_UNSUPPORTED,
 	B4C_CANNOT_OPEN_FILE,
 	B4C_CANNOT_WRITE_FILE,
+	B4C_CANNOT_APPEND_FILE,
 	B4C_INSUFFICIENT_MEMORY,
 	B4C_ENDIAN_PROBLEM,
 	B4C_CRC_ERROR,
@@ -162,7 +163,7 @@ extern int B4C_ERRNUM;
 extern const char *B4C_ERRMSG;
 
 #define BIOSIG_VERSION_MAJOR 1
-#define BIOSIG_VERSION_MINOR 1
+#define BIOSIG_VERSION_MINOR 2
 #define BIOSIG_VERSION_STEPPING 1
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR+0.01*BIOSIG_VERSION_MINOR)
 
@@ -236,6 +237,13 @@ typedef int64_t 		nrec_t;	/* type for number of records */
 #define ATT_ALI __attribute__ ((aligned (8)))	/* Matlab v7.3+ requires 8 byte alignment*/
 #define ATT_DEPREC __attribute__ ((deprecated))
 #else
+/* 
+	TODO (FIXME): 
+	not clear whether this alignment definition is equivalent to the one above:
+	This might be crucial for a mixed compiler environment 
+	e.g. libbiosig compiled with MinGW used in a MS VC++ project
+*/
+#pragma pack(8)	
 #define ATT_ALI
 #define ATT_DEPREC
 #endif
@@ -394,13 +402,14 @@ typedef struct {
 //		BZFILE*		bzFID;
 #endif
 		FILE* 		FID;		/* file handle  */
+		size_t 		size;		/* size of file - experimental: only partly supported */
 		size_t 		POS;		/* current reading/writing position [in blocks] */
 		//size_t 	POS2;		// current reading/writing position [in samples] */
 		int		Des;		/* file descriptor */
+		int		DES;		/* descriptor for streams */
 		uint8_t		OPEN; 		/* 0: closed, 1:read, 2: write */
 		uint8_t		LittleEndian;   /* 1 if file is LittleEndian data format and 0 for big endian data format*/
 		uint8_t		COMPRESSION;    /* 0: no compression 9: best compression */
-		int		DES;		/* descriptor for streams */
 	} FILE ATT_ALI;
 
 	/*	internal variables (not public)  */
@@ -414,7 +423,7 @@ typedef struct {
 		uint8_t*	Header;
 		uint8_t*	rawEventData;
 		uint8_t*	rawdata; 	/* raw data block */
-		char		flag_collapsed_rawdata; /*0 if rawdata contain obsolete channels, too. 	*/
+		char		flag_collapsed_rawdata; /* 0 if rawdata contain obsolete channels, too. 	*/
 		size_t		first;		/* first block loaded in buffer - this is equivalent to hdr->FILE.POS */
 		size_t		length;		/* number of block(s) loaded in buffer */
 		uint8_t*	auxBUF;  	/* auxillary buffer - used for storing EVENT.CodeDesc, MIT FMT infor, alpha:rawdata header */
