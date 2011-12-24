@@ -3374,36 +3374,49 @@ HDRTYPE* sopen(const char* FileName, const char* MODE, HDRTYPE* hdr)
 	// hdr->FLAG.SWAP = (__BYTE_ORDER == __BIG_ENDIAN); 	// default: most data formats are little endian
 	hdr->FILE.LittleEndian = 1;
 
-if (!strncmp(MODE,"a",1))
-{
-	hdr = ifopen(hdr,"ab");
-	if (!hdr->FILE.OPEN) {
+if (!strncmp(MODE,"a",1)) {
+	/***** 	SOPEN APPEND *****/
+	HDRTYPE *newhdr = constructHDR(hdr->NS,hdr->EVENT.N);
+	newhdr = ifopen(newhdr,"ab");
+	if (!newhdr->FILE.OPEN) {
 		B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
     		B4C_ERRMSG = "Error SOPEN(APPEND); Cannot open file.";
+		destructHDR(newhdr);
     		return(hdr);
 	}
-	hdr->FILE.size = iftell(hdr);
-	if (hdr->FILE.size==0) {
+	newhdr->FILE.size = iftell(newhdr);
+	if (newhdr->FILE.size==0) {
+		destructHDR(newhdr);
 		return( sopen(FileName, "w", hdr) );
 	} 
-	else if (hdr->FILE.size<256) {
+	else if (newhdr->FILE.size<256) {
 		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
     		B4C_ERRMSG = "Error SOPEN(APPEND);  file not supported.";
+		destructHDR(newhdr);
 		return (NULL);
 	} 
 
-	ifseek(hdr,0,SEEK_SET);
-	hdr->HeadLen = 0;
-    	if ( read_header(hdr) ) {
+	ifseek(newhdr,0,SEEK_SET);
+	newhdr->HeadLen = 0;
+    	if ( read_header(newhdr) ) {
 		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
     		B4C_ERRMSG = "Error SOPEN(APPEND);  file not supported.";
+		destructHDR(newhdr);
 		return (NULL);
 	}
 
+	// if file is successfully opened, the header info of the existing file must be used. 
+	newhdr->FLAG.ROW_BASED_CHANNELS = hdr->FLAG.ROW_BASED_CHANNELS;
+	newhdr->FLAG.UCAL = hdr->FLAG.UCAL;
+	newhdr->FILE.OPEN = 2; 
+	ifseek(newhdr, newhdr->HeadLen + max(0,newhdr->NRec) * newhdr->AS.bpb, SEEK_SET);
+	newhdr->NRec = -1; 
 
+	destructHDR(hdr); hdr = newhdr; newhdr = NULL;
 }
-else if (!strncmp(MODE,"r",1))
-{
+
+else if (!strncmp(MODE,"r",1)) {
+	/***** 	SOPEN READ *****/
 	size_t k,name=0,ext=0;
 	for (k=0; hdr->FileName[k]; k++) {
 		if (hdr->FileName[k]==FILESEP) name = k+1;
@@ -9100,7 +9113,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			else if (!strcmp(tag,"GebDat")) {
 				sscanf(val,"%02u.%02u.%04u",&t.tm_mday,&t.tm_mon,&t.tm_year);
 				t.tm_year -=1900;
-				t.tm_min--;
+				t.tm_mon--;
 				t.tm_hour = 12;
 				t.tm_min = 0;
 				t.tm_sec = 0;
@@ -9752,7 +9765,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	}
 #endif
 
-	else if (hdr->TYPE==HL7aECG) {
+	else if (hdr->TYPE==HL7aECG || hdr->TYPE==XML) {
 		sopen_HL7aECG_read(hdr);
 		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"[181] #%i\n",hdr->NS);

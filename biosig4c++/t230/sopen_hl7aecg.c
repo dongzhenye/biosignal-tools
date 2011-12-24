@@ -118,23 +118,146 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 */
 
 	char tmp[80]; 
+
+	if (VERBOSE_LEVEL > 7) fprintf(stdout,"hl7r: [410]\n"); 
+
 	TiXmlDocument doc(hdr->FileName);
 
-	if (VERBOSE_LEVEL>8)
-		fprintf(stdout,"hl7r: [411]\n"); 
+	if (VERBOSE_LEVEL > 7) fprintf(stdout,"hl7r: [411]\n"); 
 
-	if(doc.LoadFile()){
+	if ( doc.LoadFile() ) {
+
+	if (VERBOSE_LEVEL > 7) fprintf(stdout,"hl7r: [412]\n"); 
 
 	    TiXmlHandle hDoc(&doc);
 	    TiXmlHandle geECG = hDoc.FirstChild("CardiologyXML");
 	    TiXmlHandle IHE = hDoc.FirstChild("IHEDocumentList");
 	    TiXmlHandle aECG = hDoc.FirstChild("AnnotatedECG");
 	    TiXmlHandle SierraECG = hDoc.FirstChild("restingECG");
+	    TiXmlHandle SierraECG2 = hDoc.FirstChild("restingecgdata");
 
 	    if (VERBOSE_LEVEL>8) fprintf(stdout,"hl7r: [412]\n"); 
 
 	    if (SierraECG.Element()) {
 		fprintf(stdout,"Great! Philips Sierra ECG is recognized\n");
+	    }	    
+
+	    else if (SierraECG2.Element()) {
+		const char *t; 
+		const char *e;
+		float notch = 0, lowpass=0, highpass=0; 
+		uint16_t gdftyp = 16; 
+		struct tm t0;
+
+		fprintf(stdout,"Great! Philips Sierra ECG 2 is recognized\n");
+		TiXmlHandle H = SierraECG2.FirstChild("dataacquisition");
+
+		if (H.Element()) {
+			e = SierraECG2.FirstChild("dataacquisition").Element()->Attribute("date");
+			t0.tm_year = (int)strtod(e,(char**)&e) - 1900;
+			t0.tm_mon = (int)strtod(e+1,(char**)&e) - 1 ;
+			t0.tm_mday = (int)strtod(e+1,(char**)&e);
+			e = SierraECG2.FirstChild("dataacquisition").Element()->Attribute("time");
+			t0.tm_hour = (int)strtod(e+1,(char**)&e);
+			t0.tm_min = (int)strtod(e+1,(char**)&e);
+			t0.tm_sec = (int)strtod(e+1,(char**)&e);
+			hdr->T0 = tm_time2gdf_time(&t0);
+		}
+
+		H = SierraECG2.FirstChild("dataacquisition").FirstChild("signalcharacteristics").FirstChild("acsetting");
+		if (H.Element()) notch = atof(H.Element()->GetText());
+		H = SierraECG2.FirstChild("reportinfo").FirstChild("reportbandwidth").FirstChild("lowpassfiltersetting");
+		if (H.Element()) lowpass = atof(H.Element()->GetText());
+		H = SierraECG2.FirstChild("reportinfo").FirstChild("reportbandwidth").FirstChild("highpassfiltersetting");
+		if (H.Element()) highpass = atof(H.Element()->GetText());
+
+		H = SierraECG2.FirstChild("dataacquisition").FirstChild("acquirer").FirstChild("institutionname");
+		if (H.Element()) hdr->ID.Hospital = strdup(H.Element()->GetText());
+
+		H = SierraECG2.FirstChild("dataacquisition").FirstChild("signalcharacteristics").FirstChild("samplingrate");
+		if (H.Element()) hdr->SampleRate = atof(H.Element()->GetText());
+
+		H = SierraECG2.FirstChild("dataacquisition").FirstChild("signalcharacteristics").FirstChild("signalresolution");
+		double Cal = 1.0; if (H.Element()) Cal = atof(H.Element()->GetText());
+
+		H = SierraECG2.FirstChild("dataacquisition").FirstChild("signalcharacteristics").FirstChild("numberchannelsvalid");
+		if (H.Element()) hdr->NS = atoi(H.Element()->GetText());
+
+		H = SierraECG2.FirstChild("dataacquisition").FirstChild("signalcharacteristics").FirstChild("numberchannelsallocated");
+		if (H.Element()) {
+			if (hdr->NS != atoi(H.Element()->GetText()) ) 
+				fprintf(stdout,"SierraECG: number of channels is ambigous\n");
+		}
+
+		H = SierraECG2.FirstChild("patient").FirstChild("generalpatientdata").FirstChild("patientid");
+		if (H.Element()) memcpy(hdr->Patient.Id, H.Element()->GetText(), MAX_LENGTH_PID);
+		hdr->Patient.Name[0] = 0;
+		H = SierraECG2.FirstChild("patient").FirstChild("generalpatientdata").FirstChild("name").FirstChild("firstname");
+		if (H.Element()) {
+			strncat(hdr->Patient.Name, H.Element()->GetText(), MAX_LENGTH_NAME);
+		}
+		H = SierraECG2.FirstChild("patient").FirstChild("generalpatientdata").FirstChild("name").FirstChild("middlename");
+		if (H.Element()) {
+			strncat(hdr->Patient.Name, " ", MAX_LENGTH_NAME);
+			strncat(hdr->Patient.Name, H.Element()->GetText(), MAX_LENGTH_NAME);
+		}
+		H = SierraECG2.FirstChild("patient").FirstChild("generalpatientdata").FirstChild("name").FirstChild("lastname");
+		if (H.Element()) {
+			strncat(hdr->Patient.Name, " ", MAX_LENGTH_NAME);
+			strncat(hdr->Patient.Name, H.Element()->GetText(), MAX_LENGTH_NAME);
+		}
+		H = SierraECG2.FirstChild("patient").FirstChild("generalpatientdata").FirstChild("age").FirstChild("years");
+//		if (H.Element()) hdr->Patient.Age != atoi(H.Element()->GetText()) 
+
+		H = SierraECG2.FirstChild("patient").FirstChild("generalpatientdata").FirstChild("sex");
+		if (H.Element()) {
+			t = H.Element()->GetText();
+			hdr->Patient.Sex = (t[0]=='M') + (t[0]=='m') + 2 * ( (t[0]=='F') + (t[0]=='f') ); 
+		}
+
+		H = SierraECG2.FirstChild("waveforms").FirstChild("parsedwaveforms");
+		if (H.Element()) {
+			hdr->SPR = atof(H.Element()->Attribute("durationperchannel"))*hdr->SampleRate/1000;
+		}
+		hdr->NRec = 1; 	
+		hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
+		for (uint16_t k=0; k<hdr->NS; k++) {
+			CHANNEL_TYPE *hc = hdr->CHANNEL+k;
+			hc->GDFTYP   = 16;
+			sprintf(hc->Label,"#%i",k);
+			hc->Cal      = Cal;
+			hc->Off      = 0.0;
+			hc->OnOff    = 1;
+			hc->DigMin   = -ldexp(1,15);
+			hc->DigMax   = +ldexp(1,15)-1;
+			hc->PhysMin  = hc->DigMin * Cal;
+			hc->PhysMax  = hc->DigMax * Cal;
+			hc->PhysDimCode = PhysDimCode("nV");
+			strcpy(hc->PhysDim,"nV");
+			hc->bi       = k*hdr->SPR*4;
+			hc->bi8      = 0;
+			hc->LeadIdCode = 0;
+			hc->SPR      = hdr->SPR;
+			hc->LowPass  = lowpass;
+			hc->HighPass = highpass;
+			hc->Notch    = notch;
+			hc->TOffset  = 0; 
+			hc->XYZ[0]   = 0; 
+			hc->XYZ[1]   = 0; 
+			hc->XYZ[2]   = 0; 
+		}
+		hdr->AS.bpb = sizeof(float)*hdr->NS;
+		hdr->AS.rawdata = (uint8_t*)realloc(hdr->AS.rawdata, hdr->AS.bpb*hdr->NRec*hdr->SPR);
+		hdr->AS.first = 0;
+		hdr->AS.length= hdr->NRec;
+
+		if (H.Element()) {
+			const char *e = H.Element()->GetText();
+			size_t k = 0;
+			while (e != NULL && k < hdr->SPR * hdr->NRec * hdr->NS) {
+				((float*)hdr->AS.rawdata)[k++] = (float)strtod(e,(char**)&e);
+			}
+		}
 
 	    }	    
 	    else if (geECG.Element()) {

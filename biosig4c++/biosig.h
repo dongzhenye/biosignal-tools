@@ -497,12 +497,22 @@ HDRTYPE* sopen(const char* FileName, const char* MODE, HDRTYPE* hdr);
 	Mode: "w" is writing mode, hdr contains the header information
 		If the number of records is not known, set hdr->NRec=-1 and
 		sclose will fill in the correct number.
+	Mode: "a" is append mode,
+		if file exists, header and eventtable is read, 
+		position pointer is set to end of data in order to add 
+		more data 		
+	        if file is successfully opened, the header structure of the existing file is used. 
+		Currently, append mode is supported only for the GDF format
+
 	hdr should be generated with constructHDR, and the necessary fields
 	must be defined. In read-mode, hdr can be NULL; however,
 	hdr->FLAG... can be used to turn off spurious warnings. In write-mode,
 	the whole header information must be defined.
+	In append mode, it is recommended to provide whole header information, 
+	which must be equivalent to the header info of an existing file. 
 	After calling sopen, the file header is read or written, and
 	the position pointer points to the beginning of the data section
+	in append mode, the position pointer points to end of file. 
  --------------------------------------------------------------- */
 
 int 	sclose(HDRTYPE* hdr);
