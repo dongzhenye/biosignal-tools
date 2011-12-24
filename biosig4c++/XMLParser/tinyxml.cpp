@@ -682,6 +682,45 @@ int TiXmlElement::QueryIntAttribute( const char* name, int* ival ) const
 }
 
 
+int TiXmlElement::QueryUnsignedAttribute( const char* name, unsigned* value ) const
+{
+	const TiXmlAttribute* node = attributeSet.Find( name );
+	if ( !node )
+		return TIXML_NO_ATTRIBUTE;
+
+	int ival = 0;
+	int result = node->QueryIntValue( &ival );
+	*value = (unsigned)ival;
+	return result;
+}
+
+
+int TiXmlElement::QueryBoolAttribute( const char* name, bool* bval ) const
+{
+	const TiXmlAttribute* node = attributeSet.Find( name );
+	if ( !node )
+		return TIXML_NO_ATTRIBUTE;
+	
+	int result = TIXML_WRONG_TYPE;
+	if (    StringEqual( node->Value(), "true", true, TIXML_ENCODING_UNKNOWN ) 
+		 || StringEqual( node->Value(), "yes", true, TIXML_ENCODING_UNKNOWN ) 
+		 || StringEqual( node->Value(), "1", true, TIXML_ENCODING_UNKNOWN ) ) 
+	{
+		*bval = true;
+		result = TIXML_SUCCESS;
+	}
+	else if (    StringEqual( node->Value(), "false", true, TIXML_ENCODING_UNKNOWN ) 
+			  || StringEqual( node->Value(), "no", true, TIXML_ENCODING_UNKNOWN ) 
+			  || StringEqual( node->Value(), "0", true, TIXML_ENCODING_UNKNOWN ) ) 
+	{
+		*bval = false;
+		result = TIXML_SUCCESS;
+	}
+	return result;
+}
+
+
+
 #ifdef TIXML_USE_STL
 int TiXmlElement::QueryIntAttribute( const std::string& name, int* ival ) const
 {
@@ -1133,8 +1172,8 @@ bool TiXmlDocument::LoadFile(gzFile file, TiXmlEncoding encoding )
 	// file is loaded in hdr->AS.Header; 
 	size_t buflen = 1l<<18;	
 	while (!gzeof(file)) {
-	    	buf = (char*)realloc(buf, buflen);
-	    	length += gzread(file, buf+length, buflen-1);
+		buf = (char*)realloc(buf, buflen);
+	    	length += gzread(file, buf+length, buflen-length-1);
 	    	buflen *= 2;
 	}
 	buf[length] = 0;
@@ -1304,17 +1343,19 @@ void TiXmlDocument::Print( FILE* cfile, int depth ) const
 	}
 }
 
+
 #ifdef ZLIB_H 
 void TiXmlDocument::gzPrint( gzFile cfile, int depth ) const
 {
-	assert( cfile );
-	for ( const TiXmlNode* node=FirstChild(); node; node=node->NextSibling() )
-	{
-		node->gzPrint( cfile, depth );
-		gzprintf( cfile, "\n" );
-	}
+  	assert( cfile );
+ 	for ( const TiXmlNode* node=FirstChild(); node; node=node->NextSibling() )
+  	{
+ 		node->gzPrint( cfile, depth );
+  		gzprintf( cfile, "\n" );
+  	}
 }
 #endif
+
 
 bool TiXmlDocument::Accept( TiXmlVisitor* visitor ) const
 {
@@ -1379,7 +1420,7 @@ void TiXmlAttribute::Print( FILE* cfile, int /*depth*/, TIXML_STRING* str ) cons
 
 	if (value.find ('\"') == TIXML_STRING::npos) {
 		if ( cfile ) {
-		fprintf (cfile, "%s=\"%s\"", n.c_str(), v.c_str() );
+			fprintf (cfile, "%s=\"%s\"", n.c_str(), v.c_str() );
 		}
 		if ( str ) {
 			(*str) += n; (*str) += "=\""; (*str) += v; (*str) += "\"";
@@ -1387,7 +1428,7 @@ void TiXmlAttribute::Print( FILE* cfile, int /*depth*/, TIXML_STRING* str ) cons
 	}
 	else {
 		if ( cfile ) {
-		fprintf (cfile, "%s='%s'", n.c_str(), v.c_str() );
+			fprintf (cfile, "%s='%s'", n.c_str(), v.c_str() );
 		}
 		if ( str ) {
 			(*str) += n; (*str) += "='"; (*str) += v; (*str) += "'";
