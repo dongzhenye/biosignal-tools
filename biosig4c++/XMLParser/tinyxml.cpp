@@ -38,6 +38,7 @@ add support for zlib-compressed (gzipped) XML data
 */
 
 #include <ctype.h>
+#include <iconv.h>
 
 #ifdef TIXML_USE_STL
 #include <sstream>
@@ -1077,7 +1078,7 @@ bool TiXmlDocument::LoadFile( FILE* file, TiXmlEncoding encoding )
 	location.Clear();
 
 	// Get the file size, so we can pre-allocate the string. HUGE speed impact.
-	long length = 0;
+	size_t length = 0;
 	fseek( file, 0, SEEK_END );
 	length = ftell( file );
 	fseek( file, 0, SEEK_SET );
@@ -1118,6 +1119,35 @@ bool TiXmlDocument::LoadFile( FILE* file, TiXmlEncoding encoding )
 		SetError( TIXML_ERROR_OPENING_FILE, 0, 0, TIXML_ENCODING_UNKNOWN );
 		return false;
 	}
+
+
+#ifdef _ICONV_H
+	// convert utf-16 to utf-8 if needed
+
+	const char XML_UTF16LE[] = "\xff\xfe<\0?\0x\0m\0l\0 \0v\0e\0r\0s\0i\0o\0n\0=\0\"\0001\0.\0000\0\"\0 \0e\0n\0c\0o\0d\0i\0n\0g\0=\0\"\0U\0T\0F\0-\0001\0006\0\"\0?\0>\0";
+	if (!memcmp(buf, XML_UTF16LE, sizeof(XML_UTF16LE)-1 ) ) {
+		char *buf2 = (char*)malloc(length);	
+		size_t outlen = length; 
+
+		char *inbuf = buf;
+		char *outbuf = buf2;
+		iconv_t CD = iconv_open ("UTF-8","UTF-16LE");
+		size_t iconv_res = iconv (CD, &inbuf, &length, &outbuf, &outlen);
+		iconv_close (CD);
+		
+		if (iconv_res != (size_t)(-1)) {
+			free(buf); 
+			outbuf[0] = 0;
+			buf = buf2;
+			length = strlen(buf);
+		} 
+		else {
+			free(buf2);
+			fprintf(stderr,"SOPEN_HL7aECG: attempt to convert UTF-16 to UTF-8 failed\n");
+		}
+	}
+#endif 
+
 
 	// Process the buffer in place to normalize new lines. (See comment above.)
 	// Copies from the 'p' to 'q' pointer, where p can advance faster if
@@ -1167,7 +1197,7 @@ bool TiXmlDocument::LoadFile(gzFile file, TiXmlEncoding encoding )
 {
 
 	char *buf = NULL;
-	long length = 0; 
+	size_t length = 0; 
 
 	// file is loaded in hdr->AS.Header; 
 	size_t buflen = 1l<<18;	
@@ -1178,6 +1208,34 @@ bool TiXmlDocument::LoadFile(gzFile file, TiXmlEncoding encoding )
 	}
 	buf[length] = 0;
     	buf = (char*)realloc(buf,length+1);
+
+#ifdef _ICONV_H
+	// convert utf-16 to utf-8 if needed
+
+	const char XML_UTF16LE[] = "\xff\xfe<\0?\0x\0m\0l\0 \0v\0e\0r\0s\0i\0o\0n\0=\0\"\0001\0.\0000\0\"\0 \0e\0n\0c\0o\0d\0i\0n\0g\0=\0\"\0U\0T\0F\0-\0001\0006\0\"\0?\0>\0";
+	if (!memcmp(buf, XML_UTF16LE, sizeof(XML_UTF16LE)-1 ) ) {
+		char *buf2 = (char*)malloc(length);	
+		size_t outlen = length; 
+
+		char *inbuf = buf;
+		char *outbuf = buf2;
+		iconv_t CD = iconv_open ("UTF-8","UTF-16LE");
+		size_t iconv_res = iconv (CD, &inbuf, &length, &outbuf, &outlen);
+		iconv_close (CD);
+		
+		if (iconv_res != (size_t)(-1)) {
+			free(buf); 
+			outbuf[0] = 0;
+			buf = buf2;
+			length = strlen(buf);
+		} 
+		else {
+			free(buf2);
+			fprintf(stderr,"SOPEN_HL7aECG: attempt to convert UTF-16 to UTF-8 failed\n");
+		}
+	}
+#endif 
+
 
 	// Process the buffer in place to normalize new lines. (See comment above.)
 	// Copies from the 'p' to 'q' pointer, where p can advance faster if
@@ -1195,7 +1253,6 @@ bool TiXmlDocument::LoadFile(gzFile file, TiXmlEncoding encoding )
 	const char CR = 0x0d;
 	const char LF = 0x0a;
 
-	buf[length] = 0;
 	while( *p ) {
 		assert( p < (buf+length) );
 		assert( q <= (buf+length) );
