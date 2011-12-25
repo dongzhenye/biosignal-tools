@@ -790,17 +790,17 @@ test: $(TEMP_DIR)t1.scp save2scp save2aecg save2gdf
 	# biosig4python
 	# includes test for on-the-fly compression and decompression
 	./save2gdf  -z  $(TEMP_DIR)t1.scp        $(TEMP_DIR)t1.scp.gdf
-	./save2scp  -z 	$(TEMP_DIR)t1.scp        $(TEMP_DIR)t1.scp.scp
-	./save2aecg -z 	$(TEMP_DIR)t1.scp        $(TEMP_DIR)t1.scp.hl7
+	sh save2scp  -z 	$(TEMP_DIR)t1.scp        $(TEMP_DIR)t1.scp.scp
+	sh save2aecg -z 	$(TEMP_DIR)t1.scp        $(TEMP_DIR)t1.scp.hl7
 	./save2gdf 	$(TEMP_DIR)t1.scp.gdf.gz $(TEMP_DIR)t1.scp.gdf.gdf
 	./save2gdf 	$(TEMP_DIR)t1.scp.scp.gz $(TEMP_DIR)t1.scp.scp.gdf
 	./save2gdf 	$(TEMP_DIR)t1.scp.hl7.gz $(TEMP_DIR)t1.scp.hl7.gdf
-	./save2scp 	$(TEMP_DIR)t1.scp.gdf.gz $(TEMP_DIR)t1.scp.gdf.scp
-	./save2scp 	$(TEMP_DIR)t1.scp.scp.gz $(TEMP_DIR)t1.scp.scp.scp
-	./save2scp 	$(TEMP_DIR)t1.scp.hl7.gz $(TEMP_DIR)t1.scp.hl7.scp
-	./save2aecg 	$(TEMP_DIR)t1.scp.gdf.gz $(TEMP_DIR)t1.scp.gdf.hl7
-	./save2aecg	$(TEMP_DIR)t1.scp.scp.gz $(TEMP_DIR)t1.scp.scp.hl7
-	./save2aecg	$(TEMP_DIR)t1.scp.hl7.gz $(TEMP_DIR)t1.scp.hl7.hl7
+	sh ./save2scp 	$(TEMP_DIR)t1.scp.gdf.gz $(TEMP_DIR)t1.scp.gdf.scp
+	sh ./save2scp 	$(TEMP_DIR)t1.scp.scp.gz $(TEMP_DIR)t1.scp.scp.scp
+	sh ./save2scp 	$(TEMP_DIR)t1.scp.hl7.gz $(TEMP_DIR)t1.scp.hl7.scp
+	sh ./save2aecg 	$(TEMP_DIR)t1.scp.gdf.gz $(TEMP_DIR)t1.scp.gdf.hl7
+	sh ./save2aecg	$(TEMP_DIR)t1.scp.scp.gz $(TEMP_DIR)t1.scp.scp.hl7
+	sh ./save2aecg	$(TEMP_DIR)t1.scp.hl7.gz $(TEMP_DIR)t1.scp.hl7.hl7
 	# python test0/test.py
 
 zip: $(TEMP_DIR)t1.scp save2gdf
