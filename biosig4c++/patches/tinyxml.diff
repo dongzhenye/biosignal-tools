@@ -1,0 +1,486 @@
+Only in ../tinyxml: changes.txt
+Only in ../tinyxml: demotest.xml
+Only in ../tinyxml: dox
+Only in ../tinyxml: dream.xml
+Only in ../tinyxml: echo.cpp
+Only in ../tinyxml: .git
+Only in ../tinyxml: hamlet.xml
+Only in ../tinyxml: makedistlinux
+Only in ../tinyxml: makedistwin.bat
+Only in ../tinyxml: Makefile
+Only in ../tinyxml: midsummerNightsDreamWithAVeryLongFilenameToConfuseTheStringHandlingRoutines.xml
+Only in ../tinyxml: readme.txt
+Only in ../tinyxml: SConstruct
+Only in ../tinyxml: setversion.py
+Only in XMLParser: .svn
+Only in ../tinyxml: test0.xml
+Only in ../tinyxml: test1.xml
+Only in ../tinyxml: test2.xml
+Only in ../tinyxml: test5.xml
+Only in ../tinyxml: test6.xml
+Only in ../tinyxml: test7.xml
+Only in ../tinyxml: testout.xml
+Only in ../tinyxml: textfile.txt
+diff -r ../tinyxml/tinyxml.cpp XMLParser/tinyxml.cpp
+22a23,37
+> 
+> 
+> Modified:  Copyright (C) 2009 Alois Schloegl <a.schloegl@ieee.org>
+> add support for zlib-compressed (gzipped) XML data
+> 
+>     $Id: tinyxml.h,v 1.5 2009/04/09 09:12:09 schloegl Exp $
+>     Copyright (C) 2009,2011 Alois Schloegl <a.schloegl@ieee.org>
+>     This file is part of the "BioSig for C/C++" repository
+>     (biosig4c++) at http://biosig.sf.net/
+> 
+>     BioSig is free software; you can redistribute it and/or
+>     modify it under the terms of the GNU General Public License
+>     as published by the Free Software Foundation; either version 3
+>     of the License, or (at your option) any later version.
+> 
+25a41
+> #include <iconv.h>
+851a868,922
+> #ifdef ZLIB_H 
+> void TiXmlElement::gzPrint( gzFile cfile, int depth ) const
+> {
+> 	assert( cfile );
+> 	int i;
+> 	assert( cfile );
+> 	for ( i=0; i<depth; i++ ) {
+> 		gzprintf( cfile, "    " );
+> 	}
+> 
+> 	gzprintf( cfile, "<%s", value.c_str() );
+> 
+> 	const TiXmlAttribute* attrib;
+> 	for ( attrib = attributeSet.First(); attrib; attrib = attrib->Next() )
+> 	{
+> 		gzprintf( cfile, " " );
+> 		attrib->gzPrint( cfile, depth );
+> 	}
+> 
+> 	// There are 3 different formatting approaches:
+> 	// 1) An element without children is printed as a <foo /> node
+> 	// 2) An element with only a text child is printed as <foo> text </foo>
+> 	// 3) An element with children is printed on multiple lines.
+> 	TiXmlNode* node;
+> 	if ( !firstChild )
+> 	{
+> 		gzprintf( cfile, " />" );
+> 	}
+> 	else if ( firstChild == lastChild && firstChild->ToText() )
+> 	{
+> 		gzprintf( cfile, ">" );
+> 		firstChild->gzPrint( cfile, depth + 1 );
+> 		gzprintf( cfile, "</%s>", value.c_str() );
+> 	}
+> 	else
+> 	{
+> 		gzprintf( cfile, ">" );
+> 
+> 		for ( node = firstChild; node; node=node->NextSibling() )
+> 		{
+> 			if ( !node->ToText() )
+> 			{
+> 				gzprintf( cfile, "\n" );
+> 			}
+> 			node->gzPrint( cfile, depth+1 );
+> 		}
+> 		gzprintf( cfile, "\n" );
+> 		for( i=0; i<depth; ++i ) {
+> 			gzprintf( cfile, "    " );
+> 		}
+> 		gzprintf( cfile, "</%s>", value.c_str() );
+> 	}
+> }
+> #endif
+> 
+970a1042,1051
+> #ifdef ZLIB_H
+> 	gzFile file;
+> 	file = gzopen( value.c_str(), "rb" );	
+> 	if ( file )
+> 	{
+> 		bool result = LoadFile( file, encoding );
+> 		gzclose( file );
+> 		return result;
+> 	}
+> #else
+978a1060
+> #endif 
+999c1081
+< 	long length = 0;
+---
+> 	size_t length = 0;
+1040a1123,1151
+> 
+> #ifdef _ICONV_H
+> 	// convert utf-16 to utf-8 if needed
+> 
+> 	const char XML_UTF16LE[] = "\xff\xfe<\0?\0x\0m\0l\0 \0v\0e\0r\0s\0i\0o\0n\0=\0\"\0001\0.\0000\0\"\0 \0e\0n\0c\0o\0d\0i\0n\0g\0=\0\"\0U\0T\0F\0-\0001\0006\0\"\0?\0>\0";
+> 	if (!memcmp(buf, XML_UTF16LE, sizeof(XML_UTF16LE)-1 ) ) {
+> 		char *buf2 = (char*)malloc(length);	
+> 		size_t outlen = length; 
+> 
+> 		char *inbuf = buf;
+> 		char *outbuf = buf2;
+> 		iconv_t CD = iconv_open ("UTF-8","UTF-16LE");
+> 		size_t iconv_res = iconv (CD, &inbuf, &length, &outbuf, &outlen);
+> 		iconv_close (CD);
+> 		
+> 		if (iconv_res != (size_t)(-1)) {
+> 			free(buf); 
+> 			outbuf[0] = 0;
+> 			buf = buf2;
+> 			length = strlen(buf);
+> 		} 
+> 		else {
+> 			free(buf2);
+> 			fprintf(stderr,"SOPEN_HL7aECG: attempt to convert UTF-16 to UTF-8 failed\n");
+> 		}
+> 	}
+> #endif 
+> 
+> 
+1083a1195,1310
+> #ifdef ZLIB_H
+> bool TiXmlDocument::LoadFile(gzFile file, TiXmlEncoding encoding )
+> {
+> 
+> 	char *buf = NULL;
+> 	size_t length = 0; 
+> 
+> 	// file is loaded in hdr->AS.Header; 
+> 	size_t buflen = 1l<<18;	
+> 	while (!gzeof(file)) {
+> 		buf = (char*)realloc(buf, buflen);
+> 	    	length += gzread(file, buf+length, buflen-length-1);
+> 	    	buflen *= 2;
+> 	}
+> 	buf[length] = 0;
+>     	buf = (char*)realloc(buf,length+1);
+> 
+> #ifdef _ICONV_H
+> 	// convert utf-16 to utf-8 if needed
+> 
+> 	const char XML_UTF16LE[] = "\xff\xfe<\0?\0x\0m\0l\0 \0v\0e\0r\0s\0i\0o\0n\0=\0\"\0001\0.\0000\0\"\0 \0e\0n\0c\0o\0d\0i\0n\0g\0=\0\"\0U\0T\0F\0-\0001\0006\0\"\0?\0>\0";
+> 	if (!memcmp(buf, XML_UTF16LE, sizeof(XML_UTF16LE)-1 ) ) {
+> 		char *buf2 = (char*)malloc(length);	
+> 		size_t outlen = length; 
+> 
+> 		char *inbuf = buf;
+> 		char *outbuf = buf2;
+> 		iconv_t CD = iconv_open ("UTF-8","UTF-16LE");
+> 		size_t iconv_res = iconv (CD, &inbuf, &length, &outbuf, &outlen);
+> 		iconv_close (CD);
+> 		
+> 		if (iconv_res != (size_t)(-1)) {
+> 			free(buf); 
+> 			outbuf[0] = 0;
+> 			buf = buf2;
+> 			length = strlen(buf);
+> 		} 
+> 		else {
+> 			free(buf2);
+> 			fprintf(stderr,"SOPEN_HL7aECG: attempt to convert UTF-16 to UTF-8 failed\n");
+> 		}
+> 	}
+> #endif 
+> 
+> 
+> 	// Process the buffer in place to normalize new lines. (See comment above.)
+> 	// Copies from the 'p' to 'q' pointer, where p can advance faster if
+> 	// a newline-carriage return is hit.
+> 	//
+> 	// Wikipedia:
+> 	// Systems based on ASCII or a compatible character set use either LF  (Line feed, '\n', 0x0A, 10 in decimal) or 
+> 	// CR (Carriage return, '\r', 0x0D, 13 in decimal) individually, or CR followed by LF (CR+LF, 0x0D 0x0A)...
+> 	//		* LF:    Multics, Unix and Unix-like systems (GNU/Linux, AIX, Xenix, Mac OS X, FreeBSD, etc.), BeOS, Amiga, RISC OS, and others
+>     //		* CR+LF: DEC RT-11 and most other early non-Unix, non-IBM OSes, CP/M, MP/M, DOS, OS/2, Microsoft Windows, Symbian OS
+>     //		* CR:    Commodore 8-bit machines, Apple II family, Mac OS up to version 9 and OS-9
+> 
+> 	const char* p = buf;	// the read head
+> 	char* q = buf;			// the write head
+> 	const char CR = 0x0d;
+> 	const char LF = 0x0a;
+> 
+> 	while( *p ) {
+> 		assert( p < (buf+length) );
+> 		assert( q <= (buf+length) );
+> 		assert( q <= p );
+> 
+> 		if ( *p == CR ) {
+> 			*q++ = LF;
+> 			p++;
+> 			if ( *p == LF ) {		// check for CR+LF (and skip LF)
+> 				p++;
+> 			}
+> 		}
+> 		else {
+> 			*q++ = *p++;
+> 		}
+> 	}
+> 	assert( q <= (buf+length) );
+> 	*q = 0;
+> 
+> 	Parse( buf, 0, encoding );
+> 
+> 	delete [] buf;
+> 	return !Error();
+> }
+> #endif 
+> 
+> 
+> bool TiXmlDocument::SaveFile( const char * filename, char compression ) const
+> {
+> 	// The old c stuff lives on...
+> 
+> 	if (compression) {
+> #ifdef ZLIB_H 
+> 		gzFile fid = gzopen(filename, "wb" );
+> 		if (fid) {
+> 			bool result = SaveFile(fid);
+> 			gzclose(fid);
+> 			return result;
+> 		}	
+> #else
+> 		fprintf(stdout,"warning: zlib compression not supported\n"); 
+> #endif
+> 	} 
+> 	else {
+> 		FILE *fid = fopen(filename, "wb" );
+> 		if (fid) {
+> 			bool result = SaveFile(fid);
+> 			fclose(fid);
+> 			return result;
+> 		}	
+> 	}
+> 	return false;
+> }
+> 
+> 
+1113a1341,1361
+> #ifdef ZLIB_H 
+> bool TiXmlDocument::SaveFile( gzFile fp ) const
+> {
+> 	if ( useMicrosoftBOM ) 
+> 	{
+> 		const unsigned char TIXML_UTF_LEAD_0 = 0xefU;
+> 		const unsigned char TIXML_UTF_LEAD_1 = 0xbbU;
+> 		const unsigned char TIXML_UTF_LEAD_2 = 0xbfU;
+> 
+> 		gzputc( fp, TIXML_UTF_LEAD_0 );
+> 		gzputc( fp, TIXML_UTF_LEAD_1 );
+> 		gzputc( fp, TIXML_UTF_LEAD_2 );
+> 	}
+> 	gzPrint( fp, 0 ); 
+> 	int err;
+> 	gzerror(fp,&err);
+> 	return (err!=0);
+> }
+> #endif 
+> 
+> 
+1155a1404,1416
+> #ifdef ZLIB_H 
+> void TiXmlDocument::gzPrint( gzFile cfile, int depth ) const
+> {
+>   	assert( cfile );
+>  	for ( const TiXmlNode* node=FirstChild(); node; node=node->NextSibling() )
+>   	{
+>  		node->gzPrint( cfile, depth );
+>   		gzprintf( cfile, "\n" );
+>   	}
+> }
+> #endif
+> 
+> 
+1234a1496,1522
+> #ifdef ZLIB_H 
+> void TiXmlAttribute::gzPrint( gzFile cfile, int /*depth*/, TIXML_STRING* str ) const
+> {
+> 	TIXML_STRING n, v;
+> 
+> 	EncodeString( name, &n );
+> 	EncodeString( value, &v );
+> 
+> 	if (value.find ('\"') == TIXML_STRING::npos) {
+> 		if ( cfile ) {
+> 		gzprintf (cfile, "%s=\"%s\"", n.c_str(), v.c_str() );
+> 		}
+> 		if ( str ) {
+> 			(*str) += n; (*str) += "=\""; (*str) += v; (*str) += "\"";
+> 		}
+> 	}
+> 	else {
+> 		if ( cfile ) {
+> 		gzprintf (cfile, "%s='%s'", n.c_str(), v.c_str() );
+> 		}
+> 		if ( str ) {
+> 			(*str) += n; (*str) += "='"; (*str) += v; (*str) += "'";
+> 		}
+> 	}
+> }
+> #endif
+> 
+1306a1595,1605
+> #ifdef ZLIB_H
+> void TiXmlComment::gzPrint( gzFile cfile, int depth ) const
+> {
+> 	assert( cfile );
+> 	for ( int i=0; i<depth; i++ )
+> 	{
+> 		gzprintf( cfile,  "    " );
+> 	}
+> 	gzprintf( cfile, "<!--%s-->", value.c_str() );
+> }
+> #endif
+1351a1651,1672
+> #ifdef ZLIB_H
+> void TiXmlText::gzPrint( gzFile cfile, int depth ) const
+> {
+> 	assert( cfile );
+> 	if ( cdata )
+> 	{
+> 		int i;
+> 		gzprintf( cfile, "\n" );
+> 		for ( i=0; i<depth; i++ ) {
+> 			gzprintf( cfile, "    " );
+> 		}
+> 		gzprintf( cfile, "<![CDATA[%s]]>\n", value.c_str() );	// unformatted output
+> 	}
+> 	else
+> 	{
+> 		TIXML_STRING buffer;
+> 		EncodeString( value, &buffer );
+> 		gzprintf( cfile, "%s", buffer.c_str() );
+> 	}
+> }
+> #endif
+> 
+1438a1760,1782
+> #ifdef ZLIB_H
+> void TiXmlDeclaration::gzPrint( gzFile cfile, int /*depth*/, TIXML_STRING* str ) const
+> {
+> 	if ( cfile ) gzprintf( cfile, "<?xml " );
+> 	if ( str )	 (*str) += "<?xml ";
+> 
+> 	if ( !version.empty() ) {
+> 		if ( cfile ) gzprintf (cfile, "version=\"%s\" ", version.c_str ());
+> 		if ( str ) { (*str) += "version=\""; (*str) += version; (*str) += "\" "; }
+> 	}
+> 	if ( !encoding.empty() ) {
+> 		if ( cfile ) gzprintf (cfile, "encoding=\"%s\" ", encoding.c_str ());
+> 		if ( str ) { (*str) += "encoding=\""; (*str) += encoding; (*str) += "\" "; }
+> 	}
+> 	if ( !standalone.empty() ) {
+> 		if ( cfile ) gzprintf (cfile, "standalone=\"%s\" ", standalone.c_str ());
+> 		if ( str ) { (*str) += "standalone=\""; (*str) += standalone; (*str) += "\" "; }
+> 	}
+> 	if ( cfile ) gzprintf( cfile, "?>" );
+> 	if ( str )	 (*str) += "?>";
+> }
+> #endif
+> 
+1474a1819,1826
+> #ifdef ZLIB_H
+> void TiXmlUnknown::gzPrint( gzFile cfile, int depth ) const
+> {
+> 	for ( int i=0; i<depth; i++ )
+> 		gzprintf( cfile, "    " );
+> 	gzprintf( cfile, "<%s>", value.c_str() );
+> }
+> #endif
+Only in ../tinyxml: tinyxml.cpp.orig
+Only in ../tinyxml: tinyxml.cpp.rej
+Only in ../tinyxml: tinyxml.dsw
+diff -r ../tinyxml/tinyxml.h XMLParser/tinyxml.h
+22a23,37
+> 
+> Modified by Alois Schlögl 
+> Apr 6, 2009: add support for zlib-compressed (gzipped) XML data
+> Jan 2011: update to latest TinyXML
+> 	
+>     $Id: tinyxml.h,v 1.6 2009/04/15 20:31:54 schloegl Exp $
+>     Copyright (C) 2009,2011 Alois Schloegl <a.schloegl@ieee.org>
+>     This file is part of the "BioSig for C/C++" repository
+>     (biosig4c++) at http://biosig.sf.net/
+> 
+>     BioSig is free software; you can redistribute it and/or
+>     modify it under the terms of the GNU General Public License
+>     as published by the Free Software Foundation; either version 3
+>     of the License, or (at your option) any later version.
+> 
+40a56,66
+> #ifdef WITH_ZLIB
+> #include <zlib.h>
+> #ifndef ZLIB_H
+>     #if defined(__MINGW64__)
+> 	#include "../win64/zlib/zlib.h"
+>     #elif defined(__MINGW32__)
+> 	#include "../win32/zlib/include/zlib.h"
+>     #endif 
+> #endif 
+> #endif 
+> 
+213a240,242
+> #ifdef ZLIB_H
+> 	virtual void gzPrint( gzFile cfile, int depth ) const = 0;
+> #endif
+874a904,911
+> #ifdef ZLIB_H 
+> 	// Print through zlib 
+> 	virtual void gzPrint( gzFile cfile, int depth ) const {
+> 		gzPrint( cfile, depth, 0);
+> 	}
+> 	void gzPrint( gzFile cfile, int depth, TIXML_STRING* str ) const;
+> #endif 
+> 
+1126a1164,1166
+> #ifdef ZLIB_H 
+> 	virtual void gzPrint( gzFile cfile, int depth ) const;
+> #endif 
+1179a1220,1222
+> #ifdef ZLIB_H 
+> 	virtual void gzPrint( gzFile cfile, int depth ) const;
+> #endif 
+1240a1284,1286
+> #ifdef ZLIB_H
+> 	virtual void gzPrint( gzFile cfile, int depth ) const;
+> #endif
+1321a1368,1373
+> #ifdef ZLIB_H 
+> 	virtual void gzPrint( gzFile cfile, int depth, TIXML_STRING* str ) const;
+> 	virtual void gzPrint( gzFile cfile, int depth ) const {
+> 		gzPrint( cfile, depth, 0 );
+> 	}
+> #endif 
+1366a1419,1421
+> #ifdef ZLIB_H 
+> 	virtual void gzPrint( gzFile cfile, int depth ) const;
+> #endif 
+1421a1477
+> 	bool SaveFile( const char * filename, char compression ) const;
+1429a1486,1489
+> #ifdef ZLIB_H
+> 	bool LoadFile( gzFile, TiXmlEncoding encoding = TIXML_DEFAULT_ENCODING );
+> 	bool SaveFile( gzFile ) const;
+> #endif 
+1528a1589,1592
+> #ifdef ZLIB_H 
+> 	virtual void gzPrint( gzFile cfile, int depth = 0 ) const;
+> #endif 
+> 
+Only in ../tinyxml: tinyxml.h.orig
+Only in ../tinyxml: tinyxml_lib.vcxproj
+Only in ../tinyxml: tinyxml.sln
+Only in ../tinyxml: tinyxmlSTL.vcxproj
+Only in ../tinyxml: tinyXmlTestSTL.vcxproj
+Only in ../tinyxml: tinyXmlTest.vcxproj
+Only in ../tinyxml: tutorial_gettingStarted.txt
+Only in ../tinyxml: utf8test.gif
+Only in ../tinyxml: utf8testout.xml
+Only in ../tinyxml: utf8testverify.xml
+Only in ../tinyxml: utf8test.xml
+Only in ../tinyxml: xmltest.cpp
