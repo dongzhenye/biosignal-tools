@@ -141,7 +141,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			{
 				*(ptr+sectionStart+curSectLen) = 0;	// tag
 				len = strlen(hdr->Patient.Name) + 1;
-				*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(len);	// length
+				leu16a(len, ptr+sectionStart+curSectLen+1);	// length
 				strncpy((char*)ptr+sectionStart+curSectLen+3,hdr->Patient.Name,len);	// field
 				curSectLen += len+3; 
 			}
@@ -152,7 +152,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 /*
 			*(ptr+sectionStart+curSectLen) = 1;	// tag
 			len = strlen(hdr->Patient.Name) + 1;
-			*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(len);	// length
+			leu16a(len, ptr+sectionStart+curSectLen+1);	// length
 			strncpy((char*)ptr+sectionStart+curSectLen+3,hdr->Patient.Name,len);	// field
 			curSectLen += len+3; 
 */	
@@ -164,7 +164,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			if (strlen(hdr->Patient.Id)>0) {
 				*(ptr+sectionStart+curSectLen) = 2;	// tag
 				len = strlen(hdr->Patient.Id) + 1;
-				*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(len);	// length
+				leu16a(len, ptr+sectionStart+curSectLen+1);	// length
 				strncpy((char*)ptr+sectionStart+curSectLen+3,hdr->Patient.Id,len);	// field
 				curSectLen += len+3;
 			}	 
@@ -175,7 +175,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 /*
 			*(ptr+sectionStart+curSectLen) = 3;	// tag
 			len = strlen(hdr->Patient.Name) + 1;
-			*(uint16_t)(ptr+sectionStart+curSectLen+1) = l_endian_u16(len);	// length
+			leu16a(len, ptr+sectionStart+curSectLen+1);	// length
 			strncpy(ptr+sectionStart+curSectLen+3,hdr->Patient.Name,len);	// field
 			curSectLen += len+3; 
 */
@@ -185,8 +185,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 				T0_tm = gdf_time2tm_time(hdr->Patient.Birthday);
 				
 				*(ptr+sectionStart+curSectLen) = 5;	// tag
-				*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(4);	// length
-				*(uint16_t*)(ptr+sectionStart+curSectLen+3) = l_endian_u16(T0_tm->tm_year+1900);// year
+				leu16a(4, ptr+sectionStart+curSectLen+1);	// length
+				leu16a(T0_tm->tm_year+1900, ptr+sectionStart+curSectLen+3);// year
 				*(ptr+sectionStart+curSectLen+5) = (uint8_t)(T0_tm->tm_mon + 1);	// month
 				*(ptr+sectionStart+curSectLen+6) = (uint8_t)(T0_tm->tm_mday); 	// day
 				curSectLen += 7;
@@ -195,8 +195,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			// Tag 6 (len = 3)   Height
 			if (hdr->Patient.Height>0.0) {
 				*(ptr+sectionStart+curSectLen) = 6;	// tag
-				*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(3);	// length
-				*(uint16_t*)(ptr+sectionStart+curSectLen+3) = l_endian_u16(hdr->Patient.Height);	// value
+				leu16a(3, ptr+sectionStart+curSectLen+1);	// length
+				leu16a(hdr->Patient.Height, ptr+sectionStart+curSectLen+3);	// value
 				*(ptr+sectionStart+curSectLen+5) = 1;	// cm
 				curSectLen += 6;
 			}	 
@@ -204,8 +204,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			// Tag 7 (len = 3)	Weight
 			if (hdr->Patient.Weight>0.0) {
 				*(ptr+sectionStart+curSectLen) = 7;	// tag
-				*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(3);	// length
-				*(uint16_t*)(ptr+sectionStart+curSectLen+3) = l_endian_u16(hdr->Patient.Weight);	// value
+				leu16a(3, ptr+sectionStart+curSectLen+1);	// length
+				leu16a(hdr->Patient.Weight, ptr+sectionStart+curSectLen+3);	// value
 				*(ptr+sectionStart+curSectLen+5) = 1;	// kg
 				curSectLen += 6;
 			}	 
@@ -213,7 +213,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			// Tag 8 (len = 1)
 			if (hdr->Patient.Sex != 0) {
 				*(ptr+sectionStart+curSectLen) = 8;	// tag
-				*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(1);	// length
+				leu16a(1, ptr+sectionStart+curSectLen+1);	// length
 				*(ptr+sectionStart+curSectLen+3) = hdr->Patient.Sex;	// value
 				curSectLen += 4;
 			}	 
@@ -221,16 +221,16 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			// Tag 11 (len = 2)
 			if (aECG->systolicBloodPressure>0.0) {
 				*(ptr+sectionStart+curSectLen) = 11;	// tag
-				*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(2);	// length
-				*(uint16_t*)(ptr+sectionStart+curSectLen+3) = l_endian_u16((uint16_t)aECG->systolicBloodPressure);	// value
+				leu16a(2, ptr+sectionStart+curSectLen+1);	// length
+				leu16a((uint16_t)aECG->systolicBloodPressure, ptr+sectionStart+curSectLen+3);	// value
 				curSectLen += 5;
 			};	 
 
 			// Tag 12 (len = 2)
 			if (aECG->diastolicBloodPressure>0.0) {
 				*(ptr+sectionStart+curSectLen) = 12;	// tag
-				*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(2);	// length
-				*(uint16_t*)(ptr+sectionStart+curSectLen+3) = l_endian_u16((uint16_t)aECG->diastolicBloodPressure);	// value
+				leu16a(2, ptr+sectionStart+curSectLen+1);	// length
+				leu16a((uint16_t)aECG->diastolicBloodPressure, ptr+sectionStart+curSectLen+3);	// value
 				curSectLen += 5;
 			};
 			// Tag 13 (max len = 80)
@@ -239,7 +239,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			if (len>0) {
 				*(ptr+sectionStart+curSectLen) = 13;	// tag
 				len = min(64,len+1);
-				*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(len);	// length
+				leu16a(len, ptr+sectionStart+curSectLen+1);	// length
 				strncpy((char*)(ptr+sectionStart+curSectLen+3),aECG->Diagnosis,len);
 				curSectLen += 3+len;
 			};	 
@@ -250,7 +250,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			// Total = 161 (max value)
 			*(ptr+sectionStart+curSectLen) = 14;	// tag
 			//len = 41; 	// minimum length
-			// *(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(len);	// length	
+			// leu16a(len, ptr+sectionStart+curSectLen+1);	// length	
 			memset(ptr+sectionStart+curSectLen+3,0,41);  // dummy value 
 			
 			curSectLen += 3; 
@@ -295,7 +295,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			strncpy((char*)(ptr+sectionStart+curSectLen+len1), tmp, len);
 			len1 += len;
 
-			*(uint16_t*)(ptr+sectionStart+curSectLen+1-3) = l_endian_u16(len1);	// length
+			leu16a(len1, ptr+sectionStart+curSectLen+1-3);	// length
 			curSectLen += len1; 
 
 			// Tag 16 (max len = 80)
@@ -305,7 +305,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			if (len>0) {
 				*(ptr+sectionStart+curSectLen) = 16;	// tag
 				len = min(64,len+1);
-				*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(len);	// length
+				leu16a(len, ptr+sectionStart+curSectLen+1);	// length
 				strncpy((char*)(ptr+sectionStart+curSectLen+3),hdr->ID.Hospital,len);
 				curSectLen += 3+len;
 			};	 
@@ -316,7 +316,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			if (len>0) {
 				*(ptr+sectionStart+curSectLen) = 20;	// tag
 				len = min(64,len+1);
-				*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(len);	// length
+				leu16a(len, ptr+sectionStart+curSectLen+1);	// length
 				strncpy((char*)(ptr+sectionStart+curSectLen+3),aECG->ReferringPhysician,len);
 				curSectLen += 3+len;
 			};	 
@@ -327,7 +327,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			if (len>0) {
 				*(ptr+sectionStart+curSectLen) = 21;	// tag
 				len = min(64,len+1);
-				*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(len);	// length
+				leu16a(len, ptr+sectionStart+curSectLen+1);	// length
 				strncpy((char*)(ptr+sectionStart+curSectLen+3),aECG->MedicationDrugs,len);
 				curSectLen += 3+len;
 			};	 
@@ -338,7 +338,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			if (len>0) {
 				*(ptr+sectionStart+curSectLen) = 22;	// tag
 				len = min(64,len+1);
-				*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(len);	// length
+				leu16a(len, ptr+sectionStart+curSectLen+1);	// length
 				strncpy((char*)(ptr+sectionStart+curSectLen+3),hdr->ID.Technician,len);
 				curSectLen += 3+len;
 			};	 
@@ -346,7 +346,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			// Tag 24 ( len = 1 ) 
 			if (VERBOSE_LEVEL>7) fprintf(stdout,"Section 1 Tag 24 \n");
 			*(ptr+sectionStart+curSectLen) = 24;	// tag
-			*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(1);	// length
+			leu16a(1, ptr+sectionStart+curSectLen+1);	// length
 			*(ptr+sectionStart+curSectLen+3) = aECG->EmergencyLevel;
 			curSectLen += 4;
 
@@ -360,15 +360,15 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			T0_tm = gdf_time2tm_time(T1);
 
 			*(ptr+sectionStart+curSectLen) = 25;	// tag
-			*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(4);	// length
-			*(uint16_t*)(ptr+sectionStart+curSectLen+3) = l_endian_u16((uint16_t)(T0_tm->tm_year+1900));// year
+			leu16a(4, ptr+sectionStart+curSectLen+1);	// length
+			leu16a(T0_tm->tm_year+1900, ptr+sectionStart+curSectLen+3);// year
 			*(ptr+sectionStart+curSectLen+5) = (uint8_t)(T0_tm->tm_mon + 1);// month
 			*(ptr+sectionStart+curSectLen+6) = (uint8_t)T0_tm->tm_mday; 	// day
 			curSectLen += 7; 
 
 			// Tag 26 (len = 3)
 			*(ptr+sectionStart+curSectLen) = 26;	// tag
-			*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(3);	// length
+			leu16a(3, ptr+sectionStart+curSectLen+1);	// length
 			*(ptr+sectionStart+curSectLen+3) = (uint8_t)T0_tm->tm_hour;	// hour
 			*(ptr+sectionStart+curSectLen+4) = (uint8_t)T0_tm->tm_min;	// minute
 			*(ptr+sectionStart+curSectLen+5) = (uint8_t)T0_tm->tm_sec; 	// second
@@ -377,13 +377,13 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			if (hdr->NS>0)  {
 			// Tag 27 (len = 3) highpass filter 
 			*(ptr+sectionStart+curSectLen) = 27;	// tag
-			*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(2);	// length
+			leu16a(2, ptr+sectionStart+curSectLen+1);	// length
 			*(uint16_t*)(ptr+sectionStart+curSectLen+3) = (uint16_t)hdr->CHANNEL[1].HighPass;	// hour
 			curSectLen += 5; 
 
 			// Tag 28 (len = 3)  lowpass filter
 			*(ptr+sectionStart+curSectLen) = 28;	// tag
-			*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(2);	// length
+			leu16a(2, ptr+sectionStart+curSectLen+1);	// length
 			*(uint16_t*)(ptr+sectionStart+curSectLen+3) = (uint16_t)hdr->CHANNEL[1].LowPass;	// hour
 			curSectLen += 5; 
 
@@ -396,7 +396,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			else 
 				bitmap = 0; 		 
 			*(ptr+sectionStart+curSectLen) = 29;	// tag
-			*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(1);	// length			
+			leu16a(1, ptr+sectionStart+curSectLen+1);	// length			
 			*(ptr+sectionStart+curSectLen+3) = bitmap; 
 			curSectLen += 4; 
 
@@ -406,7 +406,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			if (VERBOSE_LEVEL>7) fprintf(stdout,"Section 1 Tag 32 \n");
 
 			*(ptr+sectionStart+curSectLen) = 32;	// tag
-			*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(2);	// length
+			leu16a(2, ptr+sectionStart+curSectLen+1);	// length
 			if (hdr->Patient.Impairment.Heart==1) {
 				*(ptr+sectionStart+curSectLen+3) = 0; 
 				*(ptr+sectionStart+curSectLen+4) = 1; 	// Apparently healthy
@@ -420,22 +420,22 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 
 			// Tag 34 (len = 5)
 			*(ptr+sectionStart+curSectLen) = 34;	// tag
-			*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(5);	// length
+			leu16a(5, ptr+sectionStart+curSectLen+1);	// length
 			// FIXME: compensation for daylight saving time not included
 #ifdef __APPLE__
 			// ### FIXME: for some (unknown) reason, timezone does not work on MacOSX
-			*(int16_t*)(ptr+sectionStart+curSectLen+3) = l_endian_i16(0x7fff); 
+			lei16a(0x7fff, ptr+sectionStart+curSectLen+3); 
 			printf("Warning SOPEN(SCP,write): timezone not supported\n");
 #else
-			*(int16_t*)(ptr+sectionStart+curSectLen+3) = l_endian_i16((int16_t)lrint(-timezone/60.0));
+			lei16a((int16_t)lrint(-timezone/60.0), ptr+sectionStart+curSectLen+3);
 #endif
-			//*(int16_t*)(ptr+sectionStart+curSectLen+3) = l_endian_u16((int16_t)round(T0_tm->tm_gmtoff/60));
+			//lei16a((int16_t)round(T0_tm->tm_gmtoff/60), ptr+sectionStart+curSectLen+3);
 			*(int16_t*)(ptr+sectionStart+curSectLen+5) = 0; 
 			curSectLen += 8; 
 
 			// Tag 255 (len = 0)
 			*(ptr+sectionStart+curSectLen) = 255;	// tag
-			*(uint16_t*)(ptr+sectionStart+curSectLen+1) = l_endian_u16(0);	// length
+			leu16a(0, ptr+sectionStart+curSectLen+1);	// length
 			curSectLen += 3; 
 
 			// Evaluate the size and correct it if odd
@@ -465,8 +465,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			*(ptr+sectionStart+curSectLen++) = (hdr->NS<<3) | 0x04;
 
 			for (i = 0; i < hdr->NS; i++) {
-				*(uint32_t*)(ptr+sectionStart+curSectLen) = l_endian_u32(1L);
-				*(uint32_t*)(ptr+sectionStart+curSectLen+4) = l_endian_u32(hdr->data.size[0]);
+				leu32a(1L, ptr+sectionStart+curSectLen);
+				leu32a(hdr->data.size[0], ptr+sectionStart+curSectLen+4);
 				*(ptr+sectionStart+curSectLen+8) = (uint8_t)hdr->CHANNEL[i].LeadIdCode;
 				curSectLen += 9;
 			}
@@ -508,16 +508,16 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 				if (fabs((AVM - avm)/AVM) > 1e-14)
 					fprintf(stderr,"Warning SOPEN (SCP-WRITE): scaling factors differ between channel #1 and #%i. Scaling factor of 1st channel is used.\n",i+1);
 			};
-			*(uint16_t*)(ptr+sectionStart+curSectLen) = l_endian_u16((uint16_t)lrint(AVM));
-			avm = l_endian_u16(*(uint16_t*)(ptr+sectionStart+curSectLen));
+			leu16a((uint16_t)lrint(AVM), ptr+sectionStart+curSectLen);
+			avm = leu16p(ptr+sectionStart+curSectLen);
 			curSectLen += 2;
 			if (fabs((AVM - avm)/AVM)>1e-14)
 				fprintf(stderr,"Warning SOPEN (SCP-WRITE): Scaling factor has been truncated (%f instead %f).\n",avm,AVM);
 
 			// Sample interval
 			AVM = 1e6/hdr->SampleRate;
-			*(uint16_t*)(ptr+sectionStart+curSectLen) = l_endian_u16((uint16_t)lrint(AVM));
-			avm = l_endian_u16(*(uint16_t*)(ptr+sectionStart+curSectLen));
+			leu16a((uint16_t)lrint(AVM), ptr+sectionStart+curSectLen);
+			avm = leu16p(ptr+sectionStart+curSectLen);
 			curSectLen += 2;
 			if (fabs((AVM - avm)/AVM)>1e-14)
 				fprintf(stderr,"Warning SOPEN (SCP-WRITE): Sampling interval has been truncated (%f instead %f us).\n",avm,AVM);
@@ -536,8 +536,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			
 			// Fill the length block
 			for (i = 0; i < hdr->NS; i++) {
-				*(uint16_t*)(ptr+sectionStart+curSectLen) = l_endian_u16((uint16_t)hdr->data.size[0]*2);
-				avm = l_endian_u16(*(uint16_t*)(ptr+sectionStart+curSectLen));
+				leu16a((uint16_t)hdr->data.size[0]*2, ptr+sectionStart+curSectLen);
+				avm = leu16p(ptr+sectionStart+curSectLen);
 				AVM = hdr->data.size[0]*2;
 				if (fabs((AVM - avm)/AVM)>1e-14)
 					fprintf(stderr,"Warning SOPEN (SCP-WRITE): Block length truncated (%f instead %f us).\n",avm,AVM);
@@ -584,23 +584,23 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 		}
 
 		// write to pointer field in Section 0 
-		*(uint16_t*)(ptr+curSect*10+6+16)   = l_endian_u16(curSect); // 
-		*(uint32_t*)(ptr+curSect*10+6+16+2) = l_endian_u32(curSectLen); // length
+		leu16a(curSect, ptr+curSect*10+6+16); // 
+		leu32a(curSectLen, ptr+curSect*10+6+16+2); // length
 		// Section start - must be odd. See EN1064:2005(E) Section 5.2.1 
 
 		// write to Section ID Header
 		if (curSectLen>0)
 		{
 			// Section 0: startpos in pointer field 
-			*(uint32_t*)(ptr+curSect*10+6+16+6) = l_endian_u32(sectionStart+1); 
+			leu32a(sectionStart+1, ptr+curSect*10+6+16+6); 
 
 			// Section ID header (16 bytes)
-			*(int16_t*)(ptr+sectionStart+2) = l_endian_u16(curSect); 	// Section ID
-			*(uint32_t*)(ptr+sectionStart+4)= l_endian_u32(curSectLen); 	// section length->section header
-			ptr[sectionStart+8] 		= VERSION; 	// Section Version Number 
-			ptr[sectionStart+9] 		= VERSION; 	// Protocol Version Number
+			leu16a(curSect, ptr+sectionStart+2); 	// Section ID
+			leu32a(curSectLen, ptr+sectionStart+4); 	// section length->section header
+			ptr[sectionStart+8] = VERSION; 	// Section Version Number 
+			ptr[sectionStart+9] = VERSION; 	// Protocol Version Number
 			crc = CRCEvaluate(ptr+sectionStart+2,curSectLen-2); // compute CRC
-			*(uint16_t*)(ptr+sectionStart)  = l_endian_u16(crc);
+			leu16a(crc, ptr+sectionStart);
 		}	
 		sectionStart += curSectLen;	// offset for next section
 	}

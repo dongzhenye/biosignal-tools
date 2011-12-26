@@ -345,13 +345,11 @@ double b_endian_f64(double x)
 {
 	union {
 		double f64;
-		uint32_t u32[2];
+		uint64_t u64;
 	} b1,b2;
 	b1.f64 = x;
-	b2 = b1;
-	b2.u32[0] = bswap_32(b1.u32[1]);
-	b2.u32[1] = bswap_32(b1.u32[0]);
-	return(b2.f64);
+	b1.u64 = bswap_64(b1.u64);
+	return(b1.f64);
 }
 
 #ifndef leu16p
@@ -1210,14 +1208,14 @@ fprintf(stdout,"write_gdf_eventtable is obsolete - use hdrEVT2rawEVT instead;\n"
 		buf[1] =  k32u      & 0x000000FF;
 		buf[2] = (k32u>>8 ) & 0x000000FF;
 		buf[3] = (k32u>>16) & 0x000000FF;
-		*(uint32_t*)(buf+4) = l_endian_u32(hdr->EVENT.N);
+		leu32a(hdr->EVENT.N, buf+4);
 	}
 	else {
 		k32u   = hdr->EVENT.N;
 		buf[1] =  k32u      & 0x000000FF;
 		buf[2] = (k32u>>8 ) & 0x000000FF;
 		buf[3] = (k32u>>16) & 0x000000FF;
-		*(float*)(buf+4) = l_endian_f32(hdr->EVENT.SampleRate);
+		lef32a(hdr->EVENT.SampleRate, buf+4);
 	};
 	for (k32u=0; k32u<hdr->EVENT.N; k32u++) {
 		hdr->EVENT.POS[k32u] = l_endian_u32(hdr->EVENT.POS[k32u]);
@@ -2338,10 +2336,12 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     	memcpy(Header1+ 88,  hdr->ID.Recording, min(len,80));
 		if (hdr->VERSION>1.90) {
 			memcpy(Header1+152, &hdr->LOC, 16);
+#if __BYTE_ORDER == __BIG_ENDIAN
 			*(uint32_t*) (Header1+152) = l_endian_u32( *(uint32_t*) (Header1+152) );
 			*(uint32_t*) (Header1+156) = l_endian_u32( *(uint32_t*) (Header1+156) );
 			*(uint32_t*) (Header1+160) = l_endian_u32( *(uint32_t*) (Header1+160) );
 			*(uint32_t*) (Header1+164) = l_endian_u32( *(uint32_t*) (Header1+164) );
+#endif
 		}
 
 		if (hdr->VERSION<1.90) {
@@ -2349,31 +2349,31 @@ void struct2gdfbin(HDRTYPE *hdr)
 
 			sprintf(tmp,"%04i%02i%02i%02i%02i%02i00",t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
 			memcpy(Header1+168,tmp,max(strlen(tmp),16));
-			*(uint32_t*) (Header1+184) = l_endian_u32(hdr->HeadLen);
+			leu32a(hdr->HeadLen, Header1+184);
 
 			memcpy(Header1+192, &hdr->ID.Equipment, 8);
 			// FIXME: 200: LabId, 208 TechId, 216, Serial No //
 		}
 		else {
 			//memcpy(Header1+168, &hdr->T0, 8);
-			*(uint64_t*) (Header1+168) = l_endian_u64(hdr->T0);
+			leu64a(hdr->T0, Header1+168);
 			//memcpy(Header1+176, &hdr->Patient.Birthday, 8);
-			*(uint64_t*) (Header1+176) = l_endian_u64(hdr->Patient.Birthday);
+			leu64a(hdr->Patient.Birthday, Header1+176);
 			// *(uint16_t*)(Header1+184) = (hdr->HeadLen>>8)+(hdr->HeadLen%256>0);
-			*(uint32_t*) (Header1+184) = l_endian_u32(hdr->HeadLen>>8);
+			leu32a(hdr->HeadLen>>8, Header1+184);
 
 			memcpy(Header1+192, &hdr->ID.Equipment, 8);
 			memcpy(Header1+200, &hdr->IPaddr, 6);
 			memcpy(Header1+206, &hdr->Patient.Headsize, 6);
-			*(float*) (Header1+212) = l_endian_f32(hdr->ELEC.REF[0]);
-			*(float*) (Header1+216) = l_endian_f32(hdr->ELEC.REF[1]);
-			*(float*) (Header1+220) = l_endian_f32(hdr->ELEC.REF[2]);
-			*(float*) (Header1+224) = l_endian_f32(hdr->ELEC.GND[0]);
-			*(float*) (Header1+228) = l_endian_f32(hdr->ELEC.GND[1]);
-			*(float*) (Header1+232) = l_endian_f32(hdr->ELEC.GND[2]);
+			lef32a(hdr->ELEC.REF[0], Header1+212);
+			lef32a(hdr->ELEC.REF[1], Header1+216);
+			lef32a(hdr->ELEC.REF[2], Header1+220);
+			lef32a(hdr->ELEC.GND[0], Header1+224);
+			lef32a(hdr->ELEC.GND[1], Header1+228);
+			lef32a(hdr->ELEC.GND[2], Header1+232);
 		}
 
-		*(uint64_t*) (Header1+236) = l_endian_u64(hdr->NRec);
+		leu64a(hdr->NRec, Header1+236);
 
 	/* FIXME: this part should make the records as small as possible
 		size_t DIV = 1, div;
@@ -2403,13 +2403,13 @@ void struct2gdfbin(HDRTYPE *hdr)
 				Dur[0] = lround(1.0 + dtmp1 * Dur[1]);
 			}
 
-			*(uint32_t*) (Header1+244) = l_endian_u32(Dur[0]);
-			*(uint32_t*) (Header1+248) = l_endian_u32(Dur[1]);
+			leu32a(Dur[0], Header1+244);
+			leu32a(Dur[1], Header1+248);
 		}
 		else
-			*(double*) (Header1+244) = l_endian_f64(fDur);
+			lef64a(fDur, hdr->AS.Header+244);
 
-		*(uint16_t*) (Header1+252) = l_endian_u16(NS);
+		leu16a(NS, hdr->AS.Header+252);
 
 	     	/* define HDR.Header2
 	     	this requires checking the arguments in the fields of the struct HDR.CHANNEL
@@ -2436,27 +2436,27 @@ void struct2gdfbin(HDRTYPE *hdr)
 		     		memcpy(Header2+ 8*k2 + 96*NS, tmp, min(8,len));
 		     	else {
 		     		memcpy(Header2+ 6*k2 + 96*NS, tmp, min(6,len));
-		     		*(uint16_t*)(Header2+ 2*k2 + 102*NS) = l_endian_u16(hdr->CHANNEL[k].PhysDimCode);
+				leu16a(hdr->CHANNEL[k].PhysDimCode, Header2+ 2*k2 + 102*NS);
 			};
 
-		     	*(double*)(Header2 + 8*k2 + 104*NS)   = l_endian_f64(hdr->CHANNEL[k].PhysMin);
-		     	*(double*)(Header2 + 8*k2 + 112*NS)   = l_endian_f64(hdr->CHANNEL[k].PhysMax);
+			lef64a(hdr->CHANNEL[k].PhysMin, Header2 + 8*k2 + 104*NS);
+		     	lef64a(hdr->CHANNEL[k].PhysMax, Header2 + 8*k2 + 112*NS);
 		     	if (hdr->VERSION < 1.9) {
-			     	*(int64_t*)(Header2 + 8*k2 + 120*NS)   = l_endian_i64((int64_t)hdr->CHANNEL[k].DigMin);
-			     	*(int64_t*)(Header2 + 8*k2 + 128*NS)   = l_endian_i64((int64_t)hdr->CHANNEL[k].DigMax);
+				lei64a((int64_t)hdr->CHANNEL[k].DigMin, Header2 + 8*k2 + 120*NS);
+				lei64a((int64_t)hdr->CHANNEL[k].DigMax, Header2 + 8*k2 + 128*NS);
 			     	// FIXME // memcpy(Header2 + 80*k + 136*hdr->NS,hdr->CHANNEL[k].PreFilt,max(80,strlen(hdr->CHANNEL[k].PreFilt)));
 			}
 			else {
-			     	*(double*)(Header2 + 8*k2 + 120*NS) = l_endian_f64(hdr->CHANNEL[k].DigMin);
-			     	*(double*)(Header2 + 8*k2 + 128*NS) = l_endian_f64(hdr->CHANNEL[k].DigMax);
-			     	if (hdr->VERSION >= 2.22) *(float*) (Header2 + 4*k2 + 200*NS) = l_endian_f32(hdr->CHANNEL[k].TOffset);	// GDF222
-			     	*(float*) (Header2 + 4*k2 + 204*NS) = l_endian_f32(hdr->CHANNEL[k].LowPass);
-			     	*(float*) (Header2 + 4*k2 + 208*NS) = l_endian_f32(hdr->CHANNEL[k].HighPass);
-			     	*(float*) (Header2 + 4*k2 + 212*NS) = l_endian_f32(hdr->CHANNEL[k].Notch);
-
-				*(float*) (Header2 + 4*k2 + 224*NS) = l_endian_f32(hdr->CHANNEL[k].XYZ[0]);
-				*(float*) (Header2 + 4*k2 + 228*NS) = l_endian_f32(hdr->CHANNEL[k].XYZ[1]);
-				*(float*) (Header2 + 4*k2 + 232*NS) = l_endian_f32(hdr->CHANNEL[k].XYZ[2]);
+				lef64a(hdr->CHANNEL[k].DigMin, Header2 + 8*k2 + 120*NS);
+				lef64a(hdr->CHANNEL[k].DigMax, Header2 + 8*k2 + 128*NS);
+			     	if (hdr->VERSION >= 2.22) lef32a(hdr->CHANNEL[k].TOffset, Header2 + 4*k2 + 200*NS);	// GDF222
+				lef32a(hdr->CHANNEL[k].LowPass, Header2 + 4*k2 + 204*NS);
+				lef32a(hdr->CHANNEL[k].HighPass, Header2 + 4*k2 + 208*NS);
+				lef32a(hdr->CHANNEL[k].Notch, Header2 + 4*k2 + 212*NS);
+				
+				lef32a(hdr->CHANNEL[k].XYZ[0], Header2 + 4*k2 + 224*NS);
+				lef32a(hdr->CHANNEL[k].XYZ[1], Header2 + 4*k2 + 228*NS);
+				lef32a(hdr->CHANNEL[k].XYZ[2], Header2 + 4*k2 + 232*NS);
 
         		     	if (hdr->VERSION < (float)2.19)
        	     				Header2[k2+236*NS] = (uint8_t)ceil(log10(min(39e8,hdr->CHANNEL[k].Impedance))/log10(2.0)*8.0-0.5);
@@ -2464,16 +2464,16 @@ void struct2gdfbin(HDRTYPE *hdr)
         		     	else switch (hdr->CHANNEL[k].PhysDimCode & 0xFFE0) {
         		     	        // context-specific header 2 area
         		     	        case 4256:
-        	     				*(float*)(Header2+236*NS+20*k2) = (float)hdr->CHANNEL[k].Impedance;
+						lef32a((float)hdr->CHANNEL[k].Impedance, Header2+236*NS+20*k2);
         	     				break;
         		     	        case 4288:
-        	     				*(float*)(Header2+236*NS+20*k2) = (float)hdr->CHANNEL[k].fZ;
+						lef32a((float)hdr->CHANNEL[k].fZ, Header2+236*NS+20*k2);
         	     				break;
         	     			// default:        // reserved area
                                 }
 		     	}
-		     	*(uint32_t*) (Header2 + 4*k2 + 216*NS) = l_endian_u32(hdr->CHANNEL[k].SPR);
-		     	*(uint32_t*) (Header2 + 4*k2 + 220*NS) = l_endian_u32(hdr->CHANNEL[k].GDFTYP);
+			leu32a(hdr->CHANNEL[k].SPR, Header2 + 4*k2 + 216*NS);
+			leu32a(hdr->CHANNEL[k].GDFTYP, Header2 + 4*k2 + 220*NS);
 		     	k2++;
 		}
 
@@ -2489,7 +2489,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 	    	Header2 = hdr->AS.Header+(NS+1)*256;
 	    	tag = 1;
 	     	if (TagNLen[tag]>0) {
-	     		*(uint32_t*)(Header2) = l_endian_u32(tag + (TagNLen[tag]<<8)); // Tag=1 & Length of Tag 1
+			leu32a(tag + (TagNLen[tag]<<8), Header2); // Tag=1 & Length of Tag 1
 	     		size_t pos = 4;
 	     		for (k=0; k<hdr->EVENT.LenCodeDesc; k++) {
 	     			strcpy((char*)(Header2+pos),hdr->EVENT.CodeDesc[k]);
@@ -2503,7 +2503,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 
 	     	tag = 2;
 	     	if (TagNLen[tag]>0) {
-	     		*(uint32_t*)(Header2) = l_endian_u32(tag + (TagNLen[tag]<<8)); // Tag=2 & Length of Tag 2
+			leu32a(tag + (TagNLen[tag]<<8), Header2); // Tag=2 & Length of Tag 2
      			strcpy((char*)(Header2+4),hdr->AS.bci2000);
 			Header2 += 4+TagNLen[tag];
 	     	}
@@ -2512,7 +2512,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 		if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFw tag3 %i %i\n",tag, TagNLen[tag]);
 
 	     	if (TagNLen[tag]>0) {
-	     		*(uint32_t*)(Header2) = l_endian_u32(tag + (TagNLen[tag]<<8)); // Tag=3 & Length of Tag 3
+			leu32a(tag + (TagNLen[tag]<<8), Header2); // Tag=3 & Length of Tag 3
 			if (VERBOSE_LEVEL>8) fprintf(stdout,"SOPEN(GDF)w: tag=%i,len=%i\n",tag,TagNLen[tag]);
 	     		memset(Header2+4,0,TagNLen[tag]);
 	     		size_t len = 0;
@@ -2558,7 +2558,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 
 	     	tag = 5;
 	     	if (TagNLen[tag]>0) {
-	     		*(uint32_t*)(Header2) = l_endian_u32(tag + (TagNLen[tag]<<8)); // Tag=5 & Length of Tag 5
+			leu32a(tag + (TagNLen[tag]<<8), Header2); // Tag=5 & Length of Tag 5
      			memcpy(Header2+4,hdr->IPaddr,TagNLen[tag]);
 			Header2 += 4+TagNLen[tag];
 	     	}
@@ -2567,7 +2567,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 
 	     	tag = 6;
 	     	if (TagNLen[tag]>0) {
-	     		*(uint32_t*)(Header2) = l_endian_u32(tag + (TagNLen[tag]<<8)); // Tag=6 & Length of Tag 6
+			leu32a(tag + (TagNLen[tag]<<8), Header2); // Tag=6 & Length of Tag 6
      			strcpy((char*)(Header2+4),hdr->ID.Technician);
 			Header2 += 4+TagNLen[tag];
 	     	}
@@ -2576,7 +2576,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 
 	     	tag = 7;
 	     	if (TagNLen[tag]>0) {
-	     		*(uint32_t*)(Header2) = l_endian_u32(tag + (TagNLen[tag]<<8)); // Tag=7 & Length of Tag 7
+			leu32a(tag + (TagNLen[tag]<<8), Header2); // Tag=7 & Length of Tag 7
      			strcpy((char*)(Header2+4),hdr->ID.Hospital);
 			Header2 += 4+TagNLen[tag];
 	     	}
@@ -2633,9 +2633,11 @@ int gdfbin2struct(HDRTYPE *hdr)
 	    		hdr->Patient.Impairment.Visual = (Header1[87]>>4)%4;
 	    		hdr->Patient.Impairment.Heart  = (Header1[87]>>6)%4;
 
-			*(uint32_t*)(hdr->AS.Header+156) = leu32p(hdr->AS.Header+156);
-			*(uint32_t*)(hdr->AS.Header+160) = leu32p(hdr->AS.Header+160);
-			*(uint32_t*)(hdr->AS.Header+164) = leu32p(hdr->AS.Header+164);
+#if __BYTE_ORDER == __BIG_ENDIAN
+			bswap_32(*(uint32_t*)(hdr->AS.Header+156));
+			bswap_32(*(uint32_t*)(hdr->AS.Header+160));
+			bswap_32(*(uint32_t*)(hdr->AS.Header+164));
+#endif
 			if (hdr->AS.Header[156]) {
 				hdr->LOC[0] = 0x00292929;
 				memcpy(&hdr->LOC[1], hdr->AS.Header+156, 12);
@@ -2645,7 +2647,7 @@ int gdfbin2struct(HDRTYPE *hdr)
 				memcpy(&hdr->LOC, hdr->AS.Header+152, 16);
 			}
 
-			if (VERBOSE_LEVEL>8) fprintf(stdout,"[203] FMT=%s Ver=%4.2f\n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"[203] FMT=%s Ver=%4.2f\n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
 
 			hdr->T0 		= lei64p(hdr->AS.Header+168);
 			hdr->Patient.Birthday 	= lei64p(hdr->AS.Header+176);
@@ -2663,9 +2665,9 @@ int gdfbin2struct(HDRTYPE *hdr)
 			hdr->ELEC.REF[0]   = lef32p(hdr->AS.Header+212);
 			hdr->ELEC.REF[1]   = lef32p(hdr->AS.Header+216);
 			hdr->ELEC.REF[2]   = lef32p(hdr->AS.Header+220);
-			hdr->ELEC.GND[0]   = lef32p(hdr->AS.Header+212);
-			hdr->ELEC.GND[1]   = lef32p(hdr->AS.Header+216);
-			hdr->ELEC.GND[2]   = lef32p(hdr->AS.Header+220);
+			hdr->ELEC.GND[0]   = lef32p(hdr->AS.Header+224);
+			hdr->ELEC.GND[1]   = lef32p(hdr->AS.Header+228);
+			hdr->ELEC.GND[2]   = lef32p(hdr->AS.Header+232);
 		    	if (hdr->VERSION > 100000.0) {
 		    		fprintf(stdout,"%e \nb4c %c %i %c. %c%c%c%c%c%c%c\n",hdr->VERSION,169,2007,65,83,99,104,108,246,103,108);
 		    		FILE *fid = fopen("/tmp/b4c_tmp","wb");
@@ -2953,14 +2955,14 @@ size_t hdrEVT2rawEVT(HDRTYPE *hdr) {
 		buf[1] =  k32u      & 0x000000FF;
 		buf[2] = (k32u>>8 ) & 0x000000FF;
 		buf[3] = (k32u>>16) & 0x000000FF;
-		*(uint32_t*)(buf+4) = l_endian_u32(hdr->EVENT.N);
+		leu32a(hdr->EVENT.N, buf+4);
 	}
 	else {
 		k32u   = hdr->EVENT.N;
 		buf[1] =  k32u      & 0x000000FF;
 		buf[2] = (k32u>>8 ) & 0x000000FF;
 		buf[3] = (k32u>>16) & 0x000000FF;
-		*(float*)(buf+4) = l_endian_f32(hdr->EVENT.SampleRate);
+		lef32a(hdr->EVENT.SampleRate, buf+4);
 	};
 	uint8_t *buf1=hdr->AS.rawEventData+8;
 	uint8_t *buf2=hdr->AS.rawEventData+8+hdr->EVENT.N*4;
@@ -3276,7 +3278,7 @@ int read_header(HDRTYPE *hdr) {
 	else if (hdr->FILE.size > hdr->HeadLen + hdr->AS.bpb*hdr->NRec + 8)
 	{
 			if (VERBOSE_LEVEL > 7) 
-				fprintf(stdout,"GDF EVENT: %i,%i %i,%i,%i\n",hdr->FILE.size, hdr->HeadLen + hdr->AS.bpb*hdr->NRec + 8, hdr->HeadLen, hdr->AS.bpb,hdr->NRec); 
+				fprintf(stdout,"GDF EVENT: %i,%i %i,%i,%i\n",(int)hdr->FILE.size, (int)(hdr->HeadLen + hdr->AS.bpb*hdr->NRec + 8), hdr->HeadLen, hdr->AS.bpb, (int)hdr->NRec); 
 
 			ifseek(hdr, hdr->HeadLen + hdr->AS.bpb*hdr->NRec, SEEK_SET);
 			// READ EVENTTABLE
@@ -3303,7 +3305,7 @@ int read_header(HDRTYPE *hdr) {
 			}
 
 			if (VERBOSE_LEVEL > 7) 
-				fprintf(stdout,"EVENT.N = %i,%i\n",hdr->EVENT.N,c); 
+				fprintf(stdout,"EVENT.N = %i,%i\n",hdr->EVENT.N,(int)c); 
 
 			int sze = (buf[0]>1) ? 12 : 6;
 			hdr->AS.rawEventData = (uint8_t*)realloc(hdr->AS.rawEventData,8+hdr->EVENT.N*sze);
@@ -3790,7 +3792,7 @@ else if (!strncmp(MODE,"r",1)) {
 			hc->Off     =  hc->PhysMin - hc->Cal*hc->DigMin;
 
 			if (VERBOSE_LEVEL>7)
-				fprintf(stdout,"[EDF 215c] #%i: NS=%i NRec=%i \n",(int)k,hdr->NS,hdr->NRec);
+				fprintf(stdout,"[EDF 215c] #%i: NS=%i NRec=%i \n",(int)k,hdr->NS,(int)hdr->NRec);
 
 			hc->LeadIdCode  = 0;
 			hc->SPR     	= atol(strncpy(tmp, Header2 + 8*k + 216*hdr->NS, 8));
@@ -7115,7 +7117,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		struct tm t; 
 		char nextRow = 0;
 	
-		size_t pos = 0, col=0, row=0, len; 
+		size_t col=0, row=0, len; 
 		char *f = (char*)hdr->AS.Header;
 		while (*f != 0) {
 			len = strcspn(f,"\t\n\r");
@@ -7157,7 +7159,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 					};
 				}
 
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"=======%i: %i\t%s\t%i\t%i\t%i\t%i\n", hdr->EVENT.N-1, Target.TrigTarget, Target.Stimulus, Target.OnsetTime, Target.RT, Target.RTTime, Target.RESP);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"=======%i: %i\t%s\t%i\t%i\t%i\t%i\n", hdr->EVENT.N-1, (int)Target.TrigTarget, Target.Stimulus, (int)Target.OnsetTime, (int)Target.RT, Target.RTTime, Target.RESP);
 
 				Target.RESP = 0xff;
 				Target.Stimulus = NULL; 
@@ -7168,7 +7170,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			}
 			f[len] = 0;
 
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"r%i\tc%i\t%s\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\n",row,col,f,colSubject, colSampleRate, colDate, colTime, colOnsetTime, colResponseTime, colStimulus, colRTTime);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"r%i\tc%i\t%s\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\n",(int)row,(int)col,f,colSubject, colSampleRate, colDate, colTime, colOnsetTime, colResponseTime, colStimulus, colRTTime);
 
 			if (row==0) {
 				// decode header line 
@@ -8610,7 +8612,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
         		hdr->EVENT.CodeDesc = (typeof(hdr->EVENT.CodeDesc)) realloc(hdr->EVENT.CodeDesc,257*sizeof(*hdr->EVENT.CodeDesc));
         		for (k=0; strlen(MIT_EVENT_DESC[k])>0; k++) {
 
-        			if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 182] %i\n",k);
+        			if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 182] %i\n",(int)k);
 
                                 //hdr->EVENT.CodeDesc[k+1] = MIT_EVENT_DESC[k];
                                 hdr->EVENT.CodeDesc[k+1] = (char*)MIT_EVENT_DESC[k];   // hack to satisfy MinGW (gcc version 4.2.1-sjlj)
@@ -8636,7 +8638,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 				uint16_t A   = a16 >> 10;
 				uint16_t len = a16 & 0x03ff;
 
-				if (VERBOSE_LEVEL>8) fprintf(stdout,"[MIT 183] k=%i/%i N=%i A=%i l=%i\n", k, N, hdr->EVENT.N, a16>>10, len);
+				if (VERBOSE_LEVEL>8) fprintf(stdout,"[MIT 183] k=%i/%i N=%i A=%i l=%i\n", (int)k, (int)N, (int)hdr->EVENT.N, a16>>10, len);
 
 				switch (A) {
 				case 59:	// SKIP
@@ -8678,7 +8680,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
 		/* MIT: open data file */
 		if (nDatFiles == 1) {
-        		uint8_t *Marker=NULL;
+        		//uint8_t *Marker=NULL;
         		count = 0;
 
 
@@ -9552,7 +9554,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 					for (k=0; k < (size_t)hdr->SPR*hdr->NRec; k++)
 					if (fgets(line,sz,fid)) {
 						char *next;
-						unsigned long u = strtoul(line, &next, 10);	// skip index entry
+						strtoul(line, &next, 10);	// skip index entry
 						for (k2=0;k2<hdr->NS;k2++)
 							*(double*)(hdr->AS.rawdata+(k*hdr->NS+k2)*sizeof(double)) = strtod(next,&next);
 					}
@@ -10206,22 +10208,22 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 	     	hdr->HeadLen = 68 + NS*96;
 	    	hdr->AS.Header = (uint8_t*)malloc(hdr->HeadLen);
 	    	uint8_t* Header2 = hdr->AS.Header+68;
-		memset(Header1,0,hdr->HeadLen);
-	    	memcpy(Header1,"CFWB\1\0\0\0",8);
-	    	*(double*)(Header1+8) = l_endian_f64(1/hdr->SampleRate);
+		memset(hdr->AS.Header,0,hdr->HeadLen);
+	    	memcpy(hdr->AS.Header,"CFWB\1\0\0\0",8);
+		lef64a(1/hdr->SampleRate, hdr->AS.Header+8);
 
 		struct tm *t = gdf_time2tm_time(hdr->T0);
-    		*(uint32_t*)(Header1+16) = l_endian_u32(t->tm_year + 1900);
-	    	*(uint32_t*)(Header1+20) = l_endian_u32(t->tm_mon + 1);
-	    	*(uint32_t*)(Header1+24) = l_endian_u32(t->tm_mday);
-	    	*(uint32_t*)(Header1+28) = l_endian_u32(t->tm_hour);
-	    	*(uint32_t*)(Header1+32) = l_endian_u32(t->tm_min);
-	    	*(double*)  (Header1+36) = l_endian_f64(t->tm_sec);
-	    	*(double*)  (Header1+44) = l_endian_f64(0.0);	// pretrigger time
-	    	*(uint32_t*)(Header1+52) = l_endian_u32(NS);
+    		leu32a(t->tm_year + 1900, hdr->AS.Header+16);
+	    	leu32a(t->tm_mon + 1, hdr->AS.Header+20);
+	    	leu32a(t->tm_mday, hdr->AS.Header+24);
+	    	leu32a(t->tm_hour, hdr->AS.Header+28);
+	    	leu32a(t->tm_min, hdr->AS.Header+32);
+		lef64a(t->tm_sec, hdr->AS.Header+36);
+		lef64a(0.0,  hdr->AS.Header+44);	// pretrigger time
+	    	leu32a(NS, hdr->AS.Header+52);
 	    	hdr->NRec *= hdr->SPR; hdr->SPR = 1;
-	    	*(uint32_t*)(Header1+56) = l_endian_u32(hdr->NRec); // number of samples
-	    	*(int32_t*) (Header1+60) = l_endian_i32(0);	// 1: time channel
+	    	leu32a(hdr->NRec, hdr->AS.Header+56); // number of samples
+	    	lei32a(0, hdr->AS.Header+60);	// 1: time channel
 
 	    	int32_t gdftyp = 3; // 1:double, 2:float, 3: int16; see CFWB_GDFTYP too.
 		typeof(hdr->NS) k,k2;
@@ -10234,7 +10236,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 			else if (hdr->CHANNEL[k].GDFTYP>3)
 				gdftyp = min(gdftyp,2);	// float
 		}
-	    	*(int32_t*)(Header1+64)	= l_endian_i32(gdftyp);	// 1: double, 2: float, 3:short
+		lei32a(gdftyp, hdr->AS.Header+64);	// 1: double, 2: float, 3:short
 
 		for (k=0,k2=0; k<hdr->NS; k++)
 		if (hdr->CHANNEL[k].OnOff)
@@ -10253,10 +10255,10 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		     	len = strlen(tmp);
 		     	memcpy(Header2+96*k2+32, tmp, min(len,32));
 
-			*(double*)(Header2+96*k2+64) = l_endian_f64(hdr->CHANNEL[k].Cal);
-			*(double*)(Header2+96*k2+72) = l_endian_f64(hdr->CHANNEL[k].Off);
-			*(double*)(Header2+96*k2+80) = l_endian_f64(hdr->CHANNEL[k].PhysMax);
-			*(double*)(Header2+96*k2+88) = l_endian_f64(hdr->CHANNEL[k].PhysMin);
+			lef64a(hdr->CHANNEL[k].Cal, Header2+96*k2+64);
+			lef64a(hdr->CHANNEL[k].Off, Header2+96*k2+72);
+			lef64a(hdr->CHANNEL[k].PhysMax, Header2+96*k2+80);
+			lef64a(hdr->CHANNEL[k].PhysMin, Header2+96*k2+88);
 			k2++;
 		}
 	}
@@ -10458,11 +10460,11 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		len = strlen(Header1+curPos+2);
 		Header1[curPos] = tag;
 		if (len<128) {
-			Header1[curPos+1] = len;
+			hdr->AS.Header[curPos+1] = len;
 			curPos += len+2;
 		} else if (len <= 0xffff) {
-			Header1[curPos+1] = sizeof(uint16_t);
-			*(uint16_t*)(Header1+curPos+2) = b_endian_u16(len);
+			hdr->AS.Header[curPos+1] = sizeof(uint16_t);
+			beu16a(len, hdr->AS.Header+curPos+2);
 			curPos += len+1+1+2;
 		} else
 			fprintf(stderr,"Warning MFER(W) Tag23 (manufacturer) to long len=%i>128\n",(int)len);
@@ -10480,7 +10482,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		len = sizeof(uint32_t);
 		Header1[curPos++] = tag;
 		Header1[curPos++] = len;
-		*(uint32_t*)(Header1+curPos) = b_endian_u32(hdr->SPR);
+		beu32a(hdr->SPR, hdr->AS.Header+curPos);
 		curPos += len;
 
 		if (VERBOSE_LEVEL>8) fprintf(stdout,"[MFER 720-5]:\n");
@@ -10490,7 +10492,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		len = sizeof(uint16_t);
 		Header1[curPos++] = tag;
 		Header1[curPos++] = len;
-		*(uint16_t*)(Header1+curPos) = b_endian_u16(hdr->NS);
+		beu16a(hdr->NS, hdr->AS.Header+curPos);
 		curPos += len;
 
 		if (VERBOSE_LEVEL>8) fprintf(stdout,"[MFER 720-6]:\n");
@@ -10500,7 +10502,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		len = sizeof(uint32_t);
 		Header1[curPos++] = tag;
 		Header1[curPos++] = len;
-		*(uint32_t*)(Header1+curPos) = b_endian_u32(hdr->NRec);
+		beu32a(hdr->NRec, hdr->AS.Header+curPos);
 		curPos += len;
 
 		if (VERBOSE_LEVEL>8) fprintf(stdout,"[MFER 720-8]:\n");
@@ -10538,15 +10540,15 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 			tag = 131;
 			len = 7;
 			struct tm *t = gdf_time2tm_time(hdr->Patient.Birthday);
-			Header1[curPos++] = tag;
-			Header1[curPos++] = len;
-			*(Header1+curPos) = (uint8_t)((hdr->T0 - hdr->Patient.Birthday)/365.25);
+			hdr->AS.Header[curPos++] = tag;
+			hdr->AS.Header[curPos++] = len;
+			hdr->AS.Header[curPos] = (uint8_t)((hdr->T0 - hdr->Patient.Birthday)/365.25);
 			double tmpf64 = (hdr->T0 - hdr->Patient.Birthday);
 			tmpf64 -= 365.25*floor(tmpf64/365.25);
-			*(uint16_t*)(Header1+curPos+1) = b_endian_u16((uint16_t)tmpf64);
-			*(uint16_t*)(Header1+curPos+3) = b_endian_u16(t->tm_year+1900);
-			*(Header1+curPos+5) = (t->tm_mon+1);
-			*(Header1+curPos+6) = (t->tm_mday);
+			beu16a((uint16_t)tmpf64, Header1+curPos+1);
+			beu16a(t->tm_year+1900, Header1+curPos+3);
+			hdr->AS.Header[curPos+5] = (t->tm_mon+1);
+			hdr->AS.Header[curPos+6] = (t->tm_mday);
 			curPos += len;
 		}
 
@@ -10564,16 +10566,15 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		len = 11;
 		{
 			struct tm *t = gdf_time2tm_time(hdr->T0);
-			Header1[curPos++] = tag;
-			Header1[curPos++] = len;
-			*(uint16_t*)(Header1+curPos) = b_endian_u16(t->tm_year+1900);
-			*(Header1+curPos+2) = (t->tm_mon+1);
-			*(Header1+curPos+3) = (t->tm_mday);
-			*(Header1+curPos+4) = (t->tm_hour);
-			*(Header1+curPos+5) = (t->tm_min);
-			*(Header1+curPos+6) = (t->tm_sec);
-			*(uint16_t*)(Header1+curPos+7) = 0;
-			*(uint16_t*)(Header1+curPos+9) = 0;
+			hdr->AS.Header[curPos++] = tag;
+			hdr->AS.Header[curPos++] = len;
+			beu16a(t->tm_year+1900, hdr->AS.Header+curPos);
+			hdr->AS.Header[curPos+2] = (uint8_t)(t->tm_mon+1);
+			hdr->AS.Header[curPos+3] = (uint8_t)(t->tm_mday);
+			hdr->AS.Header[curPos+4] = (uint8_t)(t->tm_hour);
+			hdr->AS.Header[curPos+5] = (uint8_t)(t->tm_min);
+			hdr->AS.Header[curPos+6] = (uint8_t)(t->tm_sec);
+			memset(hdr->AS.Header+curPos+7, 0, 4);
 			curPos += len;
 		}
 
@@ -10608,14 +10609,14 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 			size_t len1 = 0;
 			Header1[ix++] = 9;
 			if (hdr->CHANNEL[ch].LeadIdCode>0) {
-				Header1[ix++] = 2;
-				*(uint16_t*)(Header1+ix) = hdr->CHANNEL[ch].LeadIdCode;
+				hdr->AS.Header[ix++] = 2;
+				leu16a(hdr->CHANNEL[ch].LeadIdCode, hdr->AS.Header+ix);
 				len1 = 2;
 
 			} else {
 				len1 = strlen(hdr->CHANNEL[ch].Label);
 				Header1[ix++] = len1;
-				strcpy(Header1+ ix, hdr->CHANNEL[ch].Label);
+				strcpy(Header1+ix, hdr->CHANNEL[ch].Label);
 			}
 			// tag1 10: gdftyp
 			// tag1 11: SampleRate
@@ -10623,7 +10624,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 			// tag1 13: Off
 
 			len += len1+ix-curPos;
-			*(Header1+curPos) = len;
+			hdr->AS.Header[curPos] = len;
 			curPos += len+curPos;
 		}
 		// tag 30: data
@@ -11739,15 +11740,15 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 				if      (sample_value > MAX_UINT16) val.u16 = MAX_UINT16;
 				else if (sample_value > MIN_UINT16) val.u16 = (uint16_t) sample_value;
 				else     val.u16 = MIN_UINT16;
-				*(uint16_t*)ptr = l_endian_u16(val.u16);
+				leu16a(val.u16, ptr);
 				break;
 
 			case 16:
-				*(float*)ptr  = l_endian_f32((float)sample_value);
+				lef32a((float)sample_value, ptr);
 				break;
 
 			case 17:
-				*(double*)ptr = l_endian_f64((double)sample_value);
+				lef64a((double)sample_value, ptr);
 				break;
 
 			case 0:
@@ -11785,19 +11786,19 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 				if      (sample_value > ldexp(1.0,32)-1.0) val.u32 = MAX_UINT32;
 				else if (sample_value > 0.0) val.u32 = (uint32_t) sample_value;
 				else     val.u32 = MIN_UINT32;
-				*(uint32_t*)ptr = l_endian_u32(val.u32);
+				leu32a(val.u32, ptr);
 				break;
 			case 7:
 				if      (sample_value > ldexp(1.0,63)-1.0) val.i64 = MAX_INT64;
 				else if (sample_value > -ldexp(1.0,63)) val.i64 = (int64_t) sample_value;
 				else     val.i64 = MIN_INT64;
-				*(int64_t*)ptr = l_endian_i64(val.i64);
+				lei64a(val.i64, ptr);
 				break;
 			case 8:
 				if      (sample_value > ldexp(1.0,64)-1.0) val.u64 = (uint64_t)(-1);
 				else if (sample_value > 0.0) val.u64 = (uint64_t) sample_value;
 				else     val.u64 = 0;
-				*(uint64_t*)ptr = l_endian_u64(val.u64);
+				leu64a(val.u64, ptr);
 				break;
 
 			case 255+24:
@@ -11832,22 +11833,18 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 				}
 
 				if (hdr->FILE.LittleEndian) {
-					uint16_t acc = l_endian_u16(*(uint16_t*)ptr);
+					uint16_t acc = leu16p(ptr);
 					if (off)
-						*(uint16_t*)ptr = l_endian_u16( (acc & 0x000F) | (val.u16<<4));
-//						leu16a(leu16p(ptr) & 0x000F) | (i16<<4), ptr);
+						leu16a( (acc & 0x000F) | (val.u16<<4), ptr);
 					else
-						*(uint16_t*)ptr = l_endian_u16( (acc & 0xF000) | (val.u16 & 0x0FFF));
-//						leu16a(leu16p(ptr) & 0xF000) | i16, ptr);
+						leu16a( (acc & 0xF000) | (val.u16 & 0x0FFF), ptr);
 				}
 				else {
-					uint16_t acc = b_endian_u16(*(uint16_t*)ptr);
+					uint16_t acc = beu16p(ptr);
 					if (!off)
-						*(uint16_t*)ptr = b_endian_u16( (acc & 0x000F) | (val.u16<<4));
-//						beu16a(beu16p(ptr) & 0x000F) | (i16<<4), ptr);
+						beu16a( (acc & 0x000F) | (val.u16<<4), ptr);
 					else
-						*(uint16_t*)ptr = b_endian_u16( (acc & 0xF000) | (val.u16 & 0x0FFF));
-//						beu16a(beu16p(ptr) & 0xF000) | i16, ptr);
+						beu16a( (acc & 0xF000) | (val.u16 & 0x0FFF), ptr);
 				}
 				break;
 			}
@@ -12125,18 +12122,18 @@ int sclose(HDRTYPE* hdr)
 		if (aECG->Section5.Length>0) {
 			// compute CRC for Section 5
 			uint16_t crc = CRCEvaluate(hdr->AS.Header + aECG->Section5.StartPtr+2,aECG->Section5.Length-2); // compute CRC
-			*(uint16_t*)(hdr->AS.Header + aECG->Section5.StartPtr) = l_endian_u16(crc);
+			leu16a(crc, hdr->AS.Header + aECG->Section5.StartPtr);
 		}
 		if (aECG->Section6.Length>0) {
 			// compute CRC for Section 6
 			uint16_t crc = CRCEvaluate(hdr->AS.Header + aECG->Section6.StartPtr+2,aECG->Section6.Length-2); // compute CRC
-			*(uint16_t*)(hdr->AS.Header + aECG->Section6.StartPtr) = l_endian_u16(crc);
+			leu16a(crc, hdr->AS.Header + aECG->Section6.StartPtr);
 		}
 		// compute crc and len and write to preamble
 		ptr = hdr->AS.Header;
-		*(uint32_t*)(ptr+2) = l_endian_u32(hdr->HeadLen);
+		leu32a(hdr->HeadLen, ptr+2);
 		crc = CRCEvaluate(ptr+2,hdr->HeadLen-2);
-		*(int16_t*)ptr      = l_endian_u16(crc);
+		leu16a(crc, ptr);
 		ifwrite(hdr->AS.Header, sizeof(char), hdr->HeadLen, hdr);
 	}
 	else if ((hdr->FILE.OPEN>1) && (hdr->TYPE==HL7aECG))
