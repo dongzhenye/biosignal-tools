@@ -354,8 +354,8 @@ double b_endian_f64(double x)
 	return(b2.f64);
 }
 
-#ifdef __sparc__
-/*    SPARC: missing alignment must be explicitly handled     */
+#ifndef(leu16p)
+/*    SPARC, ia64: missing alignment must be explicitly handled     */
 uint16_t leu16p(uint8_t* i) {
 	// decode little endian uint16 pointer
 	return ((*i) + ((uint16_t)*(i+1) << 8));

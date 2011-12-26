@@ -42,37 +42,6 @@
 #include <sys/param.h>
 #include <time.h>
 
-#if  	__APPLE__
-#define __BIG_ENDIAN  	 4321
-#define __LITTLE_ENDIAN  1234
-#if	__LITTLE_ENDIAN__
-#define __BYTE_ORDER 	__LITTLE_ENDIAN
-#else
-#define __BYTE_ORDER 	__BIG_ENDIAN
-#endif
-#endif
-
-#if (defined(BSD) && (BSD >= 199103))
-#include <machine/endian.h>
-#define __BIG_ENDIAN _BIG_ENDIAN
-#define __LITTLE_ENDIAN _LITTLE_ENDIAN
-#define __BYTE_ORDER _BYTE_ORDER
-#define bswap_16(x) __bswap16(x)
-#define bswap_32(x) __bswap32(x)
-#define bswap_64(x) __bswap64(x)
-#endif
-
-#if	__sparc__
-#define __BIG_ENDIAN  	 4321
-#define __LITTLE_ENDIAN  1234
-#define __BYTE_ORDER 	__BIG_ENDIAN
-#endif 
-
-#if	__MINGW32__
-#define __BIG_ENDIAN  	 4321
-#define __LITTLE_ENDIAN  1234
-#define __BYTE_ORDER 	__LITTLE_ENDIAN
-#endif
 
 #ifdef	__WIN32__
 #define FILESEP '\\'
@@ -80,23 +49,55 @@
 #define FILESEP '/'
 #endif
 
+
 #if defined(__MINGW32__) 
    /* use local version because MINGW does not provide byteswap.h */
+#  define __BIG_ENDIAN  	 4321
+#  define __LITTLE_ENDIAN  1234
+#  define __BYTE_ORDER 	__LITTLE_ENDIAN
 #  include "win32/byteswap.h"
 #  define bswap_16(x) __bswap_16 (x)
 #  define bswap_32(x) __bswap_32 (x)
 #  define bswap_64(x) __bswap_64 (x)
+
 #elif defined(__NetBSD__)
 #  include <sys/bswap.h>
+#  define __BIG_ENDIAN _BIG_ENDIAN
+#  define __LITTLE_ENDIAN _LITTLE_ENDIAN
+#  define __BYTE_ORDER _BYTE_ORDER
 #  define bswap_16(x) bswap16 (x)
 #  define bswap_32(x) bswap32 (x)
 #  define bswap_64(x) bswap64 (x)
+
+#elif (defined(BSD) && (BSD >= 199103))
+#  include <machine/endian.h>
+#  define __BIG_ENDIAN _BIG_ENDIAN
+#  define __LITTLE_ENDIAN _LITTLE_ENDIAN
+#  define __BYTE_ORDER _BYTE_ORDER
+#  define bswap_16(x) __bswap16(x)
+#  define bswap_32(x) __bswap32(x)
+#  define bswap_64(x) __bswap64(x)
+
 #elif defined(__GNUC__) 
    /* use byteswap macros from the host system, hopefully optimized ones ;-) */
 #  include <byteswap.h>
 #  define bswap_16(x) __bswap_16 (x)
 #  define bswap_32(x) __bswap_32 (x)
 #  define bswap_64(x) __bswap_64 (x)
+
+#elif 	__sparc__ 
+#  define __BIG_ENDIAN  	 4321
+#  define __LITTLE_ENDIAN  1234
+#  define __BYTE_ORDER 	__BIG_ENDIAN
+
+#elif  	__APPLE__
+#  define __BIG_ENDIAN  	 4321
+#  define __LITTLE_ENDIAN  1234
+#  if	__LITTLE_ENDIAN__
+#    define __BYTE_ORDER 	__LITTLE_ENDIAN
+#  else
+#    define __BYTE_ORDER 	__BIG_ENDIAN
+#  endif
 #endif 
 
 
@@ -176,7 +177,7 @@ double  b_endian_f64(double x);
 #endif /* __BYTE_ORDER */
 
 
-#ifndef __sparc__
+#if !defined(__sparc__) && !defined(__ia64__)
 // if misaligned data words can be handled 
 #define leu16p(i) l_endian_u16(*(uint16_t*)(i))
 #define lei16p(i) l_endian_i16(*( int16_t*)(i))
@@ -215,7 +216,7 @@ double  b_endian_f64(double x);
 #define bef64a(i,r) (*(uint64_t*)r = b_endian_f64(i))
 
 #else
-/*    SPARC: missing alignment must be explicitly handled     */ 
+/*    SPARC,IA64: missing alignment must be explicitly handled     */ 
 uint16_t leu16p(uint8_t* i);
 int16_t  lei16p(uint8_t* i);
 uint32_t leu32p(uint8_t* i);
