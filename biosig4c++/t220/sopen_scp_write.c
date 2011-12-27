@@ -255,9 +255,9 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			memset(ptr+sectionStart+curSectLen+3,0,41);  // dummy value 
 			
 			curSectLen += 3; 
-			*(uint16_t*)(ptr+sectionStart+curSectLen)   = aECG->Section1.Tag14.INST_NUMBER;
-			*(uint16_t*)(ptr+sectionStart+curSectLen+2) = aECG->Section1.Tag14.DEPT_NUMBER;
-			*(uint16_t*)(ptr+sectionStart+curSectLen+4) = aECG->Section1.Tag14.DEVICE_ID;
+			leu16a(aECG->Section1.Tag14.INST_NUMBER, ptr+sectionStart+curSectLen);
+			leu16a(aECG->Section1.Tag14.DEPT_NUMBER, ptr+sectionStart+curSectLen+2);
+			leu16a(aECG->Section1.Tag14.DEVICE_ID,   ptr+sectionStart+curSectLen+4);
 			*(ptr+sectionStart+curSectLen+ 6) = aECG->Section1.Tag14.DeviceType;
 			*(ptr+sectionStart+curSectLen+ 7) = aECG->Section1.Tag14.MANUF_CODE;	// tag 14, byte 7 (MANUF_CODE has to be 255)
 			strncpy((char*)(ptr+sectionStart+curSectLen+8), aECG->Section1.Tag14.MOD_DESC, 6);	// tag 14, byte 7 (MOD_DESC has to be "Cart1")
@@ -379,13 +379,13 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			// Tag 27 (len = 3) highpass filter 
 			*(ptr+sectionStart+curSectLen) = 27;	// tag
 			leu16a(2, ptr+sectionStart+curSectLen+1);	// length
-			*(uint16_t*)(ptr+sectionStart+curSectLen+3) = (uint16_t)hdr->CHANNEL[1].HighPass;	// hour
+			leu16a((uint16_t)hdr->CHANNEL[1].HighPass, ptr+sectionStart+curSectLen+3);	// hour
 			curSectLen += 5; 
 
 			// Tag 28 (len = 3)  lowpass filter
 			*(ptr+sectionStart+curSectLen) = 28;	// tag
 			leu16a(2, ptr+sectionStart+curSectLen+1);	// length
-			*(uint16_t*)(ptr+sectionStart+curSectLen+3) = (uint16_t)hdr->CHANNEL[1].LowPass;	// hour
+			leu16a((uint16_t)hdr->CHANNEL[1].LowPass, ptr+sectionStart+curSectLen+3);	// hour
 			curSectLen += 5; 
 
 			// Tag 29 (len = 1) filter bitmap
@@ -431,7 +431,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			lei16a((int16_t)lrint(-timezone/60.0), ptr+sectionStart+curSectLen+3);
 #endif
 			//lei16a((int16_t)round(T0_tm->tm_gmtoff/60), ptr+sectionStart+curSectLen+3);
-			*(int16_t*)(ptr+sectionStart+curSectLen+5) = 0; 
+			lei16a(0, ptr+sectionStart+curSectLen+5); 
 			curSectLen += 8; 
 
 			// Tag 255 (len = 0)

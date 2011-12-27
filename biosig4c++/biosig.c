@@ -7933,7 +7933,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			else
 				len = tmplen;
 
-			if (VERBOSE_LEVEL==9)
+			if (VERBOSE_LEVEL>7)
 				fprintf(stdout,"MFER: tag=%3i chan=%2i len=%i %3i curPos=%i %li\n",tag,chan,tmplen,len,curPos,iftell(hdr));
 
 			/* VALUE */
@@ -8251,9 +8251,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 				// Patient Age
 				if (len!=7) fprintf(stderr,"Warning MFER tag131 incorrect length %i!=7\n",len);
 				curPos += ifread(buf,1,len,hdr);
-				tm_time.tm_year = *(uint16_t*)(buf+3);
-				if (SWAP) tm_time.tm_year = bswap_16(tm_time.tm_year);
-		    		tm_time.tm_year-= 1900;
+				uint16_t t16; 
+				memcpy(&t16, buf+3, 2); 
+				if (SWAP) t16 = bswap_16(t16);
+		    		tm_time.tm_year = t16 - 1900;
 		    		tm_time.tm_mon  = buf[5]-1;
 		    		tm_time.tm_mday = buf[6];
 		    		tm_time.tm_hour = 12;
@@ -8271,9 +8272,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			else if (tag==133)    //0x85
 			{
 				curPos += ifread(buf,1,len,hdr);
-				tm_time.tm_year = *(uint16_t*)ptrbuf;
-				if (SWAP) tm_time.tm_year = bswap_16(tm_time.tm_year);
-				tm_time.tm_year-= 1900;
+				uint16_t t16, u16; 
+				memcpy(&t16, buf+3, 2); 
+				if (SWAP) t16 = bswap_16(t16);
+		    		tm_time.tm_year = t16 - 1900;
 		    		tm_time.tm_mon  = buf[2] - 1;
 		    		tm_time.tm_mday = buf[3];
 		    		tm_time.tm_hour = buf[4];
@@ -8282,10 +8284,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
 				hdr->T0  = tm_time2gdf_time(&tm_time);
 				// add milli- and micro-seconds
+				memcpy(&t16, buf+7, 2); 
+				memcpy(&u16, buf+9, 2); 
 				if (SWAP)
-					hdr->T0 += (uint64_t) ( (bswap_16(*(uint16_t*)(buf+7)) * 1e+3 + bswap_16(*(uint16_t*)(buf+9))) * ldexp(1.0,32) / (24*3600e6) );
+					hdr->T0 += (uint64_t) ( bswap_16(t16) * 1e+3 + bswap_16(u16) * ldexp(1.0,32) / (24*3600e6) );
 				else
-					hdr->T0 += (uint64_t) ( (        (*(uint16_t*)(buf+7)) * 1e+3 +         (*(uint16_t*)(buf+9))) * ldexp(1.0,32) / (24*3600e6) );
+					hdr->T0 += (uint64_t) (          t16  * 1e+3 +          u16  * ldexp(1.0,32) / (24*3600e6) );
 			}
 			else {
 		    		curPos += len;
@@ -8334,13 +8338,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	    		hdr->AS.bpb += hdr->SPR*GDFTYP_BITS[gdftyp]>>3;
 	 	}
 
-		if (VERBOSE_LEVEL>8)
+		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"[MFER] -V=%i NE=%i\n",VERBOSE_LEVEL,hdr->EVENT.N);
 //	 	hdr2ascii(hdr,stdout,4);
 	}
 
 	else if (hdr->TYPE==MIT) {
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[MIT 111]: %i \n",VERBOSE_LEVEL);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 111]: %i \n",VERBOSE_LEVEL);
 
     		size_t bufsiz = 1024;
 	    	while (!ifeof(hdr)) {
@@ -8350,7 +8354,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	    	ifclose(hdr);
 
 		/* MIT: decode header information */
-		if (VERBOSE_LEVEL>8)
+		if (VERBOSE_LEVEL>7)
 		    	fprintf(stdout,"[MIT 112]: %s\n",(char*)hdr->AS.Header);
 
 	    	hdr->SampleRate = 250.0;
@@ -8363,7 +8367,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
 		ptr = strpbrk(line,"\x09\x0a\x0d\x20"); 	// skip 1st field
 		ptr[0] = 0;
-		if (VERBOSE_LEVEL>8)
+		if (VERBOSE_LEVEL>7)
 		    	fprintf(stdout,"[MIT 113]:<%s>\n",ptr);
 
 		if (strchr(line,'/') != NULL) {
@@ -8373,7 +8377,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		}
 		hdr->NS = (typeof(hdr->NS))strtod(ptr+1,&ptr);		// number of channels
 
-		if (VERBOSE_LEVEL>8)
+		if (VERBOSE_LEVEL>7)
 		    	fprintf(stdout,"[MIT 121]: NS=%i\n",hdr->NS);
 
 	    	if ((ptr != NULL) && strlen(ptr)) {
@@ -9914,10 +9918,6 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 	hdr->FILE.COMPRESSION = hdr->FILE.COMPRESSION || strchr(MODE,'z');
 	if ( (hdr->Patient.Id==NULL) || !strlen(hdr->Patient.Id))
 		strcpy(hdr->Patient.Id,"00000000");
-
-#ifdef __sparc__
-	fprintf(stdout,"Warning SOPEN: Alignment errors might cause Bus Error (SPARC platform).\nWe are aware of the problem but it is not fixed yet.\n");
-#endif
 
 #ifndef WITHOUT_NETWORK
     	if (!memcmp(hdr->FileName,"bscs://",7)) {
@@ -11760,10 +11760,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 				if      (sample_value > MAX_INT16) val.i16 = MAX_INT16;
 				else if (sample_value > MIN_INT16) val.i16 = (int16_t) sample_value;
 				else     val.i16 = MIN_INT16;
-				if (!SWAP)
-					*(int16_t*)ptr = val.i16;
-				else
-					*(int16_t*)ptr = bswap_16(val.i16);
+				lei16a(val.i16, ptr);
 				break;
 
 			case 4:
@@ -11806,10 +11803,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 				if      (sample_value > ldexp(1.0,31)-1) val.i32 = MAX_INT32;
 				else if (sample_value > ldexp(-1.0,31)) val.i32 = (int32_t) sample_value;
 				else     val.i32 = MIN_INT32;
-				if (!SWAP)
-					*(int32_t*)ptr = val.i32;
-				else
-					*(int32_t*)ptr = bswap_32(val.i32);
+				lei32a(val.i32, ptr);
 				break;
 
 			case 6:
