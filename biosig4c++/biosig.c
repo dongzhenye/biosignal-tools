@@ -346,7 +346,7 @@ double b_endian_f64(double x)
 	union {
 		double f64;
 		uint64_t u64;
-	} b1,b2;
+	} b1;
 	b1.f64 = x;
 	b1.u64 = bswap_64(b1.u64);
 	return(b1.f64);
@@ -484,68 +484,68 @@ double bef64p(uint8_t* i) {
 
 void leu16a(uint16_t i, uint8_t* r) {
 	i = l_endian_u16(i);
-	memcpy(&i,r,sizeof(i));
+	memcpy(r, &i, sizeof(i));
 }
 void lei16a( int16_t i, uint8_t* r) {
 	i = l_endian_i16(i);
-	memcpy(&i,r,sizeof(i));
+	memcpy(r, &i, sizeof(i));
 }
 void leu32a(uint32_t i, uint8_t* r) {
 	i = l_endian_u32(i);
-	memcpy(&i,r,sizeof(i));
+	memcpy(r, &i, sizeof(i));
 }
 void lei32a( int32_t i, uint8_t* r) {
 	i = l_endian_i32(i);
-	memcpy(&i,r,sizeof(i));
+	memcpy(r, &i, sizeof(i));
 }
 void leu64a(uint64_t i, uint8_t* r) {
 	i = l_endian_u64(i);
-	memcpy(&i,r,sizeof(i));
+	memcpy(r, &i, sizeof(i));
 }
 void lei64a( int64_t i, uint8_t* r) {
 	i = l_endian_i64(i);
-	memcpy(&i,r,sizeof(i));
+	memcpy(r, &i, sizeof(i));
 }
 void lef32a( float i, uint8_t* r) {
 	uint32_t i32 = l_endian_u32(*(uint32_t*)(&i));
-	memcpy(&i32,r,sizeof(i32));
+	memcpy(r, &i32, sizeof(i32));
 }
 void lef64a(  double i, uint8_t* r) {
 	uint64_t i64 = l_endian_u64(*(uint64_t*)(&i));
-	memcpy(&i64,r,sizeof(i64));
+	memcpy(r, &i64, sizeof(i64));
 }
 
 void beu16a(uint16_t i, uint8_t* r) {
 	i = b_endian_u16(i);
-	memcpy(&i,r,sizeof(i));
+	memcpy(r, &i, sizeof(i));
 };
 void bei16a( int16_t i, uint8_t* r) {
 	i = b_endian_i16(i);
-	memcpy(&i,r,sizeof(i));
+	memcpy(r, &i, sizeof(i));
 }
 void beu32a(uint32_t i, uint8_t* r) {
 	i = b_endian_u32(i);
-	memcpy(&i,r,sizeof(i));
+	memcpy(r, &i, sizeof(i));
 }
 void bei32a( int32_t i, uint8_t* r) {
 	i = b_endian_i32(i);
-	memcpy(&i,r,sizeof(i));
+	memcpy(r, &i, sizeof(i));
 }
 void beu64a(uint64_t i, uint8_t* r) {
 	i = b_endian_u64(i);
-	memcpy(&i,r,sizeof(i));
+	memcpy(r, &i, sizeof(i));
 }
 void bei64a( int64_t i, uint8_t* r) {
 	i = b_endian_i64(i);
-	memcpy(&i,r,sizeof(i));
+	memcpy(r, &i, sizeof(i));
 }
 void bef32a(   float i, uint8_t* r) {
 	uint32_t i32 = b_endian_u32(*(uint32_t*)(&i));
-	memcpy(&i32,r,sizeof(i32));
+	memcpy(r, &i32, sizeof(i32));
 }
 void bef64a(  double i, uint8_t* r) {
 	uint64_t i64 = b_endian_u64(*(uint64_t*)(&i));
-	memcpy(&i64,r,sizeof(i64));
+	memcpy(r, &i64, sizeof(i64));
 }
 
 #endif
@@ -1722,9 +1722,9 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    	hdr->TYPE = BLSC;
     	else if (!memcmp(Header1,"bscs://",7))
 	    	hdr->TYPE = BSCS;
-    	else if (((beu16p(Header1)==0x0311) && (beu32p(Header1+4)==0x0809B002)
-    		 && (leu16p(Header1+2) > 240) && (leu16p(Header1+2) < 250))  		// v2.40 - v2.50
-    		 || !memcmp(Header1+307, "E\x00\x00\x00\x00\x00\x00\x00DAT", 11)
+    	else if (((beu16p(hdr->AS.Header)==0x0311) && (beu32p(hdr->AS.Header+4)==0x0809B002)
+    		 && (leu16p(hdr->AS.Header+2) > 240) && (leu16p(hdr->AS.Header+2) < 250))  		// v2.40 - v2.50
+    		 || !memcmp(hdr->AS.Header+307, "E\x00\x00\x00\x00\x00\x00\x00DAT", 11)
     		)
 	    	hdr->TYPE = BLSC;
     	else if (!memcmp(Header1,"FileFormat = BNI-1-BALTIMORE",28))
@@ -2219,7 +2219,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 
  	    	hdr->HeadLen = (NS+1)*256;
 
-	     	if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFw 101 %i \n", hdr->HeadLen);
+	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw 101 %i \n", hdr->HeadLen);
 
 		/* experimental code: writing header 3, in Tag-Length-Value from
 			currently only tag=1 is used for storing user-specific events (i.e. free text annotations
@@ -2232,13 +2232,13 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     		TagNLen[tag] += 1; 			// acounts for terminating \0
 	     		hdr->HeadLen += 4+TagNLen[tag];
 	     	}
-	     	if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
+	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
 	     	tag = 2;
 	     	if (hdr->AS.bci2000 != NULL) {
 	     		TagNLen[tag] = strlen(hdr->AS.bci2000)+1;
 	     		hdr->HeadLen += 4+TagNLen[tag];
 	     	}
-	     	if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
+	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
 	     	tag = 3;
 	     	if ((hdr->ID.Manufacturer.Name != NULL) || (hdr->ID.Manufacturer.Model != NULL) || (hdr->ID.Manufacturer.Version != NULL) || (hdr->ID.Manufacturer.SerialNumber != NULL)) {
 	     		if (hdr->ID.Manufacturer.Name == NULL) hdr->ID.Manufacturer.Name="";
@@ -2249,7 +2249,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     		TagNLen[tag] = strlen(hdr->ID.Manufacturer.Name)+strlen(hdr->ID.Manufacturer.Model)+strlen(hdr->ID.Manufacturer.Version)+strlen(hdr->ID.Manufacturer.SerialNumber)+4;
 	     		hdr->HeadLen += 4+TagNLen[tag];
 	     	}
-	     	if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
+	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
 	     	tag = 4;
 /* OBSOLETE
 	     	char FLAG_SENSOR_ORIENTATION = 0;
@@ -2272,14 +2272,14 @@ void struct2gdfbin(HDRTYPE *hdr)
 		     	}
 	     		hdr->HeadLen += 4+TagNLen[tag];
 	     	}
-	     	if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
+	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
 	     	tag = 6;
      		TagNLen[tag] = strlen(hdr->ID.Technician);
 	     	if (TagNLen[tag]) {
 	     		TagNLen[tag]++;
 	     		hdr->HeadLen += 4+TagNLen[tag];
 	     	}
-	     	if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
+	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
 	     	tag = 7;
 		if (hdr->ID.Hospital!=NULL) {
 	     		TagNLen[tag] = strlen(hdr->ID.Hospital);
@@ -2289,7 +2289,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     		}
 	     	}
 
-	     	if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
+	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
 	     	/* end */
 
 		if (hdr->TYPE==GDF) {
@@ -2302,9 +2302,10 @@ void struct2gdfbin(HDRTYPE *hdr)
 			hdr->TYPE = GDF;
 		}
 		else
-	     	if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFw101 %i %i\n",hdr->HeadLen,TagNLen[1]);
 
-	    	hdr->AS.Header = (uint8_t*) calloc(hdr->HeadLen,1);
+	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i\n",hdr->HeadLen,TagNLen[1]);
+
+	    	hdr->AS.Header = (uint8_t*) realloc(hdr->AS.Header, hdr->HeadLen);
 	     	sprintf((char*)hdr->AS.Header,"GDF %4.2f",hdr->VERSION);
 	    	uint8_t* Header2 = hdr->AS.Header+256;
 
@@ -2349,32 +2350,35 @@ void struct2gdfbin(HDRTYPE *hdr)
     			struct tm *t = gdf_time2tm_time(hdr->T0);
 
 			sprintf(tmp,"%04i%02i%02i%02i%02i%02i00",t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
-			memcpy(Header1+168,tmp,max(strlen(tmp),16));
-			leu32a(hdr->HeadLen, Header1+184);
+			memcpy(hdr->AS.Header+168,tmp,max(strlen(tmp),16));
+			leu32a(hdr->HeadLen, hdr->AS.Header+184);
 
 			memcpy(Header1+192, &hdr->ID.Equipment, 8);
 			// FIXME: 200: LabId, 208 TechId, 216, Serial No //
 		}
 		else {
 			//memcpy(Header1+168, &hdr->T0, 8);
-			leu64a(hdr->T0, Header1+168);
+			leu64a(hdr->T0, hdr->AS.Header+168);
 			//memcpy(Header1+176, &hdr->Patient.Birthday, 8);
-			leu64a(hdr->Patient.Birthday, Header1+176);
+			leu64a(hdr->Patient.Birthday, hdr->AS.Header+176);
 			// *(uint16_t*)(Header1+184) = (hdr->HeadLen>>8)+(hdr->HeadLen%256>0);
-			leu32a(hdr->HeadLen>>8, Header1+184);
+			leu32a(hdr->HeadLen>>8, hdr->AS.Header+184);
 
-			memcpy(Header1+192, &hdr->ID.Equipment, 8);
-			memcpy(Header1+200, &hdr->IPaddr, 6);
-			memcpy(Header1+206, &hdr->Patient.Headsize, 6);
-			lef32a(hdr->ELEC.REF[0], Header1+212);
-			lef32a(hdr->ELEC.REF[1], Header1+216);
-			lef32a(hdr->ELEC.REF[2], Header1+220);
-			lef32a(hdr->ELEC.GND[0], Header1+224);
-			lef32a(hdr->ELEC.GND[1], Header1+228);
-			lef32a(hdr->ELEC.GND[2], Header1+232);
+			memcpy(hdr->AS.Header+192, &hdr->ID.Equipment, 8);
+			memcpy(hdr->AS.Header+200, &hdr->IPaddr, 6);
+			memcpy(hdr->AS.Header+206, &hdr->Patient.Headsize, 6);
+			lef32a(hdr->ELEC.REF[0], hdr->AS.Header+212);
+			lef32a(hdr->ELEC.REF[1], hdr->AS.Header+216);
+			lef32a(hdr->ELEC.REF[2], hdr->AS.Header+220);
+			lef32a(hdr->ELEC.GND[0], hdr->AS.Header+224);
+			lef32a(hdr->ELEC.GND[1], hdr->AS.Header+228);
+			lef32a(hdr->ELEC.GND[2], hdr->AS.Header+232);
 		}
 
-		leu64a(hdr->NRec, Header1+236);
+	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw109 %i %x\n",hdr->HeadLen,leu32p(hdr->AS.Header+184));
+
+
+		leu64a(hdr->NRec, hdr->AS.Header+236);
 
 	/* FIXME: this part should make the records as small as possible
 		size_t DIV = 1, div;
@@ -2404,8 +2408,8 @@ void struct2gdfbin(HDRTYPE *hdr)
 				Dur[0] = lround(1.0 + dtmp1 * Dur[1]);
 			}
 
-			leu32a(Dur[0], Header1+244);
-			leu32a(Dur[1], Header1+248);
+			leu32a(Dur[0], hdr->AS.Header+244);
+			leu32a(Dur[1], hdr->AS.Header+248);
 		}
 		else
 			lef64a(fDur, hdr->AS.Header+244);
@@ -2480,7 +2484,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 
 		if (errno==34) errno = 0; // reset numerical overflow error
 
-		if (VERBOSE_LEVEL>8)
+		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"GDFw 444 %i %s\n", errno, strerror(errno));
 
 	     	/* define Header3
@@ -2500,7 +2504,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     		Header2 += pos+1;
 	     	}
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFw tag2\n");
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag2\n");
 
 	     	tag = 2;
 	     	if (TagNLen[tag]>0) {
@@ -2510,7 +2514,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     	}
 	     	tag = 3;
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFw tag3 %i %i\n",tag, TagNLen[tag]);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag3 %i %i\n",tag, TagNLen[tag]);
 
 	     	if (TagNLen[tag]>0) {
 			leu32a(tag + (TagNLen[tag]<<8), Header2); // Tag=3 & Length of Tag 3
@@ -2537,7 +2541,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 
 	     	}
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFw tag4\n");
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag4\n");
 
 /*
 	     	tag = 4;
@@ -2555,7 +2559,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     	}
 */
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFw tag5\n");
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag5\n");
 
 	     	tag = 5;
 	     	if (TagNLen[tag]>0) {
@@ -2564,7 +2568,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 			Header2 += 4+TagNLen[tag];
 	     	}
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFw tag6\n");
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag6\n");
 
 	     	tag = 6;
 	     	if (TagNLen[tag]>0) {
@@ -2573,7 +2577,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 			Header2 += 4+TagNLen[tag];
 	     	}
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFw tag7\n");
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag7\n");
 
 	     	tag = 7;
 	     	if (TagNLen[tag]>0) {
@@ -2581,6 +2585,11 @@ void struct2gdfbin(HDRTYPE *hdr)
      			strcpy((char*)(Header2+4),hdr->ID.Hospital);
 			Header2 += 4+TagNLen[tag];
 	     	}
+
+		while (Header2 < (hdr->AS.Header + hdr->HeadLen) ) {
+			*Header2 = 0;
+			 Header2++;
+		}
 
 		if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFw [339] %p %p\n", Header1,Header2);
 }
@@ -2847,7 +2856,7 @@ int gdfbin2struct(HDRTYPE *hdr)
 		if (hdr->VERSION < 2.21)
 			hdr->SampleRate = ((double)(hdr->SPR))*Dur[1]/Dur[0];
 		else
-			hdr->SampleRate = ((double)(hdr->SPR))/lef64p(Header1+244);
+			hdr->SampleRate = ((double)(hdr->SPR))/lef64p(hdr->AS.Header+244);
 
 		if (VERBOSE_LEVEL>8) fprintf(stdout,"[219] FMT=%s Ver=%4.2f\n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
 
@@ -3261,7 +3270,7 @@ int read_header(HDRTYPE *hdr) {
 	else
 	    	hdr->HeadLen = leu64p(hdr->AS.Header+184);
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"READ_HEADER: %i %i %i %f\n", (int)hdr->FILE.size, (int)hdr->HeadLen, count, hdr->VERSION);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"READ_HEADER: %i %i %i %f\n", (int)hdr->FILE.size, (int)hdr->HeadLen, (int)count, hdr->VERSION);
 
 	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen);
         if (count < hdr->HeadLen)
@@ -3274,10 +3283,10 @@ int read_header(HDRTYPE *hdr) {
                 return(-2);
 	}
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"READ_HEADER: %i %i %i %f\n", (int)hdr->FILE.size, (int)hdr->HeadLen, count, hdr->VERSION);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"READ_HEADER: %i %i %i %f\n", (int)hdr->FILE.size, (int)hdr->HeadLen, (int)count, hdr->VERSION);
 
 	if ( gdfbin2struct(hdr) ) {
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"READ_HEADER--: %i %i %i %f\n", (int)hdr->FILE.size, (int)hdr->HeadLen, count, hdr->VERSION);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"READ_HEADER--: %i %i %i %f\n", (int)hdr->FILE.size, (int)hdr->HeadLen, (int)count, hdr->VERSION);
 		return(-2);
 	}
 
@@ -6330,10 +6339,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		fprintf(stderr,"Warning SOPEN(EBS): support for EBS format is experimental\n");
 
 		/**  Fixed Header (32 bytes)  **/
-		uint32_t EncodingID = beu32p(Header1+8);
-		hdr->NS  = beu32p(Header1+12);
-		hdr->SPR = beu64p(Header1+16);
-		uint64_t datalen = beu64p(Header1+24);
+		uint32_t EncodingID = beu32p(hdr->AS.Header+8);
+		hdr->NS  = beu32p(hdr->AS.Header+12);
+		hdr->SPR = beu64p(hdr->AS.Header+16);
+		uint64_t datalen = beu64p(hdr->AS.Header+24);
 
 		enum encoding {
 			TIB_16 = 0x00000000,
@@ -6382,7 +6391,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
         			break;
         			}
         		case 0x0000000a:
-        			hdr->Patient.Sex = bei32p(Header1+pos);
+        			hdr->Patient.Sex = bei32p(hdr->AS.Header+pos);
         			break;
         		case 0x00000010:
         			hdr->SampleRate = atof(Header1+pos);
@@ -6433,7 +6442,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
         					}
         					ptr++;
         				}
-					if (VERBOSE_LEVEL>8)
+					if (VERBOSE_LEVEL>7)
 						fprintf(stdout,"0x05: %08x\n",beu32p(ptr));
 					hc->Label[c] = 0;
         				ptr += 4;
@@ -6496,11 +6505,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		hdr->AS.length = 0;
 		hdr->ID.Hospital = "";
 
-		if ((bei64p(Header1+24)==-1) && (bei64p(Header1+24)==-1)) {
+		if ((bei64p(hdr->AS.Header+24)==-1) && (bei64p(hdr->AS.Header+24)==-1)) {
 			/* if data length is not present */
 			struct stat FileBuf;
 			stat(hdr->FileName,&FileBuf);
-			datalen = (FileBuf.st_size - hdr->HeadLen);
+			hdr->FILE.size = FileBuf.st_size;
+			datalen = (hdr->FILE.size - hdr->HeadLen);
 		}
 		else 	datalen <<= 2;
 
