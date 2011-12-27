@@ -1387,6 +1387,7 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->FILE.POS = 0;
 	hdr->FILE.Des = 0;
 	hdr->FILE.COMPRESSION = 0;
+	hdr->FILE.size = 0;
 #ifdef ZLIB_H
 	hdr->FILE.gzFID = 0;
 #endif
@@ -2598,14 +2599,22 @@ int gdfbin2struct(HDRTYPE *hdr)
 //	time_t		tt;
 	uint32_t Dur[2];
 
-      	    	strncpy(tmp,(char*)hdr->AS.Header+3,5); tmp[5]=0;
-	    	hdr->VERSION 	= strtod(tmp,NULL);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[GDFBIN2STRUCT 202] #%i \n",hdr->NS);
+
+      	    	strncpy(tmp,(char*)(hdr->AS.Header+3),5); tmp[5]=0;
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[GDFBIN2STRUCT 202] #%i Ver=<%s>\n",hdr->NS,tmp);
+	    	hdr->VERSION 	= atof(tmp);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[GDFBIN2STRUCT 202] #%i Ver=<%s>\n",hdr->NS,tmp);
+
 	    	hdr->NRec 	= lei64p(hdr->AS.Header+236);
 	    	Dur[0]  	= leu32p(hdr->AS.Header+244);
 	    	Dur[1]  	= leu32p(hdr->AS.Header+248);
 	    	hdr->NS   	= leu16p(hdr->AS.Header+252);
 
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[GDFBIN2STRUCT 212] #=%i/%i Ver=%f\n",k,hdr->NS, hdr->VERSION);
+
 	    	if (hdr->VERSION > 1.90) {
+
 		    	hdr->HeadLen 	= leu16p(hdr->AS.Header+184)<<8;
 		    	int len = min(66,MAX_LENGTH_PID);
 	    		strncpy(hdr->Patient.Id,(const char*)hdr->AS.Header+8,len);
@@ -2620,7 +2629,7 @@ int gdfbin2struct(HDRTYPE *hdr)
 		    		strncpy(hdr->Patient.Name,tmpptr,MAX_LENGTH_NAME);
 		    	}
 
-			if (VERBOSE_LEVEL>8) fprintf(stdout,"[202] FMT=%s Ver=%4.2f\n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"[202] FMT=%s Ver=%4.2f\n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
 
 	    		hdr->Patient.Smoking      =  Header1[84]%4;
 	    		hdr->Patient.AlcoholAbuse = (Header1[84]>>2)%4;
@@ -2716,6 +2725,8 @@ int gdfbin2struct(HDRTYPE *hdr)
 	    		return(B4C_ERRNUM);
 	    	}
 
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[GDFBIN2STRUCT 242] #=%i/%i Ver=%f\n",k,hdr->NS, hdr->VERSION);
+
 		if (hdr->HeadLen < (256u * (hdr->NS + 1u))) {
 			B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
 			B4C_ERRMSG = "(GDF) Length of Header is too small";
@@ -2730,7 +2741,7 @@ int gdfbin2struct(HDRTYPE *hdr)
 		for (k=0; k<hdr->NS; k++)	{
 			CHANNEL_TYPE *hc = hdr->CHANNEL+k;
 
-			if (VERBOSE_LEVEL>7) fprintf(stdout,"[GDF 212] #=%i/%i\n",k,hdr->NS);
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"[GDF 252] #=%i/%i\n",k,hdr->NS);
 
 			hc->LeadIdCode = 0;
 			strncpy(hc->Label,(char*)Header2 + 16*k,min(16,MAX_LENGTH_LABEL));
@@ -3229,8 +3240,10 @@ int read_header(HDRTYPE *hdr) {
 	-3	error reading event table
  */
 
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"READ_HEADER: %i %i %f\n", (int)hdr->FILE.size, (int)hdr->HeadLen, hdr->VERSION);
+
 	size_t count = hdr->HeadLen;
-	if (hdr->HeadLen<512) {
+	if (hdr->HeadLen<=512) {
 	    	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header, 513);
 		count += ifread(hdr->AS.Header+hdr->HeadLen, 1, 512-count, hdr);
 		getfiletype(hdr);
@@ -3248,6 +3261,8 @@ int read_header(HDRTYPE *hdr) {
 	else
 	    	hdr->HeadLen = leu64p(hdr->AS.Header+184);
 
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"READ_HEADER: %i %i %i %f\n", (int)hdr->FILE.size, (int)hdr->HeadLen, count, hdr->VERSION);
+
 	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen);
         if (count < hdr->HeadLen)
 	    	count += ifread(hdr->AS.Header+count, 1, hdr->HeadLen-count, hdr);
@@ -3259,10 +3274,16 @@ int read_header(HDRTYPE *hdr) {
                 return(-2);
 	}
 
-	if ( gdfbin2struct(hdr) )
-		return(-2);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"READ_HEADER: %i %i %i %f\n", (int)hdr->FILE.size, (int)hdr->HeadLen, count, hdr->VERSION);
 
-	hdr->EVENT.N   = 0;
+	if ( gdfbin2struct(hdr) ) {
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"READ_HEADER--: %i %i %i %f\n", (int)hdr->FILE.size, (int)hdr->HeadLen, count, hdr->VERSION);
+		return(-2);
+	}
+
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"READ_HEADER: %i %i %i %f\n", (int)hdr->FILE.size, (int)hdr->HeadLen, count, hdr->VERSION);
+
+ 	hdr->EVENT.N   = 0;
 	hdr->EVENT.POS = NULL;
 	hdr->EVENT.TYP = NULL;
 	hdr->EVENT.DUR = NULL;
@@ -3321,7 +3342,7 @@ int read_header(HDRTYPE *hdr) {
 		else
 			hdr->EVENT.N = 0;
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[228] FMT=%s Ver=%4.2f\n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[228] FMT=%s Ver=%4.2f\n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
 
 	return (0); 
 }
@@ -3533,7 +3554,7 @@ else if (!strncmp(MODE,"r",1)) {
 		return(hdr);
 	}
 
-	if (VERBOSE_LEVEL>8)
+	if (VERBOSE_LEVEL>7)
 		fprintf(stdout,"[201] FMT=%s Ver=%4.2f\n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
 
     	count = iftell(hdr);
@@ -3577,8 +3598,7 @@ else if (!strncmp(MODE,"r",1)) {
 	if (hdr->TYPE == GDF) {
 
 		struct stat FileBuf;
-		stat(hdr->FileName,&FileBuf);
-		hdr->FILE.size = FileBuf.st_size; 
+		if (stat(hdr->FileName,&FileBuf)==0) hdr->FILE.size = FileBuf.st_size; 
 
 	    	if ( read_header(hdr) ) {
 			return (hdr);

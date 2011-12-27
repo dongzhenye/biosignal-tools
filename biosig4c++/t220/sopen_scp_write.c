@@ -41,6 +41,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 	uint32_t 	sectionStart; 
 	struct tm* 	T0_tm;
 	double 		AVM, avm; 
+	uint16_t	avm16; 
 	aECG_TYPE*	aECG;		
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN_SCP_WRITE 101\n");
@@ -508,7 +509,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 				if (fabs((AVM - avm)/AVM) > 1e-14)
 					fprintf(stderr,"Warning SOPEN (SCP-WRITE): scaling factors differ between channel #1 and #%i. Scaling factor of 1st channel is used.\n",i+1);
 			};
-			leu16a((uint16_t)lrint(AVM), ptr+sectionStart+curSectLen);
+			avm16 = lrint(AVM);
+			leu16a(avm16, ptr+sectionStart+curSectLen);
 			avm = leu16p(ptr+sectionStart+curSectLen);
 			curSectLen += 2;
 			if (fabs((AVM - avm)/AVM)>1e-14)
@@ -516,7 +518,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 
 			// Sample interval
 			AVM = 1e6/hdr->SampleRate;
-			leu16a((uint16_t)lrint(AVM), ptr+sectionStart+curSectLen);
+			avm16 = lrint(AVM);
+			leu16a(avm16, ptr+sectionStart+curSectLen);
 			avm = leu16p(ptr+sectionStart+curSectLen);
 			curSectLen += 2;
 			if (fabs((AVM - avm)/AVM)>1e-14)

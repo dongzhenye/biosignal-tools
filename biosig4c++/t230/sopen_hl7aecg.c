@@ -1279,20 +1279,20 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
 	pS=S;
 
 	for (unsigned int j=0; j<hdr->CHANNEL[i].SPR; ++j) {
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"969: %i %i %f \n",i, j, Dat [j]);
+		if (VERBOSE_LEVEL>8) fprintf(stdout,"969: %i %i %f \n",i, j, Dat [j]);
 		pS+=sprintf(pS,"%g ",Dat[j]);
 	}
 #ifdef NO_BI
 	bi += hdr->CHANNEL[i].SPR*sz;
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"970 %i %i \n%s \n",i, bi, pS);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"970 %i %i \n%s \n",i, bi, S);
 #else
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"970 %i %i \n%s \n",i, hdr->CHANNEL[i].bi, pS);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"970 %i %i \n%s \n",i, hdr->CHANNEL[i].bi, S);
 #endif
 //	if (VERBOSE_LEVEL>8) fprintf(stdout,"<%s>\n",digitsStream.str().c_str());
 
 	digitsText = new TiXmlText(S);
-	delete []S;
 	valueDigits->LinkEndChild(digitsText);
+	delete []S;
     }
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"980 [%i]\n", hdr->FILE.COMPRESSION);

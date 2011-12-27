@@ -105,7 +105,7 @@ LIBS          += $(LDLIBS)
 
 DELETE        = rm
 COPY          = cp -f
-TEMP_DIR      = /tmp/
+TEMP_DIR      = test/
 
 ##########################################################
 ## set Matlab and Octave variables
@@ -707,8 +707,8 @@ remove:
 #	Testing
 #############################################################
 #	./save2gdf -V8 ~/data/test/tms32/small_test.float32.log
-	./save2gdf -f=TMSi t0.scp t2.log
-	cat t2.log
+	./save2gdf -f=TMSi t0.scp $(TEMP_DIR)t2.log
+	cat $(TEMP_DIR)t2.log
 
 $(TEMP_DIR)t1.scp:
 	# scp example data sets
@@ -746,10 +746,10 @@ $(TEMP_DIR)t1.edf:
 	touch $(TEMP_DIR)t1.edf
 
 asc: save2gdf
-	./save2gdf -f=ASCII t0.xxx t1.asc
+	./save2gdf -f=ASCII t0.xxx $(TEMP_DIR)t1.asc
 
 bin: save2gdf
-	./save2gdf -f=BIN t0.xxx t1.bin
+	./save2gdf -f=BIN t0.xxx $(TEMP_DIR)t1.bin
 
 testbin: save2gdf $(TEMP_DIR)t1.edf
 	./save2gdf -f=BIN $(TEMP_DIR)t1.edf $(TEMP_DIR)t1.hdr
@@ -806,93 +806,93 @@ test: $(TEMP_DIR)t1.scp save2scp save2aecg save2gdf
 zip: $(TEMP_DIR)t1.scp save2gdf
 	# test for on-the-fly compression and decompression
 	# on-the-fly compression of output file
-	./save2gdf -z -f=GDF $(TEMP_DIR)t1.scp t1.gdf
-	./save2gdf -z -f=GDF1 $(TEMP_DIR)t1.scp t1.gd1
-	./save2gdf -z -f=EDF $(TEMP_DIR)t1.scp t1.edf
-	./save2gdf -z -f=BDF $(TEMP_DIR)t1.scp t1.bdf
-	./save2gdf -z -f=SCP $(TEMP_DIR)t1.scp t1.scp
-	./save2gdf -z -f=CFWB $(TEMP_DIR)t1.scp t1.cfw
-	./save2gdf -z -f=MFER $(TEMP_DIR)t1.scp t1.mwf
-	./save2gdf -z -f=HL7 $(TEMP_DIR)t1.scp t1.hl7
+	./save2gdf -z -f=GDF $(TEMP_DIR)t1.scp $(TEMP_DIR)t1.gdf
+	./save2gdf -z -f=GDF1 $(TEMP_DIR)t1.scp $(TEMP_DIR)t1.gd1
+	./save2gdf -z -f=EDF $(TEMP_DIR)t1.scp $(TEMP_DIR)t1.edf
+	./save2gdf -z -f=BDF $(TEMP_DIR)t1.scp $(TEMP_DIR)t1.bdf
+	./save2gdf -z -f=SCP $(TEMP_DIR)t1.scp $(TEMP_DIR)t1.scp
+	./save2gdf -z -f=CFWB $(TEMP_DIR)t1.scp $(TEMP_DIR)t1.cfw
+	./save2gdf -z -f=MFER $(TEMP_DIR)t1.scp $(TEMP_DIR)t1.mwf
+	./save2gdf -z -f=HL7 $(TEMP_DIR)t1.scp $(TEMP_DIR)t1.hl7
 
 	gzip -c $(TEMP_DIR)t1.scp >$(TEMP_DIR)t1.scp.gz
 	# on-the-fly decompression of input file
-	./save2gdf -f=GDF $(TEMP_DIR)t1.scp.gz t1.gdf
-	./save2gdf -f=EDF $(TEMP_DIR)t1.scp.gz t1.edf
-	./save2gdf -f=BDF $(TEMP_DIR)t1.scp.gz t1.bdf
-	./save2gdf -f=SCP $(TEMP_DIR)t1.scp.gz t1.scp
-	./save2gdf -f=HL7 $(TEMP_DIR)t1.scp.gz t1.hl7
-	./save2gdf -f=MFER $(TEMP_DIR)t1.scp.gz t1.mwf
-	./save2gdf -f=CFWB $(TEMP_DIR)t1.scp.gz t1.cfw
+	./save2gdf -f=GDF $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t1.gdf
+	./save2gdf -f=EDF $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t1.edf
+	./save2gdf -f=BDF $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t1.bdf
+	./save2gdf -f=SCP $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t1.scp
+	./save2gdf -f=HL7 $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t1.hl7
+	./save2gdf -f=MFER $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t1.mwf
+	./save2gdf -f=CFWB $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t1.cfw
 
 test6: $(TEMP_DIR)t1.scp save2gdf
-	$(COPY) $(TEMP_DIR)t1.scp t0.xxx
+	$(COPY) $(TEMP_DIR)t1.scp $(TEMP_DIR)t0.xxx
 	#test7: $(TEMP_DIR)t1.edf save2gdf
 	#$(COPY) $(TEMP_DIR)t1.edf t0.xxx
-	./save2gdf -z -f=GDF1 t0.xxx t1.gd1
-	./save2gdf -z -f=GDF t0.xxx t1.gdf
-	./save2gdf -z -f=EDF t0.xxx t1.edf
-	./save2gdf -z -f=BDF t0.xxx t1.bdf
-	./save2gdf -z -f=SCP t0.xxx t1.scp
-	./save2gdf    -f=HL7 t0.xxx t1.hl7   # -z not supported for HL7
-	gzip t1.hl7
-	./save2gdf -z -f=CFWB t0.xxx t1.cfw
-	./save2gdf -z -f=MFER t0.xxx t1.mwf
-	./save2gdf -z -f=BVA t0.xxx t1.bva
-	./save2gdf -f=GDF1 t1.gd1.gz t2.gd1.gd1
-	./save2gdf -f=GDF t1.gd1.gz t2.gd1.gdf
-	./save2gdf -f=EDF t1.gd1.gz t2.gd1.edf
-	./save2gdf -f=BDF t1.gd1.gz t2.gd1.bdf
-	./save2gdf -f=SCP t1.gd1.gz t2.gd1.scp
-	./save2gdf -f=HL7 t1.gd1.gz t2.gd1.hl7
-	./save2gdf -f=CFWB t1.gd1.gz t2.gd1.cfw
-	./save2gdf -f=GDF1 t1.gdf.gz t2.gdf.gd1
-	./save2gdf -f=GDF t1.gdf.gz t2.gdf.gdf
-	./save2gdf -f=EDF t1.gdf.gz t2.gdf.edf
-	./save2gdf -f=BDF t1.gdf.gz t2.gdf.bdf
-	./save2gdf -f=SCP t1.gdf.gz t2.gdf.scp
-	./save2gdf -f=HL7 t1.gdf.gz t2.gdf.hl7
-	./save2gdf -f=CFWB t1.gdf.gz t2.gdf.cfw
-	./save2gdf -f=GDF1 t1.edf.gz t2.edf.gd1
-	./save2gdf -f=GDF t1.edf.gz t2.edf.gdf
-	./save2gdf -f=EDF t1.edf.gz t2.edf.edf
-	./save2gdf -f=BDF t1.edf.gz t2.edf.bdf
-	./save2gdf -f=SCP t1.edf.gz t2.edf.scp
-	./save2gdf -f=HL7 t1.edf.gz t2.edf.hl7
-	./save2gdf -f=CFWB t1.edf.gz t2.edf.cfw
-	./save2gdf -f=GDF1 t1.bdf.gz t2.bdf.gd1
-	./save2gdf -f=GDF t1.bdf.gz t2.bdf.gdf
-	./save2gdf -f=EDF t1.bdf.gz t2.bdf.edf
-	./save2gdf -f=BDF t1.bdf.gz t2.bdf.bdf
-	./save2gdf -f=SCP t1.bdf.gz t2.bdf.scp
-	./save2gdf -f=HL7 t1.bdf.gz t2.bdf.hl7
-	./save2gdf -f=CFWB t1.bdf.gz t2.bdf.cfw
-	./save2gdf -f=GDF1 t1.scp.gz t2.scp.gd1
-	./save2gdf -f=GDF t1.scp.gz t2.scp.gdf
-	./save2gdf -f=EDF t1.scp.gz t2.scp.edf
-	./save2gdf -f=BDF t1.scp.gz t2.scp.bdf
-#	./save2gdf -f=SCP t1.scp.gz t2.scp.scp
-	./save2gdf -f=HL7 t1.scp.gz t2.scp.hl7
-	./save2gdf -f=CFWB t1.scp.gz t2.scp.cfw
-	./save2gdf -f=GDF1 t1.hl7.gz t2.hl7.gd1
-	./save2gdf -f=GDF t1.hl7.gz t2.hl7.gdf
-	./save2gdf -f=EDF t1.hl7.gz t2.hl7.edf
-	./save2gdf -f=BDF t1.hl7.gz t2.hl7.bdf
-	./save2gdf -f=SCP t1.hl7.gz t2.hl7.scp
-	./save2gdf -f=HL7 t1.hl7.gz t2.hl7.hl7
-	./save2gdf -f=CFWB t1.hl7.gz t2.hl7.cfw
-	./save2gdf -f=GDF1 t1.cfw.gz t2.cfw.gd1
-	./save2gdf -f=GDF t1.cfw.gz t2.cfw.gdf
-	./save2gdf -f=EDF t1.cfw.gz t2.cfw.edf
-	./save2gdf -f=BDF t1.cfw.gz t2.cfw.bdf
-	./save2gdf -f=SCP t1.cfw.gz t2.cfw.scp
-	./save2gdf -f=HL7 t1.cfw.gz t2.cfw.hl7
-	./save2gdf -f=GDF1 t1.mwf.gz t2.mwf.gd1
-	./save2gdf -f=GDF t1.mwf.gz t2.mwf.gdf
-	./save2gdf -f=EDF t1.mwf.gz t2.mwf.edf
-	./save2gdf -f=BDF t1.mwf.gz t2.mwf.bdf
-	./save2gdf -f=SCP t1.mwf.gz t2.mwf.scp
-	./save2gdf -f=HL7 t1.mwf.gz t2.mwf.hl7
+	./save2gdf -z -f=GDF1 $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.gd1
+	./save2gdf -z -f=GDF $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.gdf
+	./save2gdf -z -f=EDF $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.edf
+	./save2gdf -z -f=BDF $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.bdf
+	./save2gdf -z -f=SCP $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.scp
+	./save2gdf    -f=HL7 $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.hl7   # -z not supported for HL7
+	gzip $(TEMP_DIR)t1.hl7
+	./save2gdf -z -f=CFWB $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.cfw
+	./save2gdf -z -f=MFER $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.mwf
+	./save2gdf -z -f=BVA $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.bva
+	./save2gdf -f=GDF1 $(TEMP_DIR)t1.gd1.gz $(TEMP_DIR)t2.gd1.gd1
+	./save2gdf -f=GDF $(TEMP_DIR)t1.gd1.gz $(TEMP_DIR)t2.gd1.gdf
+	./save2gdf -f=EDF $(TEMP_DIR)t1.gd1.gz $(TEMP_DIR)t2.gd1.edf
+	./save2gdf -f=BDF $(TEMP_DIR)t1.gd1.gz $(TEMP_DIR)t2.gd1.bdf
+	./save2gdf -f=SCP $(TEMP_DIR)t1.gd1.gz $(TEMP_DIR)t2.gd1.scp
+	./save2gdf -f=HL7 $(TEMP_DIR)t1.gd1.gz $(TEMP_DIR)t2.gd1.hl7
+	./save2gdf -f=CFWB $(TEMP_DIR)t1.gd1.gz $(TEMP_DIR)t2.gd1.cfw
+	./save2gdf -f=GDF1 $(TEMP_DIR)t1.gdf.gz $(TEMP_DIR)t2.gdf.gd1
+	./save2gdf -f=GDF $(TEMP_DIR)t1.gdf.gz $(TEMP_DIR)t2.gdf.gdf
+	./save2gdf -f=EDF $(TEMP_DIR)t1.gdf.gz $(TEMP_DIR)t2.gdf.edf
+	./save2gdf -f=BDF $(TEMP_DIR)t1.gdf.gz $(TEMP_DIR)t2.gdf.bdf
+	./save2gdf -f=SCP $(TEMP_DIR)t1.gdf.gz $(TEMP_DIR)t2.gdf.scp
+	./save2gdf -f=HL7 $(TEMP_DIR)t1.gdf.gz $(TEMP_DIR)t2.gdf.hl7
+	./save2gdf -f=CFWB $(TEMP_DIR)t1.gdf.gz $(TEMP_DIR)t2.gdf.cfw
+	./save2gdf -f=GDF1 $(TEMP_DIR)t1.edf.gz $(TEMP_DIR)t2.edf.gd1
+	./save2gdf -f=GDF $(TEMP_DIR)t1.edf.gz $(TEMP_DIR)t2.edf.gdf
+	./save2gdf -f=EDF $(TEMP_DIR)t1.edf.gz $(TEMP_DIR)t2.edf.edf
+	./save2gdf -f=BDF $(TEMP_DIR)t1.edf.gz $(TEMP_DIR)t2.edf.bdf
+	./save2gdf -f=SCP $(TEMP_DIR)t1.edf.gz $(TEMP_DIR)t2.edf.scp
+	./save2gdf -f=HL7 $(TEMP_DIR)t1.edf.gz $(TEMP_DIR)t2.edf.hl7
+	./save2gdf -f=CFWB $(TEMP_DIR)t1.edf.gz $(TEMP_DIR)t2.edf.cfw
+	./save2gdf -f=GDF1 $(TEMP_DIR)t1.bdf.gz $(TEMP_DIR)t2.bdf.gd1
+	./save2gdf -f=GDF $(TEMP_DIR)t1.bdf.gz $(TEMP_DIR)t2.bdf.gdf
+	./save2gdf -f=EDF $(TEMP_DIR)t1.bdf.gz $(TEMP_DIR)t2.bdf.edf
+	./save2gdf -f=BDF $(TEMP_DIR)t1.bdf.gz $(TEMP_DIR)t2.bdf.bdf
+	./save2gdf -f=SCP $(TEMP_DIR)t1.bdf.gz $(TEMP_DIR)t2.bdf.scp
+	./save2gdf -f=HL7 $(TEMP_DIR)t1.bdf.gz $(TEMP_DIR)t2.bdf.hl7
+	./save2gdf -f=CFWB $(TEMP_DIR)t1.bdf.gz $(TEMP_DIR)t2.bdf.cfw
+	./save2gdf -f=GDF1 $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t2.scp.gd1
+	./save2gdf -f=GDF $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t2.scp.gdf
+	./save2gdf -f=EDF $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t2.scp.edf
+	./save2gdf -f=BDF $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t2.scp.bdf
+#	./save2gdf -f=SCP $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t2.scp.scp
+	./save2gdf -f=HL7 $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t2.scp.hl7
+	./save2gdf -f=CFWB $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t2.scp.cfw
+	./save2gdf -f=GDF1 $(TEMP_DIR)t1.hl7.gz $(TEMP_DIR)t2.hl7.gd1
+	./save2gdf -f=GDF $(TEMP_DIR)t1.hl7.gz $(TEMP_DIR)t2.hl7.gdf
+	./save2gdf -f=EDF $(TEMP_DIR)t1.hl7.gz $(TEMP_DIR)t2.hl7.edf
+	./save2gdf -f=BDF $(TEMP_DIR)t1.hl7.gz $(TEMP_DIR)t2.hl7.bdf
+	./save2gdf -f=SCP $(TEMP_DIR)t1.hl7.gz $(TEMP_DIR)t2.hl7.scp
+	./save2gdf -f=HL7 $(TEMP_DIR)t1.hl7.gz $(TEMP_DIR)t2.hl7.hl7
+	./save2gdf -f=CFWB $(TEMP_DIR)t1.hl7.gz $(TEMP_DIR)t2.hl7.cfw
+	./save2gdf -f=GDF1 $(TEMP_DIR)t1.cfw.gz $(TEMP_DIR)t2.cfw.gd1
+	./save2gdf -f=GDF $(TEMP_DIR)t1.cfw.gz $(TEMP_DIR)t2.cfw.gdf
+	./save2gdf -f=EDF $(TEMP_DIR)t1.cfw.gz $(TEMP_DIR)t2.cfw.edf
+	./save2gdf -f=BDF $(TEMP_DIR)t1.cfw.gz $(TEMP_DIR)t2.cfw.bdf
+	./save2gdf -f=SCP $(TEMP_DIR)t1.cfw.gz $(TEMP_DIR)t2.cfw.scp
+	./save2gdf -f=HL7 $(TEMP_DIR)t1.cfw.gz $(TEMP_DIR)t2.cfw.hl7
+	./save2gdf -f=GDF1 $(TEMP_DIR)t1.mwf.gz $(TEMP_DIR)t2.mwf.gd1
+	./save2gdf -f=GDF $(TEMP_DIR)t1.mwf.gz $(TEMP_DIR)t2.mwf.gdf
+	./save2gdf -f=EDF $(TEMP_DIR)t1.mwf.gz $(TEMP_DIR)t2.mwf.edf
+	./save2gdf -f=BDF $(TEMP_DIR)t1.mwf.gz $(TEMP_DIR)t2.mwf.bdf
+	./save2gdf -f=SCP $(TEMP_DIR)t1.mwf.gz $(TEMP_DIR)t2.mwf.scp
+	./save2gdf -f=HL7 $(TEMP_DIR)t1.mwf.gz $(TEMP_DIR)t2.mwf.hl7
 
 testpybdf : $(TEMP_DIR)BDFtestfiles.zip
 	unzip -u $(TEMP_DIR)BDFtestfiles.zip -d $(TEMP_DIR) && \

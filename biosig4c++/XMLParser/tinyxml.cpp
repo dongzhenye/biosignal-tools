@@ -868,7 +868,6 @@ void TiXmlElement::Print( FILE* cfile, int depth ) const
 #ifdef ZLIB_H 
 void TiXmlElement::gzPrint( gzFile cfile, int depth ) const
 {
-	assert( cfile );
 	int i;
 	assert( cfile );
 	for ( i=0; i<depth; i++ ) {
@@ -1503,7 +1502,7 @@ void TiXmlAttribute::gzPrint( gzFile cfile, int /*depth*/, TIXML_STRING* str ) c
 
 	if (value.find ('\"') == TIXML_STRING::npos) {
 		if ( cfile ) {
-		gzprintf (cfile, "%s=\"%s\"", n.c_str(), v.c_str() );
+			gzprintf (cfile, "%s=\"%s\"", n.c_str(), v.c_str() );
 		}
 		if ( str ) {
 			(*str) += n; (*str) += "=\""; (*str) += v; (*str) += "\"";
@@ -1511,7 +1510,7 @@ void TiXmlAttribute::gzPrint( gzFile cfile, int /*depth*/, TIXML_STRING* str ) c
 	}
 	else {
 		if ( cfile ) {
-		gzprintf (cfile, "%s='%s'", n.c_str(), v.c_str() );
+			gzprintf (cfile, "%s='%s'", n.c_str(), v.c_str() );
 		}
 		if ( str ) {
 			(*str) += n; (*str) += "='"; (*str) += v; (*str) += "'";
