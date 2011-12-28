@@ -835,7 +835,7 @@ test6: $(TEMP_DIR)t1.scp save2gdf
 	./save2gdf -z -f=BDF $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.bdf
 	./save2gdf -z -f=SCP $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.scp
 	./save2gdf    -f=HL7 $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.hl7   # -z not supported for HL7
-	gzip $(TEMP_DIR)t1.hl7
+	gzip -f $(TEMP_DIR)t1.hl7
 	./save2gdf -z -f=CFWB $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.cfw
 	./save2gdf -z -f=MFER $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.mwf
 	./save2gdf -z -f=BVA $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.bva
@@ -871,7 +871,7 @@ test6: $(TEMP_DIR)t1.scp save2gdf
 	./save2gdf -f=GDF $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t2.scp.gdf
 	./save2gdf -f=EDF $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t2.scp.edf
 	./save2gdf -f=BDF $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t2.scp.bdf
-#	./save2gdf -f=SCP $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t2.scp.scp
+	./save2gdf -f=SCP $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t2.scp.scp
 	./save2gdf -f=HL7 $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t2.scp.hl7
 	./save2gdf -f=CFWB $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t2.scp.cfw
 	./save2gdf -f=GDF1 $(TEMP_DIR)t1.hl7.gz $(TEMP_DIR)t2.hl7.gd1
