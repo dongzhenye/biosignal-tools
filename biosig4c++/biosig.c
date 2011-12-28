@@ -2669,16 +2669,18 @@ int gdfbin2struct(HDRTYPE *hdr)
 	    		hdr->Patient.Impairment.Heart  = (Header1[87]>>6)%4;
 
 #if __BYTE_ORDER == __BIG_ENDIAN
-			bswap_32(*(uint32_t*)(hdr->AS.Header+156));
-			bswap_32(*(uint32_t*)(hdr->AS.Header+160));
-			bswap_32(*(uint32_t*)(hdr->AS.Header+164));
+			*(uint32_t*)(hdr->AS.Header+156) = bswap_32(*(uint32_t*)(hdr->AS.Header+156));
+			*(uint32_t*)(hdr->AS.Header+160) = bswap_32(*(uint32_t*)(hdr->AS.Header+160));
+			*(uint32_t*)(hdr->AS.Header+164) = bswap_32(*(uint32_t*)(hdr->AS.Header+164));
 #endif
 			if (hdr->AS.Header[156]) {
 				hdr->LOC[0] = 0x00292929;
 				memcpy(&hdr->LOC[1], hdr->AS.Header+156, 12);
 			}
 			else {
-				*(uint32_t*) (hdr->AS.Header+152) = leu32p(hdr->AS.Header+152);
+#if __BYTE_ORDER == __BIG_ENDIAN
+				*(uint32_t*) (hdr->AS.Header+152) = bswap_32(*(uint32_t*)(hdr->AS.Header+152));
+#endif
 				memcpy(&hdr->LOC, hdr->AS.Header+152, 16);
 			}
 
@@ -3270,13 +3272,14 @@ int read_header(HDRTYPE *hdr) {
 
 	size_t count = hdr->HeadLen;
 	if (hdr->HeadLen<=512) {
+		ifseek(hdr, count, SEEK_SET);
 	    	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header, 513);
 		count += ifread(hdr->AS.Header+hdr->HeadLen, 1, 512-count, hdr);
 		getfiletype(hdr);
 	}
     	char tmp[6];
     	strncpy(tmp,(char*)hdr->AS.Header+3,5); tmp[5]=0;
-    	hdr->VERSION 	= strtod(tmp,NULL);
+    	hdr->VERSION 	= atof(tmp);
 
 	// currently, only GDF is supported	
 	if ( (hdr->TYPE != GDF) || (hdr->VERSION < 0.01) )
@@ -3290,8 +3293,10 @@ int read_header(HDRTYPE *hdr) {
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"READ_HEADER: %i %i %i %f\n", (int)hdr->FILE.size, (int)hdr->HeadLen, (int)count, hdr->VERSION);
 
 	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen);
-        if (count < hdr->HeadLen)
+        if (count < hdr->HeadLen) {
+		ifseek(hdr, count, SEEK_SET);
 	    	count += ifread(hdr->AS.Header+count, 1, hdr->HeadLen-count, hdr);
+	}
 
         if (count < hdr->HeadLen) {
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"ambigous GDF header size: %i %i\n",(int)count,hdr->HeadLen);
@@ -3425,43 +3430,44 @@ HDRTYPE* sopen(const char* FileName, const char* MODE, HDRTYPE* hdr)
 
 if (!strncmp(MODE,"a",1)) {
 	/***** 	SOPEN APPEND *****/
-	HDRTYPE *newhdr = constructHDR(hdr->NS,hdr->EVENT.N);
-	newhdr = ifopen(newhdr,"ab");
-	if (!newhdr->FILE.OPEN) {
+	if (hdr->FILE.COMPRESSION) {
+		// read header info - requires a separate gzopen, because gzopen(..,"a") does not support simultaneous read/write 
+		HDRTYPE *hdr2 = sopen(FileName, "r", NULL); 
+		sclose(hdr2);
+		hdr = ifopen(hdr,"ab");
+		hdr->AS.Header = hdr2->AS.Header; 
+		hdr->HeadLen   = hdr2->HeadLen; 
+		hdr2->AS.Header= NULL; 
+		hdr2->HeadLen  = 0; 
+		destructHDR(hdr2);
+	}
+	else 
+		hdr = ifopen(hdr,"ab+");
+
+	if (!hdr->FILE.OPEN) {
 		B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
     		B4C_ERRMSG = "Error SOPEN(APPEND); Cannot open file.";
-		destructHDR(newhdr);
-    		return(hdr);
+		return(hdr);
 	}
-	newhdr->FILE.size = iftell(newhdr);
-	if (newhdr->FILE.size==0) {
-		destructHDR(newhdr);
+	hdr->FILE.size = iftell(hdr);
+	if (hdr->FILE.size==0) {
 		return( sopen(FileName, "w", hdr) );
 	} 
-	else if (newhdr->FILE.size<256) {
+	else if (hdr->FILE.size<256) {
 		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
     		B4C_ERRMSG = "Error SOPEN(APPEND);  file not supported.";
-		destructHDR(newhdr);
 		return (NULL);
 	} 
 
-	ifseek(newhdr,0,SEEK_SET);
-	newhdr->HeadLen = 0;
-    	if ( read_header(newhdr) ) {
+    	if ( read_header(hdr) ) {
 		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
     		B4C_ERRMSG = "Error SOPEN(APPEND);  file not supported.";
-		destructHDR(newhdr);
 		return (NULL);
 	}
 
 	// if file is successfully opened, the header info of the existing file must be used. 
-	newhdr->FLAG.ROW_BASED_CHANNELS = hdr->FLAG.ROW_BASED_CHANNELS;
-	newhdr->FLAG.UCAL = hdr->FLAG.UCAL;
-	newhdr->FILE.OPEN = 2; 
-	ifseek(newhdr, newhdr->HeadLen + max(0,newhdr->NRec) * newhdr->AS.bpb, SEEK_SET);
-	newhdr->NRec = -1; 
-
-	destructHDR(hdr); hdr = newhdr; newhdr = NULL;
+	ifseek(hdr, hdr->HeadLen + max(0,hdr->NRec) * hdr->AS.bpb, SEEK_SET);
+	hdr->FILE.OPEN = 2;
 }
 
 else if (!strncmp(MODE,"r",1)) {
