@@ -821,7 +821,10 @@ gdf_time tm_time2gdf_time(struct tm *t){
 	return(o);
 }
 
+
 struct tm *gdf_time2tm_time(gdf_time t) {
+        // this is not re-entrant, use gdf_time2tm_time_r instead
+
 	/* based Octave's datevec.m
 	it referes Peter Baum's algorithm at http://vsg.cape.com/~pbaum/date/date0.htm
 	but the link is not working anymore as of 2008-12-03.
@@ -832,7 +835,21 @@ struct tm *gdf_time2tm_time(gdf_time t) {
 	*/
 
 	static struct tm tt;	// allocate memory for t3;
-	struct tm *t3 = &tt;
+        gdf_time2tm_time_r(t,&tt);
+    	return(&tt);
+}
+
+
+int gdf_time2tm_time_r(gdf_time t, struct tm *t3) {
+	/* based Octave's datevec.m
+	it referes Peter Baum's algorithm at http://vsg.cape.com/~pbaum/date/date0.htm
+	but the link is not working anymore as of 2008-12-03.
+
+	Other links to Peter Baum's algorithm are
+	http://www.rexswain.com/b2mmddyy.rex
+	http://www.dpwr.net/forums/index.php?s=ecfa72e38be61327403126e23aeea7e5&showtopic=4309
+	*/
+
 	int32_t rd = (int32_t)floor(ldexp((double)t,-32)); // days since 0001-01-01
 	double s = ldexp((t & 0x00000000ffffffff)*86400,-32); // seconds of the day
 	// s += timezone;
@@ -865,7 +882,7 @@ struct tm *gdf_time2tm_time(gdf_time t) {
 	t3->tm_sec = (int)(s) - 60 * t3->tm_min;
 	//t3->tm_gmtoff = 3600;
 
-    	return(t3);
+        return(0);
 }
 
 
@@ -1418,7 +1435,7 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->data.block = NULL;
 	hdr->T0 = (gdf_time)0;
 	hdr->tzmin = 0;
-	hdr->ID.Equipment = *(uint64_t*) & "b4c_0.95";
+	hdr->ID.Equipment = *(uint64_t*) & "b4c_1.2 ";
 	hdr->ID.Manufacturer._field[0]    = 0;
 	hdr->ID.Manufacturer.Name         = NULL;
 	hdr->ID.Manufacturer.Model        = NULL;

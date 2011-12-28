@@ -207,8 +207,18 @@ typedef int64_t 		gdf_time; /* gdf time is represented in 64 bits */
 #ifdef __cplusplus
 EXTERN_C {
 #endif
+/*
+ * converts struct tm into gdf_time format 
+ */
 gdf_time   tm_time2gdf_time(struct tm *t);
+/*
+ * gdf_time2tm_time converts gdf-time into struct tm format, 
+ */ 
 struct tm *gdf_time2tm_time(gdf_time t);
+/*
+ * re-entrant version of gdf_time2tm_time, memory for t must be allocated
+ */
+int gdf_time2tm_time_r(gdf_time t, struct tm *tm);
 #ifdef __cplusplus
 }
 #endif
