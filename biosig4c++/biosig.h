@@ -510,9 +510,12 @@ HDRTYPE* sopen(const char* FileName, const char* MODE, HDRTYPE* hdr);
 	Mode: "a" is append mode,
 		if file exists, header and eventtable is read, 
 		position pointer is set to end of data in order to add 
-		more data 		
-	        if file is successfully opened, the header structure of the existing file is used. 
-		Currently, append mode is supported only for the GDF format
+		more data. If file is successfully opened, the header structure 
+		of the existing file is used, and any different specification in 
+		hdr is discarded.  
+		If file is not compressed, it can be used for read and write, 
+  		for compressed files, only appending at the end of file is possible.
+		Currently, append mode is supported only for the GDF format.
 
 	hdr should be generated with constructHDR, and the necessary fields
 	must be defined. In read-mode, hdr can be NULL; however,
@@ -522,7 +525,7 @@ HDRTYPE* sopen(const char* FileName, const char* MODE, HDRTYPE* hdr);
 	which must be equivalent to the header info of an existing file. 
 	After calling sopen, the file header is read or written, and
 	the position pointer points to the beginning of the data section
-	in append mode, the position pointer points to end of file. 
+	in append mode, the position pointer points to the end of the data section. 
  --------------------------------------------------------------- */
 
 int 	sclose(HDRTYPE* hdr);

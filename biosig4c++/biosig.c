@@ -3431,11 +3431,12 @@ HDRTYPE* sopen(const char* FileName, const char* MODE, HDRTYPE* hdr)
 if (!strncmp(MODE,"a",1)) {
 
 	/***** 	SOPEN APPEND *****/
-	// read header info in an extra separate step. 
-	// TODO: check when file is empty
 	HDRTYPE *hdr2 = NULL; 
 	struct stat FileBuf;
-	if (stat(FileName, &FileBuf)==0) hdr->FILE.size = FileBuf.st_size; 
+	if (stat(FileName, &FileBuf)==0) 
+		hdr->FILE.size = FileBuf.st_size; 
+	else 
+		hdr->FILE.size = 0;
 
 	if (hdr->FILE.size==0) {
 		if (hdr->FILE.OPEN) ifclose(hdr);
@@ -3453,15 +3454,30 @@ if (!strncmp(MODE,"a",1)) {
  	}; 
 
 	if (hdr2->TYPE != GDF) {
+		// currently only GDF is tested and supported
 		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
     		B4C_ERRMSG = "Error SOPEN(APPEND);  file format not supported.";
 		destructHDR(hdr2);
 		return (hdr);
 	} 
 
-	// use header of existing file 
+	// test for additional restrictions
+	if ( hdr2->EVENT.N > 0 && hdr2->FILE.COMPRESSION ) {
+		// gzopen does not support "rb+" (simultaneous read/write) but can only append at the end of file
+		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+    		B4C_ERRMSG = "Error SOPEN(GDF APPEND);  cannot append to compressed GDF file containing event table.";
+		destructHDR(hdr2);
+		return (hdr);
+	} 
+
+	// use header of existing file, sopen does hdr=hdr2, and open files for writing. 
 	destructHDR(hdr);
-	hdr = ifopen(hdr2, "ab");
+	if (hdr2->FILE.COMPRESSION) 
+		hdr = ifopen(hdr2, "ab");	
+	else {
+		hdr = ifopen(hdr2, "rb+");
+		ifseek(hdr, hdr->HeadLen + hdr->NRec*hdr->AS.bpb, SEEK_SET);
+	}
 	if (!hdr->FILE.OPEN) {
 		B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
     		B4C_ERRMSG = "Error SOPEN(APPEND); Cannot open file.";
