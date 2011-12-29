@@ -3429,44 +3429,44 @@ HDRTYPE* sopen(const char* FileName, const char* MODE, HDRTYPE* hdr)
 	hdr->FILE.LittleEndian = 1;
 
 if (!strncmp(MODE,"a",1)) {
-	/***** 	SOPEN APPEND *****/
-	if (hdr->FILE.COMPRESSION) {
-		// read header info - requires a separate gzopen, because gzopen(..,"a") does not support simultaneous read/write 
-		HDRTYPE *hdr2 = sopen(FileName, "r", NULL); 
-		sclose(hdr2);
-		hdr = ifopen(hdr,"ab");
-		hdr->AS.Header = hdr2->AS.Header; 
-		hdr->HeadLen   = hdr2->HeadLen; 
-		hdr2->AS.Header= NULL; 
-		hdr2->HeadLen  = 0; 
-		destructHDR(hdr2);
-	}
-	else 
-		hdr = ifopen(hdr,"ab+");
 
+	/***** 	SOPEN APPEND *****/
+	// read header info in an extra separate step. 
+	// TODO: check when file is empty
+	HDRTYPE *hdr2 = NULL; 
+	struct stat FileBuf;
+	if (stat(FileName, &FileBuf)==0) hdr->FILE.size = FileBuf.st_size; 
+
+	if (hdr->FILE.size==0) {
+		if (hdr->FILE.OPEN) ifclose(hdr);
+		return( sopen(FileName, "w", hdr) );
+	} 
+	else if (hdr->FILE.size < 256) {
+		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+    		B4C_ERRMSG = "Error SOPEN(APPEND);  file format not supported.";
+		return (hdr);
+	} 
+	else {
+		// read header of existing file 
+		hdr2 = sopen(FileName, "r", hdr2); 
+		sclose(hdr2);
+ 	}; 
+
+	if (hdr2->TYPE != GDF) {
+		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+    		B4C_ERRMSG = "Error SOPEN(APPEND);  file format not supported.";
+		destructHDR(hdr2);
+		return (hdr);
+	} 
+
+	// use header of existing file 
+	destructHDR(hdr);
+	hdr = ifopen(hdr2, "ab");
 	if (!hdr->FILE.OPEN) {
 		B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
     		B4C_ERRMSG = "Error SOPEN(APPEND); Cannot open file.";
 		return(hdr);
 	}
-	hdr->FILE.size = iftell(hdr);
-	if (hdr->FILE.size==0) {
-		return( sopen(FileName, "w", hdr) );
-	} 
-	else if (hdr->FILE.size<256) {
-		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-    		B4C_ERRMSG = "Error SOPEN(APPEND);  file not supported.";
-		return (NULL);
-	} 
-
-    	if ( read_header(hdr) ) {
-		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-    		B4C_ERRMSG = "Error SOPEN(APPEND);  file not supported.";
-		return (NULL);
-	}
-
-	// if file is successfully opened, the header info of the existing file must be used. 
-	ifseek(hdr, hdr->HeadLen + max(0,hdr->NRec) * hdr->AS.bpb, SEEK_SET);
 	hdr->FILE.OPEN = 2;
 }
 
