@@ -10078,8 +10078,8 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 	    		fprintf(fid,"PhysDimCode\t= %i\n",hdr->CHANNEL[k].PhysDimCode);
 	    		fprintf(fid,"DigMax   \t= %f\n",hdr->CHANNEL[k].DigMax);
 	    		fprintf(fid,"DigMin   \t= %f\n",hdr->CHANNEL[k].DigMin);
-	    		fprintf(fid,"PhysMax  \t= %f\n",hdr->CHANNEL[k].PhysMax);
-	    		fprintf(fid,"PhysMin  \t= %f\n",hdr->CHANNEL[k].PhysMin);
+	    		fprintf(fid,"PhysMax  \t= %g\n",hdr->CHANNEL[k].PhysMax);
+	    		fprintf(fid,"PhysMin  \t= %g\n",hdr->CHANNEL[k].PhysMin);
 	    		fprintf(fid,"SamplingRate\t= %f\n",hdr->CHANNEL[k].SPR*hdr->SampleRate/hdr->SPR);
 	    		fprintf(fid,"NumberOfSamples\t= %li\n",(hdr->CHANNEL[k].SPR*hdr->NRec));
 	    		fprintf(fid,"HighPassFilter\t= %f\n",hdr->CHANNEL[k].HighPass);
