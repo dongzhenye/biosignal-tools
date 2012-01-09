@@ -22,7 +22,12 @@
 #include <string.h>
 
 #include "../biosig-dev.h"
-#include "../XMLParser/tinyxml.h"
+#ifdef WITH_LIBXML2
+#  include <libxml/parser.h>
+#  include <libxml/tree.h>
+#else 
+#  include "../XMLParser/tinyxml.h"
+#endif
 
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 

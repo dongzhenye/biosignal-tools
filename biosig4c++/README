@@ -19,6 +19,7 @@ The following DEFINES are recommended and require:
  -D=__4HAERTEL__	support for special flavor of FAMOS format (experimental) 
  Other flags are used for experimental development 
  -D=WITH_DICOM, -D=WITH_GDCM 	experimental DICOM support 
+ -D=WITH_LIBXML2	experimental: tinyxml is replaced by libxml2
 If some libraries are not available on your system, remove the corresponding DEFINES in Makefile. 
 
 (2) "save2gdf" is a converter between different file formats, 

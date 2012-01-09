@@ -72,7 +72,7 @@ PathToSigViewerWIN64 = ../sigviewer4win64
 CC            = gcc
 CXX           = g++
 #DEFINES      = -D=WITHOUT_SCP_DECODE
-DEFINES       = -D=WITH_ZLIB -D=__4HAERTEL__ -D=WITH_FAMOS -D=WITH_CHOLMOD -D=WITHOUT_NETWORK #-D=WITH_FEF #-D=WITH_PDP -D=WITH_DICOM #-D=WITH_GDCM #-D=WITH_GSL #-D=WITH_EEPROBE #-D=SOFTCODED_PHYSDIMTABLE # if you have zlib
+DEFINES       = -D=WITH_ZLIB -D=__4HAERTEL__ -D=WITH_FAMOS -D=WITH_CHOLMOD -D=WITHOUT_NETWORK #-D=WITH_LIBXML2 -D=WITH_FEF #-D=WITH_PDP -D=WITH_DICOM #-D=WITH_GDCM #-D=WITH_GSL #-D=WITH_EEPROBE #-D=SOFTCODED_PHYSDIMTABLE # if you have zlib
 #DEFINES      += -D=CNT32
 CFLAGS        = -pipe -fPIC -Wall -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 CXXFLAGS      = -pipe -fPIC -Wall -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
@@ -101,10 +101,14 @@ endif
 ifneq (,$(findstring WITH_CHOLMOD, $(DEFINES)))
   LDLIBS     += -lcholmod
 endif
+ifneq (,$(findstring WITH_LIBXML2, $(DEFINES)))
+  LDLIBS     += -lxml2
+endif
 LIBS          += $(LDLIBS)
 
 DELETE        = rm
 COPY          = cp -f
+DATA_DIR      = data/
 TEMP_DIR      = test/
 
 ##########################################################
@@ -163,10 +167,6 @@ LIB	      = $(DESTDIR)/usr/lib
 
 ####### Files
 SOURCES       = biosig.c \
-		XMLParser/tinyxml.cpp \
-		XMLParser/tinyxmlparser.cpp \
-		XMLParser/tinyxmlerror.cpp \
-		XMLParser/tinystr.cpp \
 		t210/sopen_scp_read.c \
 		t210/sopen_famos_read.c \
 		t210/sopen_alpha_read.c \
@@ -182,13 +182,17 @@ SOURCES       = biosig.c \
 		biosig_client.c \
 		biosig_server.c
 
+ifeq (,$(findstring WITH_LIBXML2, $(DEFINES)))
+  ## TinyXML is used when built without libxml2 	
+  SOURCES    +=	XMLParser/tinyxml.cpp \
+		XMLParser/tinyxmlparser.cpp \
+		XMLParser/tinyxmlerror.cpp \
+		XMLParser/tinystr.cpp 
+endif
+
 OBJECTS       = \
 		crc4scp.o \
 		biosig.o \
-		tinyxml.o \
-		tinyxmlparser.o \
-		tinyxmlerror.o \
-		tinystr.o \
 		sopen_scp_read.o \
 		sopen_alpha_read.o \
 		sopen_scp_write.o \
@@ -200,10 +204,6 @@ MinGWOBJECTS  = \
 		win32/crc4scp.obj \
 		win32/biosig.obj \
 		win32/getlogin_r.obj \
-		win32/tinyxml.obj \
-		win32/tinyxmlparser.obj \
-		win32/tinyxmlerror.obj \
-		win32/tinystr.obj \
 		win32/sopen_scp_read.obj \
 		win32/sopen_alpha_read.obj \
 		win32/sopen_scp_write.obj \
@@ -217,18 +217,30 @@ endif
 ifneq (,$(findstring WITH_FAMOS, $(MinGWDEF)))
   MinGWOBJECTS += win32/sopen_famos_read.obj
 endif
+
 ifneq (,$(findstring WITH_FEF, $(DEFINES)))
   OBJECTS      += sopen_fef_read.o
 endif
 ifneq (,$(findstring WITH_FEF, $(MinGWDEF)))
   MinGWOBJECTS += win32/sopen_fef_read.obj
 endif
+
 ifeq (,$(findstring WITHOUT_SCP_DECODE, $(DEFINES)))
   OBJECTS      += scp-decode.o
 endif
 ifeq (,$(findstring WITHOUT_SCP_DECODE, $(MinGWDEF)))
   MinGWOBJECTS += win32/scp-decode.obj
 endif
+
+ifeq (,$(findstring WITH_LIBXML2, $(DEFINES)))
+  ## TinyXML is used when built without libxml2 	
+  OBJECTS    += tinyxml.o tinyxmlparser.o tinyxmlerror.o tinystr.o 
+endif
+ifeq (,$(findstring WITH_LIBXML2, $(DEFINES)))
+  ## TinyXML is used when built without libxml2 	
+  MinGWOBJECTS += win32/tinyxml.obj win32/tinyxmlparser.obj win32/tinyxmlerror.obj win32/tinystr.obj 
+endif
+
 
 MinGW64OBJECTS  = $(patsubst win32/%.obj, win64/%.obj, $(MinGWOBJECTS))
 
@@ -328,7 +340,7 @@ sopen_fef_read.o: t240/sopen_fef_read.c biosig-dev.h biosig.h
 #	$(MAKE) -C t240 -f Makefile.am.sample
 	$(CC) -c $(CFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
 
-sopen_hl7aecg.o: t230/sopen_hl7aecg.c biosig-dev.h biosig.h XMLParser/tinyxml.h XMLParser/tinystr.h
+sopen_hl7aecg.o: t230/sopen_hl7aecg.c biosig-dev.h biosig.h
 	$(CXX) -c $(CFLAGS) $(INCPATH) -o "$@" "$<"
 
 sopen_scp_read.o: t210/sopen_scp_read.c biosig-dev.h biosig.h biosig.h t210/structures.h
@@ -348,7 +360,7 @@ win32/sopen_scp_read.obj: t210/sopen_scp_read.c biosig-dev.h biosig.h t210/struc
 win32/scp-decode.obj: t210/scp-decode.cpp biosig-dev.h biosig.h t210/structures.h t210/codes.h
 	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
 
-win32/sopen_hl7aecg.obj: t230/sopen_hl7aecg.c biosig-dev.h biosig.h XMLParser/tinyxml.h XMLParser/tinystr.h
+win32/sopen_hl7aecg.obj: t230/sopen_hl7aecg.c biosig-dev.h biosig.h 
 	$(MinGWCXX) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
 
 win32/getlogin_r.obj: win32/getlogin_r.c
@@ -379,7 +391,7 @@ win64/sopen_scp_read.obj: t210/sopen_scp_read.c biosig-dev.h biosig.h t210/struc
 win64/scp-decode.obj: t210/scp-decode.cpp biosig-dev.h biosig.h t210/structures.h t210/codes.h
 	$(MinGW64CC) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
 
-win64/sopen_hl7aecg.obj: t230/sopen_hl7aecg.c biosig-dev.h biosig.h XMLParser/tinyxml.h XMLParser/tinystr.h
+win64/sopen_hl7aecg.obj: t230/sopen_hl7aecg.c biosig-dev.h biosig.h
 	$(MinGW64CXX) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
 
 win64/getlogin_r.obj: win32/getlogin_r.c
@@ -729,14 +741,16 @@ $(TEMP_DIR)t1.scp:
 	$(COPY) $(TEMP_DIR)scp/redred/PFE103.scp $(TEMP_DIR)t1.scp
 	touch $(TEMP_DIR)t1.scp
 
-$(TEMP_DIR)t1.hl7:
+#"$(DATA_DIR)aECG Release 1 Schema and Example.zip":
+$(DATA_DIR)2003-12\ Schema/example/Example\ aECG.xml:
 	# HL7aECG example data set
-	wget -q -P$(TEMP_DIR) http://hl7.org/library/committees/rcrim/annecg/aECG%20Release%201%20Schema%20and%20Example%2Ezip
-	unzip -u "$(TEMP_DIR)aECG Release 1 Schema and Example.zip"  -d $(TEMP_DIR)
-	$(COPY) "$(TEMP_DIR)2003-12 Schema/example/Example aECG.xml" $(TEMP_DIR)t1.hl7
-	rm -rf "$(TEMP_DIR)aECG Release 1 Schema and Example.zip"
-	rm -rf "$(TEMP_DIR)2003-12 Schema"
-	touch $(TEMP_DIR)t1.hl7
+	wget -q -P$(DATA_DIR) https://www.hl7.org/documentcenter/public/wg/rcrim/annecg/aECG%20Release%201%20Schema%20and%20Example.zip
+	unzip -u $(DATA_DIR)"aECG Release 1 Schema and Example.zip"  -d $(DATA_DIR)
+
+$(TEMP_DIR)t1.hl7: $(DATA_DIR)2003-12\ Schema/example/Example\ aECG.xml
+	$(COPY) $(DATA_DIR)2003-12\ Schema/example/Example\ aECG.xml" $(TEMP_DIR)t1.hl7
+	#rm -rf "$(TEMP_DIR)aECG Release 1 Schema and Example.zip"
+	#rm -rf "$(TEMP_DIR)2003-12 Schema"
 
 $(TEMP_DIR)t1.edf:
 	# EDF+ example data set
@@ -902,3 +916,4 @@ testpybdf : $(TEMP_DIR)BDFtestfiles.zip
 
 $(TEMP_DIR)BDFtestfiles.zip :
 	wget -P$(TEMP_DIR) http://www.biosemi.com/download/BDFtestfiles.zip
+
