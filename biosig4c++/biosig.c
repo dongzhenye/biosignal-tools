@@ -49,14 +49,15 @@
 #include <errno.h>
 #include <float.h>
 #include <locale.h>
-//#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-/*@=skipposixheaders@*/
 #include <sys/stat.h>
+
+#include <curl/curl.h>
 
 #include "biosig-dev.h"
 #include "biosig-network.h"
+
 
 #ifdef _WIN32
   extern int getlogin_r(char* name, size_t namesize);
@@ -298,7 +299,7 @@ const struct event_groups_t EventCodeGroups [] = {
 
 // greatest common divisor
 uint32_t gcd(uint32_t A, uint32_t B)
-{	size_t t;
+{	uint32_t t;
 	if (A<B) {t=B; B=A; A=t;};
 	while (B>0) {
 		t = B;
@@ -1658,7 +1659,7 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 
     	hdr->TYPE = unknown;
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"[GETFILETYPE 101]!\n");
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"[GETFILETYPE 101]! %i\n", hdr->HeadLen);
 
    	const uint8_t MAGIC_NUMBER_FEF1[] = {67,69,78,13,10,0x1a,4,0x84};
 	const uint8_t MAGIC_NUMBER_FEF2[] = {67,69,78,0x13,0x10,0x1a,4,0x84};
@@ -1694,7 +1695,7 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
     		}
     	}
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"[GETFILETYPE 200] %i %i!\n",leu16p(hdr->AS.Header),leu16p(hdr->AS.Header+154));
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"[GETFILETYPE 200] %x %x!\n",leu16p(hdr->AS.Header),leu16p(hdr->AS.Header+154));
 
     	if (hdr->TYPE != unknown)
       		return(hdr);
@@ -3488,41 +3489,6 @@ if (!strncmp(MODE,"a",1)) {
 
 else if (!strncmp(MODE,"r",1)) {
 	/***** 	SOPEN READ *****/
-	size_t k,name=0,ext=0;
-	for (k=0; hdr->FileName[k]; k++) {
-		if (hdr->FileName[k]==FILESEP) name = k+1;
-		if (hdr->FileName[k]=='.')     ext  = k+1;
-	}
-
-	const char *FileExt  = hdr->FileName+ext;
-	const char *FileName = hdr->FileName+name;
-
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN 101: <%s>\n",hdr->FileName);
-
-	/* AINF */
-	if (!strcmp(FileExt, "ainf")) {
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"getfiletype ainf1 %s %i\n",hdr->FileName,(int)ext);
-		char* AINF_RAW_FILENAME = (char*)calloc(strlen(hdr->FileName)+5,sizeof(char));
-		strncpy(AINF_RAW_FILENAME, hdr->FileName,ext);
-		strcpy(AINF_RAW_FILENAME+ext, "raw");
-		FILE* fid1=fopen(AINF_RAW_FILENAME,"rb");
-		if (fid1) {
-			fclose(fid1);
-			hdr->TYPE = AINF;
-		}
-		free(AINF_RAW_FILENAME);
-	}
-	else if (!strcmp(FileExt, "raw")) {
-		char* AINF_RAW_FILENAME = (char*)calloc(strlen(hdr->FileName)+5,sizeof(char));
-		strncpy(AINF_RAW_FILENAME, hdr->FileName,ext);
-		strcpy(AINF_RAW_FILENAME+ext, "ainf");
-		FILE* fid1=fopen(AINF_RAW_FILENAME,"r");
-		if (fid1) {
-			fclose(fid1);
-			hdr->TYPE = AINF;
-		}
-		free(AINF_RAW_FILENAME);
-	}
 
 #ifndef WITHOUT_NETWORK
 	if (!memcmp(hdr->FileName,"bscs://",7)) {
@@ -3552,40 +3518,118 @@ else if (!strncmp(MODE,"r",1)) {
     	}
 #endif
 
-        hdr->FILE.COMPRESSION = 0;
-	hdr   = ifopen(hdr,"rb");
-	if (!hdr->FILE.OPEN) {
-		B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
-    		B4C_ERRMSG = "Error SOPEN(READ); Cannot open file.";
-    		return(hdr);
-	}
     	hdr->AS.Header = (uint8_t*)malloc(513);
-	count = ifread(Header1, 1, 512, hdr);
-	hdr->AS.Header[count]=0;
+	size_t k,name=0,ext=0;
+	for (k=0; hdr->FileName[k]; k++) {
+		if (hdr->FileName[k]==FILESEP) name = k+1;
+		if (hdr->FileName[k]=='.')     ext  = k+1;
+	}
+	const char *FileExt  = hdr->FileName+ext;
+	const char *FileName = hdr->FileName+name;
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN 101:\n");
+#ifdef __CURL_CURL_H
+	if (! strncmp(hdr->FileName,"file://", 7) 
+         || ! strncmp(hdr->FileName,"ftp://", 6) 
+         || ! strncmp(hdr->FileName,"http://", 7) 
+         || ! strncmp(hdr->FileName,"https://", 8) ) 
+	{
+	        CURL *curl;
+	        char errbuffer[CURL_ERROR_SIZE];
+ 
+	        if ((curl = curl_easy_init()) != NULL) {
+			FILE *tmpfid = tmpfile(); 
 
-	if (!memcmp(Header1,MAGIC_NUMBER_GZIP,sizeof(MAGIC_NUMBER_GZIP))) {
-#ifdef ZLIB_H
-		ifclose(hdr);
+	                curl_easy_setopt(curl, CURLOPT_URL, hdr->FileName);
+	                curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+	                curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuffer);
+			if (VERBOSE_LEVEL > 6) 
+		                curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+			curl_easy_setopt(curl, CURLOPT_WRITEDATA, tmpfid); 
+	                if (curl_easy_perform(curl) != CURLE_OK) {
+				fprintf(stderr,"CURL ERROR: %s\n",errbuffer);
+				B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
+		    		B4C_ERRMSG = "Error SOPEN(READ); file download failed.";
+				fclose(tmpfid);
+				return(hdr);
+			}
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[221] \n");
+			/* 
+				associate temporary file with input stream
+				channeling everything through zlib ensures that *.gz files 
+				are automatically decompressed
+				According to http://www.acm.uiuc.edu/webmonkeys/book/c_guide/2.12.html#tmpfile, 
+				the tmpfile will be removed when stream is closed 
+			*/
+			fseek(tmpfid,0,SEEK_SET);
+			hdr->FILE.gzFID = gzdopen(fileno(tmpfid), "r");
+		        hdr->FILE.COMPRESSION = 1;
+	                curl_easy_cleanup(curl);
 
-	        hdr->FILE.COMPRESSION = 1;
-//		hdr->FILE.gzFID = gzdopen(hdr->FILE.FID,"rb"); // FIXME
-        	hdr= ifopen(hdr,"rb");
-	    	if (!hdr->FILE.OPEN) {
-    			B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-			B4C_ERRMSG = "Error SOPEN(GZREAD); Cannot open file.";
-	    		return(hdr);
-	    	}
-		count = ifread(Header1,1,512,hdr);
-        	hdr->AS.Header[512]=0;
-#else
-		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-	    	B4C_ERRMSG = "Error SOPEN(READ); *.gz file not supported because not linked with zlib.";
+			/* */
+			count = ifread(hdr->AS.Header, 1, 512, hdr);
+	        	hdr->AS.Header[512]=0;
+	        }
+	} else
 #endif
-    	}
+	{
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN 101: <%s>\n",hdr->FileName);
+
+		/* AINF */
+		if (!strcmp(FileExt, "ainf")) {
+			if (VERBOSE_LEVEL>8) fprintf(stdout,"getfiletype ainf1 %s %i\n",hdr->FileName,(int)ext);
+			char* AINF_RAW_FILENAME = (char*)calloc(strlen(hdr->FileName)+5,sizeof(char));
+			strncpy(AINF_RAW_FILENAME, hdr->FileName,ext);
+			strcpy(AINF_RAW_FILENAME+ext, "raw");
+			FILE* fid1=fopen(AINF_RAW_FILENAME,"rb");
+			if (fid1) {
+				fclose(fid1);
+				hdr->TYPE = AINF;
+			}
+			free(AINF_RAW_FILENAME);
+		}
+		else if (!strcmp(FileExt, "raw")) {
+			char* AINF_RAW_FILENAME = (char*)calloc(strlen(hdr->FileName)+5,sizeof(char));
+			strncpy(AINF_RAW_FILENAME, hdr->FileName,ext);
+			strcpy(AINF_RAW_FILENAME+ext, "ainf");
+			FILE* fid1=fopen(AINF_RAW_FILENAME,"r");
+			if (fid1) {
+				fclose(fid1);
+				hdr->TYPE = AINF;
+			}
+			free(AINF_RAW_FILENAME);
+		}
+	
+	        hdr->FILE.COMPRESSION = 0;
+		hdr   = ifopen(hdr,"rb");
+		if (!hdr->FILE.OPEN) {
+			B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
+	    		B4C_ERRMSG = "Error SOPEN(READ); Cannot open file.";
+	    		return(hdr);
+		}
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN 101:\n");
+		count = ifread(hdr->AS.Header, 1, 512, hdr);
+		hdr->AS.Header[count]=0;
+
+
+		if (!memcmp(Header1,MAGIC_NUMBER_GZIP,sizeof(MAGIC_NUMBER_GZIP))) {
+#ifdef ZLIB_H
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"[221] %i\n",count);
+	
+			ifseek(hdr, 0, SEEK_SET);
+			hdr->FILE.gzFID = gzdopen(fileno(hdr->FILE.FID),"r"); 
+		        hdr->FILE.COMPRESSION = 1;
+			hdr->FILE.FID = -1;
+			count = ifread(hdr->AS.Header, 1, 512, hdr);
+	        	hdr->AS.Header[512]=0;
+#else
+			B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+		    	B4C_ERRMSG = "Error SOPEN(READ); *.gz file not supported because not linked with zlib.";
+#endif
+	    	}
+
+	}
+
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"[222] %i\n",count);
 	hdr->HeadLen = count;
 	getfiletype(hdr);
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[201] FMT=%s Ver=%4.2f\n",GetFileTypeString(hdr->TYPE),hdr->VERSION);

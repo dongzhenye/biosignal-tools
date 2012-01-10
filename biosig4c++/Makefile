@@ -72,12 +72,13 @@ PathToSigViewerWIN64 = ../sigviewer4win64
 CC            = gcc
 CXX           = g++
 #DEFINES      = -D=WITHOUT_SCP_DECODE
-DEFINES       = -D=WITH_ZLIB -D=__4HAERTEL__ -D=WITH_FAMOS -D=WITH_CHOLMOD -D=WITHOUT_NETWORK #-D=WITH_LIBXML2 -D=WITH_FEF #-D=WITH_PDP -D=WITH_DICOM #-D=WITH_GDCM #-D=WITH_GSL #-D=WITH_EEPROBE #-D=SOFTCODED_PHYSDIMTABLE # if you have zlib
+DEFINES       = -D=WITH_ZLIB -D=__4HAERTEL__ -D=WITH_FAMOS -D=WITH_CHOLMOD -D=WITHOUT_NETWORK #-D=WITH_LIBXML2 #-D=WITH_FEF #-D=WITH_PDP -D=WITH_DICOM #-D=WITH_GDCM #-D=WITH_GSL #-D=WITH_EEPROBE #-D=SOFTCODED_PHYSDIMTABLE # if you have zlib
 #DEFINES      += -D=CNT32
 CFLAGS        = -pipe -fPIC -Wall -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 CXXFLAGS      = -pipe -fPIC -Wall -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 AR            = ar crs
-INCPATH       = -I /usr/local/include/gdcm-2.0/
+INCPATH       = -I /usr/include/libxml2/
+#INCPATH       = -I /usr/local/include/gdcm-2.0/
 #		../gdcm-2.0.10/Source/DataStructureAndEncodingDefinition \
 #		../gdcm-2.0.10/Source/InformationObjectDefinition  	\
 #		../gdcm-2.0.10/Source/MediaStorageAndFileFormat 	\
@@ -104,7 +105,7 @@ endif
 ifneq (,$(findstring WITH_LIBXML2, $(DEFINES)))
   LDLIBS     += -lxml2
 endif
-LIBS          += $(LDLIBS)
+LIBS          += $(LDLIBS) -lcurl
 
 DELETE        = rm
 COPY          = cp -f
@@ -722,7 +723,7 @@ remove:
 	./save2gdf -f=TMSi t0.scp $(TEMP_DIR)t2.log
 	cat $(TEMP_DIR)t2.log
 
-$(TEMP_DIR)t1.scp:
+$(TEMP_DIR)scp/redred/PFE103.scp:
 	# scp example data sets
 	wget  -q -P$(TEMP_DIR) http://www.openecg.net/ECGsamples.zip
 	wget  -q -P$(TEMP_DIR) http://www.openecg.net/ECGsamplesc.zip
@@ -738,7 +739,9 @@ $(TEMP_DIR)t1.scp:
 	unzip -u $(TEMP_DIR)scp_redredc.zip -d $(TEMP_DIR)scp/redredc
 	rm -rf $(TEMP_DIR)ECGsamples*.zip
 	rm -rf $(TEMP_DIR)scp*.zip
-	$(COPY) $(TEMP_DIR)scp/redred/PFE103.scp $(TEMP_DIR)t1.scp
+
+$(DATA_DIR)t1.scp: $(TEMP_DIR)scp/redred/PFE103.scp
+	$(COPY) $(TEMP_DIR)scp/redred/PFE103.scp $(DATA_DIR)t1.scp
 	touch $(TEMP_DIR)t1.scp
 
 #"$(DATA_DIR)aECG Release 1 Schema and Example.zip":
@@ -752,11 +755,13 @@ $(TEMP_DIR)t1.hl7: $(DATA_DIR)2003-12\ Schema/example/Example\ aECG.xml
 	#rm -rf "$(TEMP_DIR)aECG Release 1 Schema and Example.zip"
 	#rm -rf "$(TEMP_DIR)2003-12 Schema"
 
-$(TEMP_DIR)t1.edf:
+$(TEMP_DIR)Osas2002plusQRS.edf:
 	# EDF+ example data set
 	wget -q -P$(TEMP_DIR) http://www.edfplus.info/downloads/files/osas.zip
 	unzip -u "$(TEMP_DIR)osas.zip"  -d $(TEMP_DIR)
-	cp "$(TEMP_DIR)Osas2002plusQRS.edf" $(TEMP_DIR)t1.edf
+
+$(DATA_DIR)t1.edf: $(TEMP_DIR)Osas2002plusQRS.edf
+	cp "$(TEMP_DIR)Osas2002plusQRS.edf" $(DATA_DIR)t1.edf
 	touch $(TEMP_DIR)t1.edf
 
 asc: save2gdf
