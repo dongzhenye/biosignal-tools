@@ -12348,7 +12348,7 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
 		fprintf(fid,"\t\"CHANNEL\"\t: {\n");
 		fprintf(fid,"\t\t\"ChannelNumber\"\t: %i,\n", k);
 		fprintf(fid,"\t\t\"Label\"\t: \"%s\",\n", hc->Label);
-		fprintf(fid,"\t\t\"Transducer\"\t: \"%s\",\n", hc->Transducer);
+		//fprintf(fid,"\t\t\"Transducer\"\t: \"%s\",\n", hc->Transducer);
 		fprintf(fid,"\t\t\"PhysicalUnit\"\t: \"%s\",\n", PhysDim(hc->PhysDimCode,tmp));
 		fprintf(fid,"\t\t\"PhysicalMaximum\"\t: %g,\n", hc->PhysMax);
 		fprintf(fid,"\t\t\"PhysicalMinimum\"\t: %g,\n", hc->PhysMin);
@@ -12357,7 +12357,7 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
 		fprintf(fid,"\t\t\"scaling\"\t: %g,\n", hc->Cal);
 		fprintf(fid,"\t\t\"offset\"\t: %g,\n", hc->Off);
 		fprintf(fid,"\t\t\"TimeDelay\"\t: %g,\n", hc->TOffset);
-		fprintf(fid,"\t\t\"Filter\" : {\n\t\t\t\"Lowpass\"\t: %g,\n\t\t\t\"Highpass\"\t: %g,\n\t\t\t\"Notch\"\t: %g\n\t\t},\n", hc->LowPass,hc->HighPass,hc->Notch);
+		//fprintf(fid,"\t\t\"Filter\" : {\n\t\t\t\"Lowpass\"\t: %g,\n\t\t\t\"Highpass\"\t: %g,\n\t\t\t\"Notch\"\t: %g\n\t\t},\n", hc->LowPass,hc->HighPass,hc->Notch);
 		fprintf(fid,"\t\t\"TimeDelay\"\t: %g,\n", hc->TOffset);
 		fprintf(fid,"\t\t\"TimeDelay\"\t: %g,\n", hc->TOffset);
 		fprintf(fid,"\t\t\"Samplingrate\"\t: %f,\n", hdr->SampleRate * hc->SPR/hdr->SPR);
