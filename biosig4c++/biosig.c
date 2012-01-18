@@ -2145,6 +2145,7 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ ITX,    	"ITX" },
 	{ ISHNE,    	"ISHNE" },
 	{ JPEG,    	"JPEG" },
+	{ JSON,    	"JSON" },
 	{ Matlab,    	"MAT" },
 	{ MFER,    	"MFER" },
 	{ MIDI,    	"MIDI" },
@@ -2775,7 +2776,7 @@ int gdfbin2struct(HDRTYPE *hdr)
 			hc->LeadIdCode = 0;
 			strncpy(hc->Label,(char*)Header2 + 16*k,min(16,MAX_LENGTH_LABEL));
 			hc->Label[min(16,MAX_LENGTH_LABEL)] = 0;
-			strncpy(hc->Transducer,(char*)Header2 + 16*hdr->NS + 80*k,min(MAX_LENGTH_TRANSDUCER,80));
+			memcpy(hc->Transducer,(char*)Header2 + 16*hdr->NS + 80*k,min(MAX_LENGTH_TRANSDUCER,80));
 			hc->Transducer[min(MAX_LENGTH_TRANSDUCER,80)] = 0;
 
 			if (VERBOSE_LEVEL>7) fprintf(stdout,"[GDF 212] #=%i/%i %s\n",k,hdr->NS,hc->Label);
@@ -12308,6 +12309,104 @@ int sflush_gdf_event_table(HDRTYPE* hdr)
 /**                     HDR2ASCII                                          **/
 /**	displaying header information                                      **/
 /****************************************************************************/
+int hdr2json(HDRTYPE* hdr, FILE *fid)
+{
+        size_t k;
+	char tmp[41];
+
+        fprintf(fid,"\n{\n");
+        fprintf(fid,"\t\"TYPE\"\t: \"%s\",\n",GetFileTypeString(hdr->TYPE));
+        fprintf(fid,"\t\"VERSION\"\t: %4.2f,\n",hdr->VERSION);
+
+	fprintf(fid,"\t\"Filename\"\t: \"%s\",\n",hdr->FileName);
+	fprintf(fid,"\t\"NumberOfChannels\"\t: %i,\n",(int)hdr->NS);
+	fprintf(fid,"\t\"NumberOfRecords\"\t: %i,\n",(int)hdr->NRec);
+	fprintf(fid,"\t\"SamplesPerRecords\"\t: %i,\n",(int)hdr->SPR);
+	fprintf(fid,"\t\"NumberOfSamples\"\t: %i,\n",(int)(hdr->NRec*hdr->SPR));
+	fprintf(fid,"\t\"Samplingrate\"\t: %f,\n",hdr->SampleRate);
+	strftime(tmp,40,"%Y-%m-%d %H:%M:%S",gdf_time2tm_time(hdr->T0));
+	fprintf(fid,"\t\"StartOfRecording\"\t: \"%s\",\n",tmp);
+
+	fprintf(fid,"\t\"Patient\"\t: {\n");
+	fprintf(fid,"\t\t\"Name\"\t: \"%s\",\n", hdr->Patient.Name);
+	fprintf(fid,"\t\t\"Id\"\t: \"%s\",\n", hdr->Patient.Id);
+	if (hdr->Patient.Weight) fprintf(fid,"\t\t\"Weight\"\t: \"%i kg\",\n", hdr->Patient.Weight);
+	if (hdr->Patient.Height) fprintf(fid,"\t\t\"Height\"\t: \"%i cm\",\n", hdr->Patient.Height);
+	fprintf(fid,"\t\t\"Gender\"\t: \"%s\",\n", hdr->Patient.Sex==1 ? "Male" : "Female");
+	if (hdr->Patient.Birthday>0) fprintf(fid,"\t\t\"Age\"\t: %i,\n", (int)((hdr->T0 - hdr->Patient.Birthday)/ldexp(365.25,32)) );
+	fprintf(fid,"\t},\n");   // end-of-Patient
+
+	fprintf(fid,"\t\"Manufacturer\"\t: {\n");
+	fprintf(fid,"\t\t\"Name\"\t: \"%s\"\n", hdr->ID.Manufacturer.Name);
+	fprintf(fid,"\t\t\"Model\"\t: \"%s\"\n", hdr->ID.Manufacturer.Model);
+	fprintf(fid,"\t\t\"Version\"\t: \"%s\"\n", hdr->ID.Manufacturer.Version);
+	fprintf(fid,"\t\t\"SerialNumber\"\t: \"%s\"\n", hdr->ID.Manufacturer.SerialNumber);
+	fprintf(fid,"\t},\n");   // end-of-Manufacturer
+
+	for (k = 0; k < hdr->NS; k++) {
+		CHANNEL_TYPE *hc = hdr->CHANNEL+k;
+		fprintf(fid,"\t\"CHANNEL\"\t: {\n");
+		fprintf(fid,"\t\t\"ChannelNumber\"\t: %i,\n", k);
+		fprintf(fid,"\t\t\"Label\"\t: \"%s\",\n", hc->Label);
+		fprintf(fid,"\t\t\"Transducer\"\t: \"%s\",\n", hc->Transducer);
+		fprintf(fid,"\t\t\"PhysicalUnit\"\t: \"%s\",\n", PhysDim(hc->PhysDimCode,tmp));
+		fprintf(fid,"\t\t\"PhysicalMaximum\"\t: %g,\n", hc->PhysMax);
+		fprintf(fid,"\t\t\"PhysicalMinimum\"\t: %g,\n", hc->PhysMin);
+		fprintf(fid,"\t\t\"DigitalMaximum\"\t: %f,\n", hc->DigMax);
+		fprintf(fid,"\t\t\"DigitalMinimum\"\t: %f,\n", hc->DigMin);
+		fprintf(fid,"\t\t\"scaling\"\t: %g,\n", hc->Cal);
+		fprintf(fid,"\t\t\"offset\"\t: %g,\n", hc->Off);
+		fprintf(fid,"\t\t\"TimeDelay\"\t: %g,\n", hc->TOffset);
+		fprintf(fid,"\t\t\"Filter\" : {\n\t\t\t\"Lowpass\"\t: %g,\n\t\t\t\"Highpass\"\t: %g,\n\t\t\t\"Notch\"\t: %g\n\t\t},\n", hc->LowPass,hc->HighPass,hc->Notch);
+		fprintf(fid,"\t\t\"TimeDelay\"\t: %g,\n", hc->TOffset);
+		fprintf(fid,"\t\t\"TimeDelay\"\t: %g,\n", hc->TOffset);
+		fprintf(fid,"\t\t\"Samplingrate\"\t: %f,\n", hdr->SampleRate * hc->SPR/hdr->SPR);
+		switch (hc->PhysDimCode & 0xffe0) {
+		case 4256: // Volt       
+			fprintf(fid,"\t\t\"Impedance\"\t: %g", hc->Impedance);
+			break;
+		case 4288: // Ohm
+			fprintf(fid,"\t\t\"fZ\"\t: %g", hc->fZ);
+			break;
+		}
+		fprintf(fid,"\n\t}\n");   // end-of-CHANNEL
+	}
+
+        for (k = 0; k < hdr->EVENT.N; k++) {
+                fprintf(fid,"\t\"EVENT\"\t: {\n");
+                fprintf(fid,"\t\t\"TYP\"\t: \"0x%04x\",\n", hdr->EVENT.TYP[k]);
+                fprintf(fid,"\t\t\"POS\"\t: \"%i\",\n", hdr->EVENT.POS[k]);
+                if (hdr->EVENT.CHN && hdr->EVENT.DUR) {
+                        fprintf(fid,"\t\t\"CHN\"\t: \"0x%04x\",\n", hdr->EVENT.CHN[k]);
+                        fprintf(fid,"\t\t\"DUR\"\t: \"0x%04x\",\n", hdr->EVENT.DUR[k]);
+                }
+		if ((hdr->EVENT.TYP[k] == 0x7fff) && (hdr->TYPE==GDF))
+			fprintf(fid,"\t\t\"Description\"\t: [neds]\n");
+
+		else if (hdr->EVENT.TYP[k] < hdr->EVENT.LenCodeDesc)
+			fprintf(fid,"\t\t\"Description\"\t: \"%s\"\n",hdr->EVENT.CodeDesc[hdr->EVENT.TYP[k]]);
+
+		else if (GLOBAL_EVENTCODES_ISLOADED) {
+			uint16_t k1;
+			for (k1=0; (k1 < Global.LenCodeDesc) && (hdr->EVENT.TYP[k] != Global.CodeIndex[k1]); k1++) {};
+			if (k1 < Global.LenCodeDesc)
+        			fprintf(fid,"\t\t\"Description\"\t: \"%s\"\n", Global.CodeDesc[k1]);
+		}
+                fprintf(fid,"\t},\n");   // end-of-EVENT
+        }
+
+
+
+
+        fprintf(fid,"}\n");
+
+}
+
+
+/****************************************************************************/
+/**                     HDR2ASCII                                          **/
+/**	displaying header information                                      **/
+/****************************************************************************/
 int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 {
 	CHANNEL_TYPE* 	cp;
@@ -12322,6 +12421,11 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 		strftime(tmp, 59, "%x %X %Z", T0);
 		fprintf(fid,"\tStartOfRecording: %s\n",tmp);
 		return(0);
+	}
+
+	if (VERBOSE==-1) {
+		hdr2json(hdr,fid);
+		return; 
 	}
 
 	if (VERBOSE>0) {

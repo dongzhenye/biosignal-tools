@@ -842,6 +842,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				hdr->SPR 		= lcm(hdr->SPR,hdr->CHANNEL[i].SPR);
 				hdr->CHANNEL[i].LeadIdCode =  *(PtrCurSect+curSectPos+8);
 				hdr->CHANNEL[i].Label[0]= 0;
+				hdr->CHANNEL[i].Transducer[0]= 0;
 				hdr->CHANNEL[i].LowPass = LowPass; 
 				hdr->CHANNEL[i].HighPass= HighPass; 
 				hdr->CHANNEL[i].Notch 	= Notch; 
@@ -985,7 +986,6 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				hc->Cal 	= Cal0 * 1e-3;
 				hc->Off         = 0;
 				hc->OnOff       = 1;    // 1: ON 0:OFF
-				hc->Transducer[0] = 0;
 				hc->GDFTYP      = gdftyp;  
 #ifndef NO_BI
 				hc->bi          = i*hdr->SPR*GDFTYP_BITS[gdftyp]>>3;  

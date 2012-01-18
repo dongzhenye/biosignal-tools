@@ -62,6 +62,7 @@ int main(int argc, char **argv){
     int		TARGETSEGMENT=1; 	// select segment in multi-segment file format EEG1100 (Nihon Kohden)
     int 	VERBOSE	= 1; 
     char	FLAG_CNT32 = 0; 	// assume CNT format is 16bit
+    char	FLAG_JSON = 0; 
     char	*argsweep = NULL;
     double	t1=0.0, t2=1.0/0.0;
 #ifdef CHOLMOD_H
@@ -100,6 +101,7 @@ int main(int argc, char **argv){
 #endif
 		fprintf(stdout,"   -cnt32\n\tmust be set for reading 32 bit CNT files\n");
 		fprintf(stdout,"   -f=FMT  \n\tconverts data into format FMT\n");
+		fprintf(stdout,"   -JSON  \n\tshows header, and events in JSON format\n");
 		fprintf(stdout,"\tFMT must represent a valid target file format\n"); 
 		fprintf(stdout,"\tCurrently are supported: HL7aECG, SCP_ECG (EN1064), GDF, EDF, BDF, CFWB, BIN, ASCII, BVA (BrainVision)\n\tas well as HEKA v2 -> ITX\n"); 
 		fprintf(stdout,"   -z=#, -z#\n\t# indicates the compression level (#=0 no compression; #=9 best compression, default #=1)\n");
@@ -132,6 +134,9 @@ int main(int argc, char **argv){
 	    	argsweep = argv[k]+6;
 
 	}
+	else if (!strcmpi(argv[k],"-JSON"))
+		FLAG_JSON = 1;
+
     	else if (!strncmp(argv[k],"-f=",3))  	{
     		if (0) {}
     		else if (!strncmp(argv[k],"-f=ASCII",8))
@@ -289,8 +294,8 @@ int main(int argc, char **argv){
 	
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[113] SOPEN-R finished\n");
 
-	hdr2ascii(hdr,stdout,VERBOSE);
-//	hdr2ascii(hdr,stdout,3);
+	
+	hdr2ascii(hdr,stdout, FLAG_JSON ? -1 : VERBOSE);
 
 	// all channels are converted - channel selection currently not supported
     	for (k=0; k<hdr->NS; k++) {

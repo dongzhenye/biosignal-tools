@@ -22,7 +22,7 @@ If some libraries are not available on your system, remove the corresponding DEF
 Prerequisites: 
 --------------
 P1) for building libbiosig, save2gdf, mma (mathematica) and mex (matlab)  
-	sudo apt-get install subversion libz-dev libsuitesparse-dev gawk g++ gcc 
+	sudo apt-get install subversion libz-dev libsuitesparse-dev libcurl-dev gawk g++ gcc 
 	svn co https://biosig.svn.sourceforge.net/svnroot/biosig/trunk/biosig4c++ 
 
         For ttl2trig, also the package 

@@ -126,6 +126,9 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 
 	if (VERBOSE_LEVEL > 7) fprintf(stdout,"hl7r: [410]\n"); 
 
+#ifdef WITH_LIBXML2
+	fprintf(stderr,"Warning: LIBXML2 is used instead of TinyXML - support for HL7aECG is very experimental and must not be used for production use! You are warned\n");
+#else
 	TiXmlDocument doc(hdr->FileName);
 
 	if (VERBOSE_LEVEL > 7) fprintf(stdout,"hl7r: [411]\n"); 
@@ -864,6 +867,8 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 	else
 	    fprintf(stderr, "%s : failed to parse (1)\n", hdr->FileName);
 
+#endif
+
 	return(0);
 
 };
@@ -893,6 +898,32 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
 
     struct tm *t0;
     char tmp[80];	
+
+#ifdef WITH_LIBXML2
+	fprintf(stderr,"Warning: LIBXML2 is used instead of TinyXML - support for HL7aECG is very experimental and must not be used for production use! You are warned\n");
+
+	xmlDoc *doc = xmlNewDoc("1.0");
+	xmlNode *root = xmlNewNode(NULL, "root");
+	xmlDocSetRootElement(doc, root);
+ 
+	xmlNode *node = xmlNewNode(NULL, "element");
+	xmlAddChild(node, xmlNewText("some text here"));
+	xmlAddChild(root, node);
+ 
+	ifopen(hdr, "w");
+	if (hdr->FILE.COMPRESSION) 
+		xmlElemDump(hdr->FILE.gzFID, doc, root);
+	else
+		xmlElemDump(hdr->FILE.FID, doc, root);
+	
+	ifclose(hdr);
+ 
+	xmlFreeDoc(doc);
+	xmlCleanupParser();
+ 
+
+#else
+
     TiXmlDocument doc;
     
     TiXmlDeclaration* decl = new TiXmlDeclaration("1.0", "UTF-8", "");
@@ -1304,6 +1335,8 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
 	doc.SaveFile(hdr->FileName, hdr->FILE.COMPRESSION);
 //	doc.SaveFile(hdr);
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"989\n");
+
+#endif 
 
     return(0);
 };

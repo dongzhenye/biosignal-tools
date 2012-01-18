@@ -155,7 +155,7 @@ enum FileFormat {
 	TIFF, TMS32, TMSiLOG, TRC, UNIPRO, VRML, VTK,
 	WAV, WinEEG, WMF, XML, XPM,
 	Z, ZIP, ZIP2, 
-	SQLite, NeuroLoggerHEX, BESA, ePrime
+	SQLite, NeuroLoggerHEX, BESA, ePrime, JSON
 };
 
 
@@ -164,7 +164,7 @@ extern const char *B4C_ERRMSG;
 
 #define BIOSIG_VERSION_MAJOR 1
 #define BIOSIG_VERSION_MINOR 2
-#define BIOSIG_VERSION_STEPPING 1
+#define BIOSIG_VERSION_STEPPING 2
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR+0.01*BIOSIG_VERSION_MINOR)
 
 extern int VERBOSE_LEVEL; 	// used for debugging
@@ -627,6 +627,9 @@ int	hdr2ascii(HDRTYPE* hdr,FILE *fid, int VERBOSITY);
  *	VERBOSITY=0 or 1 report just some basic information,
  *	VERBOSITY=2 reports als the channel information
  *	VERBOSITY=3 provides in addition the event table.
+ *	VERBOSITY=8 for debugging 
+ *	VERBOSITY=9 for debugging
+ *	VERBOSITY=-1 header and event table is shown in JSON format
  --------------------------------------------------------------- */
 
 int RerefCHANNEL(HDRTYPE *hdr, void *ReRef, char rrtype);
