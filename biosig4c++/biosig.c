@@ -12345,9 +12345,11 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
 	fprintf(fid,"\t\t\"SerialNumber\"\t: \"%s\"\n", hdr->ID.Manufacturer.SerialNumber);
 	fprintf(fid,"\t},\n");   // end-of-Manufacturer
 
+	fprintf(fid,"\t\"CHANNEL\"\t: [");
 	for (k = 0; k < hdr->NS; k++) {
 		CHANNEL_TYPE *hc = hdr->CHANNEL+k;
-		fprintf(fid,"\t\"CHANNEL\"\t: {\n");
+		if (k>0) fprintf(fid,","); 
+		fprintf(fid,"\n\t\t{\n");
 		fprintf(fid,"\t\t\"ChannelNumber\"\t: %i,\n", k);
 		fprintf(fid,"\t\t\"Label\"\t: \"%s\",\n", hc->Label);
 		//fprintf(fid,"\t\t\"Transducer\"\t: \"%s\",\n", hc->Transducer);
@@ -12371,11 +12373,14 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
 			fprintf(fid,"\t\t\"fZ\"\t: %g", hc->fZ);
 			break;
 		}
-		fprintf(fid,"\n\t}\n");   // end-of-CHANNEL
+		fprintf(fid,"\n\t\t}");   // end-of-CHANNEL
 	}
+	fprintf(fid,"\n\t],\n");   // end-of-CHANNELS
 
+        fprintf(fid,"\t\"EVENT\"\t: [\n");
         for (k = 0; k < hdr->EVENT.N; k++) {
-                fprintf(fid,"\t\"EVENT\"\t: {\n");
+		if (k>0) fprintf(fid,","); 
+                fprintf(fid,"\n\t\t: {\n");
                 fprintf(fid,"\t\t\"TYP\"\t: \"0x%04x\",\n", hdr->EVENT.TYP[k]);
                 fprintf(fid,"\t\t\"POS\"\t: \"%i\",\n", hdr->EVENT.POS[k]);
                 if (hdr->EVENT.CHN && hdr->EVENT.DUR) {
@@ -12394,11 +12399,9 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
 			if (k1 < Global.LenCodeDesc)
         			fprintf(fid,"\t\t\"Description\"\t: \"%s\"\n", Global.CodeDesc[k1]);
 		}
-                fprintf(fid,"\t},\n");   // end-of-EVENT
+                fprintf(fid,"\t}");
         }
-
-
-
+	fprintf(fid,"\t]\n");   // end-of-EVENT
 
         fprintf(fid,"}\n");
 
