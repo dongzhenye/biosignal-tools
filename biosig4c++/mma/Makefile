@@ -25,7 +25,7 @@ CADDSDIR  = ${MLINKDIR}/${SYS}/CompilerAdditions
 INCDIR    = ${CADDSDIR}
 LIBDIR    = ${CADDSDIR}
 
-EXTRALIBS = -lm -lpthread -lrt -lstdc++ -lcholmod -lz -L.. -lbiosig# Set these with appropriate libs for your system.
+EXTRALIBS = -lm -lpthread -lrt -lstdc++ -lcholmod -lz -lcurl -L.. -lbiosig# Set these with appropriate libs for your system.
 
 MPREP     = ${CADDSDIR}/mprep
 
@@ -59,7 +59,7 @@ CADDSDIRwin  = ${MLINKDIR}/${SYSwin}/CompilerAdditions/mldev32
 INCDIRwin    = ${CADDSDIRwin}/include
 LIBDIRwin    = ${CADDSDIRwin}/lib
 
-EXTRALIBSwin =  ../win32/libbiosig.a -lgdi32 -lm -lpthread -lstdc++ -lws2_32 -lcholmod -lz  # Set these with appropriate libs for your system.
+EXTRALIBSwin =  ../win32/libbiosig.a -lgdi32 -lm -lpthread -lstdc++ -lws2_32 -lcholmod -lz -lcurl  # Set these with appropriate libs for your system.
 
 MPREPwin     = ${CADDSDIRwin}/bin/mprep.exe
 
@@ -83,7 +83,7 @@ CADDSDIRwin64 = ${MLINKDIR}/${SYSwin}/CompilerAdditions/mldev64
 INCDIRwin64   = ${CADDSDIRwin64}/include
 LIBDIRwin64   = ${CADDSDIRwin64}/lib
 
-EXTRALIBSwin64 =  ../win64/libbiosig.a -lgdi32 -lm -lpthread -lstdc++ -lws2_32 -lcholmod -lz  # Set these with appropriate libs for your system.
+EXTRALIBSwin64 =  ../win64/libbiosig.a -lgdi32 -lm -lpthread -lstdc++ -lws2_32 -lcholmod -lz -lcurl # Set these with appropriate libs for your system.
 
 MPREPwin64     = ${CADDSDIRwin64}/bin/mprep.exe
 

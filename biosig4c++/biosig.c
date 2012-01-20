@@ -53,7 +53,9 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include <curl/curl.h>
+#ifdef WITH_CURL
+#  include <curl/curl.h>
+#endif 
 
 #include "biosig-dev.h"
 #include "biosig-network.h"
