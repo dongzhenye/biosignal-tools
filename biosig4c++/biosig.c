@@ -12362,28 +12362,28 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
 		fprintf(fid,"\t\t\"offset\"\t: %g,\n", hc->Off);
 		//fprintf(fid,"\t\t\"Filter\" : {\n\t\t\t\"Lowpass\"\t: %g,\n\t\t\t\"Highpass\"\t: %g,\n\t\t\t\"Notch\"\t: %g\n\t\t},\n", hc->LowPass,hc->HighPass,hc->Notch);
 		fprintf(fid,"\t\t\"TimeDelay\"\t: %g,\n", hc->TOffset);
-		fprintf(fid,"\t\t\"Samplingrate\"\t: %f,\n", hdr->SampleRate * hc->SPR/hdr->SPR);
 		switch (hc->PhysDimCode & 0xffe0) {
 		case 4256: // Volt       
-			fprintf(fid,"\t\t\"Impedance\"\t: %g", hc->Impedance);
+			fprintf(fid,"\t\t\"Impedance\"\t: %g,\n", hc->Impedance);
 			break;
 		case 4288: // Ohm
-			fprintf(fid,"\t\t\"fZ\"\t: %g", hc->fZ);
+			fprintf(fid,"\t\t\"fZ\"\t: %g,\n", hc->fZ);
 			break;
 		}
+		fprintf(fid,"\t\t\"Samplingrate\"\t: %f", hdr->SampleRate * hc->SPR/hdr->SPR);
 		fprintf(fid,"\n\t\t}");   // end-of-CHANNEL
 	}
 	fprintf(fid,"\n\t],\n");   // end-of-CHANNELS
 
-        fprintf(fid,"\t\"EVENT\"\t: [\n");
+        fprintf(fid,"\t\"EVENT\"\t: [");
         for (k = 0; k < hdr->EVENT.N; k++) {
 		if (k>0) fprintf(fid,","); 
-                fprintf(fid,"\n\t\t: {\n");
+                fprintf(fid,"\n\t\t{\n");
                 fprintf(fid,"\t\t\"TYP\"\t: \"0x%04x\",\n", hdr->EVENT.TYP[k]);
-                fprintf(fid,"\t\t\"POS\"\t: \"%i\",\n", hdr->EVENT.POS[k]);
+                fprintf(fid,"\t\t\"POS\"\t: %f,\n", hdr->EVENT.POS[k]/hdr->EVENT.SampleRate);
                 if (hdr->EVENT.CHN && hdr->EVENT.DUR) {
-                        fprintf(fid,"\t\t\"CHN\"\t: \"0x%04x\",\n", hdr->EVENT.CHN[k]);
-                        fprintf(fid,"\t\t\"DUR\"\t: \"0x%04x\",\n", hdr->EVENT.DUR[k]);
+                        fprintf(fid,"\t\t\"CHN\"\t: %i,\n", hdr->EVENT.CHN[k]);
+                        fprintf(fid,"\t\t\"DUR\"\t: %f,\n", hdr->EVENT.DUR[k]/hdr->EVENT.SampleRate);
                 }
 		if ((hdr->EVENT.TYP[k] == 0x7fff) && (hdr->TYPE==GDF))
 			fprintf(fid,"\t\t\"Description\"\t: [neds]\n");
@@ -12397,9 +12397,9 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
 			if (k1 < Global.LenCodeDesc)
         			fprintf(fid,"\t\t\"Description\"\t: \"%s\"\n", Global.CodeDesc[k1]);
 		}
-                fprintf(fid,"\t}");
+                fprintf(fid,"\t\t}");
         }
-	fprintf(fid,"\t]\n");   // end-of-EVENT
+	fprintf(fid,"\n\t]\n");   // end-of-EVENT
 
         fprintf(fid,"}\n");
 

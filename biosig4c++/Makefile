@@ -743,7 +743,7 @@ $(TEMP_DIR)scp/redred/PFE103.scp:
 
 $(DATA_DIR)t1.scp: $(TEMP_DIR)scp/redred/PFE103.scp
 	$(COPY) $(TEMP_DIR)scp/redred/PFE103.scp $(DATA_DIR)t1.scp
-	touch $(TEMP_DIR)t1.scp
+	touch $(DATA_DIR)t1.scp
 
 #"$(DATA_DIR)aECG Release 1 Schema and Example.zip":
 $(DATA_DIR)2003-12\ Schema/example/Example\ aECG.xml:
@@ -763,7 +763,7 @@ $(TEMP_DIR)Osas2002plusQRS.edf:
 
 $(DATA_DIR)t1.edf: $(TEMP_DIR)Osas2002plusQRS.edf
 	cp "$(TEMP_DIR)Osas2002plusQRS.edf" $(DATA_DIR)t1.edf
-	touch $(TEMP_DIR)t1.edf
+	touch $(DATA_DIR)t1.edf
 
 asc: save2gdf
 	./save2gdf -f=ASCII t0.xxx $(TEMP_DIR)t1.asc
