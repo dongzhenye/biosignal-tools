@@ -1,7 +1,7 @@
 /*
 
     $Id$
-    Copyright (C) 2005,2006,2007,2008,2009,2010,2011 Alois Schloegl <alois.schloegl@gmail.com>
+    Copyright (C) 2005,2006,2007,2008,2009,2010,2011,2012 Alois Schloegl <alois.schloegl@gmail.com>
     Copyright (C) 2011 Stoyan Mihaylov
     This file is part of the "BioSig for C/C++" repository
     (biosig4c++) at http://biosig.sf.net/
@@ -12339,9 +12339,9 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
 	fprintf(fid,"\t},\n");   // end-of-Patient
 
 	fprintf(fid,"\t\"Manufacturer\"\t: {\n");
-	fprintf(fid,"\t\t\"Name\"\t: \"%s\"\n", hdr->ID.Manufacturer.Name);
-	fprintf(fid,"\t\t\"Model\"\t: \"%s\"\n", hdr->ID.Manufacturer.Model);
-	fprintf(fid,"\t\t\"Version\"\t: \"%s\"\n", hdr->ID.Manufacturer.Version);
+	fprintf(fid,"\t\t\"Name\"\t: \"%s\",\n", hdr->ID.Manufacturer.Name);
+	fprintf(fid,"\t\t\"Model\"\t: \"%s\",\n", hdr->ID.Manufacturer.Model);
+	fprintf(fid,"\t\t\"Version\"\t: \"%s\",\n", hdr->ID.Manufacturer.Version);
 	fprintf(fid,"\t\t\"SerialNumber\"\t: \"%s\"\n", hdr->ID.Manufacturer.SerialNumber);
 	fprintf(fid,"\t},\n");   // end-of-Manufacturer
 
