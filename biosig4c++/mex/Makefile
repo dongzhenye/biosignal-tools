@@ -28,7 +28,7 @@ GNUMEX64 = $(HOME)/bin/win64/gnumex
 
 ### User-specified options: its likely you want to change this
 MEX_OPTION    = -largeArrayDims # turn on for 64 bit Matlab, otherwise empty
-LIBS          = -lbiosig -lz -lcholmod -lcurl
+LIBS          = -lbiosig $(LDLIBS)
 LFLAGS        = -L..
 COPY          = cp
 
@@ -110,7 +110,7 @@ mexSOPEN.obj: mexSLOAD.cpp
 	$(CROSS)-$(CXX) -c -DMATLAB_MEX_FILE -D=mexSOPEN -x c++ -o $@ -I$(W32MAT_INC) -O2 -DMX_COMPAT_32 $< 
 
 %.mexw32: %.obj ../win32/libbiosig.a
-	$(CROSS)-$(CXX) -shared $(GNUMEX)/mex.def -o $@ -L$(GNUMEX) -s $< -llibmx -llibmex ../win32/libbiosig.a -lz -lcurl -lcholmod -lws2_32 
+	$(CROSS)-$(CXX) -shared $(GNUMEX)/mex.def -o $@ -L$(GNUMEX) -s $< -llibmx -llibmex ../win32/libbiosig.a $(LDLIBS) -lws2_32 
 
 
 #########################################################
@@ -125,4 +125,4 @@ mexSOPEN.o64: mexSLOAD.cpp
 	$(CROSS64)-$(CXX) -c -DMATLAB_MEX_FILE -D=mexSOPEN -x c++ -o $@ -I$(W64MAT_INC) -O2 $< 
 
 %.mexw64: %.o64 ../win64/libbiosig.a
-	$(CROSS64)-$(CXX) -shared $(GNUMEX64)/mex.def -o $@ -L$(GNUMEX64) -s $< -llibmx -llibmex ../win64/libbiosig.a -lz -lcurl -lcholmod -lws2_32
+	$(CROSS64)-$(CXX) -shared $(GNUMEX64)/mex.def -o $@ -L$(GNUMEX64) -s $< -llibmx -llibmex ../win64/libbiosig.a  $(LDLIBS) -lws2_32

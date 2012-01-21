@@ -72,8 +72,21 @@ PathToSigViewerWIN64 = ../sigviewer4win64
 CC            = gcc
 CXX           = g++
 #DEFINES      = -D=WITHOUT_SCP_DECODE
-DEFINES       = -D=WITH_ZLIB -D=WITH_CURL -D=__4HAERTEL__ -D=WITH_FAMOS -D=WITH_CHOLMOD -D=WITHOUT_NETWORK #-D=WITH_LIBXML2 #-D=WITH_FEF #-D=WITH_PDP -D=WITH_DICOM #-D=WITH_GDCM #-D=WITH_GSL #-D=WITH_EEPROBE #-D=SOFTCODED_PHYSDIMTABLE # if you have zlib
-#DEFINES      += -D=CNT32
+DEFINES       = -D=WITH_ZLIB 
+#DEFINES      += -D=WITH_CURL
+DEFINES      += -D=__4HAERTEL__
+DEFINES      += -D=WITH_FAMOS
+DEFINES      += -D=WITH_CHOLMOD
+DEFINES      += -D=WITHOUT_NETWORK
+#DEFINES      += -D=WITH_LIBXML2 
+#DEFINES      += -D=WITH_FEF 
+#DEFINES      += -D=WITH_PDP
+#DEFINES      += -D=WITH_DICOM
+#DEFINES      += -D=WITH_GDCM
+#DEFINES      += -D=WITH_GSL
+#DEFINES      += -D=WITH_EEPROBE		
+#DEFINES      += -D=SOFTCODED_PHYSDIMTABLE	# obsolete
+#DEFINES      += -D=CNT32			# for 32bit Neuroscan format
 CFLAGS        = -pipe -fPIC -Wall -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 CXXFLAGS      = -pipe -fPIC -Wall -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 AR            = ar crs
@@ -105,7 +118,9 @@ endif
 ifneq (,$(findstring WITH_LIBXML2, $(DEFINES)))
   LDLIBS     += -lxml2
 endif
-LDLIBS       += -lcurl
+ifneq (,$(findstring WITH_CURL, $(DEFINES)))
+  LDLIBS     += -lcurl
+endif
 LIBS         += $(LDLIBS)
 
 DELETE        = rm
@@ -541,28 +556,28 @@ biosig_server: biosig_server.c libbiosig.$(LIBEXT) biosig-network.o Makefile
 #	MathLink interface to Mathematica
 #############################################################
 mma: libbiosig.$(LIBEXT)
-	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) sload
+	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS=$(LDLIBS) sload
 
 win32mma: win32/libbiosig.a
-	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) sload.exe
+	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS=$(LDLIBS) sload.exe
 
 win64mma: win64/libbiosig.a 
-	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) sload.w64.exe
+	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS=$(LDLIBS) sload.w64.exe
 
 
 #############################################################
 #	MEX-files for Octave and Matlab
 #############################################################
 mex mex4m mex4o oct: libbiosig.a
-	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) OCTAVE_VERSION=$(OCTAVE_VERSION) $@
+	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS=$(LDLIBS) OCTAVE_VERSION=$(OCTAVE_VERSION) $@
 	-cp mex/*.mex* ../biosig/t200_FileAccess/
 
 mexw32: win32/libbiosig.a
-	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) $(@F)
+	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS=$(LDLIBS) $(@F)
 	-cp mex/*.mexw32 ../biosig/t200_FileAccess/
 	
 mexw64: win64/libbiosig.a
-	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) $(@F)
+	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS=$(LDLIBS) $(@F)
 	-cp mex/*.mexw64 ../biosig/t200_FileAccess/
 
 #############################################################
@@ -579,7 +594,7 @@ $(PathToSigViewer)/bin/sigviewer: libbiosig.$(LIBEXT) biosig.h
 	-$(COPY) biosig.h $(PathToSigViewer)/extern/include
 	-$(DELETE) $(PathToSigViewer)/extern/lib/lib*
 	-$(COPY) libbiosig.a $(PathToSigViewer)/extern/lib
-	sed -i 's|\([[:space:]]*-lbiosig\)\([ #\\]*\)$$|\1 -lcholmod -lz -lcurl \2|' $(PathToSigViewer)/src/src.pro
+	sed -i 's|\([[:space:]]*-lbiosig\)\([ #\\]*\)$$|\1 $(LDLIBS) \2|' $(PathToSigViewer)/src/src.pro
 	(cd $(PathToSigViewer)/src; qmake; $(MAKE);)
 	#(cd $(PathToSigViewer); svn revert -R .; svn up -r 556; patch -p0 <../biosig4c++/patches/patch_sigviewer_0.5.1-as.4-DisplayHeaderInfo+EventTableAlways4Columns+SampleRateChanged2FLOAT64+libbiosigEventTable.diff; cd src; qmake; $(MAKE);)
 
