@@ -1,5 +1,12 @@
-# Makefile to compile sload.exe for loading data supported by libbiosig into Mathematica
-# Copyright (C) 2010, 2011 Alois Schloegl
+####### Makefile to compile sload.exe for loading data supported by libbiosig into Mathematica
+###
+###  $Id$
+###  Copyright (C) 2010,2011,2012 Alois Schloegl, IST Austria <alois.schloegl@ist.ac.at>
+###  This file is part of the "BioSig for C/C++" repository
+###  (biosig4c++) at http://biosig.sf.net/
+###
+##############################################################
+
 
 ###########################################
 # user-defined variables 

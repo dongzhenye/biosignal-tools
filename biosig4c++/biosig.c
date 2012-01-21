@@ -12335,8 +12335,8 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
 	fprintf(fid,"\t\t\"Id\"\t: \"%s\",\n", hdr->Patient.Id);
 	if (hdr->Patient.Weight) fprintf(fid,"\t\t\"Weight\"\t: \"%i kg\",\n", hdr->Patient.Weight);
 	if (hdr->Patient.Height) fprintf(fid,"\t\t\"Height\"\t: \"%i cm\",\n", hdr->Patient.Height);
-	fprintf(fid,"\t\t\"Gender\"\t: \"%s\",\n", hdr->Patient.Sex==1 ? "Male" : "Female");
 	if (hdr->Patient.Birthday>0) fprintf(fid,"\t\t\"Age\"\t: %i,\n", (int)((hdr->T0 - hdr->Patient.Birthday)/ldexp(365.25,32)) );
+	fprintf(fid,"\t\t\"Gender\"\t: \"%s\"\n", hdr->Patient.Sex==1 ? "Male" : "Female");
 	fprintf(fid,"\t},\n");   // end-of-Patient
 
 	fprintf(fid,"\t\"Manufacturer\"\t: {\n");

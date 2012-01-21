@@ -1,7 +1,7 @@
 ####### Makefile for "BioSig for C/C++" #####################
 ###
-###  $Id: Makefile 2600 2011-02-03 00:13:06Z schloegl $
-###  Copyright (C) 2006,2007,2008,2009 Alois Schloegl <a.schloegl@ieee.org>
+###  $Id$
+###  Copyright (C) 2006,2007,2008,2009,2011,2012 Alois Schloegl <alois.schloegl@ist.ac.at>
 ###  This file is part of the "BioSig for C/C++" repository
 ###  (biosig4c++) at http://biosig.sf.net/
 ###

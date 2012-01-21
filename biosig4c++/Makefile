@@ -638,7 +638,7 @@ distclean:
 	-$(DELETE) *.mex*
 	-$(DELETE) *.oct
 	-$(DELETE) t5.scp t6.scp save2gdf gztest test_scp_decode biosig_server biosig_client
-	-$(DELETE) t?.[bge]df* t?.hl7* t?.scp* t?.cfw* t?.gd1* t?.*.gz *.fil $(TEMP_DIR)/t1.*
+	-$(DELETE) t?.[bge]df* t?.hl7* t?.scp* t?.cfw* t?.gd1* t?.*.gz *.fil $(TEMP_DIR)/t1.* $(DATA_DIR)/t1.*
 	-$(DELETE) python/swig_wrap.* python/biosig.py* python/_biosig.so
 	-$(DELETE) QMakefile
 	-$(DELETE) igor/libIgor.a
@@ -663,6 +663,7 @@ clean:
 	-$(DELETE) *.so.*
 	-$(DELETE) *.mex*
 	-$(DELETE) *.oct
+	-$(DELETE) $(TEMP_DIR)/t1.*
 	-$(DELETE) python/biosig.py* _biosig.so
 	-$(DELETE) python/swig_wrap.*
 	-$(DELETE) win32/*.exe  win32/*.o* win32/*.lib win32/*.a  
@@ -786,20 +787,24 @@ asc: save2gdf
 bin: save2gdf
 	./save2gdf -f=BIN t0.xxx $(TEMP_DIR)t1.bin
 
-testbin: save2gdf $(TEMP_DIR)t1.edf
-	./save2gdf -f=BIN $(TEMP_DIR)t1.edf $(TEMP_DIR)t1.hdr
+json: save2gdf
+	./save2gdf -JSON t0.xxx >$(TEMP_DIR)t1.xxx.json
+
+testbin: save2gdf $(DATA_DIR)t1.edf
+	./save2gdf -f=BIN $(DATA_DIR)t1.edf $(TEMP_DIR)t1.hdr
+	./save2gdf -f=GDF $(TEMP_DIR)t1.edf >$(TEMP_DIR)t1.edf.json
 	./save2gdf -f=BIN $(TEMP_DIR)t1.hdr $(TEMP_DIR)t2.hdr
 	./save2gdf -f=GDF $(TEMP_DIR)t2.hdr $(TEMP_DIR)t2.gdf
 
-testscp: save2gdf $(TEMP_DIR)t1.scp
+testscp: save2gdf $(DATA_DIR)t1.scp
 	# test converting SCP data
-	./save2gdf -f=HL7 $(TEMP_DIR)/t1.scp $(TEMP_DIR)/t1.scp.hl7
+	./save2gdf -f=HL7 $(DATA_DIR)/t1.scp $(TEMP_DIR)/t1.scp.hl7
 	./save2gdf -f=GDF $(TEMP_DIR)/t1.scp.hl7 $(TEMP_DIR)/t1.scp.hl7.gdf
 	./save2gdf -f=SCP $(TEMP_DIR)/t1.scp.hl7.gdf $(TEMP_DIR)/t1.scp.hl7.gdf.scp
 	./save2gdf -f=GDF $(TEMP_DIR)/t1.scp.hl7.gdf.scp $(TEMP_DIR)t1.scp.hl7.gdf.scp.gdf
 	./save2gdf -f=HL7 $(TEMP_DIR)t1.scp.hl7.gdf.scp.gdf $(TEMP_DIR)t1.scp.hl7.gdf.scp.gdf.hl7
 	./save2gdf -f=SCP $(TEMP_DIR)t1.scp.hl7.gdf.scp.gdf.hl7 $(TEMP_DIR)t1.scp.hl7.gdf.scp.gdf.hl7.scp
-	./save2gdf -f=GDF $(TEMP_DIR)t1.scp $(TEMP_DIR)t1.scp.gdf
+	./save2gdf -f=GDF $(DATA_DIR)t1.scp $(TEMP_DIR)t1.scp.gdf
 	./save2gdf -f=HL7 $(TEMP_DIR)t1.scp.gdf $(TEMP_DIR)t1.scp.gdf.hl7
 	./save2gdf -f=SCP $(TEMP_DIR)t1.scp.gdf.hl7 $(TEMP_DIR)t1.scp.gdf.hl7.scp
 	./save2gdf -f=HL7 $(TEMP_DIR)t1.scp.gdf.hl7.scp $(TEMP_DIR)t1.scp.gdf.hl7.scp.hl7
@@ -821,12 +826,12 @@ testhl7: save2gdf $(TEMP_DIR)t1.hl7
 	./save2gdf -f=SCP $(TEMP_DIR)t1.hl7.scp.gdf.hl7.gdf $(TEMP_DIR)t1.hl7.scp.gdf.hl7.gdf.scp
 	./save2gdf -f=HL7 $(TEMP_DIR)t1.hl7.scp.gdf.hl7.gdf.scp $(TEMP_DIR)t1.hl7.scp.gdf.hl7.gdf.scp.hl7
 
-test: $(TEMP_DIR)t1.scp save2scp save2aecg save2gdf
+test: $(DATA_DIR)t1.scp save2scp save2aecg save2gdf
 	# biosig4python
 	# includes test for on-the-fly compression and decompression
-	./save2gdf -z  $(TEMP_DIR)t1.scp        $(TEMP_DIR)t1.scp.gdf
-	./save2gdf -f=SCP -z 	$(TEMP_DIR)t1.scp        $(TEMP_DIR)t1.scp.scp
-	./save2gdf -f=HL7 -z	$(TEMP_DIR)t1.scp        $(TEMP_DIR)t1.scp.hl7
+	./save2gdf -z  $(DATA_DIR)t1.scp        $(TEMP_DIR)t1.scp.gdf
+	./save2gdf -f=SCP -z 	$(DATA_DIR)t1.scp        $(TEMP_DIR)t1.scp.scp
+	./save2gdf -f=HL7 -z	$(DATA_DIR)t1.scp        $(TEMP_DIR)t1.scp.hl7
 	./save2gdf 	$(TEMP_DIR)t1.scp.gdf.gz $(TEMP_DIR)t1.scp.gdf.gdf
 	./save2gdf 	$(TEMP_DIR)t1.scp.scp.gz $(TEMP_DIR)t1.scp.scp.gdf
 	./save2gdf 	$(TEMP_DIR)t1.scp.hl7.gz $(TEMP_DIR)t1.scp.hl7.gdf
@@ -838,19 +843,19 @@ test: $(TEMP_DIR)t1.scp save2scp save2aecg save2gdf
 	./save2gdf -f=HL7	$(TEMP_DIR)t1.scp.hl7.gz $(TEMP_DIR)t1.scp.hl7.hl7
 	# python test0/test.py
 
-zip: $(TEMP_DIR)t1.scp save2gdf
+zip: $(DATA_DIR)t1.scp save2gdf
 	# test for on-the-fly compression and decompression
 	# on-the-fly compression of output file
-	./save2gdf -z -f=GDF $(TEMP_DIR)t1.scp $(TEMP_DIR)t1.gdf
-	./save2gdf -z -f=GDF1 $(TEMP_DIR)t1.scp $(TEMP_DIR)t1.gd1
-	./save2gdf -z -f=EDF $(TEMP_DIR)t1.scp $(TEMP_DIR)t1.edf
-	./save2gdf -z -f=BDF $(TEMP_DIR)t1.scp $(TEMP_DIR)t1.bdf
-	./save2gdf -z -f=SCP $(TEMP_DIR)t1.scp $(TEMP_DIR)t1.scp
-	./save2gdf -z -f=CFWB $(TEMP_DIR)t1.scp $(TEMP_DIR)t1.cfw
-	./save2gdf -z -f=MFER $(TEMP_DIR)t1.scp $(TEMP_DIR)t1.mwf
-	./save2gdf -z -f=HL7 $(TEMP_DIR)t1.scp $(TEMP_DIR)t1.hl7
+	./save2gdf -z -f=GDF $(DATA_DIR)t1.scp $(TEMP_DIR)t1.gdf
+	./save2gdf -z -f=GDF1 $(DATA_DIR)t1.scp $(TEMP_DIR)t1.gd1
+	./save2gdf -z -f=EDF $(DATA_DIR)t1.scp $(TEMP_DIR)t1.edf
+	./save2gdf -z -f=BDF $(DATA_DIR)t1.scp $(TEMP_DIR)t1.bdf
+	./save2gdf -z -f=SCP $(DATA_DIR)t1.scp $(TEMP_DIR)t1.scp
+	./save2gdf -z -f=CFWB $(DATA_DIR)t1.scp $(TEMP_DIR)t1.cfw
+	./save2gdf -z -f=MFER $(DATA_DIR)t1.scp $(TEMP_DIR)t1.mwf
+	./save2gdf -z -f=HL7 $(DATA_DIR)t1.scp $(TEMP_DIR)t1.hl7
 
-	gzip -c $(TEMP_DIR)t1.scp >$(TEMP_DIR)t1.scp.gz
+	gzip -c $(DATA_DIR)t1.scp >$(TEMP_DIR)t1.scp.gz
 	# on-the-fly decompression of input file
 	./save2gdf -f=GDF $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t1.gdf
 	./save2gdf -f=EDF $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t1.edf
@@ -860,10 +865,10 @@ zip: $(TEMP_DIR)t1.scp save2gdf
 	./save2gdf -f=MFER $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t1.mwf
 	./save2gdf -f=CFWB $(TEMP_DIR)t1.scp.gz $(TEMP_DIR)t1.cfw
 
-test6: $(TEMP_DIR)t1.scp save2gdf
-	$(COPY) $(TEMP_DIR)t1.scp $(TEMP_DIR)t0.xxx
-	#test7: $(TEMP_DIR)t1.edf save2gdf
-	#$(COPY) $(TEMP_DIR)t1.edf t0.xxx
+test6: $(DATA_DIR)t1.scp save2gdf
+	$(COPY) $(DATA_DIR)t1.scp $(TEMP_DIR)t0.xxx
+	#test7: $(DATA_DIR)t1.edf save2gdf
+	#$(COPY) $(DATA_DIR)t1.edf $(TEMP_DIR)t0.xxx
 	./save2gdf -z -f=GDF1 $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.gd1
 	./save2gdf -z -f=GDF $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.gdf
 	./save2gdf -z -f=EDF $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.edf
