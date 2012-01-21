@@ -1673,8 +1673,8 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	const uint8_t MAGIC_NUMBER_TIFF_b64[] = {77,77,0,43,0,8,0,0};
 	const uint8_t MAGIC_NUMBER_DICOM[]    = {8,0,5,0,10,0,0,0,73,83,79,95,73,82,32,49,48,48};
 	const uint8_t MAGIC_NUMBER_UNIPRO[]   = {40,0,4,1,44,1,102,2,146,3,44,0,190,3};
-	const char* MAGIC_NUMBER_BRAINVISION  = "Brain Vision Data Exchange Header File";
-	const char* MAGIC_NUMBER_BRAINVISION1 = "Brain Vision V-Amp Data Header File Version";
+	const char* MAGIC_NUMBER_BRAINVISION       = "Brain Vision Data Exchange Header File";
+	const char* MAGIC_NUMBER_BRAINVISION1      = "Brain Vision V-Amp Data Header File Version";
 	const char* MAGIC_NUMBER_BRAINVISIONMARKER = "Brain Vision Data Exchange Marker File, Version";
 
     	/******** read 1st (fixed)  header  *******/
@@ -1749,11 +1749,11 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    	hdr->TYPE = BLSC;
     	else if (!memcmp(Header1,"FileFormat = BNI-1-BALTIMORE",28))
 	    	hdr->TYPE = BNI;
-        else if (!memcmp(Header1,MAGIC_NUMBER_BRAINVISION,sizeof(MAGIC_NUMBER_BRAINVISION)) || ((leu32p(hdr->AS.Header)==0x42bfbbef) && !memcmp(Header1+3, MAGIC_NUMBER_BRAINVISION,38)))
+        else if (!memcmp(Header1,MAGIC_NUMBER_BRAINVISION,strlen(MAGIC_NUMBER_BRAINVISION)) || ((leu32p(hdr->AS.Header)==0x42bfbbef) && !memcmp(Header1+3, MAGIC_NUMBER_BRAINVISION,38)))
                 hdr->TYPE = BrainVision;
-        else if (!memcmp(Header1,MAGIC_NUMBER_BRAINVISION1,sizeof(MAGIC_NUMBER_BRAINVISION1)))
+        else if (!memcmp(Header1,MAGIC_NUMBER_BRAINVISION1,strlen(MAGIC_NUMBER_BRAINVISION1)))
                 hdr->TYPE = BrainVisionVAmp;
-        else if (!memcmp(Header1,MAGIC_NUMBER_BRAINVISIONMARKER,sizeof(MAGIC_NUMBER_BRAINVISIONMARKER)))
+        else if (!memcmp(Header1,MAGIC_NUMBER_BRAINVISIONMARKER,strlen(MAGIC_NUMBER_BRAINVISIONMARKER)))
                 hdr->TYPE = BrainVisionMarker;
     	else if (!memcmp(Header1,"BZh91",5))
 	    	hdr->TYPE = BZ2;
@@ -2112,6 +2112,7 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ BNI,    	"BNI-1-Baltimore/Nicolet" },
 	{ BrainVision,  "BrainVision" },
 	{ BrainVisionVAmp, "BrainVision" },
+	{ BrainVisionMarker, "BrainVision" },
 	{ BZ2,    	"BZ2" },
 	{ CDF,    	"CDF" },
 	{ CFS,    	"CFS" },
@@ -5228,22 +5229,22 @@ if (VERBOSE_LEVEL>8)
 	else if (hdr->TYPE==BrainVisionMarker) {
 
 		while (!ifeof(hdr)) {
-			size_t bufsiz = 4096;
+			size_t bufsiz  = 4096;
 		    	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,count+bufsiz+1);
-		    	count  += ifread(hdr->AS.Header+count,1,bufsiz,hdr);
+		    	count += ifread(hdr->AS.Header+count,1,bufsiz,hdr);
 		}
 		hdr->AS.Header[count]=0;
 		hdr->HeadLen = count;
 		ifclose(hdr);
 
-		if (VERBOSE_LEVEL>8)
+		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"SOPEN(BV): marker file read.\n");
 
 		int seq = 0;
 		/* decode marker file */
 
 
-		char *t,*t1="    ";;
+		char *t,*t1="    ";
 		t  = Header1;
 		t += strcspn(Header1,"\x0A\x0D");
 		t += strspn(t,"\x0A\x0D");
@@ -5343,7 +5344,7 @@ if (VERBOSE_LEVEL>8)
 		hdr->HeadLen = count;
 		ifclose(hdr);
 
-		if (VERBOSE_LEVEL>8)
+		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"SOPEN(BV): header file read.\n");
 
 		int seq = 0;
