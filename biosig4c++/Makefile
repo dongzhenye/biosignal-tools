@@ -556,28 +556,28 @@ biosig_server: biosig_server.c libbiosig.$(LIBEXT) biosig-network.o Makefile
 #	MathLink interface to Mathematica
 #############################################################
 mma: libbiosig.$(LIBEXT)
-	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS=$(LDLIBS) sload
+	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" sload
 
 win32mma: win32/libbiosig.a
-	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS=$(LDLIBS) sload.exe
+	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" sload.exe
 
 win64mma: win64/libbiosig.a 
-	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS=$(LDLIBS) sload.w64.exe
+	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" sload.w64.exe
 
 
 #############################################################
 #	MEX-files for Octave and Matlab
 #############################################################
 mex mex4m mex4o oct: libbiosig.a
-	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS=$(LDLIBS) OCTAVE_VERSION=$(OCTAVE_VERSION) $@
+	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" OCTAVE_VERSION=$(OCTAVE_VERSION) $@
 	-cp mex/*.mex* ../biosig/t200_FileAccess/
 
 mexw32: win32/libbiosig.a
-	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS=$(LDLIBS) $(@F)
+	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
 	-cp mex/*.mexw32 ../biosig/t200_FileAccess/
 	
 mexw64: win64/libbiosig.a
-	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS=$(LDLIBS) $(@F)
+	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
 	-cp mex/*.mexw64 ../biosig/t200_FileAccess/
 
 #############################################################
