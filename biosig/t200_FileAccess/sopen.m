@@ -1047,7 +1047,11 @@ end;
 				[s,t] = strtok(t,0);
 	                        HDR.EVENT.TYP(N,1) = length(Desc{N});
     			end;		
-                        HDR.EVENT.POS = round(onset * HDR.SampleRate);
+                        HDR.EVENT.POS = onset * HDR.SampleRate;
+                        if any(HDR.EVENT.POS - ceil(HDR.EVENT.POS))
+                                warning('HDR.EVENT.POS is not integer')        
+                                %HDR.EVENT.POS = round(HDR.EVENT.POS); 
+                        end
                         HDR.EVENT.DUR = dur * HDR.SampleRate;
                         HDR.EVENT.CHN = zeros(N,1); 
                         [HDR.EVENT.CodeDesc, CodeIndex, HDR.EVENT.TYP] = unique(Desc(1:N)');
@@ -2715,7 +2719,7 @@ elseif strcmp(HDR.TYPE,'ACQ'),
                 sz = fread(HDR.FILE.FID,1,'uint16');
                 HDR.AS.bpb = HDR.AS.bpb + HDR.AS.SPR(k)*sz; 
                 offset3 = offset3 + HDR.ACQ.BufLength(k) * sz;
-ftell(HDR.FILE.FID),                
+% ftell(HDR.FILE.FID),                
                 typ = fread(HDR.FILE.FID,1,'uint16');
                 if ~any(typ==[1,2])
                         fprintf(HDR.FILE.stderr,'Warning SOPEN (ACQ): invalid or unknonw data type in file %s.\n',HDR.FileName);
