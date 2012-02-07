@@ -637,10 +637,13 @@ end;
 	                elseif (CHAN==0)
 	                	chan = 1:HDR.NS;
 	                	if strcmp(HDR.TYPE,'EDF')
-	                        if strcmp(HDR.reserved1(1:4),'EDF+')
+                                if strcmp(HDR.reserved1(1:4),'EDF+')
 	                        	tmp = strmatch('EDF Annotations',HDR.Label);
 		                        chan(tmp)=[];
 		                end; 
+		                elseif strcmp(HDR.TYPE,'BDF')
+	                        	tmp = strmatch('BDF Annotations',HDR.Label);
+		                        chan(tmp)=[];
 		                end;
 	                end;	
 	                for k=chan,
