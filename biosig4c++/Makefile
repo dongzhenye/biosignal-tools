@@ -878,7 +878,7 @@ test6: $(DATA_DIR)t1.scp save2gdf
 	gzip -f $(TEMP_DIR)t1.hl7
 	./save2gdf -z -f=CFWB $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.cfw
 	./save2gdf -z -f=MFER $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.mwf
-	./save2gdf -z -f=BVA $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.bva
+	./save2gdf -f=BVA $(TEMP_DIR)t0.xxx $(TEMP_DIR)t1.bva
 	./save2gdf -f=GDF1 $(TEMP_DIR)t1.gd1.gz $(TEMP_DIR)t2.gd1.gd1
 	./save2gdf -f=GDF $(TEMP_DIR)t1.gd1.gz $(TEMP_DIR)t2.gd1.gdf
 	./save2gdf -f=EDF $(TEMP_DIR)t1.gd1.gz $(TEMP_DIR)t2.gd1.edf

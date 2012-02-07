@@ -504,10 +504,10 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		uint8_t versionSection  = *(ptr+sectionStart+8);
 		uint8_t versionProtocol = *(ptr+sectionStart+9);
 #ifndef ANDROID
-		if (versionSection != 13)
-			fprintf(stderr,"Warning SOPEN(SCP-READ): Version of section %i is not 13 but %i. This is not tested.\n", curSect, versionSection);
-		if (versionProtocol != 13)
-			fprintf(stderr,"Warning SOPEN(SCP-READ): Version of Protocol is not 13 but %i. This is not tested.\n", versionProtocol);
+		if (versionSection != 13 && versionSection != 20)
+			fprintf(stderr,"Warning SOPEN(SCP-READ): Version of section %i is not 13 or 20 but %i. This is not tested.\n", curSect, versionSection);
+		if (versionProtocol != 13 && versionProtocol != 20)
+			fprintf(stderr,"Warning SOPEN(SCP-READ): Version of Protocol is not 13 or 20 but %i. This is not tested.\n", versionProtocol);
 #endif
 		curSectPos = 16;
 
