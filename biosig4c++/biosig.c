@@ -1673,6 +1673,7 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	const uint8_t MAGIC_NUMBER_TIFF_b64[] = {77,77,0,43,0,8,0,0};
 	const uint8_t MAGIC_NUMBER_DICOM[]    = {8,0,5,0,10,0,0,0,73,83,79,95,73,82,32,49,48,48};
 	const uint8_t MAGIC_NUMBER_UNIPRO[]   = {40,0,4,1,44,1,102,2,146,3,44,0,190,3};
+	const uint8_t MAGIC_NUMBER_VIKING[]   = {83,121,110,101,114,103,121,0,48,49,50,46,48,48,51,46,48,48,48,46,48,48,48,0,28,0,0,0,2,0,0,0};
 	const char* MAGIC_NUMBER_BRAINVISION       = "Brain Vision Data Exchange Header File";
 	const char* MAGIC_NUMBER_BRAINVISION1      = "Brain Vision V-Amp Data Header File Version";
 	const char* MAGIC_NUMBER_BRAINVISIONMARKER = "Brain Vision Data Exchange Marker File, Version";
@@ -2038,6 +2039,12 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 		hdr->TYPE = VRML;
 	else if ((hdr->HeadLen > 17) && !memcmp(hdr->AS.Header+4,MAGIC_NUMBER_UNIPRO,14))
 		hdr->TYPE = UNIPRO;
+
+    	else if (!memcmp(Header1,MAGIC_NUMBER_VIKING,sizeof(MAGIC_NUMBER_VIKING)) 
+                && !strncmp(Header1+63,"CRawDataElement",15) 
+                && !strncmp(Header1+85,"CRawDataBuffer",14) )  {
+	    	hdr->TYPE = VIASYS_VIKING;
+    	}
 	else if ((hdr->HeadLen > 23) && !memcmp(Header1,"# vtk DataFile Version ",23)) {
 		hdr->TYPE = VTK;
 		char tmp[4];
@@ -2182,6 +2189,7 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ TMSiLOG,    	"TMSiLOG" },
 	{ TRC,    	"TRC" },
 	{ UNIPRO,    	"UNIPRO" },
+        { VIASYS_VIKING, "VIASYS_VIKING_Synergy"},
 	{ VRML,    	"VRML" },
 	{ VTK,    	"VTK" },
 	{ WAV,    	"WAV" },
@@ -12342,21 +12350,23 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
 	fprintf(fid,"\t\t\"Id\"\t: \"%s\",\n", hdr->Patient.Id);
 	if (hdr->Patient.Weight) fprintf(fid,"\t\t\"Weight\"\t: \"%i kg\",\n", hdr->Patient.Weight);
 	if (hdr->Patient.Height) fprintf(fid,"\t\t\"Height\"\t: \"%i cm\",\n", hdr->Patient.Height);
-	fprintf(fid,"\t\t\"Gender\"\t: \"%s\",\n", hdr->Patient.Sex==1 ? "Male" : "Female");
 	if (hdr->Patient.Birthday>0) fprintf(fid,"\t\t\"Age\"\t: %i,\n", (int)((hdr->T0 - hdr->Patient.Birthday)/ldexp(365.25,32)) );
+	fprintf(fid,"\t\t\"Gender\"\t: \"%s\"\n", hdr->Patient.Sex==1 ? "Male" : "Female");        // no comma at the end because its the last element
 	fprintf(fid,"\t},\n");   // end-of-Patient
 
 	fprintf(fid,"\t\"Manufacturer\"\t: {\n");
-	fprintf(fid,"\t\t\"Name\"\t: \"%s\"\n", hdr->ID.Manufacturer.Name);
-	fprintf(fid,"\t\t\"Model\"\t: \"%s\"\n", hdr->ID.Manufacturer.Model);
-	fprintf(fid,"\t\t\"Version\"\t: \"%s\"\n", hdr->ID.Manufacturer.Version);
-	fprintf(fid,"\t\t\"SerialNumber\"\t: \"%s\"\n", hdr->ID.Manufacturer.SerialNumber);
+	fprintf(fid,"\t\t\"Name\"\t: \"%s\",\n", hdr->ID.Manufacturer.Name);
+	fprintf(fid,"\t\t\"Model\"\t: \"%s\",\n", hdr->ID.Manufacturer.Model);
+	fprintf(fid,"\t\t\"Version\"\t: \"%s\",\n", hdr->ID.Manufacturer.Version);
+	fprintf(fid,"\t\t\"SerialNumber\"\t: \"%s\"\n", hdr->ID.Manufacturer.SerialNumber);        // no comma at the end because its the last element
 	fprintf(fid,"\t},\n");   // end-of-Manufacturer
 
+        fprintf(fid,"\t\"CHANNEL\"\t: [");
 	for (k = 0; k < hdr->NS; k++) {
 		CHANNEL_TYPE *hc = hdr->CHANNEL+k;
-		fprintf(fid,"\t\"CHANNEL\"\t: {\n");
-		fprintf(fid,"\t\t\"ChannelNumber\"\t: %i,\n", (unsigned) k);
+                if (k>0) fprintf(fid,",");
+                fprintf(fid,"\n\t\t{\n");
+		fprintf(fid,"\t\t\"ChannelNumber\"\t: %i,\n", k+1);
 		fprintf(fid,"\t\t\"Label\"\t: \"%s\",\n", hc->Label);
 		fprintf(fid,"\t\t\"Transducer\"\t: \"%s\",\n", hc->Transducer);
 		fprintf(fid,"\t\t\"PhysicalUnit\"\t: \"%s\",\n", PhysDim(hc->PhysDimCode,tmp));
@@ -12367,44 +12377,51 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
 		if (!isnan(hc->Cal))     fprintf(fid,"\t\t\"scaling\"\t: %g,\n", hc->Cal);
 		if (!isnan(hc->Off))     fprintf(fid,"\t\t\"offset\"\t: %g,\n", hc->Off);
 		if (!isnan(hc->TOffset)) fprintf(fid,"\t\t\"TimeDelay\"\t: %g,\n", hc->TOffset);
+/*      TODO: fix for NaN and INF
 		fprintf(fid,"\t\t\"Filter\" : {\n\t\t\t\"Lowpass\"\t: %g,\n\t\t\t\"Highpass\"\t: %g,\n\t\t\t\"Notch\"\t: %g\n\t\t},\n", hc->LowPass,hc->HighPass,hc->Notch);
-                double fs = hdr->SampleRate * hc->SPR/hdr->SPR;
-		if (!isnan(fs)) fprintf(fid,"\t\t\"Samplingrate\"\t: %f,\n", fs);
+*/
 		switch (hc->PhysDimCode & 0xffe0) {
 		case 4256: // Volt       
-			if (!isnan(hc->Impedance)) fprintf(fid,"\t\t\"Impedance\"\t: %g", hc->Impedance);
+			if (!isnan(hc->Impedance)) fprintf(fid,"\t\t\"Impedance\"\t: %g,\n", hc->Impedance);
 			break;
 		case 4288: // Ohm
-			if (!isnan(hc->fZ)) fprintf(fid,"\t\t\"fZ\"\t: %g", hc->fZ);
+			if (!isnan(hc->fZ)) fprintf(fid,"\t\t\"fZ\"\t: %g,\n", hc->fZ);
 			break;
 		}
-		fprintf(fid,"\n\t}\n");   // end-of-CHANNEL
+                double fs = hdr->SampleRate * hc->SPR/hdr->SPR;
+		if (!isnan(fs)) fprintf(fid,"\t\t\"Samplingrate\"\t: %f", fs);        // no comma at the end because its the last element
+		fprintf(fid,"\n\t\t}");   // end-of-CHANNEL
 	}
+        fprintf(fid,"\n\t]");   // end-of-CHANNELS
 
-        for (k = 0; k < hdr->EVENT.N; k++) {
-                fprintf(fid,"\t\"EVENT\"\t: {\n");
+        if (hdr->EVENT.N>0) {
+            fprintf(fid,",\n\t\"EVENT\"\t: [");
+            for (k = 0; k < hdr->EVENT.N; k++) {
+                if (k>0) fprintf(fid,",");
+                fprintf(fid,"\n\t\t{\n");
                 fprintf(fid,"\t\t\"TYP\"\t: \"0x%04x\",\n", hdr->EVENT.TYP[k]);
-                fprintf(fid,"\t\t\"POS\"\t: \"%i\",\n", hdr->EVENT.POS[k]);
+                fprintf(fid,"\t\t\"POS\"\t: \"%i\",\n", hdr->EVENT.POS[k]/hdr->EVENT.SampleRate);
                 if (hdr->EVENT.CHN && hdr->EVENT.DUR) {
                         fprintf(fid,"\t\t\"CHN\"\t: \"0x%04x\",\n", hdr->EVENT.CHN[k]);
-                        fprintf(fid,"\t\t\"DUR\"\t: \"0x%04x\",\n", hdr->EVENT.DUR[k]);
+                        fprintf(fid,"\t\t\"DUR\"\t: \"0x%04x\",\n", hdr->EVENT.DUR[k]/hdr->EVENT.SampleRate);
                 }
 		if ((hdr->EVENT.TYP[k] == 0x7fff) && (hdr->TYPE==GDF))
-			fprintf(fid,"\t\t\"Description\"\t: [neds]\n");
+			fprintf(fid,"\t\t\"Description\"\t: [neds]\n");        // no comma at the end because its the last element
 
 		else if (hdr->EVENT.TYP[k] < hdr->EVENT.LenCodeDesc)
-			fprintf(fid,"\t\t\"Description\"\t: \"%s\"\n",hdr->EVENT.CodeDesc[hdr->EVENT.TYP[k]]);
+			fprintf(fid,"\t\t\"Description\"\t: \"%s\"\n",hdr->EVENT.CodeDesc[hdr->EVENT.TYP[k]]);        // no comma at the end because its the last element
 
 		else if (GLOBAL_EVENTCODES_ISLOADED) {
 			uint16_t k1;
 			for (k1=0; (k1 < Global.LenCodeDesc) && (hdr->EVENT.TYP[k] != Global.CodeIndex[k1]); k1++) {};
 			if (k1 < Global.LenCodeDesc)
-        			fprintf(fid,"\t\t\"Description\"\t: \"%s\"\n", Global.CodeDesc[k1]);
+        			fprintf(fid,"\t\t\"Description\"\t: \"%s\"\n", Global.CodeDesc[k1]);        // no comma at the end because its the last element
 		}
-                fprintf(fid,"\t},\n");   // end-of-EVENT
+                fprintf(fid,"\t\t}");
+            }
+            fprintf(fid,"\n\t]");   // end-of-EVENT
         }
-
-        fprintf(fid,"}\n");
+        fprintf(fid,"\n}\n");
         return (0); 
 }
 
