@@ -1673,7 +1673,7 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	const uint8_t MAGIC_NUMBER_TIFF_b64[] = {77,77,0,43,0,8,0,0};
 	const uint8_t MAGIC_NUMBER_DICOM[]    = {8,0,5,0,10,0,0,0,73,83,79,95,73,82,32,49,48,48};
 	const uint8_t MAGIC_NUMBER_UNIPRO[]   = {40,0,4,1,44,1,102,2,146,3,44,0,190,3};
-	const uint8_t MAGIC_NUMBER_VIKING[]   = {83,121,110,101,114,103,121,0,48,49,50,46,48,48,51,46,48,48,48,46,48,48,48,0,28,0,0,0,2,0,0,0};
+	const uint8_t MAGIC_NUMBER_SYNERGY[]  =  {83,121,110,101,114,103,121,0,48,49,50,46,48,48,51,46,48,48,48,46,48,48,48,0,28,0,0,0,2,0,0,0};
 	const char* MAGIC_NUMBER_BRAINVISION       = "Brain Vision Data Exchange Header File";
 	const char* MAGIC_NUMBER_BRAINVISION1      = "Brain Vision V-Amp Data Header File Version";
 	const char* MAGIC_NUMBER_BRAINVISIONMARKER = "Brain Vision Data Exchange Marker File, Version";
@@ -2040,10 +2040,10 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	else if ((hdr->HeadLen > 17) && !memcmp(hdr->AS.Header+4,MAGIC_NUMBER_UNIPRO,14))
 		hdr->TYPE = UNIPRO;
 
-    	else if (!memcmp(Header1,MAGIC_NUMBER_VIKING,sizeof(MAGIC_NUMBER_VIKING)) 
+    	else if (!memcmp(Header1,MAGIC_NUMBER_SYNERGY,sizeof(MAGIC_NUMBER_SYNERGY)) 
                 && !strncmp(Header1+63,"CRawDataElement",15) 
                 && !strncmp(Header1+85,"CRawDataBuffer",14) )  {
-	    	hdr->TYPE = VIASYS_VIKING;
+	    	hdr->TYPE = SYNERGY;
     	}
 	else if ((hdr->HeadLen > 23) && !memcmp(Header1,"# vtk DataFile Version ",23)) {
 		hdr->TYPE = VTK;
@@ -2184,12 +2184,12 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ SQLite,    	"SQLite" },
 	{ STATA,    	"STATA" },
 	{ SVG,    	"SVG" },
+        { SYNERGY,      "SYNERGY"},
 	{ TIFF,    	"TIFF" },
 	{ TMS32,    	"TMS32" },
 	{ TMSiLOG,    	"TMSiLOG" },
 	{ TRC,    	"TRC" },
 	{ UNIPRO,    	"UNIPRO" },
-        { VIASYS_VIKING, "VIASYS_VIKING_Synergy"},
 	{ VRML,    	"VRML" },
 	{ VTK,    	"VTK" },
 	{ WAV,    	"WAV" },
