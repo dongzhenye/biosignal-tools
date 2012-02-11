@@ -305,7 +305,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 
 			if (VERBOSE_LEVEL>8) fprintf(stdout,"hl7r: [413]\n"); 
 
-			double Cal=0.0, LP=NaN, HP=NaN, Notch=0.0;
+			double Cal=0.0, LP=NAN, HP=NAN, Notch=0.0;
 			hdr->NRec= 0;
 			hdr->SPR = 1;
 			hdr->NS  = 1;
@@ -367,7 +367,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 				hc->LowPass	= LP;
 				hc->HighPass	= HP;
 				hc->Notch	= Notch;
-				hc->Impedance	= NaN;
+				hc->Impedance	= NAN;
 				hc->XYZ[0] 	= 0.0;
 				hc->XYZ[1] 	= 0.0;
 				hc->XYZ[2] 	= 0.0;

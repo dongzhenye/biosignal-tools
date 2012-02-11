@@ -34,7 +34,7 @@ typedef mwSize Int;
 
 double getDouble(const mxArray *pm, size_t idx) {
 	size_t n = mxGetNumberOfElements(pm);
-	if (n == 0)   return(0.0/0.0);
+	if (n == 0)   return(NAN);
 	if (n <= idx) idx = n-1;
 
 	switch (mxGetClassID(pm)) {
@@ -68,7 +68,7 @@ double getDouble(const mxArray *pm, size_t idx) {
 	default: 
 */
 	}
-	return(0.0/0.0);
+	return(NAN);
 }
 
 void mexFunction(

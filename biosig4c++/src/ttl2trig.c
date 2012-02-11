@@ -86,7 +86,7 @@ int main(int argc, const char* argv[]) {
 	unsigned winlen = 0; 
 
 	const float WINLEN = 0.001; 	// window lengths for computing steepness: default is 1 ms
-	float TH = 0.0/0.0; 
+	float TH = NAN; 
 
 #ifdef TO_STOP_PRESS_ANY_KEY
 	/* initialization for IS_KEY_PRESSED() */	
@@ -343,7 +343,7 @@ int main(int argc, const char* argv[]) {
 #endif
 
 	size_t count = 0, pos = 0;
-	float delta, lastdelta = 0.0/0.0;
+	float delta, lastdelta = NAN;
 	while (1) {
 
 		/* stop when key pressed */

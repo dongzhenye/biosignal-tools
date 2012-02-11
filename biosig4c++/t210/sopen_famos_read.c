@@ -48,7 +48,7 @@ EXTERN_C void sopen_FAMOS_read(HDRTYPE* hdr) {
 		pos  = strspn(Header1, EOL);
 		uint16_t gdftyp, CHAN=0;
 		char OnOff=1;		
-		double Fs = NaN;
+		double Fs = NAN;
 		uint32_t NoChanCurrentGroup = 0;	// number of (undefined) channels of current group 
 		int level = 0; 	// to check consistency of file
 
@@ -442,7 +442,7 @@ EXTERN_C void sopen_FAMOS_read(HDRTYPE* hdr) {
 	      			hdr->CHANNEL[CHAN].Transducer[0]=0;
 			      	hdr->CHANNEL[CHAN].PhysDimCode = 0;
 			      	hdr->CHANNEL[CHAN].SPR       = 1;	// one sample per block
-			      	hdr->CHANNEL[CHAN].Impedance = INF;
+			      	hdr->CHANNEL[CHAN].Impedance = INFINITY;
 	      			hdr->CHANNEL[CHAN].XYZ[0] = 0.0;
 	      			hdr->CHANNEL[CHAN].XYZ[1] = 0.0;
 	      			hdr->CHANNEL[CHAN].XYZ[2] = 0.0;

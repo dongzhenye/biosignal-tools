@@ -240,7 +240,7 @@ void sopen_heka(HDRTYPE* hdr, FILE *itx) {
 
 	if (hdr->TYPE==HEKA && hdr->VERSION > 0) {
 
-/* TODO:
+/* TODO: HEKA support of eventtable 
 	+ support for resampling (needed by mexSLOAD, SigViewer, save2gdf)
 	+ support for selection of experiment,series,sweep,trace (needed by MMA)
 	+ make event-table aware of Sweep Selection
@@ -358,7 +358,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 989: \n");
 
 		// if (!Sizes) free(Sizes); Sizes=NULL;
 
-/* TODO:
+/* TODO: HEKA, check channel number and label 
 	pass 1:
 		+ get number of sweeps
 		+ get number of channels
@@ -369,7 +369,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 989: \n");
 		+ level 4 may have no children
 		+ count event descriptions Level2/SeLabel
 	pass 2:
-		+ initialize data to NaN
+		+ initialize data to NAN
 		+ skip sweeps if selected channel is not in it
 		+ Y scale, physical scale
 		+ Event.CodeDescription, Events,
@@ -517,8 +517,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i \n",(int)(po
 							DigMin = -1e9;
 							break;
 						default:
-							DigMax =  NaN;
-							DigMin =  NaN;
+							DigMax =  NAN;
+							DigMin =  NAN;
 							B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
 							B4C_ERRMSG = "Heka/Patchmaster: data type not supported.";
 						};
@@ -697,14 +697,14 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
                         B4C_ERRMSG = "memory allocation failed - not enough memory!";
                         return;
 		}	
-		memset(hdr->AS.rawdata, 0xff, hdr->NRec * hdr->AS.bpb); 	// initialize with NaN's
+		memset(hdr->AS.rawdata, 0xff, hdr->NRec * hdr->AS.bpb); 	// initialize with NAN's
 
 #ifdef NO_BI
 #define _BI (BI[k])
 #else
 #define _BI (hc->bi)
 #endif
-		/* initialize with NaN's */
+		/* initialize with NAN's */
 		for (k=0; k<hdr->NS; k++) {
 			size_t k1;
 			CHANNEL_TYPE *hc = hdr->CHANNEL+k;
@@ -716,10 +716,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 				for (k1=0; k1<hc->SPR; k1++) *(uint32_t*)(hdr->AS.rawdata + _BI + k1 * 4) = 0x80000000;
 				break;
 			case 16:
-				for (k1=0; k1<hc->SPR; k1++) *(float*)(hdr->AS.rawdata + _BI + k1 * 4) = 0.0/0.0;
+				for (k1=0; k1<hc->SPR; k1++) *(float*)(hdr->AS.rawdata + _BI + k1 * 4) = NAN;
 				break;
 			case 17:
-				for (k1=0; k1<hc->SPR; k1++) *(double*)(hdr->AS.rawdata + _BI + k1 * 8) = 0.0/0.0;
+				for (k1=0; k1<hc->SPR; k1++) *(double*)(hdr->AS.rawdata + _BI + k1 * 8) = NAN;
 				break;
 			}
 		}
@@ -1017,7 +1017,7 @@ int sopen_zzztest(HDRTYPE* hdr) {
 
 	    	size_t ns=0, NS=0, spr = 0, SPR = 0;
 		size_t ngroup=0, nseries=0, nsweep=0;
-		double deltaT = -1.0/0.0;
+		double deltaT = -INFINITY;
 		hdr->SPR = 0;
 
 		ifseek(hdr, 0, SEEK_SET);
@@ -1077,8 +1077,8 @@ int sopen_zzztest(HDRTYPE* hdr) {
 				hc->Cal      = 1.0;
 				hc->Off      = 0.0;
 				hc->Transducer[0] = '\0';
-				hc->LowPass  = NaN;
-				hc->HighPass = NaN;
+				hc->LowPass  = NAN;
+				hc->HighPass = NAN;
 				hc->PhysMax  = hc->Cal * hc->DigMax;
 				hc->PhysMin  = hc->Cal * hc->DigMin;
 	    		}

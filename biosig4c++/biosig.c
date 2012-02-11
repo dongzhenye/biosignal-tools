@@ -710,9 +710,9 @@ double PhysDimScale(uint16_t PhysDimCode)
 
 	const double scale[] =
 	{ 1e+0, 1e+1, 1e+2, 1e+3, 1e+6, 1e+9,  1e+12, 1e+15,	//  0..7
-	  1e+18,1e+21,1e+24,NaN,  NaN,  NaN,   NaN,   NaN, 	//  8..15
+	  1e+18,1e+21,1e+24,NAN,  NAN,  NAN,   NAN,   NAN, 	//  8..15
 	  1e-1, 1e-2, 1e-3, 1e-6, 1e-9, 1e-12, 1e-15, 1e-18, 	// 16..23
-	  1e-21,1e-24,NaN,  NaN,  NaN,  NaN,   NaN,   NaN,	// 24..31
+	  1e-21,1e-24,NAN,  NAN,  NAN,  NAN,   NAN,   NAN,	// 24..31
 	  1e-6	// hack for "µ" = "u" 				// 32
 	  };
 
@@ -750,7 +750,7 @@ uint16_t PhysDimCode(const char* PhysDim0)
 	// greedy search - check all codes 0..65535
 	for (k1=0; k1<33; k1++)
 	if (!strncmp(PhysDimFactor[k1],PhysDim0,strlen(PhysDimFactor[k1])) && (PhysDimScale(k1)>0.0))
-	{ 	// exclude if beginning of PhysDim0 differs from PhysDimFactor and if NaN
+	{ 	// exclude if beginning of PhysDim0 differs from PhysDimFactor and if NAN
 		strcpy(s, PhysDimFactor[k1]);
 		s1 = s+strlen(s);
 		for (k2=0; _physdim[k2].idx < 0xffff; k2++) {
@@ -1513,7 +1513,7 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	      	hc->PhysMin   = -100;
 	      	hc->DigMax    = +2047;
 	      	hc->DigMin    = -2048;
-	      	hc->Cal	      = NaN;
+	      	hc->Cal	      = NAN;
 	      	hc->Off	      = 0.0;
 	      	hc->TOffset   = 0.0;
 	      	hc->GDFTYP    = 3;	// int16
@@ -1526,8 +1526,8 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	      	hc->HighPass  = 0.16;
 	      	hc->LowPass   = 70.0;
 	      	hc->Notch     = 50;
-	      	hc->Impedance = INF;
-	      	hc->fZ        = NaN;
+	      	hc->Impedance = INFINITY;
+	      	hc->fZ        = NAN;
 	      	hc->XYZ[0] 	= 0.0;
 	      	hc->XYZ[1] 	= 0.0;
 	      	hc->XYZ[2] 	= 0.0;
@@ -2819,10 +2819,10 @@ int gdfbin2struct(HDRTYPE *hdr)
 				hc->DigMax   = (double) lei64p(Header2 + 8*k + 128*hdr->NS);
 
 				char *PreFilt  = (char*)(Header2+ 68*k + 136*hdr->NS);
-				hc->LowPass  = NaN;
-				hc->HighPass = NaN;
-				hc->Notch    = NaN;
-				hc->TOffset  = NaN;
+				hc->LowPass  = NAN;
+				hc->HighPass = NAN;
+				hc->Notch    = NAN;
+				hc->TOffset  = NAN;
 				float lf,hf;
 				if (sscanf(PreFilt,"%f - %f Hz",&lf,&hf)==2) {
 					hc->LowPass  = hf;
@@ -2846,7 +2846,7 @@ int gdfbin2struct(HDRTYPE *hdr)
 				hc->Impedance= ldexp(1.0, (uint8_t)Header2[k + 236*hdr->NS]/8);
 
 			     	if (hdr->VERSION < 2.22)
-					hc->TOffset  = NaN;
+					hc->TOffset  = NAN;
 			     	else
 			     		hc->TOffset  = lef32p(Header2 + 4 * k + 200 * hdr->NS);
 
@@ -3222,11 +3222,11 @@ int RerefCHANNEL(HDRTYPE *hdr, void *arg2, char Mode)
 					        if (NEWCHANNEL[i].PhysDimCode != hdr->CHANNEL[r].PhysDimCode)
 					                NEWCHANNEL[i].PhysDimCode = 0;
 					        if (NEWCHANNEL[i].LowPass != hdr->CHANNEL[r].LowPass)
-					                NEWCHANNEL[i].LowPass = NaN;
+					                NEWCHANNEL[i].LowPass = NAN;
 					        if (NEWCHANNEL[i].HighPass != hdr->CHANNEL[r].HighPass)
-					                NEWCHANNEL[i].HighPass = NaN;
+					                NEWCHANNEL[i].HighPass = NAN;
 					        if (NEWCHANNEL[i].Notch != hdr->CHANNEL[r].Notch)
-					                NEWCHANNEL[i].Notch = NaN;
+					                NEWCHANNEL[i].Notch = NAN;
 
 					        if (NEWCHANNEL[i].SPR != hdr->CHANNEL[r].SPR)
 					                NEWCHANNEL[i].SPR = lcm(NEWCHANNEL[i].SPR, hdr->CHANNEL[r].SPR);
@@ -3411,7 +3411,7 @@ HDRTYPE* sopen(const char* FileName, const char* MODE, HDRTYPE* hdr)
 	const uint16_t	CFWB_GDFTYP[] = {17,16,3};
 	const float	CNT_SETTINGS_NOTCH[] = {0.0, 50.0, 60.0};
 	const float	CNT_SETTINGS_LOWPASS[] = {30, 40, 50, 70, 100, 200, 500, 1000, 1500, 2000, 2500, 3000};
-	const float	CNT_SETTINGS_HIGHPASS[] = {NaN, 0, .05, .1, .15, .3, 1, 5, 10, 30, 100, 150, 300};
+	const float	CNT_SETTINGS_HIGHPASS[] = {NAN, 0, .05, .1, .15, .3, 1, 5, 10, 30, 100, 150, 300};
 
 //    	unsigned int 	k2;
 //    	uint32_t	k32u;
@@ -3936,9 +3936,9 @@ else if (!strncmp(MODE,"r",1)) {
 			if (VERBOSE_LEVEL>8)
 				fprintf(stdout,"[EDF 216] #%i/%i/%i/%i/%i/%i\n",(int)k,hdr->NS,nbytes,hdr->AS.bpb,hc->SPR,hdr->SPR);
 
-			hc->LowPass  = NaN;
-			hc->HighPass = NaN;
-			hc->Notch    = NaN;
+			hc->LowPass  = NAN;
+			hc->HighPass = NAN;
+			hc->Notch    = NAN;
 
 			// decode filter information into hdr->Filter.{Lowpass, Highpass, Notch}
 			uint8_t kk; 			
@@ -4196,8 +4196,8 @@ else if (!strncmp(MODE,"r",1)) {
 					      	hc->SPR       = leu32p(b+k*BlockSize+20);
 					      	hc->OnOff     = 1;
 					      	hc->Notch     = 50;
-					      	hc->Impedance = INF;
-					      	hc->fZ        = NaN;
+					      	hc->Impedance = INFINITY;
+					      	hc->fZ        = NAN;
 					      	hc->bi 	  = hdr->AS.bpb;
 					      	hdr->AS.bpb += (GDFTYP_BITS[hc->GDFTYP]*hc->SPR)>>3;
 					}
@@ -4576,11 +4576,11 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 					cp = hdr->CHANNEL+hdr->NS-1;
 					cp->bi = hdr->AS.bpb;
 					cp->PhysDimCode = 0;
-					cp->HighPass = NaN;
-					cp->LowPass  = NaN;
-					cp->Notch    = NaN;
-					cp->Impedance= NaN;
-					cp->fZ       = NaN;
+					cp->HighPass = NAN;
+					cp->LowPass  = NAN;
+					cp->Notch    = NAN;
+					cp->Impedance= NAN;
+					cp->fZ       = NAN;
 					cp->LeadIdCode = 0;
 					datfile      = val;
 
@@ -5442,7 +5442,7 @@ if (VERBOSE_LEVEL>8)
 				    	hc->DigMax	= digmax;
 				    	hc->PhysMin	= physmin;
 				    	hc->DigMin	= digmin;
-				    	hc->Impedance	= NaN;
+				    	hc->Impedance	= NAN;
 				    	hc->Cal		= cal;
 				    	hc->Off		= off;
 					hc->OnOff   	= 1;
@@ -5712,9 +5712,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n
 				B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
 				B4C_ERRMSG = "(CFS)Subsidiary or Matrix data not supported";
 			}
-			hc->LowPass  = NaN;
-			hc->HighPass = NaN;
-			hc->Notch    = NaN;
+			hc->LowPass  = NAN;
+			hc->HighPass = NAN;
+			hc->Notch    = NAN;
 if (VERBOSE_LEVEL>7) fprintf(stdout,"Channel #%i: [%s](%i/%i) <%s>/<%s> ByteSpace%i,Next#%i\n",k+1, H2 + 1 + k*H2LEN, gdftyp, H2[43], H2 + 23 + k*H2LEN, H2 + 33 + k*H2LEN, leu16p(H2+44+k*H2LEN), leu16p(H2+46+k*H2LEN));
 		}
 
@@ -5724,7 +5724,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"Channel #%i: [%s](%i/%i) <%s>/<%s> ByteSpac
 		// n*36 bytes
 if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* file variable information *********\n");
 		for (k = 0; k < n; k++) {
-			int i=-1; double f=NaN;
+			int i=-1; double f=NAN;
 			size_t pos = datapos + k*36;
 			uint16_t typ = leu16p(hdr->AS.Header+pos+22);
 			uint16_t off = leu16p(hdr->AS.Header+pos+34);
@@ -5854,7 +5854,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i\n
 						case 7:  val = lei64p(ptr); break;
 						case 8:  val = leu64p(ptr); break;
 						default:
-							val = NaN;
+							val = NAN;
 							B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
 							B4C_ERRMSG = "CED/CFS: invalid data type";
 						}
@@ -6657,9 +6657,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			hc->PhysMin = hc->DigMin*hc->Cal;
 			hc->Transducer[0] = 0;
 			hc->LeadIdCode = 0; 
-			hc->Notch = NaN;
-			hc->Impedance = INF;
-		      	hc->fZ        = NaN;
+			hc->Notch     = NAN;
+			hc->Impedance = INFINITY;
+		      	hc->fZ        = NAN;
 			hc->XYZ[0] = 0.0;
 			hc->XYZ[1] = 0.0;
 			hc->XYZ[2] = 0.0;
@@ -7755,9 +7755,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 				hc->Cal      = 1.0;
 				hc->Off      = 0.0;
 				hc->Transducer[0] = '\0';
-				hc->LowPass  = NaN;
-				hc->HighPass = NaN;
-				hc->TOffset  = NaN;
+				hc->LowPass  = NAN;
+				hc->HighPass = NAN;
+				hc->TOffset  = NAN;
 				hc->PhysMax  = hc->Cal * hc->DigMax;
 				hc->PhysMin  = hc->Cal * hc->DigMin;
 				hc->PhysDimCode = 0;
@@ -7957,8 +7957,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			hc->Cal      = lei16p(hdr->AS.Header + 206 + 2*k);
 			hc->Off      = 0.0;
 			hc->Transducer[0] = '\0';
-			hc->LowPass  = NaN;
-			hc->HighPass = NaN;
+			hc->LowPass  = NAN;
+			hc->HighPass = NAN;
 			hc->PhysMax  = hc->Cal * hc->DigMax;
 			hc->PhysMin  = hc->Cal * hc->DigMin;
 		    	hc->LeadIdCode  = Table1[lei16p(hdr->AS.Header + 158 + 2*k)];
@@ -8426,8 +8426,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		 			hc->DigMin = 0.0;
 	 			}
 	 		else {
-	 			hc->DigMax =  INF;
-		 		hc->DigMin = -INF;
+	 			hc->DigMax =  INFINITY;
+		 		hc->DigMin = -INFINITY;
 	 		}
 	 		hc->PhysMax = hc->DigMax * hc->Cal + hc->Off;
 	 		hc->PhysMin = hc->DigMin * hc->Cal + hc->Off;
@@ -8961,9 +8961,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		hdr->CHANNEL[0].bi8      = 0;
 		hdr->CHANNEL[0].LeadIdCode = 0;
 		hdr->CHANNEL[0].SPR      = hdr->SPR;
-		hdr->CHANNEL[0].LowPass  = NaN;
-		hdr->CHANNEL[0].HighPass = NaN;
-		hdr->CHANNEL[0].Notch    = NaN;
+		hdr->CHANNEL[0].LowPass  = NAN;
+		hdr->CHANNEL[0].HighPass = NAN;
+		hdr->CHANNEL[0].Notch    = NAN;
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"NEURON 202: \n");
 
@@ -9287,7 +9287,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		for (k=1; k < sizeof(p)/sizeof(p[0]); k++) p[k] += p[k-1];	// relative position
 
 		double *fs = (double*) malloc(hdr->NS * sizeof(double));
-		double minFs = 1.0/0.0;
+		double minFs = INFINITY;
 		for (k=0; k<hdr->NS; k++) {
 			CHANNEL_TYPE *hc = hdr->CHANNEL+k;
 			pos = 148 + k*203;
@@ -9302,11 +9302,11 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		      	hc->PhysMin   = hc->DigMin;
 //		      	hc->Cal       = 1.0;
 	      		hc->Off       = 0.0;
-		      	hc->HighPass  = NaN;
-		      	hc->LowPass   = NaN;
+		      	hc->HighPass  = NAN;
+		      	hc->LowPass   = NAN;
 		      	hc->Notch     = *(int16_t*)(hdr->AS.Header+pos+2) ? 1.0 : 0.0;
-		      	hc->Impedance = INF;
-		      	hc->fZ        = NaN;
+		      	hc->Impedance = INFINITY;
+		      	hc->fZ        = NAN;
 	      		hc->XYZ[0]    = 0.0;
 		      	hc->XYZ[1]    = 0.0;
 		      	hc->XYZ[2]    = 0.0;
@@ -9692,7 +9692,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 					}
 					else {
 						for (k2=0;k2<hdr->NS;k2++)
-							*(double*)(hdr->AS.rawdata+(k*hdr->NS+k2)*sizeof(double)) = NaN;
+							*(double*)(hdr->AS.rawdata+(k*hdr->NS+k2)*sizeof(double)) = NAN;
 					}
 				}
 				free(line);
@@ -9733,11 +9733,11 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	      		hc->Transducer[0] = 0;
 		      	hc->SPR       = 1;	// one sample per block
 		      	hc->OnOff     = 1;
-	      		hc->HighPass  = NaN;
-		      	hc->LowPass   = NaN;
-		      	hc->Notch     = NaN;
-	      		hc->Impedance = INF;
-		      	hc->fZ        = NaN;
+	      		hc->HighPass  = NAN;
+		      	hc->LowPass   = NAN;
+		      	hc->Notch     = NAN;
+	      		hc->Impedance = INFINITY;
+		      	hc->fZ        = NAN;
 		      	hc->XYZ[0] = 0.0;
 		      	hc->XYZ[1] = 0.0;
 		      	hc->XYZ[2] = 0.0;
@@ -11171,7 +11171,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 	uint8_t			*ptr=NULL; // *buffer;
 	CHANNEL_TYPE		*CHptr;
 	int32_t			int32_value;
-	biosig_data_type 	sample_value=NaN;
+	biosig_data_type 	sample_value=NAN;
 	size_t			toffset;	// time offset for rawdata
 	biosig_data_type	*data1=NULL;
 
@@ -11480,7 +11480,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 
 		// overflow and saturation detection
 		if ((hdr->FLAG.OVERFLOWDETECTION) && ((sample_value <= CHptr->DigMin) || (sample_value >= CHptr->DigMax)))
-			sample_value = NaN; 	// missing value
+			sample_value = NAN; 	// missing value
 		else if (!hdr->FLAG.UCAL)	// scaling
 			sample_value = sample_value * CHptr->Cal + CHptr->Off;
 
@@ -11518,16 +11518,16 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 
 		for (k1=0,k2=0; k1<hdr->NS; k1++) {
 			CHptr 	= hdr->CHANNEL+k1;
-			// Initialize sparse channels with NaNs
+			// Initialize sparse channels with NANs
 			if (CHptr->OnOff) {	/* read selected channels only */
 				if (CHptr->SPR==0) {
 					// sparsely sampled channels are stored in event table
 					if (hdr->FLAG.ROW_BASED_CHANNELS) {
 						for (k5 = 0; k5 < hdr->SPR*count; k5++)
-							data1[k2 + k5*NS] = NaN;		// row-based channels
+							data1[k2 + k5*NS] = NAN;		// row-based channels
 					} else {
 						for (k5 = 0; k5 < hdr->SPR*count; k5++)
-							data1[k2*count*hdr->SPR + k5] = NaN; 	// column-based channels
+							data1[k2*count*hdr->SPR + k5] = NAN; 	// column-based channels
 					}
 				}
 				k2++;
@@ -11596,7 +11596,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 
 			// overflow and saturation detection
 			if ((hdr->FLAG.OVERFLOWDETECTION) && ((sample_value<=CHptr->DigMin) || (sample_value>=CHptr->DigMax)))
-				sample_value = NaN; 	// missing value
+				sample_value = NAN; 	// missing value
 			else if (!hdr->FLAG.UCAL)	// scaling
 				sample_value = sample_value * CHptr->Cal + CHptr->Off;
 
@@ -11625,9 +11625,9 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 		for (k2=0; k2<NS; k2++) 
 		for (k5 = spr - POS*hdr->SPR; k5 < hdr->SPR*count; k5++) {
 			if (hdr->FLAG.ROW_BASED_CHANNELS)
-				data1[k2 + k5*NS] = NaN;		// row-based channels
+				data1[k2 + k5*NS] = NAN;		// row-based channels
 			else
-				data1[k2*count*hdr->SPR + k5] = NaN; 	// column-based channels
+				data1[k2*count*hdr->SPR + k5] = NAN; 	// column-based channels
 		}
 	}
 
@@ -12377,7 +12377,7 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
 		if (!isnan(hc->Cal))     fprintf(fid,"\t\t\"scaling\"\t: %g,\n", hc->Cal);
 		if (!isnan(hc->Off))     fprintf(fid,"\t\t\"offset\"\t: %g,\n", hc->Off);
 		if (!isnan(hc->TOffset)) fprintf(fid,"\t\t\"TimeDelay\"\t: %g,\n", hc->TOffset);
-/*      TODO: fix for NaN and INF
+/*      TODO: fix for NAN and INFINITY
 		fprintf(fid,"\t\t\"Filter\" : {\n\t\t\t\"Lowpass\"\t: %g,\n\t\t\t\"Highpass\"\t: %g,\n\t\t\t\"Notch\"\t: %g\n\t\t},\n", hc->LowPass,hc->HighPass,hc->Notch);
 */
 		switch (hc->PhysDimCode & 0xffe0) {
@@ -12478,7 +12478,7 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 		if (hdr->Patient.Birthday>0)
 			age = (hdr->T0 - hdr->Patient.Birthday)/ldexp(365.25,32);
 		else
-			age = NaN;
+			age = NAN;
 
 		if (hdr->Patient.Height)
 			fprintf(fid,"\tHeight          : %i cm\n",hdr->Patient.Height);

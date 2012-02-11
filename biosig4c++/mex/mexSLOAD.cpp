@@ -692,13 +692,13 @@ void mexFunction(
 		mxSetField(Patient,0,"Birthday",mxCreateDoubleScalar(ldexp(hdr->Patient.Birthday,-32)));
 
 		double d;
-		if (hdr->Patient.Weight==0)		d = 0.0/0.0;	// not-a-number		
-		else if (hdr->Patient.Weight==255)	d = 1.0/0.0;	// Overflow
+		if (hdr->Patient.Weight==0)		d = NAN;	// not-a-number		
+		else if (hdr->Patient.Weight==255)	d = INFINITY;	// Overflow
 		else					d = (double)hdr->Patient.Weight;
 		mxSetField(Patient,0,"Weight",mxCreateDoubleScalar(d));
 			
-		if (hdr->Patient.Height==0)		d = 0.0/0.0;	// not-a-number		
-		else if (hdr->Patient.Height==255)	d = 1.0/0.0;	// Overflow
+		if (hdr->Patient.Height==0)		d = NAN;	// not-a-number		
+		else if (hdr->Patient.Height==255)	d = INFINITY;	// Overflow
 		else					d = (double)hdr->Patient.Height;
 		mxSetField(Patient,0,"Height",mxCreateDoubleScalar(d));
 	

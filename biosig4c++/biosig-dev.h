@@ -258,13 +258,6 @@ void bef64a(  double i, uint8_t* r);
 }
 #endif 
 
-
-#define NaN (0.0/0.0)	/* used for encoding of missing values */ 
-#define INF (1.0/0.0)	/* positive infinity */
-
-//const double NaN = (0.0/0.0);
-//const double INF = (1.0/0.0);
-
 #define min(a,b)	(((a) < (b)) ? (a) : (b))
 #define max(a,b)	(((a) > (b)) ? (a) : (b))
 #define fix(m)     	(m<0 ? ceil(m) : floor(m))	

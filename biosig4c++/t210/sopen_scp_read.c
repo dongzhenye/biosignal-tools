@@ -346,7 +346,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 	size_t 		sectionStart; 
 	int 		NSections = 12;
 	uint8_t		tag;
-	float 		HighPass=0, LowPass=1.0/0.0, Notch=-1; 	// filter settings
+	float 		HighPass=0, LowPass=INFINITY, Notch=-1; 	// filter settings
 	uint16_t	Cal5=0, Cal6=0, Cal0=0;	// scaling coefficients 
 	uint16_t 	dT_us = 1000; 	// sampling interval in microseconds
 
@@ -708,7 +708,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				else if (tag==29) {
 					uint8_t bitmap = *(PtrCurSect+curSectPos);
 					if (bitmap==0)
-						Notch = NaN;	// undefined 
+						Notch = NAN;	// undefined 
 					else if ((bitmap & 0x03)==0)
 						Notch = -1;	// notch off
 					else if (bitmap & 0x01)

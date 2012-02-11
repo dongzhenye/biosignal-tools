@@ -33,10 +33,6 @@
 #include <time.h>
 #include "biosig-dev.h"
 
-#ifndef INF
-#define INF (1.0/0.0)
-#endif 
-
 #ifdef __cplusplus
 extern "C" {
 #endif 
@@ -438,9 +434,9 @@ int main(int argc, char **argv){
 	
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[201]\n");
 
-        double PhysMaxValue0 = -INF; //hdr->data.block[0];
-	double PhysMinValue0 = +INF; //hdr->data.block[0];
-	biosig_data_type val = NaN; 
+	double PhysMaxValue0 = -INFINITY; //hdr->data.block[0];
+	double PhysMinValue0 = +INFINITY; //hdr->data.block[0];
+	biosig_data_type val = NAN; 
 	char FLAG_CONVERSION_TESTED = 1;
 	size_t N; 
 #ifdef T1T2
