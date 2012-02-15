@@ -1,0 +1,215 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 8.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       157,          7]
+NotebookDataLength[      9471,        205]
+NotebookOptionsPosition[      9193,        191]
+NotebookOutlinePosition[      9530,        206]
+CellTagsIndexPosition[      9487,        203]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[
+ RowBox[{"\[IndentingNewLine]", 
+  RowBox[{"(*", "\[IndentingNewLine]", "   ", 
+   RowBox[{
+    RowBox[{
+    "Platform", " ", "independent", " ", "loading", " ", "of", " ", 
+     "biosignal", " ", "data", "\[IndentingNewLine]", "  ", "Copyright", " ", 
+     "2011", " ", "Alois", " ", "Schloegl"}], ",", " ", 
+    RowBox[{
+     RowBox[{
+     "IST", " ", "Austria", "\[IndentingNewLine]", "  ", "This", " ", "file", 
+      " ", "is", " ", "part", " ", "of", " ", "the", " ", 
+      "\"\<BioSig for C/C++\>\"", " ", "repository", "\n", 
+      "\[IndentingNewLine]", "BioSig", " ", "is", " ", "free", " ", 
+      "software"}], ";", " ", 
+     RowBox[{"you", " ", "can", " ", "redistribute", " ", "it", " ", 
+      RowBox[{"and", "/", "or"}], "\n", "modify", " ", "it", " ", "under", 
+      " ", "the", " ", "terms", " ", "of", " ", "the", " ", "GNU", " ", 
+      "General", " ", "Public", " ", "License", "\n", "as", " ", "published", 
+      " ", "by", " ", "the", " ", "Free", " ", "Software", " ", 
+      "Foundation"}], ";", 
+     RowBox[{
+     "either", " ", "version", " ", "3", "\n", "of", " ", "the", " ", 
+      "License"}]}], ",", 
+    RowBox[{"or", " ", 
+     RowBox[{"(", 
+      RowBox[{"at", " ", "your", " ", "option"}], ")"}], " ", "any", " ", 
+     "later", " ", 
+     RowBox[{
+     "version", ".", "\[IndentingNewLine]", "\[IndentingNewLine]", "This"}], 
+     " ", "program", " ", "is", " ", "distributed", " ", "in", " ", "the", 
+     " ", "hope", " ", "that", " ", "it", " ", "will", " ", "be", " ", 
+     "useful"}], ",", 
+    RowBox[{
+     RowBox[{"but", " ", "WITHOUT", " ", "ANY", " ", "WARRANTY"}], ";", 
+     RowBox[{
+     "without", " ", "even", " ", "the", " ", "implied", " ", "warranty", " ",
+       "of", "\n", "MERCHANTABILITY", " ", "or", " ", "FITNESS", " ", "FOR", 
+      " ", "A", " ", "PARTICULAR", " ", 
+      RowBox[{"PURPOSE", ".", "See"}], " ", "the", "\n", "GNU", " ", 
+      "General", " ", "Public", " ", "License", " ", "for", " ", "more", " ", 
+      
+      RowBox[{
+      "details", ".", "\[IndentingNewLine]", "\[IndentingNewLine]", "You"}], 
+      " ", "should", " ", "have", " ", "received", " ", "a", " ", "copy", " ",
+       "of", " ", "the", " ", "GNU", " ", "General", " ", "Public", " ", 
+      "License", "\n", "along", " ", "with", " ", "this", " ", 
+      RowBox[{"program", ".", "If"}], " ", "not"}]}], ",", 
+    RowBox[{
+     RowBox[{"see", "<", 
+      RowBox[{"http", ":"}]}], "//", 
+     RowBox[{
+      RowBox[{
+       RowBox[{
+        RowBox[{"www", ".", "gnu", ".", "org"}], "/", "licenses"}], "/"}], 
+      ">", "."}]}]}], "\[IndentingNewLine]", "\[IndentingNewLine]", "*)"}], 
+  "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{
+     RowBox[{"mySLOAD", "[", 
+      RowBox[{"filename_", ",", " ", "sweeps_"}], "]"}], ":=", " ", 
+     RowBox[{"Module", " ", "[", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{"link", ",", " ", "data"}], "}"}], ",", " ", 
+       "\[IndentingNewLine]", 
+       RowBox[{"(*", " ", 
+        RowBox[{"mySLOAD", ":", " ", 
+         RowBox[{"makes", " ", "it", " ", "platform", " ", "independent"}]}], 
+        " ", "*)"}], "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{"link", "=", 
+         RowBox[{"Install", "[", 
+          RowBox[{"Switch", "[", 
+           RowBox[{
+           "$SystemID", ",", "\[IndentingNewLine]", "\"\<Windows\>\"", ",", 
+            " ", "\"\<sload.exe\>\"", ",", "\[IndentingNewLine]", 
+            "\"\<Windows-x86-64\>\"", ",", " ", "\"\<sload.exe\>\"", ",", 
+            "\[IndentingNewLine]", "\"\<Linux-x86-64\>\"", ",", " ", 
+            "\"\<sload\>\""}], "\[IndentingNewLine]", "]"}], 
+          "\[IndentingNewLine]", "]"}]}], ";", "\[IndentingNewLine]", 
+        RowBox[{"data", " ", "=", " ", 
+         RowBox[{"sload", "[", 
+          RowBox[{"filename", ",", "sweeps"}], "]"}]}], ";", 
+        "\[IndentingNewLine]", 
+        RowBox[{"Uninstall", "[", "link", "]"}], ";", "\[IndentingNewLine]", 
+        "data"}]}], " ", 
+      RowBox[{"(*", " ", 
+       RowBox[{"return", " ", "data"}], " ", "*)"}], "\[IndentingNewLine]", 
+      "]"}]}], ";"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]"}]}]], "Input",
+ CellChangeTimes->{{3.519966450456757*^9, 3.519966502320704*^9}, {
+   3.519966532912158*^9, 3.519966567258428*^9}, {3.519966618877387*^9, 
+   3.51996673299822*^9}, {3.519967510684229*^9, 3.519967518075049*^9}, {
+   3.519967718475827*^9, 3.519967817238503*^9}, {3.5199678483044167`*^9, 
+   3.519967876960375*^9}, {3.51996870364047*^9, 3.519968728788637*^9}, 
+   3.519968924215603*^9, {3.519969005484152*^9, 3.519969026719164*^9}, 
+   3.519970272703093*^9, {3.519970402459618*^9, 3.519970431884839*^9}, {
+   3.519970507406836*^9, 3.519970525000025*^9}, {3.5199705605132723`*^9, 
+   3.519970601765779*^9}, {3.5199706767387466`*^9, 3.519970694115168*^9}, {
+   3.519970737788637*^9, 3.519970820710442*^9}, {3.5199713618225*^9, 
+   3.519971396988562*^9}, {3.51997143077888*^9, 3.519971470172937*^9}, {
+   3.5199716198612328`*^9, 3.519971627056596*^9}, {3.519971726220508*^9, 
+   3.519971847383973*^9}, {3.519971901738119*^9, 3.5199719262231913`*^9}, {
+   3.519971991327641*^9, 3.519972011494048*^9}, {3.519972063607362*^9, 
+   3.519972078449243*^9}, {3.5199721084608583`*^9, 3.5199721166614122`*^9}, {
+   3.519972179906435*^9, 3.519972253024084*^9}, {3.519972293264285*^9, 
+   3.519972332511961*^9}, {3.519972600537383*^9, 3.519972606896717*^9}, {
+   3.51997595094864*^9, 3.519975959335071*^9}, {3.519975990577208*^9, 
+   3.519975992123939*^9}, {3.519976036783289*^9, 3.519976040847102*^9}, {
+   3.51997613119839*^9, 3.5199761479495497`*^9}, 3.519976183864498*^9, {
+   3.519976224100204*^9, 3.519976226220254*^9}, {3.519976464411666*^9, 
+   3.519976513020597*^9}, {3.5199765611290503`*^9, 3.519976574326784*^9}, {
+   3.5199766138015957`*^9, 3.5199766308529673`*^9}, {3.519976763613339*^9, 
+   3.519976799683815*^9}, {3.519979138025991*^9, 3.5199791968322573`*^9}, {
+   3.519979289763797*^9, 3.5199792908051453`*^9}, {3.519979377123864*^9, 
+   3.519979383972021*^9}, {3.519979442771205*^9, 3.51997946614472*^9}, {
+   3.5199806627277665`*^9, 3.519980674071444*^9}, {3.520006832039811*^9, 
+   3.520006858540068*^9}, {3.5200069516304865`*^9, 3.5200069738178444`*^9}, {
+   3.5200072973938985`*^9, 3.520007442783593*^9}, {3.5200452788136187`*^9, 
+   3.520045350254847*^9}, {3.5287739788324213`*^9, 3.528773986388357*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+   "This", " ", "demonstrates", " ", "the", " ", "usage", " ", "of", " ", 
+    "the", " ", "above", " ", "module", " ", "mySLOAD", "\[IndentingNewLine]",
+     "On", " ", "Windows", " ", "platform", " ", "the", " ", "directory", " ",
+     "separators", " ", "must", " ", "be", " ", "either", " ", "a", " ", 
+    "single", " ", "forward", " ", "slash", " ", "\"\</\>\"", " ", "or", " ", 
+    "double", " ", "backward", " ", "slashes", " ", "\"\<\\\\\>\""}], 
+   "\[IndentingNewLine]", "*)"}], "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{"filename", " ", "=", " ", 
+    RowBox[{"Switch", "[", 
+     RowBox[{
+     "$SystemID", ",", "\[IndentingNewLine]", "\"\<Windows\>\"", ",", " ", 
+      "\"\<C:\\\\data\\\\AP100427b.dat\>\"", ",", "\[IndentingNewLine]", 
+      "\"\<Windows-x86-64\>\"", ",", " ", 
+      "\"\<C:\\\\data\\\\mma/AP100427b.dat\>\"", ",", "\[IndentingNewLine]", 
+      "\"\<Linux-x86-64\>\"", ",", " ", "\"\</home/data/AP100427b.dat\>\""}], 
+     "\[IndentingNewLine]", "]"}]}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"data", " ", "=", " ", 
+     RowBox[{"mySLOAD", "[", 
+      RowBox[{"filename", ",", 
+       RowBox[{"{", 
+        RowBox[{"1", ",", "0", ",", "0"}], "}"}]}], "]"}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{"signal", " ", "=", " ", 
+    RowBox[{"data", "[", 
+     RowBox[{"[", "1", "]"}], "]"}]}], " ", 
+   RowBox[{"(*", " ", 
+    RowBox[{"sampled", " ", "data"}], " ", "*)"}], "\[IndentingNewLine]", 
+   RowBox[{"t", " ", "=", " ", 
+    RowBox[{"data", "[", 
+     RowBox[{"[", "2", "]"}], "]"}]}], "  ", 
+   RowBox[{"(*", " ", 
+    RowBox[{"sampling", " ", "time", " ", "points"}], " ", "*)"}], 
+   "\[IndentingNewLine]"}]}]], "Input",
+ CellChangeTimes->{{3.519979391272304*^9, 3.519979391298527*^9}, {
+  3.5199794391621532`*^9, 3.519979443619672*^9}, {3.5199796130222473`*^9, 
+  3.519979624542252*^9}, {3.519979795590229*^9, 3.5199798223556824`*^9}, {
+  3.520006868285538*^9, 3.520006886419143*^9}, {3.5200071094263515`*^9, 
+  3.5200072102225814`*^9}, {3.5200072451598577`*^9, 3.5200072750190415`*^9}, {
+  3.528787036180324*^9, 3.528787110864997*^9}, {3.5382845652299757`*^9, 
+  3.5382846614577017`*^9}}]
+},
+WindowSize->{740, 867},
+WindowMargins->{{124, Automatic}, {Automatic, 3}},
+FrontEndVersion->"8.0 for Linux x86 (64-bit) (February 23, 2011)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[557, 20, 6389, 121, 669, "Input"],
+Cell[6949, 143, 2240, 46, 282, "Input"]
+}
+]
+*)
+
+(* End of internal cache information *)
+
