@@ -256,19 +256,28 @@ void bef64a(  double i, uint8_t* r);
 #endif
 #ifdef __cplusplus
 }
-#endif 
+#endif
+
+
+#ifndef NAN
+# define NAN (0.0/0.0)        /* used for encoding of missing values */
+#endif
+#ifndef INFINITY
+# define INFINITY (1.0/0.0)   /* positive infinity */
+#endif
+
 
 #define min(a,b)	(((a) < (b)) ? (a) : (b))
 #define max(a,b)	(((a) > (b)) ? (a) : (b))
-#define fix(m)     	(m<0 ? ceil(m) : floor(m))	
+#define fix(m)     	(m<0 ? ceil(m) : floor(m))
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-	global constants and variables 
+	global constants and variables
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #ifndef VERBOSE_LEVEL
 extern int   VERBOSE_LEVEL; 	// used for debugging
-#endif 
+#endif
 
 
 
@@ -280,7 +289,7 @@ extern int   VERBOSE_LEVEL; 	// used for debugging
 
 
 /*
-	This structure defines the fields used for "VitalFEF" 
+	This structure defines the fields used for "VitalFEF"
  */
 typedef struct {
 	void *pduType;
@@ -288,7 +297,7 @@ typedef struct {
 } ASN1_t;
 
 /*
-	This structure defines the fields used for "Annotated ECG" 
+	This structure defines the fields used for "Annotated ECG"
  */
 typedef struct {
 	char*		test;		/* test field for annotated ECG */
