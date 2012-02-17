@@ -2425,6 +2425,9 @@ void struct2gdfbin(HDRTYPE *hdr)
 	*/
 
 		double fDur = hdr->SPR/hdr->SampleRate;
+ 		if (hdr->NS==0 && 0.0 < hdr->EVENT.SampleRate && hdr->EVENT.SampleRate < INFINITY) 
+			fDur = 1.0 / hdr->EVENT.SampleRate;
+
 		if (hdr->VERSION < 2.21) {
 			/* Duration is expressed as an fraction of integers */
 			double dtmp1, dtmp2;
@@ -3063,6 +3066,8 @@ void rawEVT2hdrEVT(HDRTYPE *hdr) {
 				hdr->EVENT.SampleRate = lef32p(buf + 4);
 			}
 //			int sze = (buf[0]>1) ? 12 : 6;
+			
+			if (hdr->NS==0 && !isfinite(hdr->SampleRate)) hdr->SampleRate = hdr->EVENT.SampleRate; 
 
 	 		hdr->EVENT.POS = (uint32_t*) realloc(hdr->EVENT.POS, hdr->EVENT.N*sizeof(*hdr->EVENT.POS) );
 			hdr->EVENT.TYP = (uint16_t*) realloc(hdr->EVENT.TYP, hdr->EVENT.N*sizeof(*hdr->EVENT.TYP) );
