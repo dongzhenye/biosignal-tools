@@ -90,7 +90,7 @@ Index: src/src.pro
                 $$_PRO_FILE_PWD_/.
  LIBS += -L$$_PRO_FILE_PWD_/../extern/lib \
 -    -lbiosig# \
-+    -lbiosig -lcholmod -lz  \
++    -lbiosig -lcholmod -lz -lcurl \
      #-lGDF
  
  RESOURCES = src.qrc
@@ -101,6 +101,23 @@ Index: src/version.txt
 @@ -1,2 +1,2 @@
 -0.5.1
 +0.5.1-as.5
+ 
+Index: src/file_handling_impl/sinus_dummy_reader.cpp
+===================================================================
+--- src/file_handling_impl/sinus_dummy_reader.cpp	(revision 556)
++++ src/file_handling_impl/sinus_dummy_reader.cpp	(working copy)
+@@ -29,10 +29,11 @@
+             data->push_back (sin(sample_index / ((i*i+1))));
+         QSharedPointer<DataBlock const> data_block (new FixedDataBlock (data, 100));
+         data_.insert(i, data_block);
+-
++/*
+         QSharedPointer<SignalChannel> channel (new SignalChannel(i,
+                                                    QString::number(i)));
+         header->addDummyChannel(i, channel);
++*/
+         header_ = header;
+     }
  
 Index: src/file_handling_impl/biosig_reader.cpp
 ===================================================================
@@ -176,24 +193,6 @@ Index: src/file_handling_impl/biosig_reader.cpp
          events_.append (event);
      }
  
-Index: src/file_handling_impl/sinus_dummy_reader.cpp
-===================================================================
---- src/file_handling_impl/sinus_dummy_reader.cpp	(revision 556)
-+++ src/file_handling_impl/sinus_dummy_reader.cpp	(working copy)
-@@ -29,11 +29,11 @@
-             data->push_back (sin(sample_index / ((i*i+1))));
-         QSharedPointer<DataBlock const> data_block (new FixedDataBlock (data, 100));
-         data_.insert(i, data_block);
--
-+/*
-         QSharedPointer<SignalChannel> channel (new SignalChannel(i,
-                                                    QString::number(i)));
-         header->addDummyChannel(i, channel);
--        header_ = header;
-+*/        header_ = header;
-     }
- 
-     for (int i = 0; i < 40; i++)
 Index: src/file_handling_impl/biosig_writer.cpp
 ===================================================================
 --- src/file_handling_impl/biosig_writer.cpp	(revision 556)
@@ -504,7 +503,15 @@ Index: src/file_handling_impl/biosig_basic_header.cpp
  #include "biosig_basic_header.h"
  
  #include <ctime>
-@@ -23,7 +46,7 @@
+@@ -16,14 +39,14 @@
+         for (unsigned index = 0; index < raw_header->EVENT.LenCodeDesc; index++)
+         {
+             if (raw_header->EVENT.CodeDesc[index])
+-                user_defined_event_map_[index+1] = QString(raw_header->EVENT.CodeDesc[index]);
++                user_defined_event_map_[index] = QString(raw_header->EVENT.CodeDesc[index]);
+         }
+     }
+ 
  
      setFileTypeString (QString (GetFileTypeString(raw_header->TYPE)).append(" v").append(QString::number(raw_header->VERSION)));
  
