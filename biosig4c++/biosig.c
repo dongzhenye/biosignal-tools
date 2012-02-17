@@ -2638,11 +2638,10 @@ int gdfbin2struct(HDRTYPE *hdr)
 {
     	unsigned int 	k;
     	char 		tmp[81];
-//    	double 		Dur;
+    	double 		Dur;
 //	char*		ptr_str;
 	struct tm 	tm_time;
 //	time_t		tt;
-	uint32_t Dur[2];
 
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"[GDFBIN2STRUCT 202] #%i \n",hdr->NS);
 
@@ -2652,9 +2651,12 @@ int gdfbin2struct(HDRTYPE *hdr)
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"[GDFBIN2STRUCT 202] #%i Ver=<%s>\n",hdr->NS,tmp);
 
 	    	hdr->NRec 	= lei64p(hdr->AS.Header+236);
-	    	Dur[0]  	= leu32p(hdr->AS.Header+244);
-	    	Dur[1]  	= leu32p(hdr->AS.Header+248);
 	    	hdr->NS   	= leu16p(hdr->AS.Header+252);
+
+		if (hdr->VERSION < 2.21)
+			Dur = (double)leu32p(hdr->AS.Header+248)/(double)leu32p(hdr->AS.Header+244);
+		else
+			Dur = lef64p(hdr->AS.Header+244);
 
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"[GDFBIN2STRUCT 212] #%i Ver=%f\n", hdr->NS, hdr->VERSION);
 
@@ -2890,11 +2892,7 @@ int gdfbin2struct(HDRTYPE *hdr)
 				return(B4C_ERRNUM);
 			}
 		}
-
-		if (hdr->VERSION < 2.21)
-			hdr->SampleRate = ((double)(hdr->SPR))*Dur[1]/Dur[0];
-		else
-			hdr->SampleRate = ((double)(hdr->SPR))/lef64p(hdr->AS.Header+244);
+		hdr->SampleRate = ((double)(hdr->SPR))/Dur;
 
 		if (VERBOSE_LEVEL>8) fprintf(stdout,"[219] FMT=%s Ver=%4.2f\n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
 
