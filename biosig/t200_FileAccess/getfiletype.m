@@ -565,9 +565,7 @@ else
                         
                 elseif all(s(1:2)==[hex2dec('55'),hex2dec('AA')]);
                         HDR.TYPE='RDF'; % UCSD ERPSS aquisition system 
-                elseif ( (c>107) && 
-                        all(reshape(s(1:32),1,[])==[abs('Synergy'),0,abs('012.003.000.000'),0,28,0,0,0,2,0,0,0]) 
-                        && strcmp(ss(64:78),'CRawDataElement') && strcmp(ss(86:99),'CRawDataBuffer') ), 
+                elseif ( (c>107) && all(reshape(s(1:32),1,[])==[abs('Synergy'),0,abs('012.003.000.000'),0,28,0,0,0,2,0,0,0]) && strcmp(ss(64:78),'CRawDataElement') && strcmp(ss(86:99),'CRawDataBuffer') ), 
                         HDR.TYPE='SYNERGY';
 			HDR.SampleRate = 50000;
                         

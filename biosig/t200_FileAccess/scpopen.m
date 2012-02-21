@@ -137,7 +137,7 @@ if ~isempty(findstr(HDR.FILE.PERMISSION,'r')),		%%%%% READ
                         Sect1Len = section.Length-16;
                         ListOfRequiredTags = [2,14,25,26];
                         ListOfRecommendedTags = [0,1,5,8,15,34];
-                        while (tag~=255) & (Sect1Len>2),
+                        while (tag~=255) && (Sect1Len>2),
                                 tag = fread(fid,1,'uint8');
                                 len = fread(fid,1,'uint16');
                                 Sect1Len = Sect1Len - 3 - len; 
@@ -196,11 +196,12 @@ if ~isempty(findstr(HDR.FILE.PERMISSION,'r')),		%%%%% READ
                                 elseif tag == 9,
                                         HDR.Patient.Race = field;
                                 elseif tag == 10,
+field,
 					if (field(1)~=0)
 	                                        HDR.Patient.Medication = field;
 					else	
-	                                        HDR.Patient.Medication.Code = field(2:3);
-						HDR.Patient.Medication = field(4:end);
+	                                        HDR.Patient.Medication.Code = {field(2:3)};
+						HDR.Patient.Medication.txt = field(4:end);
 					end;	
                                 elseif tag == 11,
                                         HDR.Patient.BloodPressure.Systolic = field*[1;256];
@@ -343,13 +344,13 @@ if ~isempty(findstr(HDR.FILE.PERMISSION,'r')),		%%%%% READ
                                 if 0,
                                 elseif (HDR.LeadIdCode(k)==0),
                                         HDR.Label{k} = 'unspecified lead';
-                                elseif (HDR.VERSION <= 1.3) & (HDR.LeadIdCode(k) < 86),
+                                elseif (HDR.VERSION <= 1.3) && (HDR.LeadIdCode(k) < 86),
                                 %        HDR.Label{k} = H.Label(H.LeadIdCode==HDR.LeadIdCode(k));
-                                elseif (HDR.VERSION <= 1.3) & (HDR.LeadIdCode(k) > 99),
+                                elseif (HDR.VERSION <= 1.3) && (HDR.LeadIdCode(k) > 99),
                                         HDR.Label{k} = 'manufacturer specific';
-                                elseif (HDR.VERSION >= 2.0) & (HDR.LeadIdCode(k) < 151),
+                                elseif (HDR.VERSION >= 2.0) && (HDR.LeadIdCode(k) < 151),
                                 %        HDR.Label{k} = H.Label(H.LeadIdCode==HDR.LeadIdCode(k));
-                                elseif (HDR.VERSION >= 2.0) & (HDR.LeadIdCode(k) > 199),
+                                elseif (HDR.VERSION >= 2.0) && (HDR.LeadIdCode(k) > 199),
                                         HDR.Label{k} = 'manufacturer specific';
                                 else
                                         HDR.Label{k} = 'reserved';
@@ -458,7 +459,7 @@ if ~isempty(findstr(HDR.FILE.PERMISSION,'r')),		%%%%% READ
 					x  = [];
 					HT = HDR.SCP2.HT(find(HDR.SCP2.HT(:,1)==1),3:7);
 					while (l2 < HDR.LeadPos(k,2)),
-						while ((c < max(HT(:,2))) & (k1<length(s2)-1));
+						while ((c < max(HT(:,2))) && (k1<length(s2)-1));
 							k1 = k1 + 1;
 							dd = s2(k1);
 							accu = accu + ACC(dd+1)*(2^c);
@@ -573,7 +574,7 @@ if ~isempty(findstr(HDR.FILE.PERMISSION,'r')),		%%%%% READ
                                                         %accu = bitshift(accu, prefix(ixx),32);
                                                         accu  = mod(accu.*(2^prefix(ixx)),2^32);
                                                         l2    = l2 + 1;
-                                                        while (c > 7) & (l < Ntmp),
+                                                        while (c > 7) && (l < Ntmp),
                                                                 l = l+1;
                                                                 c = c-8;
                                                                 accu = accu + tmp(l)*2^c;
@@ -593,7 +594,7 @@ if ~isempty(findstr(HDR.FILE.PERMISSION,'r')),		%%%%% READ
                                                         c = c + 16;
                                                 end;
                                                 
-                                                while (c > 7) & (l < Ntmp),
+                                                while (c > 7) && (l < Ntmp),
                                                         l = l+1;
                                                         c = c-8;
                                                         accu = accu + tmp(l)*(2^c);
@@ -696,7 +697,7 @@ if ~isempty(findstr(HDR.FILE.PERMISSION,'r')),		%%%%% READ
                                         S2 = S1;
                                 end;
                                 
-                                if HDR.FLAG.ReferenceBeat & ~isfield(HDR,'SCP5') 
+                                if HDR.FLAG.ReferenceBeat && ~isfield(HDR,'SCP5') 
 	                                fprintf(HDR.FILE.stderr,'Warning SOPEN SCP-ECG: Flag ReferenceBeat set, but no section 5 (containing the reference beat) is available\n');
                                 elseif HDR.FLAG.ReferenceBeat,
 
