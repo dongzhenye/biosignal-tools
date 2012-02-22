@@ -214,7 +214,8 @@ int main(int argc, char **argv){
     	}	
 
 	if (VERBOSE_LEVEL<0) VERBOSE=1; // default 
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"[108] SAVE2GDF started\n");
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"[108] SAVE2GDF %s %s started \n", source, dest
+);
 
 	tzset();
 	hdr = constructHDR(0,0);
@@ -248,11 +249,12 @@ int main(int argc, char **argv){
 	}
 #endif
 	// HEKA2ITX hack
+        if (TARGET_TYPE==ITX) 
 	if (hdr->TYPE==HEKA) {
 		// hack: HEKA->ITX conversion is already done in SOPEN	
 		dest = NULL; 
 	} 
-	else if (TARGET_TYPE==ITX) {
+	else {
                 fprintf(stdout,"error: only HEKA->ITX is supported - source file is not HEKA file");
 		B4C_ERRNUM = B4C_UNSPECIFIC_ERROR;
 	}
@@ -337,7 +339,7 @@ int main(int argc, char **argv){
 		fprintf(stdout,"\n[129] SREAD on %s successful [%i,%i].\n",hdr->FileName,(int)hdr->data.size[0],(int)hdr->data.size[1]);
 
 //	fprintf(stdout,"\n %f,%f.\n",hdr->FileName,hdr->data.block[3*hdr->SPR],hdr->data.block[4*hdr->SPR]);
-	if (VERBOSE_LEVEL>8) 
+	if (VERBOSE_LEVEL>7) 
 		fprintf(stdout,"\n[130] File  %s =%i/%i\n",hdr->FileName,hdr->FILE.OPEN,hdr->FILE.Des);
 
 	if (dest==NULL) {
@@ -351,9 +353,9 @@ int main(int argc, char **argv){
 			// fprintf(stdout,"Status-SFLUSH %i\n",sflush_gdf_event_table(hdr));
 		}
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[131] going for SCLOSE\n");
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[131] going for SCLOSE\n");
 		sclose(hdr);
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[137] SCLOSE(HDR) finished\n");
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[137] SCLOSE(HDR) finished\n");
 		destructHDR(hdr);
 		exit(serror());
 	}
@@ -362,9 +364,9 @@ int main(int argc, char **argv){
 		sclose(hdr); 
 		free(hdr->AS.Header);
 		hdr->AS.Header = NULL;
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[138] file closed\n");
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[138] file closed\n");
 	}
-	if (VERBOSE_LEVEL>8) 
+	if (VERBOSE_LEVEL>7 ) 
 		fprintf(stdout,"\n[139] File %s closed sd=%i/%i\n",hdr->FileName,hdr->FILE.OPEN,hdr->FILE.Des);
 
 	SOURCE_TYPE = hdr->TYPE;
@@ -579,7 +581,7 @@ int main(int argc, char **argv){
 		savelink(source);
 #endif 
 	if (VERBOSE_LEVEL>7)
-		fprintf(stdout,"\n[221] File %s opened. %i %i %Li Des=%i\n",hdr->FileName,hdr->AS.bpb,hdr->NS,(int)hdr->NRec,hdr->FILE.Des);
+		fprintf(stdout,"\n[221] File %s opened. %i %i %Li Des=%i\n",hdr->FileName,hdr->AS.bpb,hdr->NS,(int)(hdr->NRec),hdr->FILE.Des);
 
 	swrite(data, hdr->NRec, hdr);
 
