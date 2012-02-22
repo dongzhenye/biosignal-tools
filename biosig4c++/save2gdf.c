@@ -507,6 +507,8 @@ int main(int argc, char **argv){
 		}
 		else if ((SOURCE_TYPE==GDF) && (TARGET_TYPE==GDF)) 
 			;
+		else if (SOURCE_TYPE==HEKA)
+			;
 		else if (TARGET_TYPE==SCP_ECG && !hdr->FLAG.UCAL) {
 			double scale = PhysDimScale(hdr->CHANNEL[k].PhysDimCode) *1e9;
 			if (hdr->FLAG.ROW_BASED_CHANNELS) {
@@ -553,7 +555,7 @@ int main(int argc, char **argv){
 			FLAG_CONVERSION_TESTED = 0;
 		}   		
 		
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"#%3d %d [%f %f][%f %f]\n",k,hdr->CHANNEL[k].GDFTYP,MinValue,MaxValue,PhysMinValue0,PhysMaxValue0);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"#%3d %d [%g %g][%g %g]\n",k,hdr->CHANNEL[k].GDFTYP,MinValue,MaxValue,PhysMinValue0,PhysMaxValue0);
 		k2++;
 	}
 	if (!FLAG_CONVERSION_TESTED) 
