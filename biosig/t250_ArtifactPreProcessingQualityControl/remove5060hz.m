@@ -197,9 +197,13 @@ if ~isempty(outfile)
         HDR.TYPE = 'GDF'; 
 	HDR.VERSION = 3; 
 	HDR.GDFTYP(:) = 16;
-	HDR = sopen(HDR,'w'); 
-	HDR = swrite(HDR,s); 
-	HDR = sclose(HDR); 	
+	try, 
+		mexSSAVE(HDR,s); 
+	catch 
+		HDR = sopen(HDR,'w'); 
+		HDR = swrite(HDR,s); 
+		HDR = sclose(HDR); 	
+	end; 
 end; 	
 
 
