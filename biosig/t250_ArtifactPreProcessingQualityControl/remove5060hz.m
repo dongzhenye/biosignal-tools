@@ -1,10 +1,13 @@
-function [S,HDR] = remove5060hz(arg1,arg2,arg3)
+function [s,HDR] = remove5060hz(varargin)
 %  REMOVE5060HZ removes line interference artifacts
-%	from biomedical signal data.
+%    from biomedical signal data. Segmented data supported only 
+%    with an FFT-based method. 
 %
 %   [s,HDR] = remove5060hz(fn, Mode)
 %   [s,HDR] = remove5060hz(fn, CHAN, Mode)
 %   [s,HDR] = remove5060hz(s, HDR, Mode)
+%             remove5060hz(..., '-o',outfile)
+%  
 %
 % INPUT:
 % 	fn	biosignal file
@@ -14,20 +17,21 @@ function [S,HDR] = remove5060hz(arg1,arg2,arg3)
 %	Mode    'PCA', 'PCA 50'	50 Hz PCA/SVD filter
 %		'NOTCH'  	50 Hz FIR Notch filter, order=3
 %               'FIT'           fit and remove 50 Hz sine/cosine wave
-%		'FFT'		fft filter - cancels 50+-0.5 Hz in Frequency domain
+%		'FFT'		fft filter - cancels 50+-0.5 Hz in Frequency domain (default)
 %		'FFT3'		fft filter - cancels also 3rd harmonic 50 and 150 Hz 
 %		'PCA 60'	60 Hz PCA/SVD filter
 %		'NOTCH 60' 	60 Hz FIR Notch filter, order=3
 %               'FIT 60'        fit and remove 60 Hz sine/cosine wave
 %		'FFT 60'	fft filter - cancels 60+-0.5 Hz in frequency domain
 %		'FFT3 60'	fft filter - cancels also 3rd harmonic 60 and 180 Hz 
+%       outfile	Name of file for storing corrected data. 
 %
 % OUTPUT:
 %	s	corrected signal data
 %	HDR	header structure
 %
 %
-% see also: REGRESS_EOG
+% see also: REGRESS_EOG, EVENTCODES
 %
 % Reference(s):
 %
@@ -51,6 +55,16 @@ function [S,HDR] = remove5060hz(arg1,arg2,arg3)
 %	(C)2006,2009,2012 by Alois Schloegl <alois.schloegl@ist.ac.at>
 %    	This is part of the BIOSIG-toolbox http://biosig.sf.net/
 
+MODE = [];
+
+arg2 = []; arg3=[];
+arg1 = varargin{1};
+if length(varargin)>1, arg2 = varargin{2}; end;
+if length(varargin)>2, arg3 = varargin{3}; end; 
+
+outfile = []; 
+k = strmatch('-o',varargin); 
+if k, outfile = varargin{k+1}; end; 
 
 if ischar(arg1),
         CHAN = 0;
@@ -74,6 +88,9 @@ elseif isnumeric(arg1) && isstruct(arg2)
 
 end
 
+if isempty(MODE)
+	MODE = 'FFT';
+end;
 
 NotchFreq = 50; 	% default 50 Hz Notch
 if strfind(upper(MODE),'60')
@@ -81,7 +98,19 @@ if strfind(upper(MODE),'60')
 end;
 
 
+if isfield(HDR,'EVENT') 
+	segs = [1;HDR.EVENT.POS(HDR.EVENT.TYP==hex2dec('7ffe'));size(s,1)];
+else
+	segs = [1;size(s,1)];
+end; 
+flagNoSegmentSupport = length(segs)>2; 
+
+
 if strfind(upper(MODE),'PCA') % strfind(upper(MODE),'SVD')
+	if flagNoSegmentSupport, 	
+		error('non-continous data is not supported by MODE=%s',MODE);
+	end; 
+
         % fit and remove sine/cosine wave 
         % Assumption: stationarity of line interference
 
@@ -96,17 +125,21 @@ if strfind(upper(MODE),'PCA') % strfind(upper(MODE),'SVD')
 
         %%%%% regress 50/60 Hz component
         [R,S] = regress_eog([s,u(:,ix)],1:size(s,2),size(s,2)+1);	% regression on filtered component
-        S = S(:,1:size(s,2));
+        s = S(:,1:size(s,2));
         %[R2,s2] = regress_eog(s,1:size(s,2),v(:,ix));			% regression on raw component
 
 
 elseif ~isempty(strfind(upper(MODE),'FIT'))
+	if flagNoSegmentSupport, 	
+		error('non-continous data is not supported by MODE=%s',MODE);
+	end; 
+
         % fit and remove sine/cosine wave
         % Assumption: stationarity and locking of line and sampling frequency 
         t = [1:size(s,1)]'/HDR.SampleRate;
         u = exp(j*2*pi*NotchFreq/HDR.SampleRate*[1:size(s,1)]');
         A = covm(u,s);
-        S = s - 2*real(u*A);
+        s = s - 2*real(u*A);
 
 
 elseif strfind(upper(MODE),'ICA')
@@ -116,44 +149,57 @@ elseif strfind(upper(MODE),'ICA')
 
 
 elseif ~isempty(strfind(upper(MODE),'NOTCH'))
+	if flagNoSegmentSupport, 	
+		error('non-continous data is not supported by MODE=%s',MODE);
+	end; 
+
         if ~isempty(strfind(upper(MODE),'+'))
                 B = real(poly(exp(i*2*pi/HDR.SampleRate*[NotchFreq,HDR.SampleRate-NotchFreq])));
         else
                 warning('NOTCH+ - mode is not recommended');        
                 B = real(poly(exp(i*2*pi/HDR.SampleRate*[NotchFreq:2*NotchFreq:HDR.SampleRate-NotchFreq/2])));
         end;
-        S = filtfilt(B/sum(B),1,s);
+        s = filtfilt(B/sum(B),1,s);
 
 
 elseif ~isempty(strfind(upper(MODE),'FFT'))
-	S = fft(s,[],1); 
-	f = [0:size(s,1)-1];
+    	% cancel 50/60 Hz
 	b = 1/2;   % half bandwidth 
 
-	% cancel 50/60 Hz
-	S((NotchFreq-b) < f & f < (NotchFreq+b),:) = 0; 
-	S((NotchFreq-b) < (HDR.SampleRate-f) & (HDR.SampleRate-f) < (NotchFreq+b),:) = 0; 
-	if ~isempty(strfind(upper(MODE),'FFT3'))
-		% cancel 3rd harmonic 150/180 Hz
-		S(3*(NotchFreq-b) < f & f < 3*(NotchFreq+b),:) = 0; 
-		S(3*(NotchFreq-b) < (HDR.SampleRate-f) & (HDR.SampleRate-f) < 3*(NotchFreq+b),:) = 0; 
+	for k=1:length(segs)-1,	
+		%% support segmented data 
+		u = fft(s(segs(k):segs(k+1)-1,:),[],1); 
+		f = [0,segs(k+1)-segs(k)-1];
+		u((NotchFreq-b) < f & f < (NotchFreq+b),:) = 0; 
+		u((NotchFreq-b) < (HDR.SampleRate-f) & (HDR.SampleRate-f) < (NotchFreq+b),:) = 0; 
+		if ~isempty(strfind(upper(MODE),'FFT3'))
+			% cancel 3rd harmonic 150/180 Hz
+			u(3*(NotchFreq-b) < f & f < 3*(NotchFreq+b),:) = 0; 
+			u(3*(NotchFreq-b) < (HDR.SampleRate-f) & (HDR.SampleRate-f) < 3*(NotchFreq+b),:) = 0; 
+		end; 
+		s(segs(k):segs(k+1)-1,:) = real(ifft(u,[],1)); 
 	end; 
-
-	S = real(ifft(S,[],1)); 
 
 
 elseif ~isempty(strfind(upper(MODE),'USER-SPECIFIC')) && (abs(HDR.SampleRate-1000)<1e3),
         % Sebastians filter 
         B = load('49__51bs_2751pts_1000Hz.asc');
-        S = filtfilt(B,1,s);
-
+        s = filtfilt(B,1,s);
 
 else
         warning('unknown method: no correction applied.');
-        S = s; 
 
 end;
 
 
+if ~isempty(outfile)
+	HDR.FileName = outfile; 
+        HDR.TYPE = 'GDF'; 
+	HDR.VERSION = 3; 
+	HDR.GDFTYP(:) = 16;
+	HDR = sopen(HDR,'w'); 
+	HDR = swrite(HDR,s); 
+	HDR = sclose(HDR); 	
+end; 	
 
 
