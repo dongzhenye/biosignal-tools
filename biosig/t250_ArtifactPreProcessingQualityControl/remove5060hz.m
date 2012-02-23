@@ -14,9 +14,14 @@ function [S,HDR] = remove5060hz(arg1,arg2,arg3)
 %	Mode    'PCA', 'PCA 50'	50 Hz PCA/SVD filter
 %		'NOTCH'  	50 Hz FIR Notch filter, order=3
 %               'FIT'           fit and remove 50 Hz sine/cosine wave
+%		'FFT'		fft filter - cancels 50+-0.5 Hz in Frequency domain
+%		'FFT3'		fft filter - cancels also 3rd harmonic 50 and 150 Hz 
 %		'PCA 60'	60 Hz PCA/SVD filter
 %		'NOTCH 60' 	60 Hz FIR Notch filter, order=3
 %               'FIT 60'        fit and remove 60 Hz sine/cosine wave
+%		'FFT 60'	fft filter - cancels 60+-0.5 Hz in frequency domain
+%		'FFT3 60'	fft filter - cancels also 3rd harmonic 60 and 180 Hz 
+%
 % OUTPUT:
 %	s	corrected signal data
 %	HDR	header structure
@@ -43,7 +48,7 @@ function [S,HDR] = remove5060hz(arg1,arg2,arg3)
 % Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 %	$Id$
-%	(C)2006 by Alois Schloegl <a.schloegl@ieee.org>
+%	(C)2006,2009,2012 by Alois Schloegl <alois.schloegl@ist.ac.at>
 %    	This is part of the BIOSIG-toolbox http://biosig.sf.net/
 
 
@@ -60,7 +65,7 @@ if ischar(arg1),
         end;
         [s,HDR] = sload(arg1,CHAN);
 
-elseif isnumeric(arg1) & isstruct(arg2)
+elseif isnumeric(arg1) && isstruct(arg2)
         s = arg1;
         HDR = arg2;
         if (nargin>2)
@@ -120,7 +125,24 @@ elseif ~isempty(strfind(upper(MODE),'NOTCH'))
         S = filtfilt(B/sum(B),1,s);
 
 
-elseif ~isempty(strfind(upper(MODE),'USER-SPECIFIC')) & (abs(HDR.SampleRate-1000)<1e3),
+elseif ~isempty(strfind(upper(MODE),'FFT'))
+	S = fft(s,[],1); 
+	f = [0:size(s,1)-1];
+	b = 1/2;   % half bandwidth 
+
+	% cancel 50/60 Hz
+	S((NotchFreq-b) < f & f < (NotchFreq+b),:) = 0; 
+	S((NotchFreq-b) < (HDR.SampleRate-f) & (HDR.SampleRate-f) < (NotchFreq+b),:) = 0; 
+	if ~isempty(strfind(upper(MODE),'FFT3'))
+		% cancel 3rd harmonic 150/180 Hz
+		S(3*(NotchFreq-b) < f & f < 3*(NotchFreq+b),:) = 0; 
+		S(3*(NotchFreq-b) < (HDR.SampleRate-f) & (HDR.SampleRate-f) < 3*(NotchFreq+b),:) = 0; 
+	end; 
+
+	S = real(ifft(S,[],1)); 
+
+
+elseif ~isempty(strfind(upper(MODE),'USER-SPECIFIC')) && (abs(HDR.SampleRate-1000)<1e3),
         % Sebastians filter 
         B = load('49__51bs_2751pts_1000Hz.asc');
         S = filtfilt(B,1,s);
