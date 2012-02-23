@@ -433,6 +433,36 @@ void mexFunction(
 			for (k = 0; k < n; k++) 
 				hdr->EVENT.CHN[k] = (uint16_t)getDouble(p1,k);
 		}
+		
+		if ( (p1 = mxGetField(p, 0, "CodeDesc") ) != NULL ) {
+			size_t n = mxGetNumberOfElements(p1);
+			hdr->EVENT.LenCodeDesc = n+1; 
+			// get total size for storing all CodeDesc strings
+			size_t memsiz = 1; 
+			for (k = 0; k < n; k++) {
+				mxArray *p2 = mxGetCell(p1,k);
+				memsiz += mxGetN(p2)+1; 
+			}
+			/* allocate memory for 
+				hdr->.AS.auxBUF contains the \0-terminated CodeDesc strings, 
+				hdr->EVENT.CodeDesc contains the pointer to the strings 
+			*/ 
+			hdr->EVENT.CodeDesc = (char**) realloc(hdr->EVENT.CodeDesc, hdr->EVENT.LenCodeDesc*sizeof(char*));
+			hdr->AS.auxBUF = (uint8_t*)realloc(hdr->AS.auxBUF, memsiz*sizeof(char));  
+
+			// first element is always the empty string. 
+			hdr->AS.auxBUF[0] = 0; 
+			hdr->EVENT.CodeDesc[0] = (char*)hdr->AS.auxBUF; 
+			size_t pos = 1; 
+			for (k = 0; k < n; k++) {
+				mxArray *p2 = mxGetCell(p1,k);
+				size_t buflen = mxGetN(p2)+1; //*mxGetM(p2)
+				mxGetString(p2, (char*)hdr->AS.auxBUF+pos, buflen);
+				hdr->EVENT.CodeDesc[k+1] = (char*)hdr->AS.auxBUF+pos; 
+				pos += buflen; 
+			}
+		}
+
 	}
 
 	hdr = sopen(hdr->FileName, "w", hdr);
