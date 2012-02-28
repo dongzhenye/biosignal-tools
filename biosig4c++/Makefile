@@ -609,17 +609,23 @@ save2aecg: save2gdf
 
 
 #############################################################
-#	TTL2TRIG
+#	TTL2TRIG, FLOWMON
 #############################################################
 
+###	TTL2TRIG
 ifeq (1,0)
 ### for debugging 
 bin/ttl2trig : src/ttl2trig.c libbiosig.a
-	$(CXX) $(INCPATH) $(DEFINES) -D=WITH_BIOSIG "$<" -Wall -Wextra -lasound -lz -lcholmod libbiosig.a -o "$@"
+	$(CXX) $(INCPATH) $(DEFINES) -D=WITH_BIOSIG "$<" -Wall -Wextra -lasound $(LIBS) -o "$@"
 else
 bin/ttl2trig : src/ttl2trig.c 
 	$(CXX) $(INCPATH) $(DEFINES) "$<" -Wall -Wextra -lasound -o "$@"
 endif
+
+
+###	FLOWMON
+bin/flowmon : src/flowmon.c
+	$(CXX) $(INCPATH) $(DEFINES) "$<" -I. -Wall -Wextra $(LIBS) -o "$@"
 
 
 #############################################################
