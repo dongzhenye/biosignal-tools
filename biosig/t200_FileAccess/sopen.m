@@ -609,15 +609,17 @@ end;
 			end;
                 end;
 
-                HDR.SPR=1;
+                HDR.SPR = 1;
 		if (HDR.NS>0)
 			if ~isfield(HDR,'THRESHOLD')
 	                        HDR.THRESHOLD  = [HDR.DigMin',HDR.DigMax'];       % automated overflow detection 
-	                        if (HDR.VERSION == 0) && HDR.FLAG.OVERFLOWDETECTION,   % in case of EDF and OVERFLOWDETECTION
-	                        	fprintf(2,'WARNING SOPEN(EDF): Physical Max/Min values of EDF data are not necessarily defining the dynamic range.\n'); 
-	                        	fprintf(2,'   Hence, OVERFLOWDETECTION might not work correctly. See also EEG2HIST and read \n'); 
-	                        	fprintf(2,'   http://dx.doi.org/10.1016/S1388-2457(99)00172-8 (A. Schlögl et al. Quality Control ... Clin. Neurophysiol. 1999, Dec; 110(12): 2165 - 2170).\n'); 
+	                        if (HDR.VERSION <= 0) && HDR.FLAG.OVERFLOWDETECTION,   % in case of EDF and OVERFLOWDETECTION
+					HHDR.FLAG.OVERFLOWDETECTION = 0;
+	                        	fprintf(2,'WARNING SOPEN(EDF): Automated Overflowdetection not supported for EDF and BDF data, because \n'); 
+					fprintf(2,'   Physical Max/Min values of EDF/BDF data are not necessarily defining the dynamic range.\n'); 
+	                        	fprintf(2,'   For more information see: http://dx.doi.org/10.1016/S1388-2457(99)00172-8 (A. Schloegl et al. Quality Control ... Clin. Neurophysiol. 1999, Dec; 110(12): 2165 - 2170).\n'); 
 	                        	fprintf(2,'   A copy is available here, too: http://pub.ist.ac.at/~schloegl/publications/neurophys1999_2165.pdf \n'); 
+					fprintf(2,' See also EEG2HIST: it''s a tool to identify the saturation thresholds.\n'); 
 				end;
 			end; 
 	                if any(HDR.PhysMax==HDR.PhysMin), HDR.ErrNum=[1029,HDR.ErrNum]; end;	
@@ -934,7 +936,7 @@ end;
                         % EDF+: 
                         tmp = strmatch('EDF Annotations',HDR.Label);
                         HDR.EDF.Annotations = tmp;
-                        if 0,isempty(ReRefMx)
+                        if isempty(ReRefMx)
                         	ReRefMx = sparse(1:HDR.NS,1:HDR.NS,1);
                         	ReRefMx(:,tmp) = [];
                         end;	
@@ -948,7 +950,7 @@ end;
                         % BDF+: 
                         tmp = strmatch('BDF Annotations',HDR.Label);
                         HDR.EDF.Annotations = tmp;
-                        if 0,isempty(ReRefMx)
+                        if isempty(ReRefMx)
                         	ReRefMx = sparse(1:HDR.NS,1:HDR.NS,1);
                         	ReRefMx(:,tmp) = [];
                         end;	
