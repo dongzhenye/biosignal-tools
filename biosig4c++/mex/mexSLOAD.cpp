@@ -164,7 +164,7 @@ void mexFunction(
 )
 
 {
-	int k,k1;
+	size_t 		k,k1;
 	const mxArray	*arg;
 	mxArray		*HDR;
 	HDRTYPE		*hdr;
@@ -477,7 +477,7 @@ void mexFunction(
 		mxSetField(HDR,0,"TYPE",mxCreateString(GetFileTypeString(hdr->TYPE)));
 		mxSetField(HDR,0,"HeadLen",mxCreateDoubleScalar(hdr->HeadLen));
 		mxSetField(HDR,0,"VERSION",mxCreateDoubleScalar(hdr->VERSION));
-		mxSetField(HDR,0,"NS",mxCreateDoubleScalar(hdr->NS));
+		mxSetField(HDR,0,"NS",mxCreateDoubleScalar(NS));
 		mxSetField(HDR,0,"SPR",mxCreateDoubleScalar(hdr->SPR));
 		mxSetField(HDR,0,"NRec",mxCreateDoubleScalar(hdr->NRec));
 		mxSetField(HDR,0,"SampleRate",mxCreateDoubleScalar(hdr->SampleRate));
@@ -495,61 +495,65 @@ void mexFunction(
         	}
 */
 #endif
-		mxArray *LeadIdCode  = mxCreateDoubleMatrix(1,hdr->NS, mxREAL);
-		mxArray *PhysDimCode = mxCreateDoubleMatrix(1,hdr->NS, mxREAL);
-		mxArray *GDFTYP      = mxCreateDoubleMatrix(1,hdr->NS, mxREAL);
-		mxArray *PhysMax     = mxCreateDoubleMatrix(1,hdr->NS, mxREAL);
-		mxArray *PhysMin     = mxCreateDoubleMatrix(1,hdr->NS, mxREAL);
-		mxArray *DigMax      = mxCreateDoubleMatrix(1,hdr->NS, mxREAL);
-		mxArray *DigMin      = mxCreateDoubleMatrix(1,hdr->NS, mxREAL);
-		mxArray *Cal         = mxCreateDoubleMatrix(1,hdr->NS, mxREAL);
-		mxArray *Off         = mxCreateDoubleMatrix(1,hdr->NS, mxREAL);
-		mxArray *Toffset     = mxCreateDoubleMatrix(1,hdr->NS, mxREAL);
-		mxArray *ELEC_POS    = mxCreateDoubleMatrix(hdr->NS,3, mxREAL);
-		mxArray *ELEC_Orient = mxCreateDoubleMatrix(hdr->NS,3, mxREAL);
-		mxArray *ELEC_Area   = mxCreateDoubleMatrix(hdr->NS,1, mxREAL);
-		mxArray *LowPass     = mxCreateDoubleMatrix(1,hdr->NS, mxREAL);
-		mxArray *HighPass    = mxCreateDoubleMatrix(1,hdr->NS, mxREAL);
-		mxArray *Notch       = mxCreateDoubleMatrix(1,hdr->NS, mxREAL);
-		mxArray *Impedance   = mxCreateDoubleMatrix(1,hdr->NS, mxREAL);
-		mxArray *fZ          = mxCreateDoubleMatrix(1,hdr->NS, mxREAL);
-		mxArray *SPR         = mxCreateDoubleMatrix(1,hdr->NS, mxREAL);
-		mxArray *Label       = mxCreateCellMatrix(hdr->NS,1);
-		mxArray *Transducer  = mxCreateCellMatrix(hdr->NS,1);
-		mxArray *PhysDim1    = mxCreateCellMatrix(hdr->NS,1);
-
-		for (size_t k=0; k<hdr->NS; ++k) {
-			*(mxGetPr(LeadIdCode)+k)  = (double)hdr->CHANNEL[k].LeadIdCode;
-			*(mxGetPr(PhysDimCode)+k) = (double)hdr->CHANNEL[k].PhysDimCode;
-			*(mxGetPr(GDFTYP)+k) 	  = (double)hdr->CHANNEL[k].GDFTYP;
-			*(mxGetPr(PhysMax)+k) 	  = (double)hdr->CHANNEL[k].PhysMax;
-			*(mxGetPr(PhysMin)+k) 	  = (double)hdr->CHANNEL[k].PhysMin;
-			*(mxGetPr(DigMax)+k) 	  = (double)hdr->CHANNEL[k].DigMax;
-			*(mxGetPr(DigMin)+k) 	  = (double)hdr->CHANNEL[k].DigMin;
-			*(mxGetPr(Toffset)+k) 	  = (double)hdr->CHANNEL[k].TOffset;
-			*(mxGetPr(Cal)+k) 	  = (double)hdr->CHANNEL[k].Cal;
-			*(mxGetPr(Off)+k) 	  = (double)hdr->CHANNEL[k].Off;
-			*(mxGetPr(SPR)+k) 	  = (double)hdr->CHANNEL[k].SPR;
-			*(mxGetPr(LowPass)+k) 	  = (double)hdr->CHANNEL[k].LowPass;
-			*(mxGetPr(HighPass)+k) 	  = (double)hdr->CHANNEL[k].HighPass;
-			*(mxGetPr(Notch)+k) 	  = (double)hdr->CHANNEL[k].Notch;
-			*(mxGetPr(Impedance)+k)	  = (double)hdr->CHANNEL[k].Impedance;
-			*(mxGetPr(fZ)+k)	  = (double)hdr->CHANNEL[k].fZ;
-			*(mxGetPr(ELEC_POS)+k) 	  = (double)hdr->CHANNEL[k].XYZ[0];
-			*(mxGetPr(ELEC_POS)+k+hdr->NS) 	  = (double)hdr->CHANNEL[k].XYZ[1];
-			*(mxGetPr(ELEC_POS)+k+hdr->NS*2)  = (double)hdr->CHANNEL[k].XYZ[2];
+		mxArray *LeadIdCode  = mxCreateDoubleMatrix(1,NS, mxREAL);
+		mxArray *PhysDimCode = mxCreateDoubleMatrix(1,NS, mxREAL);
+		mxArray *GDFTYP      = mxCreateDoubleMatrix(1,NS, mxREAL);
+		mxArray *PhysMax     = mxCreateDoubleMatrix(1,NS, mxREAL);
+		mxArray *PhysMin     = mxCreateDoubleMatrix(1,NS, mxREAL);
+		mxArray *DigMax      = mxCreateDoubleMatrix(1,NS, mxREAL);
+		mxArray *DigMin      = mxCreateDoubleMatrix(1,NS, mxREAL);
+		mxArray *Cal         = mxCreateDoubleMatrix(1,NS, mxREAL);
+		mxArray *Off         = mxCreateDoubleMatrix(1,NS, mxREAL);
+		mxArray *Toffset     = mxCreateDoubleMatrix(1,NS, mxREAL);
+		mxArray *ELEC_POS    = mxCreateDoubleMatrix(NS,3, mxREAL);
 /*
-			*(mxGetPr(ELEC_Orient)+k) 	  = (double)hdr->CHANNEL[k].Orientation[0];
-			*(mxGetPr(ELEC_Orient)+k+hdr->NS) 	  = (double)hdr->CHANNEL[k].Orientation[1];
-			*(mxGetPr(ELEC_Orient)+k+hdr->NS*2)  = (double)hdr->CHANNEL[k].Orientation[2];
-			*(mxGetPr(ELEC_Area)+k) 	  = (double)hdr->CHANNEL[k].Area;
+		mxArray *ELEC_Orient = mxCreateDoubleMatrix(NS,3, mxREAL);
+		mxArray *ELEC_Area   = mxCreateDoubleMatrix(NS,1, mxREAL);
 */
-			mxSetCell(Label,k,mxCreateString(hdr->CHANNEL[k].Label));
-			mxSetCell(Transducer,k,mxCreateString(hdr->CHANNEL[k].Transducer));
+		mxArray *LowPass     = mxCreateDoubleMatrix(1,NS, mxREAL);
+		mxArray *HighPass    = mxCreateDoubleMatrix(1,NS, mxREAL);
+		mxArray *Notch       = mxCreateDoubleMatrix(1,NS, mxREAL);
+		mxArray *Impedance   = mxCreateDoubleMatrix(1,NS, mxREAL);
+		mxArray *fZ          = mxCreateDoubleMatrix(1,NS, mxREAL);
+		mxArray *SPR         = mxCreateDoubleMatrix(1,NS, mxREAL);
+		mxArray *Label       = mxCreateCellMatrix(NS,1);
+		mxArray *Transducer  = mxCreateCellMatrix(NS,1);
+		mxArray *PhysDim1    = mxCreateCellMatrix(NS,1);
+
+		for (k=0,k1=0; k1<NS; ++k) 
+		if (hdr->CHANNEL[k].OnOff) {
+			*(mxGetPr(LeadIdCode)+k1)	= (double)hdr->CHANNEL[k].LeadIdCode;
+			*(mxGetPr(PhysDimCode)+k1)	= (double)hdr->CHANNEL[k].PhysDimCode;
+			*(mxGetPr(GDFTYP)+k1)		= (double)hdr->CHANNEL[k].GDFTYP;
+			*(mxGetPr(PhysMax)+k1)		= (double)hdr->CHANNEL[k].PhysMax;
+			*(mxGetPr(PhysMin)+k1)		= (double)hdr->CHANNEL[k].PhysMin;
+			*(mxGetPr(DigMax)+k1)		= (double)hdr->CHANNEL[k].DigMax;
+			*(mxGetPr(DigMin)+k1)		= (double)hdr->CHANNEL[k].DigMin;
+			*(mxGetPr(Toffset)+k1)		= (double)hdr->CHANNEL[k].TOffset;
+			*(mxGetPr(Cal)+k1) 		= (double)hdr->CHANNEL[k].Cal;
+			*(mxGetPr(Off)+k1) 		= (double)hdr->CHANNEL[k].Off;
+			*(mxGetPr(SPR)+k1) 		= (double)hdr->CHANNEL[k].SPR;
+			*(mxGetPr(LowPass)+k1) 		= (double)hdr->CHANNEL[k].LowPass;
+			*(mxGetPr(HighPass)+k1) 	= (double)hdr->CHANNEL[k].HighPass;
+			*(mxGetPr(Notch)+k1) 		= (double)hdr->CHANNEL[k].Notch;
+			*(mxGetPr(Impedance)+k1)	= (double)hdr->CHANNEL[k].Impedance;
+			*(mxGetPr(fZ)+k1)		= (double)hdr->CHANNEL[k].fZ;
+			*(mxGetPr(ELEC_POS)+k1)    	= (double)hdr->CHANNEL[k].XYZ[0];
+			*(mxGetPr(ELEC_POS)+k1+NS)	= (double)hdr->CHANNEL[k].XYZ[1];
+			*(mxGetPr(ELEC_POS)+k1+NS*2)	= (double)hdr->CHANNEL[k].XYZ[2];
+/*
+			*(mxGetPr(ELEC_Orient)+k1)	= (double)hdr->CHANNEL[k].Orientation[0];
+			*(mxGetPr(ELEC_Orient)+k1+NS)	= (double)hdr->CHANNEL[k].Orientation[1];
+			*(mxGetPr(ELEC_Orient)+k1+NS*2)	= (double)hdr->CHANNEL[k].Orientation[2];
+			*(mxGetPr(ELEC_Area)+k1)	= (double)hdr->CHANNEL[k].Area;
+*/
+			mxSetCell(Label,k1,mxCreateString(hdr->CHANNEL[k].Label));
+			mxSetCell(Transducer,k1,mxCreateString(hdr->CHANNEL[k].Transducer));
 			
 			char p[MAX_LENGTH_PHYSDIM+1];
 			PhysDim(hdr->CHANNEL[k].PhysDimCode,p);			
-			mxSetCell(PhysDim1,k,mxCreateString(p));
+			mxSetCell(PhysDim1,k1,mxCreateString(p));
+			k1++;
 		} 
 
 		mxSetField(HDR,0,"LeadIdCode",LeadIdCode);
@@ -573,8 +577,10 @@ void mexFunction(
 		for (numfields=0; field[numfields++] != 0; );
 		tmp = mxCreateStructMatrix(1, 1, --numfields, field);
 		mxSetField(tmp,0,"XYZ",ELEC_POS);
+/*
 		mxSetField(tmp,0,"Orientation",ELEC_Orient);
 		mxSetField(tmp,0,"Area",ELEC_Area);
+*/
 		mxSetField(HDR,0,"ELEC",tmp);
 
 		const char* field2[] = {"SPR",NULL};
@@ -596,7 +602,8 @@ void mexFunction(
 		for (numfields=0; field3[numfields++] != 0; );
 		Flag = mxCreateStructMatrix(1, 1, --numfields, field3);
 #ifdef MX_API_VER
-                // Matlab 
+//#if 1
+                // Matlab, Octave 3.6.1 
        		mxSetField(Flag,0,"UCAL",mxCreateLogicalScalar(hdr->FLAG.UCAL));
         	mxSetField(Flag,0,"OVERFLOWDETECTION",mxCreateLogicalScalar(hdr->FLAG.OVERFLOWDETECTION));
         	mxSetField(Flag,0,"ROW_BASED_CHANNELS",mxCreateLogicalScalar(hdr->FLAG.ROW_BASED_CHANNELS));
@@ -626,7 +633,7 @@ void mexFunction(
 			EVENT = mxCreateStructMatrix(1, 1, 5, event_fields);
 			mxArray *DUR = mxCreateDoubleMatrix(hdr->EVENT.N,1, mxREAL);
 			mxArray *CHN = mxCreateDoubleMatrix(hdr->EVENT.N,1, mxREAL);
-			for (size_t k=0; k<hdr->EVENT.N; ++k) {
+			for (k=0; k<hdr->EVENT.N; ++k) {
 				*(mxGetPr(DUR)+k) = (double)hdr->EVENT.DUR[k];
 				*(mxGetPr(CHN)+k) = (double)hdr->EVENT.CHN[k];  // channels use a 1-based index, 0 indicates all channels
 			} 
@@ -637,7 +644,7 @@ void mexFunction(
 		if (hdr->EVENT.CodeDesc != NULL) {
 			mxAddField(EVENT, "CodeDesc");
 			mxArray *CodeDesc = mxCreateCellMatrix(hdr->EVENT.LenCodeDesc-1,1);
-			for (size_t k=1; k < hdr->EVENT.LenCodeDesc; ++k) {
+			for (k=1; k < hdr->EVENT.LenCodeDesc; ++k) {
 				mxSetCell(CodeDesc,k-1,mxCreateString(hdr->EVENT.CodeDesc[k]));
 			} 
 			mxSetField(EVENT,0,"CodeDesc",CodeDesc);
@@ -645,7 +652,7 @@ void mexFunction(
 
 		mxArray *TYP = mxCreateDoubleMatrix(hdr->EVENT.N,1, mxREAL);
 		mxArray *POS = mxCreateDoubleMatrix(hdr->EVENT.N,1, mxREAL);
-		for (size_t k=0; k<hdr->EVENT.N; ++k) {
+		for (k=0; k<hdr->EVENT.N; ++k) {
 			*(mxGetPr(TYP)+k) = (double)hdr->EVENT.TYP[k];
 			*(mxGetPr(POS)+k) = (double)hdr->EVENT.POS[k]+1;   // conversion from 0-based to 1-based indexing 
 		} 
@@ -664,7 +671,7 @@ void mexFunction(
 		mxSetField(ID,0,"Equipment",mxCreateString((char*)&hdr->ID.Equipment));
 		int len = 4; 
 		uint8_t IPv6=0;
-		for (uint8_t k=4; k<16; k++) IPv6 |= hdr->IPaddr[k];
+		for (k=4; k<16; k++) IPv6 |= hdr->IPaddr[k];
 		if (IPv6) len=16; 
 		mxArray *IPaddr = mxCreateNumericMatrix(1,len,mxUINT8_CLASS,mxREAL);
 		memcpy(mxGetData(IPaddr),hdr->IPaddr,len);
@@ -724,7 +731,7 @@ void mexFunction(
 		}
 		mxSetField(HDR,0,"Manufacturer",Manufacturer);
 
-	if (VERBOSE_LEVEL>8) 
+	if (VERBOSE_LEVEL>7) 
 		fprintf(stdout,"[148] going for SCLOSE\n");
 
 		mxSetField(HDR,0,"Patient",Patient);
