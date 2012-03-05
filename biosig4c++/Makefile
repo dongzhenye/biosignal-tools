@@ -705,7 +705,7 @@ install: save2gdf libbiosig.a libbiosig.so doc/save2gdf.1
 	install heka2itx 	$(BIN)
 	install save2aecg 	$(BIN)
 	install save2scp  	$(BIN)
-	install bin/tt2trig  	$(BIN)
+	-install bin/tt2trig  	$(BIN)
 	#install rec2bin  	$(BIN)
 	#install bin2rec  	$(BIN)
 	install -d		$(LIB) $(DESTDIR)/usr/include
@@ -720,23 +720,23 @@ install: save2gdf libbiosig.a libbiosig.so doc/save2gdf.1
 	#$(MAKE)  install_sigviewer
 	#$(MAKE)  install_octave
 
-remove:
-	rm $(BIN)/save2gdf
-	rm $(BIN)/heka2itx
-	rm $(BIN)/save2scp
-	rm $(BIN)/save2aecg
-	rm $(BIN)/ttl2trig
-	#rm $(BIN)/rec2bin
-	#rm $(BIN)/bin2rec
-	rm $(BIN)/sigviewer
-	rm $(BIN)/eventcodes.txt
-	rm $(DESTDIR)/usr/include/biosig.h
-	rm $(LIB)/libbiosig.*
-	rm $(DESTDIR)/usr/share/man/man1/save2gdf.1
-	rm $(DESTDIR)/usr/share/man/man1/mexSLOAD.1
-	rm $(DESTDIR)/usr/share/man/man1/sigviewer.1
-	#rm $(DESTDIR)/usr/share/man/man1/rec2bin.1
-	#rm $(DESTDIR)/usr/share/man/man1/bin2rec.1
+uninstall remove:
+	-rm $(BIN)/save2gdf
+	-rm $(BIN)/heka2itx
+	-rm $(BIN)/save2scp
+	-rm $(BIN)/save2aecg
+	-rm $(BIN)/ttl2trig
+	#-rm $(BIN)/rec2bin
+	#-rm $(BIN)/bin2rec
+	-rm $(BIN)/sigviewer
+	-rm $(BIN)/eventcodes.txt
+	-rm $(DESTDIR)/usr/include/biosig.h
+	-rm $(LIB)/libbiosig.*
+	-rm $(DESTDIR)/usr/share/man/man1/save2gdf.1
+	-rm $(DESTDIR)/usr/share/man/man1/mexSLOAD.1
+	-rm $(DESTDIR)/usr/share/man/man1/sigviewer.1
+	#-rm $(DESTDIR)/usr/share/man/man1/rec2bin.1
+	#-rm $(DESTDIR)/usr/share/man/man1/bin2rec.1
 
 
 #############################################################
