@@ -265,6 +265,12 @@ void bef64a(  double i, uint8_t* r);
 #ifndef INFINITY
 # define INFINITY (1.0/0.0)   /* positive infinity */
 #endif
+#ifndef isfinite
+# define isfinite(a) (-INFINITY < a && a < INFINITY)
+#endif
+#ifndef isnan
+# define isnan(a) (a!=a)
+#endif
 
 
 #define min(a,b)	(((a) < (b)) ? (a) : (b))
