@@ -48,6 +48,9 @@ extern "C" int sopen_dicom_read(HDRTYPE* hdr) {
 
 #endif
 
+#ifdef WITH_HDF
+#include <hdf5.h>
+#endif 
 
 
 #ifdef WITH_GDCM
@@ -234,6 +237,22 @@ char *IgorChanLabel(char *inLabel, HDRTYPE *hdr, size_t *ngroup, size_t *nseries
 	return(inLabel);
 }
 
+#ifdef WITH_HDF
+int sopen_hdf5(HDRTYPE* hdr) {
+        /*
+                file hdr->FileName is already opened and hdr->HeadLen bytes are read
+                These are available from hdr->AS.Header. 
+
+                ToDo: populate hdr 
+        */
+	size_t count = hdr->HeadLen;
+        fprintf(stdout,"Trying to read HDF data using \"%s\"\n",H5_VERS_INFO);  
+
+	ifclose(hdr);
+
+        return(-1); 
+}
+#endif 
 
 void sopen_heka(HDRTYPE* hdr, FILE *itx) {
 	size_t count = hdr->HeadLen;

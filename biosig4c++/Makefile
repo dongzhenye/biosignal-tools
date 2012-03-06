@@ -78,6 +78,7 @@ DEFINES      += -D=__4HAERTEL__
 DEFINES      += -D=WITH_FAMOS
 DEFINES      += -D=WITH_CHOLMOD
 DEFINES      += -D=WITHOUT_NETWORK
+DEFINES      += -D=WITH_HDF
 #DEFINES      += -D=WITH_LIBXML2 
 #DEFINES      += -D=WITH_FEF 
 #DEFINES      += -D=WITH_PDP
@@ -120,6 +121,9 @@ ifneq (,$(findstring WITH_LIBXML2, $(DEFINES)))
 endif
 ifneq (,$(findstring WITH_CURL, $(DEFINES)))
   LDLIBS     += -lcurl
+endif
+ifneq (,$(findstring WITH_HDF, $(DEFINES)))
+  LDLIBS     += -lhdf5
 endif
 LIBS         += $(LDLIBS)
 

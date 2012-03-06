@@ -112,6 +112,9 @@ int sopen_fef_read(HDRTYPE* hdr);
 void sopen_heka(HDRTYPE* hdr,FILE *fid);
 int sclose_fef_read(HDRTYPE* hdr);
 int sopen_zzztest(HDRTYPE* hdr);
+#ifdef WITH_HDF
+int sopen_hdf5(HDRTYPE *hdr);
+#endif 
 #ifdef WITH_DICOM
 int sopen_dicom_read(HDRTYPE* hdr);
 #endif
@@ -7607,11 +7610,16 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	}
 
     	else if (hdr->TYPE==HDF) {
-#ifdef _HDF5_H
-#endif
-		ifclose(hdr);
+#ifdef WITH_HDF
+                if (sopen_hdf5(hdr) != 0) {
+        		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+        		B4C_ERRMSG = "Error reading HDF file\n";
+                }
+#else
 		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
 		B4C_ERRMSG = "Format HDF not supported\n";
+		ifclose(hdr);
+#endif
 		return(hdr);
 	}
 
