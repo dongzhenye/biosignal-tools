@@ -6785,22 +6785,38 @@ elseif strncmp(HDR.TYPE,'MAT',3),
                 if isfield(tmp.EEG.chanlocs,'X')
 	                HDR.ELEC.XYZ    = [[tmp.EEG.chanlocs.X]',[tmp.EEG.chanlocs.Y]',[tmp.EEG.chanlocs.Z]'];
 	        end;        
-                HDR.Label       = tmp.EEG.chanlocs.labels;
+
+                if isfield(tmp.EEG.chanlocs,'labels') 
+	                HDR.Label       = tmp.EEG.chanlocs.labels;
+		else
+			HDR.Label = cellstr([repmat('#',HDR.NS,1),int2str([1:HDR.NS]')]);
+		end
+
                 if ischar(tmp.EEG.data) && exist(tmp.EEG.data,'file')
                         fid = fopen(tmp.EEG.data,'r','ieee-le');
                         HDR.data = fread(fid,[HDR.SPR*HDR.NS*HDR.NRec],'float32');
                         fclose(fid);
+			HDR.GDFTYP = 16;
                 elseif isnumeric(tmp.EEG.data)
                 	HDR.data = tmp.EEG.data';
+			HDR.GDFTYP = 17;
                 end;
-                if isfield(HDR,'data'),
+
+		if isfield(HDR,'data'),
                 	HDR.data = reshape(permute(reshape(HDR.data,[HDR.SPR,HDR.NS,HDR.NRec]),[1,3,2]),[HDR.SPR*HDR.NRec,HDR.NS]);
-                        HDR.BDF.Status.Channel = strmatch('Status',HDR.Label,'exact');
-                        if length(HDR.BDF.Status.Channel),
-	                	HDR.BDF.ANNONS = uint32(HDR.data(:,HDR.BDF.Status.Channel)); 
+			if isfield(HDR,'Label') && ~isempty(HDR.Label)
+	                        HDR.BDF.Status.Channel = strmatch('Status',HDR.Label,'exact');
+        	                if length(HDR.BDF.Status.Channel),
+		                	HDR.BDF.ANNONS = uint32(HDR.data(:,HDR.BDF.Status.Channel)); 
+				end;
 	                end;
 		end; 
-		if isfield(HDR.BDF,'ANNONS'),
+
+                if isfield(tmp.EEG,'event'),
+			HDR.EVENT.SampleRate = HDR.SampleRate; 
+			HDR.EVENT.POS = round([tmp.EEG.event.latency]');% * HDR.SampleRate; 
+			[HDR.EVENT.CodeDesc, tmp, HDR.EVENT.TYP] = unique({tmp.EEG.event.type}');
+		elseif isfield(HDR,'BDF') && isfield(HDR.BDF,'ANNONS'),
 			HDR = bdf2biosig_events(HDR,FLAG.BDF.status2event); 	
 		else		
 	                % trial onset and offset event
@@ -6813,7 +6829,8 @@ elseif strncmp(HDR.TYPE,'MAT',3),
 	                        HDR.EVENT.POS = [HDR.EVENT.POS; [0:HDR.NRec-1]'*HDR.SPR - offset];      % timing of cue
 	                        HDR.EVENT.TYP = [HDR.EVENT.TYP; repmat(hex2dec('0301'), HDR.NRec,1)]; % this is a hack because info on true classlabels is not available
 	                end;
-	        end;         
+                end;
+
 		% HDR.debugging_info = tmp.EEG;
 	        HDR.TYPE = 'native'; 
 
