@@ -6791,6 +6791,7 @@ elseif strncmp(HDR.TYPE,'MAT',3),
 		else
 			HDR.Label = cellstr([repmat('#',HDR.NS,1),int2str([1:HDR.NS]')]);
 		end
+		HDR.PhysDimCode = repmat(4275,HDR.NS,1); 	% uV
 
                 if ischar(tmp.EEG.data) && exist(tmp.EEG.data,'file')
                         fid = fopen(tmp.EEG.data,'r','ieee-le');
@@ -6814,7 +6815,7 @@ elseif strncmp(HDR.TYPE,'MAT',3),
 
                 if isfield(tmp.EEG,'event'),
 			HDR.EVENT.SampleRate = HDR.SampleRate; 
-			HDR.EVENT.POS = round([tmp.EEG.event.latency]');% * HDR.SampleRate; 
+			HDR.EVENT.POS = round([tmp.EEG.event.latency]');
 			[HDR.EVENT.CodeDesc, tmp, HDR.EVENT.TYP] = unique({tmp.EEG.event.type}');
 		elseif isfield(HDR,'BDF') && isfield(HDR.BDF,'ANNONS'),
 			HDR = bdf2biosig_events(HDR,FLAG.BDF.status2event); 	
