@@ -79,6 +79,7 @@ DEFINES      += -D=WITH_FAMOS
 DEFINES      += -D=WITH_CHOLMOD
 DEFINES      += -D=WITHOUT_NETWORK
 #DEFINES      += -D=WITH_HDF
+DEFINES      += -D=WITH_MATIO
 #DEFINES      += -D=WITH_LIBXML2 
 #DEFINES      += -D=WITH_FEF 
 #DEFINES      += -D=WITH_PDP
@@ -124,6 +125,9 @@ ifneq (,$(findstring WITH_CURL, $(DEFINES)))
 endif
 ifneq (,$(findstring WITH_HDF, $(DEFINES)))
   LDLIBS     += -lhdf5
+endif
+ifneq (,$(findstring WITH_MATIO, $(DEFINES)))
+  LDLIBS     += -lmatio
 endif
 LIBS         += $(LDLIBS)
 
@@ -338,7 +342,7 @@ win64/%.obj: XMLParser/%.cpp
 #	eventcodes and units: conversion from ascii to C code
 #############################################################
 
-biosig.o win32/biosig.obj win64/biosig.obj: eventcodes.i eventcodegroups.i units.i biosig.c biosig.h biosig-dev.h
+biosig.o win32/biosig.obj win64/biosig.obj: eventcodes.i eventcodegroups.i units.i biosig.c biosig.h biosig-dev.h Makefile
 
 eventcodes.i eventcodegroups.i : extern/eventcodes.txt
 	./eventcodes.awk "$<"

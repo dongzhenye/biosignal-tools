@@ -115,6 +115,9 @@ int sopen_zzztest(HDRTYPE* hdr);
 #ifdef WITH_HDF
 int sopen_hdf5(HDRTYPE *hdr);
 #endif 
+#ifdef WITH_MATIO
+int sopen_matlab(HDRTYPE *hdr);
+#endif 
 #ifdef WITH_DICOM
 int sopen_dicom_read(HDRTYPE* hdr);
 #endif
@@ -1885,6 +1888,10 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    	hdr->TYPE = MFER;
     	else if (!memcmp(Header1,"@ MFR ",6))
 	    	hdr->TYPE = MFER;
+    	else if (!memcmp(Header1,"MATLAB 5.0 MAT-file, ",7) && !memcmp(Header1+10," MAT-file, ",11) ) {
+	    	hdr->TYPE = Matlab;
+		hdr->VERSION = (Header1[7]-'0') + (Header1[9]-'0')/10.0;
+	}
     	else if (!memcmp(Header1,"%%MatrixMarket",14))
 	    	hdr->TYPE = MM;
 /*    	else if (!memcmp(Header1,"MThd\000\000\000\001\000",9))
@@ -7980,6 +7987,20 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		}
     		ifseek(hdr,offsetData,SEEK_SET);
     		hdr->FILE.POS = 0;
+	}
+
+    	else if (hdr->TYPE==Matlab) {
+#ifdef WITH_MATIO
+                if (sopen_matlab(hdr) != 0) {
+        		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+        		B4C_ERRMSG = "Error reading MATLAB file\n";
+                }
+#else
+		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+		B4C_ERRMSG = "Format MAT not supported\n";
+		ifclose(hdr);
+#endif
+		return(hdr);
 	}
 
     	else if (hdr->TYPE==MFER) {

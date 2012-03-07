@@ -51,6 +51,9 @@ extern "C" int sopen_dicom_read(HDRTYPE* hdr) {
 #ifdef WITH_HDF
 #include <hdf5.h>
 #endif 
+#ifdef WITH_MATIO
+#include <matio.h>
+#endif 
 
 
 #ifdef WITH_GDCM
@@ -251,6 +254,72 @@ int sopen_hdf5(HDRTYPE* hdr) {
 	ifclose(hdr);
 
         return(-1); 
+}
+#endif 
+
+#ifdef WITH_MATIO
+int sopen_matlab(HDRTYPE* hdr) {
+        /*
+                file hdr->FileName is already opened and hdr->HeadLen bytes are read
+                These are available from hdr->AS.Header. 
+
+                ToDo: populate hdr 
+			sanity checks 
+			memory leaks
+        */
+	ifclose(hdr);
+	size_t count = hdr->HeadLen;
+
+        fprintf(stdout, "Trying to read Matlab data using MATIO v%i.%i.%i\n", MATIO_MAJOR_VERSION, MATIO_MINOR_VERSION, MATIO_RELEASE_LEVEL);  
+
+	mat_t *matfile = Mat_Open(hdr->FileName, MAT_ACC_RDONLY);
+	matvar_t *EEG=NULL, *pnts=NULL, *nbchan=NULL, *trials=NULL, *srate=NULL, *data=NULL, *chanlocs=NULL, *event=NULL;
+	if (matfile != NULL) {
+		EEG    = Mat_VarRead(matfile, "EEG" );
+		if (EEG != NULL) {
+			Mat_VarReadDataAll(matfile, EEG );
+			pnts   = Mat_VarGetStructField(EEG, "pnts", BY_NAME, 0);
+			nbchan = Mat_VarGetStructField(EEG, "nbchan", BY_NAME, 0);
+			trials = Mat_VarGetStructField(EEG, "trials", BY_NAME, 0);
+			srate  = Mat_VarGetStructField(EEG, "srate", BY_NAME, 0);
+			data   = Mat_VarGetStructField(EEG, "data", BY_NAME, 0);
+			chanlocs = Mat_VarGetStructField(EEG, "chanlocs", BY_NAME, 0);
+			event    = Mat_VarGetStructField(EEG, "event", BY_NAME, 0);
+			
+			hdr->NS  = *(double*)(nbchan->data);
+			hdr->SPR = *(double*)(pnts->data);
+			hdr->NRec= *(double*)(trials->data);
+			hdr->SampleRate = *(double*)(srate->data);
+
+			hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
+			int k;
+			for (k=0; k<hdr->NS; k++) {
+				CHANNEL_TYPE *hc = hdr->CHANNEL+k;
+				sprintf(hc->Label,"#%2d",k+1);
+				hc->SPR = hdr->SPR;
+				hc->GDFTYP = 17; 
+			}
+
+			Mat_VarPrint(pnts,   stdout);
+			Mat_VarPrint(nbchan, stdout);
+			Mat_VarPrint(trials, stdout);
+			Mat_VarPrint(srate,  stdout);
+			Mat_VarPrint(data,   stdout);
+			//Mat_VarPrint(chanlocs, stdout);
+			//Mat_VarPrint(event,  stdout);
+
+			Mat_VarFree(pnts); 
+			Mat_VarFree(nbchan); 
+			Mat_VarFree(trials); 
+			Mat_VarFree(srate); 
+			Mat_VarFree(data); 
+			Mat_VarFree(EEG); 
+		}
+
+		int status = Mat_Close(matfile);
+	}
+	
+        return (0); 
 }
 #endif 
 
