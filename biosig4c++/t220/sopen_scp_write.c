@@ -116,7 +116,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 		curSectLen = 0; // current section length
 		//ptr = (uint8_t*)realloc(ptr,sectionStart+curSectLen); 
 
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"Section %i %x\n",curSect,ptr);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"Section %i %p\n",curSect,ptr);
 
 		if (curSect==0)  // SECTION 0 
 		{
@@ -444,7 +444,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 				*(ptr+sectionStart+curSectLen++) = 0; 
 			}
 
-			if (VERBOSE_LEVEL>7) fprintf(stdout,"End-of-Section %i %x\n",curSect,ptr);
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"End-of-Section %i %p\n",curSect,ptr);
 
 		}
 		else if (curSect==2)  // SECTION 2 

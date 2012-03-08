@@ -165,13 +165,6 @@ extern "C" {
 #endif
 
 
-int sopen_eeprobe(HDRTYPE* hdr) {
-	B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-	B4C_ERRMSG = "asn1 currently not supported";
-	return(0);
-};
-
-
 #define ITX_MAXLINELENGTH 400
 
 char *IgorChanLabel(char *inLabel, HDRTYPE *hdr, size_t *ngroup, size_t *nseries, size_t *nsweep, size_t *ns) {
@@ -268,7 +261,7 @@ int sopen_matlab(HDRTYPE* hdr) {
 			memory leaks
         */
 	ifclose(hdr);
-	size_t count = hdr->HeadLen;
+	//size_t count = hdr->HeadLen;
 
         fprintf(stdout, "Trying to read Matlab data using MATIO v%i.%i.%i\n", MATIO_MAJOR_VERSION, MATIO_MINOR_VERSION, MATIO_RELEASE_LEVEL);  
 
@@ -300,13 +293,13 @@ int sopen_matlab(HDRTYPE* hdr) {
 				hc->GDFTYP = 17; 
 			}
 
-			Mat_VarPrint(pnts,   stdout);
-			Mat_VarPrint(nbchan, stdout);
-			Mat_VarPrint(trials, stdout);
-			Mat_VarPrint(srate,  stdout);
-			Mat_VarPrint(data,   stdout);
-			//Mat_VarPrint(chanlocs, stdout);
-			//Mat_VarPrint(event,  stdout);
+			Mat_VarPrint(pnts,   1);
+			Mat_VarPrint(nbchan, 1);
+			Mat_VarPrint(trials, 1);
+			Mat_VarPrint(srate,  1);
+			Mat_VarPrint(data,   1);
+			//Mat_VarPrint(chanlocs, 1);
+			//Mat_VarPrint(event,  1);
 
 			Mat_VarFree(pnts); 
 			Mat_VarFree(nbchan); 
@@ -316,7 +309,7 @@ int sopen_matlab(HDRTYPE* hdr) {
 			Mat_VarFree(EEG); 
 		}
 
-		int status = Mat_Close(matfile);
+		Mat_Close(matfile);
 	}
 	
         return (0); 
@@ -524,7 +517,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L1 @%i=\t%i/%i \n",(int)(pos+StartOfDa
 				char *SeLabel =  (char*)(hdr->AS.Header+pos+4);		// max 32 bytes
 				strncpy((char*)hdr->AS.auxBUF + 33*k2, (char*)hdr->AS.Header+pos+4, 32); hdr->AS.auxBUF[33*k2+32] = 0;
 				SeLabel = (char*)hdr->AS.auxBUF + 33*k2;
-				double t  = *(double*)(hdr->AS.Header+pos+136);		// time of series. TODO: this time should be taken into account 
+				//double t  = *(double*)(hdr->AS.Header+pos+136);		// time of series. TODO: this time should be taken into account 
 				Delay.u64 = bswap_64(*(uint64_t*)(hdr->AS.Header+pos+472+176));
 	
 if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i \n",(int)(pos+StartOfData),SeLabel,Delay.f64,k1,K1,k2,K2);
@@ -554,7 +547,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i \n",(int)(po
 					// read sweep
 					hdr->NRec++; 	// increase number of sweeps
 					uint32_t SPR = 0, spr = 0;
-					double t  = *(double*)(hdr->AS.Header+pos+48);		// time of sweep. TODO: this should be taken into account 
+					// double t  = *(double*)(hdr->AS.Header+pos+48);		// time of sweep. TODO: this should be taken into account 
 
 					char flagSweepSelected = (hdr->AS.SegSel[0]==0 || k1+1==hdr->AS.SegSel[0])
 						              && (hdr->AS.SegSel[1]==0 || k2+1==hdr->AS.SegSel[1])
@@ -1222,9 +1215,38 @@ int sopen_zzztest(HDRTYPE* hdr) {
 };
 
 int sopen_unipro_read(HDRTYPE* hdr) {
-	B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-	B4C_ERRMSG = "UNIPRO not supported";
-	return(0);
+		hdr->FILE.LittleEndian = (__BYTE_ORDER == __LITTLE_ENDIAN);
+		char *Header1 = (char*)hdr->AS.Header;
+		struct tm t0;
+		char tmp[5];
+		memset(tmp,0,5);
+		strncpy(tmp,Header1+0x9c,2);
+		t0.tm_mon = atoi(tmp)-1;
+		strncpy(tmp,Header1+0x9e,2);
+		t0.tm_mday = atoi(tmp);
+		strncpy(tmp,Header1+0xa1,2);
+		t0.tm_hour = atoi(tmp);
+		strncpy(tmp,Header1+0xa3,2);
+		t0.tm_min = atoi(tmp);
+		strncpy(tmp,Header1+0xa5,2);
+		t0.tm_sec = atoi(tmp);
+		strncpy(tmp,Header1+0x98,4);
+		t0.tm_year = atoi(tmp)-1900;
+		hdr->T0 = tm_time2gdf_time(&t0);
+
+		memset(tmp,0,5);
+		strncpy(tmp,Header1+0x85,2);
+		t0.tm_mday = atoi(tmp);
+		strncpy(tmp,Header1+0x83,2);
+		t0.tm_mon = atoi(tmp)-1;
+		strncpy(tmp,Header1+0x7f,4);
+		t0.tm_year = atoi(tmp)-1900;
+		hdr->Patient.Birthday = tm_time2gdf_time(&t0);
+
+		// filesize = leu32p(hdr->AS.Header + 0x24);
+		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+		B4C_ERRMSG = "UNIPRO not supported";
+		return(0);
 }
 
 

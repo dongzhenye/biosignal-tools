@@ -1179,7 +1179,7 @@ void section_1_10(clinic &cli, U_int_M &dim)
 {
 	U_int_M val;
 	U_int_S code_;
-	char *temp_string, *pos_char;
+	char *temp_string=NULL, *pos_char;
 	int_M pos;
 
 	ReadByte(val);
@@ -1263,7 +1263,7 @@ void section_1_13(clinic &cli, U_int_M &dim)
 // section 1 tag 13
 {
 	U_int_M val;
-	char *temp_string, *pos_char;
+	char *temp_string=NULL, *pos_char;
 
 	ReadByte(val);
 	if(val)
@@ -2224,7 +2224,7 @@ void section_8(pointer_section info_sections,DATA_INFO &data)
 {
 	U_int_S m, g, h, s, i;
 	U_int_M a, dim;
-	char *temp_string, *c;
+	char *c;
 	//fpos_t filepos;
 	long filepos;
 	int_S version;
@@ -2286,7 +2286,7 @@ void section_8(pointer_section info_sections,DATA_INFO &data)
 		for(i=0;i<data.flag_report.number;i++)
 		{
 			Skip(3);
-			temp_string=ReadString(temp_string,data.text_dim[i].value);
+			char *temp_string=ReadString(NULL,data.text_dim[i].value);
 			strcat(temp_string,STR_END);
 			strcpy(c,temp_string);
 			c+=strlen(temp_string);
@@ -2407,6 +2407,7 @@ void section_10(pointer_section info_sections, DATA_RECORD &data, int_S version)
 									for(k=0;k<8;k++)
 									{
 										data.lead_block[i].quality_recording[k]=mask&val;
+										// TODO: code has no effect 
 										mask<<2;
 									}
 									break;

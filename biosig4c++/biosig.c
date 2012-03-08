@@ -107,7 +107,6 @@ void sopen_FAMOS_read   (HDRTYPE* hdr);
 int sclose_HL7aECG_write(HDRTYPE* hdr);
 int sopen_trc_read   (HDRTYPE* hdr);
 int sopen_unipro_read   (HDRTYPE* hdr);
-int sopen_eeprobe(HDRTYPE* hdr);
 int sopen_fef_read(HDRTYPE* hdr);
 void sopen_heka(HDRTYPE* hdr,FILE *fid);
 int sclose_fef_read(HDRTYPE* hdr);
@@ -1390,8 +1389,6 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	} EndianTest;
     	int k,k1;
 	uint8_t	LittleEndian;
-      	// set default IP address to local IP address
-	char localhostname[HOST_NAME_MAX+1];
 	size_t BitsPerBlock;
 
 	EndianTest.testword = 0x4a3b2c1d;
@@ -1464,6 +1461,8 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 #else
 	hdr->ID.Technician[MAX_LENGTH_TECHNICIAN-2]=0;
 #endif
+      	// set default IP address to local IP address
+	char localhostname[HOST_NAME_MAX+1];
 	if (!gethostname(localhostname,HOST_NAME_MAX+1)) {
 		// TODO: replace gethostbyname by getaddrinfo (for IPv6)
 		struct hostent *host = gethostbyname(localhostname);
@@ -3356,7 +3355,7 @@ int read_header(HDRTYPE *hdr) {
 			hdr->AS.rawEventData=NULL;
 		}
 	}
-	else if (hdr->FILE.size > hdr->HeadLen + hdr->AS.bpb*hdr->NRec + 8)
+	else if (hdr->FILE.size > hdr->HeadLen + hdr->AS.bpb*(size_t)hdr->NRec + 8)
 	{
 			if (VERBOSE_LEVEL > 7) 
 				fprintf(stdout,"GDF EVENT: %i,%i %i,%i,%i\n",(int)hdr->FILE.size, (int)(hdr->HeadLen + hdr->AS.bpb*hdr->NRec + 8), hdr->HeadLen, hdr->AS.bpb, (int)hdr->NRec); 
@@ -3645,8 +3644,8 @@ else if (!strncmp(MODE,"r",1)) {
 	
 			ifseek(hdr, 0, SEEK_SET);
 			hdr->FILE.gzFID = gzdopen(fileno(hdr->FILE.FID),"r"); 
-		        hdr->FILE.COMPRESSION = 1;
-			hdr->FILE.FID = -1;
+		        hdr->FILE.COMPRESSION = (uint8_t)1;
+			hdr->FILE.FID = NULL;
 			count = ifread(hdr->AS.Header, 1, 512, hdr);
 	        	hdr->AS.Header[512]=0;
 #else
@@ -7016,7 +7015,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	}
 
 	else if (hdr->TYPE==EEProbe) {
-		sopen_eeprobe(hdr);
+		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+		B4C_ERRMSG = "EEProbe currently not supported";
 	}
 
 	else if (hdr->TYPE==EGI) {
@@ -7250,7 +7250,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			uint8_t RESP; 
 			char *Stimulus; 
 		} Target; 
-
+		Target.RESP = 0xff;
+		Target.Stimulus = NULL; 
+		Target.OnsetTime = 0; 
+		Target.RTTime = 0; 
+		Target.RT = 0; 
+		Target.TrigTarget = 0; 
 
 		int colSubject      = -1, colSampleRate = -1, colDate = -1, colTime = -1, colOnsetTime = -1;
 		int colResponseTime = -1, colRTTime = -1, colStimulus = -1, colTrigTarget = -1, colRESP = -1;
@@ -7258,7 +7263,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		struct tm t; 
 		char nextRow = 0;
 	
-		size_t col=0, row=0, len; 
+		int col=0, row=0, len; 
 		char *f = (char*)hdr->AS.Header;
 		while (*f != 0) {
 			len = strcspn(f,"\t\n\r");
@@ -9949,34 +9954,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 #endif
 
 	else if (hdr->TYPE==UNIPRO) {
-		hdr->FILE.LittleEndian = (__BYTE_ORDER == __LITTLE_ENDIAN);
-		struct tm t0;
-		char tmp[5];
-		memset(tmp,0,5);
-		strncpy(tmp,Header1+0x9c,2);
-		t0.tm_mon = atoi(tmp)-1;
-		strncpy(tmp,Header1+0x9e,2);
-		t0.tm_mday = atoi(tmp);
-		strncpy(tmp,Header1+0xa1,2);
-		t0.tm_hour = atoi(tmp);
-		strncpy(tmp,Header1+0xa3,2);
-		t0.tm_min = atoi(tmp);
-		strncpy(tmp,Header1+0xa5,2);
-		t0.tm_sec = atoi(tmp);
-		strncpy(tmp,Header1+0x98,4);
-		t0.tm_year = atoi(tmp)-1900;
-		hdr->T0 = tm_time2gdf_time(&t0);
-
-		memset(tmp,0,5);
-		strncpy(tmp,Header1+0x85,2);
-		t0.tm_mday = atoi(tmp);
-		strncpy(tmp,Header1+0x83,2);
-		t0.tm_mon = atoi(tmp)-1;
-		strncpy(tmp,Header1+0x7f,4);
-		t0.tm_year = atoi(tmp)-1900;
-		hdr->Patient.Birthday = tm_time2gdf_time(&t0);
-
-		// filesize = leu32p(hdr->AS.Header + 0x24);
 		sopen_unipro_read(hdr);
 		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"[181] #%i\n",hdr->NS);
@@ -11767,17 +11744,8 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 		uint64_t u64;
 	} val;
 
-
 	if (VERBOSE_LEVEL>6)
 		fprintf(stdout,"SWRITE( %p, %li, %s ) MODE=%i\n",data, nelem, hdr->FileName, hdr->FILE.OPEN);
-
-
-#if (__BYTE_ORDER == __BIG_ENDIAN)
-	char SWAP = hdr->FILE.LittleEndian;
-#elif (__BYTE_ORDER == __LITTLE_ENDIAN)
-	char SWAP = !hdr->FILE.LittleEndian;
-#endif
-	// char SWAP = hdr->FLAG.SWAP;
 
 	// write data
 
@@ -12398,7 +12366,7 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
 		CHANNEL_TYPE *hc = hdr->CHANNEL+k;
                 if (k>0) fprintf(fid,",");
                 fprintf(fid,"\n\t\t{\n");
-		fprintf(fid,"\t\t\"ChannelNumber\"\t: %i,\n", k+1);
+		fprintf(fid,"\t\t\"ChannelNumber\"\t: %i,\n", (int)k+1);
 		fprintf(fid,"\t\t\"Label\"\t: \"%s\",\n", hc->Label);
 		fprintf(fid,"\t\t\"Transducer\"\t: \"%s\",\n", hc->Transducer);
 		fprintf(fid,"\t\t\"PhysicalUnit\"\t: \"%s\",\n", PhysDim(hc->PhysDimCode,tmp));
@@ -12432,10 +12400,10 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
                 if (k>0) fprintf(fid,",");
                 fprintf(fid,"\n\t\t{\n");
                 fprintf(fid,"\t\t\"TYP\"\t: \"0x%04x\",\n", hdr->EVENT.TYP[k]);
-                fprintf(fid,"\t\t\"POS\"\t: \"%i\",\n", hdr->EVENT.POS[k]/hdr->EVENT.SampleRate);
+                fprintf(fid,"\t\t\"POS\"\t: \"%f\",\n", hdr->EVENT.POS[k]/hdr->EVENT.SampleRate);
                 if (hdr->EVENT.CHN && hdr->EVENT.DUR) {
                         fprintf(fid,"\t\t\"CHN\"\t: \"0x%04x\",\n", hdr->EVENT.CHN[k]);
-                        fprintf(fid,"\t\t\"DUR\"\t: \"0x%04x\",\n", hdr->EVENT.DUR[k]/hdr->EVENT.SampleRate);
+                        fprintf(fid,"\t\t\"DUR\"\t: \"%f\",\n", hdr->EVENT.DUR[k]/hdr->EVENT.SampleRate);
                 }
 		if ((hdr->EVENT.TYP[k] == 0x7fff) && (hdr->TYPE==GDF))
 			fprintf(fid,"\t\t\"Description\"\t: [neds]\n");        // no comma at the end because its the last element

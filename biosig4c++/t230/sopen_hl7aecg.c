@@ -154,7 +154,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 		const char *t; 
 		const char *e;
 		float notch = 0, lowpass=0, highpass=0; 
-		uint16_t gdftyp = 16; 
+		//uint16_t gdftyp = 16; 
 		struct tm t0;
 
 		fprintf(stdout,"Great! Philips Sierra ECG 2 is recognized\n");
@@ -241,7 +241,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 			hc->PhysMin  = hc->DigMin * Cal;
 			hc->PhysMax  = hc->DigMax * Cal;
 			hc->PhysDimCode = PhysDimCode("nV");
-			strcpy(hc->PhysDim,"nV");
+			//strcpy(hc->PhysDim,"nV");
 			hc->bi       = k*hdr->SPR*4;
 			hc->bi8      = 0;
 			hc->LeadIdCode = 0;
@@ -262,7 +262,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 		if (H.Element()) {
 			const char *e = H.Element()->GetText();
 			size_t k = 0;
-			while (e != NULL && k < hdr->SPR * hdr->NRec * hdr->NS) {
+			while (e != NULL && k < hdr->SPR * (size_t)hdr->NRec * hdr->NS) {
 				((float*)hdr->AS.rawdata)[k++] = (float)strtod(e,(char**)&e);
 			}
 		}
@@ -789,7 +789,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 
 			char *s = (char*) channel.FirstChild("value").FirstChild("digits").Element()->GetText();
 			size_t spr = 0; 	
-			char *ps = s ? s+strlen(s) : NULL; //end of s
+			//char *ps = s ? s+strlen(s) : NULL; //end of s
 
 			if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [420] %i %p <%s>\n",i,s,s); 
 
@@ -805,7 +805,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 				if(d > hc->DigMax) hc->DigMax = d;
 				if(d < hc->DigMin) hc->DigMin = d;
 			}
-			if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [420] %i %i\n",i,spr); 
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [420] %i %i\n",i,(int)spr); 
 
 	   	    	hc->bi = hdr->AS.bpb;
 			SPR += spr;		 	
@@ -1308,7 +1308,7 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
 	Dat=(float*)(hdr->AS.rawdata + bi);
 #endif
 
-	size_t sz = GDFTYP_BITS[hdr->CHANNEL[i].GDFTYP]>>3;
+	//size_t sz = GDFTYP_BITS[hdr->CHANNEL[i].GDFTYP]>>3;
 
 	S=new char[32*hdr->CHANNEL[i].SPR];
 	S[0]=0;

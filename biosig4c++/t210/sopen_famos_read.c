@@ -233,7 +233,7 @@ EXTERN_C void sopen_FAMOS_read(HDRTYPE* hdr) {
 				t2 += p+1;
 				p   = strcspn(t2,",");
 				t2[p] = 0;
-				size_t len = max(atol(t2),MAX_LENGTH_PHYSDIM);
+				//size_t len = max(atol(t2),MAX_LENGTH_PHYSDIM);
 				// Einheit
 				t2 += p+1;
 				if (strncmp(t,"s",strlen(t))) {
@@ -480,7 +480,7 @@ EXTERN_C void sopen_FAMOS_read(HDRTYPE* hdr) {
 				t2 += p+1;
 				p   = strcspn(t2,",");
 				t2[p] = 0;
-				int len = min(atoi(t2),MAX_LENGTH_PHYSDIM); 
+				//int len = min(atoi(t2),MAX_LENGTH_PHYSDIM); 
 				// Einheit
 				t2 += p+1;
 				hdr->CHANNEL[CHAN].PhysDimCode  = PhysDimCode(t2);

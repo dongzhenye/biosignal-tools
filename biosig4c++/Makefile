@@ -89,8 +89,8 @@ DEFINES      += -D=WITHOUT_NETWORK
 #DEFINES      += -D=WITH_EEPROBE		
 #DEFINES      += -D=SOFTCODED_PHYSDIMTABLE	# obsolete
 #DEFINES      += -D=CNT32			# for 32bit Neuroscan format
-CFLAGS        = -pipe -fPIC -Wall -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
-CXXFLAGS      = -pipe -fPIC -Wall -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
+CFLAGS        = -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
+CXXFLAGS      = -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 AR            = ar crs
 INCPATH       = -I /usr/include/libxml2/
 #INCPATH       = -I /usr/local/include/gdcm-2.0/
@@ -292,7 +292,7 @@ lib:	libbiosig.a win32/libbiosig.dll win32/libbiosig.a win64/libbiosig.a
 .c.o:
 	$(CC) -c $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
 
-%.o: %.c biosig.h biosig-dev.h
+%.o: %.c biosig.h biosig-dev.h Makefile
 	$(CC) -c $(CFLAGS) $(INCPATH) -o "$@" "$<"
 %.o: t210/%.c biosig.h biosig-dev.h
 	$(CC) -c $(CFLAGS) $(INCPATH) -o "$@" "$<"
@@ -302,12 +302,12 @@ lib:	libbiosig.a win32/libbiosig.dll win32/libbiosig.a win64/libbiosig.a
 	$(CC) -c $(CFLAGS) $(INCPATH) -o "$@" "$<"
 %.o: t240/%.c biosig.h biosig-dev.h
 	$(CC) -c $(CFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
-%.o: test0/%.c biosig.h biosig-dev.h
+%.o: test0/%.c biosig.h biosig-dev.h Makefile
 	$(CC) -c $(CFLAGS) $(INCPATH) -o "$@" "$<"
 %.o: XMLParser/%.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
 
-win32/%.obj: %.c  biosig-dev.h biosig.h 
+win32/%.obj: %.c  biosig-dev.h biosig.h Makefile
 	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
 win32/%.obj: t210/%.c  biosig-dev.h biosig.h 
 	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
@@ -317,12 +317,12 @@ win32/%.obj: t230/%.c  biosig-dev.h biosig.h
 	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
 win32/%.obj: t240/%.c  biosig-dev.h biosig.h 
 	$(MinGWCC) -c $(MinGWCFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
-win32/%.obj: test0/%.c  biosig-dev.h biosig.h 
+win32/%.obj: test0/%.c  biosig-dev.h biosig.h Makefile
 	$(MinGWCC) -c $(MinGWCFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
 win32/%.obj: XMLParser/%.cpp 
 	$(MinGWCXX) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
 
-win64/%.obj: %.c  biosig-dev.h biosig.h 
+win64/%.obj: %.c  biosig-dev.h biosig.h Makefile
 	$(MinGW64CC) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
 win64/%.obj: t210/%.c  biosig-dev.h biosig.h 
 	$(MinGW64CC) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
@@ -332,7 +332,7 @@ win64/%.obj: t230/%.c  biosig-dev.h biosig.h
 	$(MinGW64CC) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
 win64/%.obj: t240/%.c  biosig-dev.h biosig.h 
 	$(MinGW64CC) -c $(MinGW64CFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
-win64/%.obj: test0/%.c  biosig-dev.h biosig.h 
+win64/%.obj: test0/%.c  biosig-dev.h biosig.h Makefile
 	$(MinGW64CC) -c $(MinGW64CFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
 win64/%.obj: XMLParser/%.cpp 
 	$(MinGW64CXX) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"

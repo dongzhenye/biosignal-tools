@@ -62,9 +62,8 @@ int main(int argc, char **argv){
     char	*argsweep = NULL;
     double	t1=0.0, t2=1.0/0.0;
 #ifdef CHOLMOD_H
-    cholmod_sparse *rr  = NULL; 
-    char        *rrFile = NULL;
-    int refarg          = 0;
+    char *rrFile = NULL;
+    int   refarg = 0;
 #endif 
 	
     for (k=1; k<argc; k++) {
@@ -249,7 +248,7 @@ int main(int argc, char **argv){
 	}
 #endif
 	// HEKA2ITX hack
-        if (TARGET_TYPE==ITX) 
+        if (TARGET_TYPE==ITX) {
 	if (hdr->TYPE==HEKA) {
 		// hack: HEKA->ITX conversion is already done in SOPEN	
 		dest = NULL; 
@@ -257,6 +256,7 @@ int main(int argc, char **argv){
 	else {
                 fprintf(stdout,"error: only HEKA->ITX is supported - source file is not HEKA file");
 		B4C_ERRNUM = B4C_UNSPECIFIC_ERROR;
+	} 
 	}
 
 #ifdef CHOLMOD_H
@@ -583,7 +583,7 @@ int main(int argc, char **argv){
 		savelink(source);
 #endif 
 	if (VERBOSE_LEVEL>7)
-		fprintf(stdout,"\n[221] File %s opened. %i %i %Li Des=%i\n",hdr->FileName,hdr->AS.bpb,hdr->NS,(int)(hdr->NRec),hdr->FILE.Des);
+		fprintf(stdout,"\n[221] File %s opened. %i %i %i Des=%i\n",hdr->FileName,hdr->AS.bpb,hdr->NS,(int)(hdr->NRec),hdr->FILE.Des);
 
 	swrite(data, hdr->NRec, hdr);
 
