@@ -297,16 +297,12 @@ int sopen_matlab(HDRTYPE* hdr) {
 			Mat_VarPrint(nbchan, 1);
 			Mat_VarPrint(trials, 1);
 			Mat_VarPrint(srate,  1);
-			Mat_VarPrint(data,   1);
+			//Mat_VarPrint(data,   1);
 			//Mat_VarPrint(chanlocs, 1);
 			//Mat_VarPrint(event,  1);
 
-			Mat_VarFree(pnts); 
-			Mat_VarFree(nbchan); 
-			Mat_VarFree(trials); 
-			Mat_VarFree(srate); 
-			Mat_VarFree(data); 
-			Mat_VarFree(EEG); 
+			
+			Mat_VarFree(EEG);
 		}
 
 		Mat_Close(matfile);
