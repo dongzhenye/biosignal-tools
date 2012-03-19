@@ -328,6 +328,7 @@ int sopen_matlab(HDRTYPE* hdr) {
 			for (k=0; k<hdr->EVENT.N; k++) {
 /* TODO CB
 				hdr->EVENT.TYP[k] = 			
+				FreeTextEvent(hdr, k, annotation)
 				hdr->EVENT.POS[k] = 			
 				hdr->EVENT.CHN[k] = 0; 			
 				hdr->EVENT.DUR[k] = 0;			
