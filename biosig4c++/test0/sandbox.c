@@ -283,15 +283,60 @@ int sopen_matlab(HDRTYPE* hdr) {
 			hdr->SPR = *(double*)(pnts->data);
 			hdr->NRec= *(double*)(trials->data);
 			hdr->SampleRate = *(double*)(srate->data);
-
+			
+/* TODO CB
+			hdr->NRec 	 = ;
+			hdr->SPR  	 = ;
+			hdr->T0 	 = 0;        // Unknown;
+			uint16_t gdftyp  = ;	16: float; 17: double
+*/
 			hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
-			int k;
+			size_t k;
 			for (k=0; k<hdr->NS; k++) {
 				CHANNEL_TYPE *hc = hdr->CHANNEL+k;
 				sprintf(hc->Label,"#%2d",k+1);
 				hc->SPR = hdr->SPR;
-				hc->GDFTYP = 17; 
+/* TODO CB
+				hc->GDFTYP = gdftyp; 
+				hc->Transducer[0] = '\0';
+			    	hc->LowPass	= ;
+			    	hc->HighPass = ;
+			    	hc->Notch	= ;  // unknown
+			    	hc->PhysMax	= ;
+			    	hc->DigMax	= ;
+			    	hc->PhysMin	= ;
+			    	hc->DigMin	= ;
+			    	hc->Cal	 	= 1.0;
+			    	hc->Off	 	= 0.0;
+				hc->OnOff    	= 1;
+			    	hc->PhysDimCode = 4275; // uV
+			    	hc->LeadIdCode  = 0;
+			    	hc->bi      	= k*GDFTYP_BITS[gdftyp]>>3;	// TODO AS
+*/
 			}
+
+			size_t sz = hdr->NS*hdr->SPR*hdr->NRec*GDFTYP_BITS[gdftyp]>>3;
+			hdr->AS.rawdata = realloc(hdr->AS.rawdata, sz); 
+/* TODO CB
+			memcpy(hdr->AS.rawdata,...,sz); 
+*/
+			hdr->EVENT.N = 0; 	// TODO CB
+			hdr->EVENT.POS = (uint32_t*) realloc(hdr->EVENT.POS, hdr->EVENT.N*sizeof(*hdr->EVENT.POS));
+			hdr->EVENT.TYP = (uint16_t*) realloc(hdr->EVENT.TYP, hdr->EVENT.N*sizeof(*hdr->EVENT.TYP));
+			hdr->EVENT.DUR = (uint32_t*) realloc(hdr->EVENT.DUR, hdr->EVENT.N*sizeof(*hdr->EVENT.DUR));
+			hdr->EVENT.CHN = (uint16_t*) realloc(hdr->EVENT.CHN, hdr->EVENT.N*sizeof(*hdr->EVENT.CHN));
+			for (k=0; k<hdr->EVENT.N; k++) {
+/* TODO CB
+				hdr->EVENT.TYP[k] = 			
+				hdr->EVENT.POS[k] = 			
+				hdr->EVENT.CHN[k] = 0; 			
+				hdr->EVENT.DUR[k] = 0;			
+*/
+			}
+
+		hdr->AS.bpb = hdr->NS*2;
+		hdr->FLAG.OVERFLOWDETECTION = 0; 	// BKR does not support automated overflow and saturation detection
+
 
 			Mat_VarPrint(pnts,   1);
 			Mat_VarPrint(nbchan, 1);
