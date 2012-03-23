@@ -43,65 +43,71 @@
 #include <time.h>
 
 
-#ifdef	__WIN32__
-#define FILESEP '\\'
+#ifdef __WIN32__
+    #define FILESEP '\\'
 #else
-#define FILESEP '/'
+    #define FILESEP '/'
 #endif
 
 
-#if defined(__MINGW32__) 
+#ifdef __MINGW32__
    /* use local version because MINGW does not provide byteswap.h */
-#  define __BIG_ENDIAN  	 4321
-#  define __LITTLE_ENDIAN  1234
-#  define __BYTE_ORDER 	__LITTLE_ENDIAN
-#  include "win32/byteswap.h"
-#  define bswap_16(x) __bswap_16 (x)
-#  define bswap_32(x) __bswap_32 (x)
-#  define bswap_64(x) __bswap_64 (x)
+    #define __BIG_ENDIAN 4321
+    #define __LITTLE_ENDIAN 1234
+    #define __BYTE_ORDER __LITTLE_ENDIAN
+    #include "win32/byteswap.h"
+    #define bswap_16(x) __bswap_16(x)
+    #define bswap_32(x) __bswap_32(x)
+    #define bswap_64(x) __bswap_64(x)
+#endif
 
-#elif defined(__NetBSD__)
-#  include <sys/bswap.h>
-#  define __BIG_ENDIAN _BIG_ENDIAN
-#  define __LITTLE_ENDIAN _LITTLE_ENDIAN
-#  define __BYTE_ORDER _BYTE_ORDER
-#  define bswap_16(x) bswap16 (x)
-#  define bswap_32(x) bswap32 (x)
-#  define bswap_64(x) bswap64 (x)
+#ifdef __NetBSD__
+    #include <sys/bswap.h>
+    #define __BIG_ENDIAN _BIG_ENDIAN
+    #define __LITTLE_ENDIAN _LITTLE_ENDIAN
+    #define __BYTE_ORDER _BYTE_ORDER
+    #define bswap_16(x) bswap16(x)
+    #define bswap_32(x) bswap32(x)
+    #define bswap_64(x) bswap64(x)
+#endif
 
-#elif (defined(BSD) && (BSD >= 199103))
-#  include <machine/endian.h>
-#  define __BIG_ENDIAN _BIG_ENDIAN
-#  define __LITTLE_ENDIAN _LITTLE_ENDIAN
-#  define __BYTE_ORDER _BYTE_ORDER
-#  define bswap_16(x) __bswap16(x)
-#  define bswap_32(x) __bswap32(x)
-#  define bswap_64(x) __bswap64(x)
+#if defined(BSD) && (BSD >= 199103) && !defined(__APPLE__)
+    #include <machine/endian.h>
+    #define __BIG_ENDIAN _BIG_ENDIAN
+    #define __LITTLE_ENDIAN _LITTLE_ENDIAN
+    #define __BYTE_ORDER _BYTE_ORDER
+    #define bswap_16(x) __bswap16(x)
+    #define bswap_32(x) __bswap32(x)
+    #define bswap_64(x) __bswap64(x)
+#endif
 
-#elif defined(__GNUC__) 
-   /* use byteswap macros from the host system, hopefully optimized ones ;-) */
-#  include <byteswap.h>
-#  define bswap_16(x) __bswap_16 (x)
-#  define bswap_32(x) __bswap_32 (x)
-#  define bswap_64(x) __bswap_64 (x)
+#if defined(__GNUC__) && !defined(__APPLE__)
+    /* use byteswap macros from the host system, hopefully optimized ones ;-) */
+    #include <byteswap.h>
+    #define bswap_16(x) __bswap_16(x)
+    #define bswap_32(x) __bswap_32(x)
+    #define bswap_64(x) __bswap_64(x)
+#endif
 
-#elif 	__sparc__ 
-#  define __BIG_ENDIAN  	 4321
-#  define __LITTLE_ENDIAN  1234
-#  define __BYTE_ORDER 	__BIG_ENDIAN
+#ifdef __sparc__
+    #define __BIG_ENDIAN 4321
+    #define __LITTLE_ENDIAN 1234
+    #define __BYTE_ORDER __BIG_ENDIAN
+#endif
 
-#elif  	__APPLE__
-#  define __BIG_ENDIAN  	 4321
-#  define __LITTLE_ENDIAN  1234
-#  if	__LITTLE_ENDIAN__
-#    define __BYTE_ORDER 	__LITTLE_ENDIAN
-#  else
-#    define __BYTE_ORDER 	__BIG_ENDIAN
-#  endif
+#ifdef __APPLE__
+    #define __BIG_ENDIAN 4321
+    #define __LITTLE_ENDIAN 1234
+    #if	__LITTLE_ENDIAN
+        #define __BYTE_ORDER __LITTLE_ENDIAN
+    #else
+        #define __BYTE_ORDER __BIG_ENDIAN
+    #endif
+    #define bswap_32(x) __builtin_bswap32(x)
+    #define bswap_64(x) __builtin_bswap64(x)
 #endif 
 
 
-#if 1
 
 # ifndef bswap_16
 #  define bswap_16(x)   \
@@ -129,7 +135,6 @@
       	| (((x) & 0x00000000000000ffull) << 56))
 # endif
 
-#endif
 
 
 #ifdef __cplusplus

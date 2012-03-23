@@ -84,7 +84,11 @@ typedef char			int8_t;
 #endif
 
 #ifdef WITH_CHOLMOD
-    #include <suitesparse/cholmod.h>
+    #ifdef __APPLE__
+        #include <ufsparse/cholmod.h>
+    #else
+        #include <suitesparse/cholmod.h>
+    #endif
 #endif
 #ifdef WITH_GSL
     #include <gsl/gsl_matrix_double.h>

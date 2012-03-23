@@ -79,7 +79,11 @@ int B4C_ERRNUM  = 0;
 const char *B4C_ERRMSG;
 
 #ifdef WITH_CHOLMOD
+#ifdef __APPLE__
+    #include <ufsparse/cholmod.h>
+#else
     #include <suitesparse/cholmod.h>
+#endif
     cholmod_common CHOLMOD_COMMON_VAR;
 void CSstop() {
 	cholmod_finish(&CHOLMOD_COMMON_VAR);
@@ -562,7 +566,8 @@ void bef64a(  double i, uint8_t* r) {
 void* mfer_swap8b(uint8_t *buf, int8_t len, char FLAG_SWAP)
 {
 	if (VERBOSE_LEVEL==9)
-		fprintf(stdout,"swap=%i %i %i \nlen=%i %2x%2x%2x%2x%2x%2x%2x%2x\n",(int)FLAG_SWAP, __BYTE_ORDER, __LITTLE_ENDIAN, (int)len, (unsigned)buf[0],(unsigned)buf[1],(unsigned)buf[2],(unsigned)buf[3],(unsigned)buf[4],(unsigned)buf[5],(unsigned)buf[6],(unsigned)buf[7]);
+
+        fprintf(stdout,"swap=%i %i %i \nlen=%i %2x%2x%2x%2x%2x%2x%2x%2x\n",(int)FLAG_SWAP, __BYTE_ORDER, __LITTLE_ENDIAN, (int)len, (unsigned)buf[0],(unsigned)buf[1],(unsigned)buf[2],(unsigned)buf[3],(unsigned)buf[4],(unsigned)buf[5],(unsigned)buf[6],(unsigned)buf[7]);
 
 #ifndef S_SPLINT_S
 	typedef uint64_t iType;
@@ -7821,8 +7826,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			hdr->CHANNEL[ns].bi  = sizeof(double)*ns;
 		}
 
-       		double *data = (double*)realloc(hdr->AS.rawdata,hdr->NRec*hdr->SPR*hdr->NS*sizeof(double));
-		hdr->FILE.LittleEndian = (__BYTE_ORDER == __LITTLE_ENDIAN);   // no swapping
+       	double *data = (double*)realloc(hdr->AS.rawdata,hdr->NRec*hdr->SPR*hdr->NS*sizeof(double));
+        hdr->FILE.LittleEndian = (__BYTE_ORDER == __LITTLE_ENDIAN);   // no swapping
 		hdr->AS.rawdata = (uint8_t*) data;
 
 		/*

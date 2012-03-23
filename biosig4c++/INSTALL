@@ -62,7 +62,7 @@ P5) Host=Win32 platform (this solution is currently not maintained):
 
 Platform specific information
 -----------------------------
-# Linux, MacOSX(?) 
+# Linux
 You need GNU gcc, g++ (ver>4.0), make, zlib (if you do not have zlib, do not define WITH_ZLIB), 
 libsuitesparse (if you do not have libsuitesparse, do not define WITH_CHOLMOD).
 
@@ -83,6 +83,23 @@ Running make compiles the converter.
   make test		# tests HL7<->SCP, SCP<->GDF, GDF<->HL7 converters
   make test6		# tests bidirectional conversion between 6 differerent data formats	
 
+# Mac OS X (tested under 10.7 Lion)
+ 1. First, get Xcode from the App Store. You need to create an Apple Developer Account (which is free) to install the command line tools (see next step).
+ 2. In Xcode, go to Preferences - Downloads - Components - Install Command Line Tools.
+ 3. Install MacPorts from http://www.macports.org/.
+ 4. In a terminal, type "sudo port install gawk".
+ 5. In a terminal, type "sudo port install SuiteSparse".
+
+Optional (if you want a good IDE, this is recommended):
+ 6. Install Eclipse from http://www.eclipse.org/.
+ 7. Install CDT (in Eclipse, go to Help - Install New Software...).
+    Activate the CDT repository by clicking on "Available Software Sites" and activate "CDT Juno".
+    After clicking OK, select "-- All Available Sites --" and install "CDT Main Features".
+ 8. In Eclipse, go to Preferences - C/C++ - Build - Environment - Add...
+    Enter PATH in the Name text box and /opt/local/bin:/opt/local/sbin in the Value text box.
+ 9. To load the project, go to File - New - Makefile Project with Existing Code.
+    Fill in the name of the project (for example, biosig4c++) and enter the root folder containing the source code of biosig4c++.
+10. In the Project Explorer, you can now right-click on the project and choose Clean or Build to start compiling the project.
 
 
 # MinGW Crosscompiler on Debian/Ubuntu for Windows  

@@ -92,7 +92,7 @@ DEFINES      += -D=WITHOUT_NETWORK
 CFLAGS        = -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 CXXFLAGS      = -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 AR            = ar crs
-INCPATH       = -I /usr/include/libxml2/
+INCPATH       = -I /usr/include/libxml2/ -I/opt/local/include/
 #INCPATH       = -I /usr/local/include/gdcm-2.0/
 #		../gdcm-2.0.10/Source/DataStructureAndEncodingDefinition \
 #		../gdcm-2.0.10/Source/InformationObjectDefinition  	\
@@ -100,9 +100,9 @@ INCPATH       = -I /usr/include/libxml2/
 #		../gdcm-2.0.10/Source/DataDictionary 			\
 #		../gdcm-2.0.10/Source/Common
 LINK          = $(CXX)
-LFLAGS_dynamic = -L/usr/local/lib/ -L.
+LFLAGS_dynamic = -L/usr/local/lib/ -L/opt/local/lib -L.
 LIBS_dynamic  = -lbiosig
-LFLAGS_static = -L/usr/local/lib/
+LFLAGS_static = -L/usr/local/lib/ -L/opt/local/lib
 LIBS_static   = libbiosig.a
 ifeq ($(LIBEXT),so)
   LFLAGS      = $(LFLAGS_dynamic)
@@ -345,10 +345,10 @@ win64/%.obj: XMLParser/%.cpp
 biosig.o win32/biosig.obj win64/biosig.obj: eventcodes.i eventcodegroups.i units.i biosig.c biosig.h biosig-dev.h Makefile
 
 eventcodes.i eventcodegroups.i : extern/eventcodes.txt
-	./eventcodes.awk "$<"
+	gawk -f eventcodes.awk "$<"
 
 units.i : extern/units.csv
-	./units.awk "$<" > "$@"
+	gawk -f units.awk "$<" > "$@"
 
 
 #############################################################
