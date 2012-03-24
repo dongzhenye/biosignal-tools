@@ -36,7 +36,7 @@
 
 int main (int argc, char *argv[]) {
 
-	int s; 
+	int s=0; 
     	register int sd;
 	struct stat info;
 	int state; 
@@ -53,14 +53,12 @@ int main (int argc, char *argv[]) {
 
 	
 	char path2keys[1024];
-	strcpy(path2keys,getenv("HOME"));
-	int pos = strlen(path2keys);
-	path2keys[pos]=FILESEP;
-	path2keys[pos+1]=0;
-	strcat(path2keys,".biosig");
-	pos = strlen(path2keys);
-	path2keys[pos]=FILESEP;
-	path2keys[pos+1]=0;
+	char *str = strcpy(path2keys,getenv("HOME"));
+	str += strlen(path2keys);
+	str[0] = FILESEP;
+	str = memcpy(str+1,".biosig",7)+7;
+	str[0] = FILESEP;
+	str[1] = 0;
 	size_t path2keysLength = strlen(path2keys); 
 	stat(path2keys, &info);
 	if (!(S_ISDIR(info.st_mode)))
@@ -188,7 +186,7 @@ fprintf(stdout,"12 %i\n",hdr->EVENT.N);
 			getfiletype(hdr);
 fprintf(stdout,"13 %s %i\n",GetFileTypeString(hdr->TYPE),hdr->EVENT.N);
 			bscs_requ_hdr(sd,hdr);
-fprintf(stdout,"14a %i %i %i\n",0,hdr->NRec,hdr->EVENT.N);
+fprintf(stdout,"14a %i %i %i\n",0,(int)hdr->NRec,hdr->EVENT.N);
 			bscs_requ_dat(sd,0,hdr->NRec,hdr);
 fprintf(stdout,"14b %i\n",hdr->EVENT.N);
 //			bscs_requ_evt(sd,hdr);
@@ -222,7 +220,7 @@ fprintf(stdout,"16 %i\n",hdr->EVENT.N);
 			     		fclose(fid); 
 
 					ID = 0; 
-					if (state = bscs_open(sd,&ID)) // write-open
+					if ((state = bscs_open(sd,&ID))) // write-open
 						fprintf(stdout,"BSCS_OPEN failed: state=%08x\n",state);
 					else
 					{
@@ -235,7 +233,7 @@ fprintf(stdout,"16 %i\n",hdr->EVENT.N);
 						fprintf(fid,"key4biosig: host=%s ID=%16Lx ",argv[1],ID);
 						fclose(fid);
 
-						fprintf(stdout,"open_w ID=%lx\n",ID);
+						fprintf(stdout,"open_w ID=%Lx\n",ID);
 						hdr->HeadLen = count; 
 						bscs_send_dat(sd, buf, count);
 						bscs_close(sd);
@@ -290,5 +288,5 @@ fprintf(stdout,"16 %i\n",hdr->EVENT.N);
      * connection, since we're done .
      */
 //    bscs_disconnect(sd);
-
+	return(0);
 }

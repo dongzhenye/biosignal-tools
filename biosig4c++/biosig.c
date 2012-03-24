@@ -591,7 +591,7 @@ void* mfer_swap8b(uint8_t *buf, int8_t len, char FLAG_SWAP)
 #endif
 #endif
 	if (VERBOSE_LEVEL==9)
-		fprintf(stdout,"%2x%2x%2x%2x%2x%2x%2x%2x %li %f\n",buf[0],buf[1],buf[2],buf[3],buf[4],buf[5],buf[6],buf[7],*(uint64_t*)buf,*(double*)buf);
+		fprintf(stdout,"%2x%2x%2x%2x%2x%2x%2x%2x %i %f\n",buf[0],buf[1],buf[2],buf[3],buf[4],buf[5],buf[6],buf[7],(int)*(uint64_t*)buf,*(double*)buf);
 
 	return(buf);
 }
@@ -733,13 +733,13 @@ char* PhysDim(uint16_t PhysDimCode, char *PhysDim)
 {
 	// converting PhysDimCode -> PhysDim
 	uint16_t k=0;
-
-	strcpy(PhysDim,PhysDimFactor[PhysDimCode & 0x001F]);
+	size_t l2 = strlen(PhysDimFactor[PhysDimCode & 0x001F]);	
+	memcpy(PhysDim,PhysDimFactor[PhysDimCode & 0x001F],l2);
 
 	PhysDimCode &= ~0x001F;
 	for (k=0; _physdim[k].idx<0xffff; k++)
 	if (PhysDimCode == _physdim[k].idx) {
-		strncat(PhysDim, _physdim[k].PhysDimDesc, MAX_LENGTH_PHYSDIM);
+		strncpy(PhysDim+l2, _physdim[k].PhysDimDesc, MAX_LENGTH_PHYSDIM+1-l2);
 		PhysDim[MAX_LENGTH_PHYSDIM]='\0';
 		break;
 	}
@@ -2353,23 +2353,28 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     	sprintf((char*)hdr->AS.Header,"GDF %4.2f",hdr->VERSION);
 	    	uint8_t* Header2 = hdr->AS.Header+256;
 
-		uint16_t maxlen=66;
-		if (hdr->VERSION<1.90) maxlen=80;
-		if (strlen(hdr->Patient.Id) > 0) {
+		uint16_t maxlen = 66;
+		if (hdr->VERSION < 1.90) maxlen = 80;
+		size_t l1 = (hdr->Patient.Id==NULL) ? 0 : strlen(hdr->Patient.Id);
+		size_t l2 = (hdr->Patient.Name==NULL) ? 0 : strlen(hdr->Patient.Name);
+		if (0 < l1 && l1 < maxlen) {
 			for (k=0; hdr->Patient.Id[k]; k++)
 				if (isspace(hdr->Patient.Id[k]))
 					hdr->Patient.Id[k] = '_';
 
-	     		strncat(Header1+8, hdr->Patient.Id, maxlen);
+	     		strcpy(Header1+8, hdr->Patient.Id);
 		}
-		else
-		     	strncat(Header1+8, "X", maxlen);
+		else {
+		     	strcpy(Header1+8, "X X");
+			l1 = 1;
+		}
 
-	     	strncat(Header1+8, " ", maxlen);
-		if (!hdr->FLAG.ANONYMOUS && (hdr->Patient.Name!=NULL))
-		     	strncat(Header1+8, hdr->Patient.Name, maxlen);
-		else
-		     	strncat(Header1+8, "X", maxlen);
+		if (!hdr->FLAG.ANONYMOUS && (0 < l2) && (l1+l2+1 < maxlen) ) {
+		     	Header1[8+l1] = ' ';
+		     	strcpy(Header1+8+1+l1, hdr->Patient.Name);
+		}
+		else if (l1+3 < maxlen)
+		     	strcpy(Header1+8+l1, " X");
 
 		if (hdr->VERSION>1.90) {
 	     		Header1[84] = (hdr->Patient.Smoking%4) + ((hdr->Patient.AlcoholAbuse%4)<<2) + ((hdr->Patient.DrugAbuse%4)<<4) + ((hdr->Patient.Medication%4)<<6);
@@ -8766,7 +8771,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			hdr   = ifopen(hdr,"r");
 		}
 
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 179] <%s> %i %li\n",hdr->FileName,hdr->FILE.OPEN,bufsiz);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 179] <%s> %i %i\n",hdr->FileName,hdr->FILE.OPEN,(int)bufsiz);
 
 		if (hdr->FILE.OPEN) {
         		uint16_t *Marker=NULL;
@@ -10109,16 +10114,21 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 
 
    		fprintf(fid,"\n[Header 2]\n");
-		char fn[1025];
-		strcpy(fn,hdr->FileName);
-		char e1 = (hdr->TYPE == ASCII ? 'a' : 's');
-		if (strrchr(fn,'.')==NULL)
-			strcat(fn,".");
-
+		k = strlen(hdr->FileName);
+		char* fn = (char*)calloc(k + 10,1);
+		strcpy(fn, hdr->FileName);
+		char *e = strrchr(fn,'.');
+		if (e==NULL) { 
+			fn[k] = '.';
+			e = fn+k+1;
+		}
+		*e = (hdr->TYPE == ASCII ? 'a' : 's');
+		e++;
+		
     		for (k=0; k<hdr->NS; k++)
     		if (hdr->CHANNEL[k].OnOff) {
-    			sprintf(strrchr(fn,'.'),".%c%02i",e1,(int)k+1);
-    			if (hdr->FILE.COMPRESSION) strcat(fn,"_gz");
+    			if (hdr->FILE.COMPRESSION) sprintf(e,"%02i_gz",(int)k+1);
+    			else sprintf(e,"%02i",(int)k+1);
 	    		fprintf(fid,"Filename  \t= %s\n",fn);
 	    		fprintf(fid,"Label     \t= %s\n",hdr->CHANNEL[k].Label);
 	    		if (hdr->TYPE==ASCII)
@@ -10154,7 +10164,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 	    		fprintf(fid,"PhysMax  \t= %g\n",hdr->CHANNEL[k].PhysMax);
 	    		fprintf(fid,"PhysMin  \t= %g\n",hdr->CHANNEL[k].PhysMin);
 	    		fprintf(fid,"SamplingRate\t= %f\n",hdr->CHANNEL[k].SPR*hdr->SampleRate/hdr->SPR);
-	    		fprintf(fid,"NumberOfSamples\t= %li\n",(hdr->CHANNEL[k].SPR*hdr->NRec));
+	    		fprintf(fid,"NumberOfSamples\t= %i\n",(int)(hdr->CHANNEL[k].SPR*hdr->NRec));
 	    		fprintf(fid,"HighPassFilter\t= %f\n",hdr->CHANNEL[k].HighPass);
 	    		fprintf(fid,"LowPassFilter\t= %f\n",hdr->CHANNEL[k].LowPass);
 	    		fprintf(fid,"NotchFilter\t= %f\n",hdr->CHANNEL[k].Notch);
@@ -10202,6 +10212,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 			}
 		}
 		fclose(fid);
+		free(fn);
     	}
 	else if (hdr->TYPE==BrainVision) {
 
@@ -10586,30 +10597,40 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		// tag 23: Manufacturer
 		tag = 23;
 		Header1[curPos] = tag;
-		strcpy(Header1+curPos+2,hdr->ID.Manufacturer.Name);
-		strcat(Header1+curPos+2,"^");
-		if (hdr->ID.Manufacturer.Model != NULL) {
-			strcat(Header1+curPos+2,hdr->ID.Manufacturer.Model);
+		{
+			char *str = Header1+curPos+2;
+			strncpy(str, hdr->ID.Manufacturer.Name, MAX_LENGTH_MANUF);
+			size_t l2,l1 = strlen(str);
+
+			l2 = (hdr->ID.Manufacturer.Model==NULL) ? MAX_LENGTH_MANUF*2 : strlen(hdr->ID.Manufacturer.Model);
+			str[l1++]='^';  
+			if (l1+l2 <= MAX_LENGTH_MANUF) {
+				memcpy(str+l1, hdr->ID.Manufacturer.Model, l2);
+				l1 += l2;
+			}
+
+			l2 = (hdr->ID.Manufacturer.Version==NULL) ? MAX_LENGTH_MANUF*2 : strlen(hdr->ID.Manufacturer.Version);
+			str[l1++]='^';  
+			if (l1+l2 <= MAX_LENGTH_MANUF) {
+				memcpy(str+l1, hdr->ID.Manufacturer.Version, l2);
+				l1 += l2;
+			}
+
+			l2 = (hdr->ID.Manufacturer.SerialNumber==NULL) ? MAX_LENGTH_MANUF*2 : strlen(hdr->ID.Manufacturer.SerialNumber);
+			str[l1++]='^';  
+			if (l1+l2 <= MAX_LENGTH_MANUF) {
+				memcpy(str+l1, hdr->ID.Manufacturer.SerialNumber, l2);
+				l1 += l2;
+			}
+			len = min(l1, MAX_LENGTH_MANUF);
+			str[len]=0;
 		}
-		strcat(Header1+curPos+2,"^");
-		if (hdr->ID.Manufacturer.Version != NULL) {
-			strcat(Header1+curPos+2,hdr->ID.Manufacturer.Version);
-		}
-		strcat(Header1+curPos+2,"^");
-		if (hdr->ID.Manufacturer.SerialNumber!=NULL) {
-			strcat(Header1+curPos+2,hdr->ID.Manufacturer.SerialNumber);
-		}
-		len = strlen(Header1+curPos+2);
 		Header1[curPos] = tag;
 		if (len<128) {
 			hdr->AS.Header[curPos+1] = len;
 			curPos += len+2;
-		} else if (len <= 0xffff) {
-			hdr->AS.Header[curPos+1] = sizeof(uint16_t);
-			beu16a(len, hdr->AS.Header+curPos+2);
-			curPos += len+1+1+2;
 		} else
-			fprintf(stderr,"Warning MFER(W) Tag23 (manufacturer) to long len=%i>128\n",(int)len);
+			fprintf(stderr,"Warning MFER(W) Tag23 (manufacturer) too long len=%i>128\n",(int)len);
 
 		if (VERBOSE_LEVEL>8)
 			fprintf(stdout,"Write MFER: tag=%i,len%i,curPos=%i\n",tag,(int)len,(int)curPos);
@@ -11191,7 +11212,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 
 
 	if (VERBOSE_LEVEL>6)
-		fprintf(stdout,"SREAD( %p, %li, %li, %s ) MODE=%i\n",data, start, length, hdr->FileName, hdr->FILE.OPEN);
+		fprintf(stdout,"SREAD( %p, %i, %i, %s ) MODE=%i\n",data, (int)start, (int)length, hdr->FileName, hdr->FILE.OPEN);
 
 	if (start >= (size_t)hdr->NRec) return(0);
 
@@ -11750,7 +11771,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 	} val;
 
 	if (VERBOSE_LEVEL>6)
-		fprintf(stdout,"SWRITE( %p, %li, %s ) MODE=%i\n",data, nelem, hdr->FileName, hdr->FILE.OPEN);
+		fprintf(stdout,"SWRITE( %p, %i, %s ) MODE=%i\n",data, (int)nelem, hdr->FileName, hdr->FILE.OPEN);
 
 	// write data
 
@@ -11795,7 +11816,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 
 
 	if (VERBOSE_LEVEL>7)
-		fprintf(stdout,"swrite 311: %li %i\n",hdr->NRec,hdr->NS);
+		fprintf(stdout,"swrite 311: %i %i\n",(int)hdr->NRec,hdr->NS);
 
 	size_t bi8 = 0;
 	for (k1=0,k2=0; k1<hdr->NS; k1++) {
@@ -11855,7 +11876,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 			ptr = hdr->AS.rawdata + (off>>3);
 
 			if (VERBOSE_LEVEL>8)
-				fprintf(stdout,"swrite 313e %i %i %li %f\n",(int)k4,(int)k5,off>>3,sample_value);
+				fprintf(stdout,"swrite 313e %i %i %i %f\n",(int)k4,(int)k5,(int)(off>>3),sample_value);
 
 			// mapping of raw data type to (biosig_data_type)
 			switch (GDFTYP) {
@@ -12007,26 +12028,29 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 	else
 #endif
 	if ((hdr->TYPE == ASCII) || (hdr->TYPE == BIN)) {
-		char fn[1025];
 		HDRTYPE H1;
 		H1.CHANNEL = NULL; 
 		H1.FILE.COMPRESSION = hdr->FILE.COMPRESSION;
-		char e1 = (hdr->TYPE == ASCII ? 'a' : 's');
 
-		if (VERBOSE_LEVEL>8)
+		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"swrite ASCII/BIN\n");
 
-		strcpy(fn,hdr->FileName);
-		if (strrchr(fn,'.')==NULL)
-			strcat(fn,".");
-
+		k1 = strlen(hdr->FileName);
+		char* fn = (char*)calloc(k1 + 10,1);
+		strcpy(fn, hdr->FileName);
+		char *e = strrchr(fn,'.');
+		if (e==NULL) { 
+			fn[k1] = '.';
+			e = fn+k1+1;
+		}
+		*e = (hdr->TYPE == ASCII ? 'a' : 's');
+		e++;
+		
 		for (k1=0; k1<hdr->NS; k1++)
     		if (hdr->CHANNEL[k1].OnOff) {
 			CHptr 	= hdr->CHANNEL+k1;
-    			sprintf(strrchr(fn,'.'),".%c%02i",e1,(int)k1+1);
-			if (H1.FILE.COMPRESSION)
-	    			strcat(fn,"_gz");
-	    		else
+    			if (hdr->FILE.COMPRESSION) sprintf(e,"%02i_gz",(int)k1+1);
+    			else sprintf(e,"%02i",(int)k1+1);
 
     			if (VERBOSE_LEVEL>7)
 				fprintf(stdout,"#%i: %s\n",(int)k1,fn);
@@ -12075,6 +12099,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 			ifclose(&H1);
 		}
 		count = hdr->NRec;
+		free(fn);
 	}
 	else if ((hdr->TYPE != SCP_ECG) && (hdr->TYPE != HL7aECG)) {
 		// for SCP: writing to file is done in SCLOSE
@@ -12199,7 +12224,7 @@ int sclose(HDRTYPE* hdr)
 	if ((hdr->FILE.OPEN>1) && ((hdr->TYPE==GDF) || (hdr->TYPE==EDF) || (hdr->TYPE==BDF)))
 	{
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"sclose(121) nrec= %li\n",hdr->NRec);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"sclose(121) nrec= %i\n",(int)hdr->NRec);
 
 		// WRITE HDR.NRec
 		pos = (iftell(hdr)-hdr->HeadLen);

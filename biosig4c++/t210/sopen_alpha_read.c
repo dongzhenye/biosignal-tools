@@ -306,17 +306,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"<%6.2f> %i- %s | %s\n",hdr->VERSION, STATUS
 					sscanf(t1,"%02d.%02d.%02d",&T.tm_hour,&T.tm_min,&T.tm_sec);
 				else if (!strcmp(t,"TechSal"))
 					strncpy(hdr->ID.Technician,t1,MAX_LENGTH_TECHNICIAN);
-				else if (!strcmp(t,"TechTitle")) {
-					strncat(hdr->ID.Technician," ",MAX_LENGTH_TECHNICIAN);
-					strncat(hdr->ID.Technician,t1,MAX_LENGTH_TECHNICIAN);
-				}	
-				else if (!strcmp(t,"TechLast")) {
-					strncat(hdr->ID.Technician," ",MAX_LENGTH_TECHNICIAN);
-					strncat(hdr->ID.Technician,t1,MAX_LENGTH_TECHNICIAN);
-				}	
-				else if (!strcmp(t,"TechFirst")) {
-					strncat(hdr->ID.Technician," ",MAX_LENGTH_TECHNICIAN);
-					strncat(hdr->ID.Technician,t1,MAX_LENGTH_TECHNICIAN);
+				else if (!strcmp(t,"TechTitle") || !strcmp(t,"TechLast") || !strcmp(t,"TechFirst")) {
+					size_t l0 = strlen(hdr->ID.Technician);
+					size_t l1 = strlen(t1);
+					if (l0+l1+1 <= MAX_LENGTH_TECHNICIAN) {
+						hdr->ID.Technician[l0] = ' ';
+						strcpy(hdr->ID.Technician+l0+1,t1);
+					}
 				}	
 
 				t = strtok(NULL,"\xA\xD");
@@ -402,7 +398,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"<%6.2f> %i- %s | %s\n",hdr->VERSION, STATUS
 				
 		fid = fopen(fn,"r"); 
 		if (fid!=NULL) {
-			count  = fread(buf,1,bufsiz-1,fid); fclose(fid); buf[count]=0;	// terminating 0 character 		
+			count  = fread(buf,1,bufsiz-1,fid); fclose(fid); buf[count]=0;	// terminating 0 character 
+			char *Lastname = NULL;		
+			char *Firstname = NULL;		
 			struct tm T;
 			t   = strtok(buf,"\xA\xD");
 			t   = strtok(NULL,"\xA\xD");	// skip line 1 
@@ -447,12 +445,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"<%6.2f> %i- %s | %s\n",hdr->VERSION, STATUS
 				else if (!strcmp(t,"Weight")) 
 					hdr->Patient.Weight = atof(t1); 
 				else if (!strcmp(t,"FirstName")) {
-					strncat(hdr->Patient.Name,t1,MAX_LENGTH_NAME); 
-					strncat(hdr->Patient.Name," ",MAX_LENGTH_NAME); 
+					Firstname = t1;
 				}	
 				else if (!strcmp(t,"LastName")) {
-					strncat(hdr->Patient.Name,t1,MAX_LENGTH_NAME); 
-					strncat(hdr->Patient.Name," ",MAX_LENGTH_NAME); 
+					Lastname = t1;
 				}
 				else if (!strcmp(t,"BirthDay")) {
 					int c = sscanf(t1,"%02d.%02d.%04d",&T.tm_mday,&T.tm_mon,&T.tm_year);
@@ -465,6 +461,16 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"<%6.2f> %i- %s | %s\n",hdr->VERSION, STATUS
 				}	
 				t = strtok(NULL,"\xA\xD");
 			}	
+
+			size_t l0 = strlen(Firstname);
+			size_t l1 = strlen(Lastname);
+			if (l0+l1+1 <= MAX_LENGTH_NAME) {
+				strcpy(hdr->Patient.Name, Firstname);
+				hdr->Patient.Name[l0] = ' ';
+				strcpy(hdr->Patient.Name + l0 + 1, Lastname);
+			} else 
+				strncpy(hdr->Patient.Name, Lastname, MAX_LENGTH_NAME); 
+			
 		}
 
 		strcpy(fn,hdr->FileName); 
@@ -518,3 +524,4 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"<%6.2f> %i- %s | %s\n",hdr->VERSION, STATUS
 		free(fn);     
 		hdr->FileName = FileName; 		
 }
+
