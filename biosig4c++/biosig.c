@@ -971,7 +971,7 @@ int ifprintf(HDRTYPE* hdr, const char *format, va_list arg) {
 int ifputc(int c, HDRTYPE* hdr) {
 #ifdef ZLIB_H
 	if (hdr->FILE.COMPRESSION)
-	return(gzputc(hdr->FILE.FID,c));
+	return(gzputc(hdr->FILE.gzFID, c));
 	else
 #endif
 	return(fputc(c,hdr->FILE.FID));
@@ -11311,7 +11311,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 		ptr = ptr1 + (k5*SZ>>3);
 
 		if (VERBOSE_LEVEL>8)
-			fprintf(stdout,"SREAD 555: k_i = [%d %d %d %d ] 0x%08x[%f] @%p => ",(int)k1,(int)k2,(int)k4,(int)k5,(int)leu32p(ptr),lef64p(ptr),ptr);
+			fprintf(stdout,"SREAD 555: k_i = [%d %d %d %d ] 0x%08x[%g] @%p => ",(int)k1,(int)k2,(int)k4,(int)k5,(int)leu32p(ptr),lef64p(ptr),ptr);
 
 		switch (GDFTYP) {
 		case 1:
@@ -11520,7 +11520,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 			sample_value = sample_value * CHptr->Cal + CHptr->Off;
 
 		if (VERBOSE_LEVEL>8)
-			fprintf(stdout,"%f\n",sample_value);
+			fprintf(stdout,"%g\n",sample_value);
 
 		// resampling 1->DIV samples
 		if (hdr->FLAG.ROW_BASED_CHANNELS) {
@@ -11838,7 +11838,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 		fprintf(stdout,"swrite 312=#%i gdftyp=%i %i %i %i %f %f %f %f %i\n",(int)k1,GDFTYP,(int)bi8,(int)SZ,(int)CHptr->SPR,CHptr->Cal,CHptr->Off,iCal,iOff,(int)bpb8);
 
 		for (k4 = 0; k4 < (size_t)hdr->NRec; k4++) {
-			if (VERBOSE_LEVEL>7)
+			if (VERBOSE_LEVEL>8)
 				fprintf(stdout,"swrite 313- #%i: [%i %i] %i %i %i %i %i\n",(int)k1,(int)hdr->data.size[0],(int)hdr->data.size[1],(int)k4,(int)0,(int)hdr->SPR,(int)DIV,(int)nelem);
 
 		for (k5 = 0; k5 < CHptr->SPR; k5++) {
