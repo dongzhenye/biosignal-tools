@@ -50,15 +50,17 @@
 #endif
 
 
+#define GCC_VERSION (__GNUC__ * 10000  + __GNUC_MINOR__ * 100  + __GNUC_PATCHLEVEL__)
+
 #if defined(__MINGW32__) 
    /* use local version because MINGW does not provide byteswap.h */
 #  define __BIG_ENDIAN  	 4321
 #  define __LITTLE_ENDIAN  1234
 #  define __BYTE_ORDER 	__LITTLE_ENDIAN
 #  include "win32/byteswap.h"
-#  define bswap_16(x) __bswap_16 (x)
-#  define bswap_32(x) __bswap_32 (x)
-#  define bswap_64(x) __bswap_64 (x)
+#  define bswap_16(x) __bswap_16(x)
+#  define bswap_32(x) __bswap_32(x)
+#  define bswap_64(x) __bswap_64(x)
 
 #elif defined(__NetBSD__)
 #  include <sys/bswap.h>
@@ -68,6 +70,21 @@
 #  define bswap_16(x) bswap16(x)
 #  define bswap_32(x) bswap32(x)
 #  define bswap_64(x) bswap64(x)
+
+#elif defined(__APPLE__)
+#  include <Endian.h>
+#  include <NSByteOrder.h>
+#  define __BIG_ENDIAN  	(NS_BigEndian)
+#  define __LITTLE_ENDIAN	(NS_LittleEndian)
+#  define __BYTE_ORDER  	(NSHostByteOrder())
+#  define bswap_16(x) Endian16_Swap(x)
+#  if (GCC_VERSION < 40300)
+#    define bswap_32(x) Endian32_Swap(x)
+#    define bswap_64(x) Endian64_Swap(x)
+#  else 
+#    define bswap_32(x) __builtin_bswap32(x)
+#    define bswap_64(x) __builtin_bswap64(x)
+#  endif
 
 #elif (defined(BSD) && (BSD >= 199103))
 #  include <machine/endian.h>
@@ -80,8 +97,8 @@
 
 #elif defined(__GNUC__) 
    /* use byteswap macros from the host system, hopefully optimized ones ;-) */
-#  include <byteswap.h>
 #  include <endian.h>
+#  include <byteswap.h>
 #  define bswap_16(x) __bswap_16 (x)
 #  define bswap_32(x) __bswap_32 (x)
 #  define bswap_64(x) __bswap_64 (x)
@@ -91,21 +108,9 @@
 #  define __LITTLE_ENDIAN  	1234
 #  define __BYTE_ORDER 	__BIG_ENDIAN
 
-#elif defined(__APPLE__)
-#  include <Endian.h>
-#  include <NSByteOrder.h>
-#  define __BIG_ENDIAN  	(NS_BigEndian)
-#  define __LITTLE_ENDIAN	(NS_LittleEndian)
-#  define __BYTE_ORDER  	(NSHostByteOrder())
-#  define bswap_16(x) Endian16_Swap(x)
-#  define bswap_32(x) Endian32_Swap(x)
-#  define bswap_64(x) Endian64_Swap(x)
-
 #endif 
 
-
 #if 1
-
 # ifndef bswap_16
 #  define bswap_16(x)   \
 	((((x) & 0xff00) >> 8) | (((x) & 0x00ff) << 8))
