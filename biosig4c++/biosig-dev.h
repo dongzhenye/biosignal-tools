@@ -72,19 +72,13 @@
 #  define bswap_64(x) bswap64(x)
 
 #elif defined(__APPLE__)
-#  include <Endian.h>
-#  include <NSByteOrder.h>
-#  define __BIG_ENDIAN  	(NS_BigEndian)
-#  define __LITTLE_ENDIAN	(NS_LittleEndian)
-#  define __BYTE_ORDER  	(NSHostByteOrder())
-#  define bswap_16(x) Endian16_Swap(x)
-#  if (GCC_VERSION < 40300)
-#    define bswap_32(x) Endian32_Swap(x)
-#    define bswap_64(x) Endian64_Swap(x)
-#  else 
-#    define bswap_32(x) __builtin_bswap32(x)
-#    define bswap_64(x) __builtin_bswap64(x)
-#  endif
+#  include <CoreFoundation/CFByteOrder.h>
+#  define __BIG_ENDIAN  	CFByteOrderBigEndian
+#  define __LITTLE_ENDIAN	CFByteOrderLittleEndian
+#  define __BYTE_ORDER (CFByteOrderGetCurrent)
+#  define bswap_16(x) CFSwapInt16(x)
+#  define bswap_32(x) CFSwapInt32(x)
+#  define bswap_64(x) CFSwapInt64(x)
 
 #elif (defined(BSD) && (BSD >= 199103))
 #  include <machine/endian.h>
