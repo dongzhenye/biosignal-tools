@@ -2069,6 +2069,8 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 		hdr->TYPE = ASCII_IBI;
 	else if (!memcmp(Header1,MAGIC_NUMBER_Z,3))
 		hdr->TYPE = Z;
+	else if (!memcmp(Header1,"\xAF\xFE\xDA\xDA",4) || !memcmp(Header1,"\xDA\xDA\xFE\xAF",4) || !memcmp(Header1,"\x55\x55\xFE\xAF",4) )
+		hdr->TYPE = WG1;	// Walter Graphtek
 	else if (!strncmp(Header1,"PK\003\004",4))
 		hdr->TYPE = ZIP;
 	else if (!strncmp(Header1,"PK\005\006",4))
@@ -2207,6 +2209,7 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ VRML,    	"VRML" },
 	{ VTK,    	"VTK" },
 	{ WAV,    	"WAV" },
+	{ WG1,    	"Walter Graphtek" },
 	{ WMF,    	"WMF" },
 	{ XML,    	"XML" },
 	{ ZIP,    	"ZIP" },
@@ -9970,6 +9973,21 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
     		if (serror()) return(hdr);
     		// hdr->FLAG.SWAP = 0;
+	}
+
+	else if (hdr->TYPE==WG1) {
+		uint32_t VER = leu32p(hdr->AS.Header); 
+		if (VER==0xAFFE5555) {
+	    		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+	    		B4C_ERRMSG = "ERROR BIOSIG SOPEN(READ): WG1 0x5555FEAF format is not supported yet";
+		}
+		else {
+			hdr->SampleRate = 1e6 / leu32p(Header1+16);			
+			hdr->NS = leu16p(Header1+22);			
+	    		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+	    		B4C_ERRMSG = "ERROR BIOSIG SOPEN(READ): WG1 data format is not supported yet";
+		}
+    		return(hdr);
 	}
 
 	else {

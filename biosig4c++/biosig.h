@@ -159,7 +159,7 @@ enum FileFormat {
 	TIFF, TMS32, TMSiLOG, TRC, UNIPRO, VRML, VTK,
 	WAV, WinEEG, WMF, XML, XPM,
 	Z, ZIP, ZIP2, 
-	SQLite, NeuroLoggerHEX, BESA, ePrime, JSON, SYNERGY
+	SQLite, NeuroLoggerHEX, BESA, ePrime, JSON, SYNERGY, WG1
 };
 
 
