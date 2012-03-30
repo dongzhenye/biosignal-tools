@@ -4756,13 +4756,16 @@ elseif strcmp(HDR.TYPE,'WFT'),	% implementation of this format is not finished y
         
 elseif strcmp(HDR.TYPE,'WG1'),
         if ~isempty(findstr(HDR.FILE.PERMISSION,'r')),		%%%%% READ 
-                HDR.FILE.FID = fopen(HDR.FileName,[HDR.FILE.PERMISSION,'b'],HDR.Endianity);
-                
-                HDR.VERSION = dec2hex(fread(HDR.FILE.FID,1,'uint32')); 
+            HDR.FILE.FID = fopen(HDR.FileName,[HDR.FILE.PERMISSION,'b'],HDR.Endianity);
+            HDR.VERSION = dec2hex(fread(HDR.FILE.FID,1,'uint32'));
+	    if strcmp(HDR.VERSION,'AFFE5555')
+		error('This version of WG1 format is not supported, yet')
+
+	    elseif any(strcmp(HDR.VERSION,{'DADAFEFA','AFFEDADA'}))
                 HDR.WG1.MachineId = fread(HDR.FILE.FID,1,'uint32');
                 HDR.WG1.Day = fread(HDR.FILE.FID,1,'uint32'); 
                 HDR.WG1.millisec = fread(HDR.FILE.FID,1,'uint32');
-		HDR.T0    = datevec(HDR.WG1.Day-15755-hex2dec('250000'));
+		HDR.T0    = datevec(HDR.WG1.Day - 15755 - hex2dec('250000'));
 		HDR.T0(1) = HDR.T0(1) + 1970;
 		HDR.T0(4) = floor(HDR.WG1.millisec/3600000);
 		HDR.T0(5) = mod(floor(HDR.WG1.millisec/60000),60);
@@ -4815,11 +4818,11 @@ elseif strcmp(HDR.TYPE,'WG1'),
         	conv = round(19*sinh((0:127)/19));
 		conv = [conv, HDR.WG1.unknownNr, -conv(end:-1:2)];
     		HDR.WG1.conv = conv;
-
 		HDR.NRec = HDR.WG1.szRecs;
 		HDR.SPR  = HDR.WG1.szBlock;
 		HDR.Dur  = HDR.SPR/HDR.SampleRate;
 		HDR.AS.endpos = HDR.NRec*HDR.SPR;
+	    end 
 		
 		%----- load event information -----
 		eventFile = fullfile(HDR.FILE.Path,[HDR.FILE.Name, '.wg2']);

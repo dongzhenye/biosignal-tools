@@ -457,6 +457,9 @@ else
                 elseif all(s(1:4)==hex2dec(reshape('DADAFEAF',2,4)')'); 
                         HDR.TYPE='WG1';
                         HDR.Endianity = 'ieee-le';
+                elseif all(s(1:4)==hex2dec(reshape('5555FEAF',2,4)')'); 
+                        HDR.TYPE='WG1';
+                        HDR.Endianity = 'ieee-le';
                 elseif all(s(1:4)==[14,15,23,0]); 
                         HDR.TYPE='WINEEG';
                         

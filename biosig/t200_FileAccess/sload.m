@@ -631,7 +631,7 @@ if exist('mexSLOAD','file')==3,
 
 	catch
 		%fprintf(1,lasterr);
-		fprintf(1, 'SLOAD: mexSLOAD failed - the slower M-function is used.\n');
+		fprintf(1, 'SLOAD: mexSLOAD(''%s'') failed - the slower M-function is used.\n', FILENAME);
 	end;
 else 
 	global FLAG_HINT_mexSLOAD;
