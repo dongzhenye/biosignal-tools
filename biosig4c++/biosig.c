@@ -1286,16 +1286,18 @@ void LoadGlobalEventCodeTable()
 {
 	size_t N = 0;
 
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"LoadGlobalEventTable(start)%i\n",GLOBAL_EVENTCODES_ISLOADED);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"LoadGlobalEventTable(start)%i\n",GLOBAL_EVENTCODES_ISLOADED);
 
 	if (GLOBAL_EVENTCODES_ISLOADED) return; 	// table is already loaded
 
+	atexit(&FreeGlobalEventCodeTable);
+	// TODO: move user-specified events into hdr
 	Global.CodeDesc = NULL;
 	Global.CodeIndex = NULL;
 	Global.EventCodesTextBuffer = NULL;
 	Global.LenCodeDesc = 0;
 
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"LoadGlobalEventTable(101)%i %i\n",GLOBAL_EVENTCODES_ISLOADED,Global.LenCodeDesc);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"LoadGlobalEventTable(101)%i %i\n",GLOBAL_EVENTCODES_ISLOADED,Global.LenCodeDesc);
 
 	while (ETD[N].desc != NULL) N++;
 	N += 256; 	// make sure there is enough space for free text events 
