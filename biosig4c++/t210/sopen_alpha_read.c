@@ -304,12 +304,23 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"<%6.2f> %i- %s | %s\n",hdr->VERSION, STATUS
 				}	
 				else if (!strcmp(t,"RecTime"))
 					sscanf(t1,"%02d.%02d.%02d",&T.tm_hour,&T.tm_min,&T.tm_sec);
-				else if (!strcmp(t,"TechSal"))
+				else if (!strcmp(t,"TechSal")) {
+#ifdef DYNAMIC_TECHNICIAN
+					if (hdr->ID.Technician) free(hdr->ID.Technician);
+					hdr->ID.Technician = strdup(t1);
+#else
 					strncpy(hdr->ID.Technician,t1,MAX_LENGTH_TECHNICIAN);
+#endif
+				}
 				else if (!strcmp(t,"TechTitle") || !strcmp(t,"TechLast") || !strcmp(t,"TechFirst")) {
 					size_t l0 = strlen(hdr->ID.Technician);
 					size_t l1 = strlen(t1);
-					if (l0+l1+1 <= MAX_LENGTH_TECHNICIAN) {
+#ifdef DYNAMIC_TECHNICIAN
+					hdr->ID.Technician = (char*)realloc(hdr->ID.Technician,l0+l1+2);
+#else
+					if (l0+l1+1 <= MAX_LENGTH_TECHNICIAN) 
+#endif
+					{
 						hdr->ID.Technician[l0] = ' ';
 						strcpy(hdr->ID.Technician+l0+1,t1);
 					}

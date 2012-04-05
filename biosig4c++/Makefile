@@ -77,7 +77,7 @@ DEFINES       = -D=WITH_ZLIB
 DEFINES      += -D=__4HAERTEL__
 DEFINES      += -D=WITH_FAMOS
 DEFINES      += -D=WITH_CHOLMOD
-DEFINES      += -D=WITHOUT_NETWORK
+#DEFINES      += -D=WITHOUT_NETWORK
 #DEFINES      += -D=WITH_HDF
 #DEFINES      += -D=WITH_MATIO
 #DEFINES      += -D=WITH_LIBXML2 
@@ -89,6 +89,7 @@ DEFINES      += -D=WITHOUT_NETWORK
 #DEFINES      += -D=WITH_EEPROBE		
 #DEFINES      += -D=SOFTCODED_PHYSDIMTABLE	# obsolete
 #DEFINES      += -D=CNT32			# for 32bit Neuroscan format
+#DEFINES       += -D=DYNAMIC_TECHNICIAN		# TODO: this is experimental, fix it and make it the default
 CFLAGS        = -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 CXXFLAGS      = -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 AR            = ar crs
@@ -201,6 +202,7 @@ SOURCES       = biosig.c \
 		t230/sopen_hl7aecg.c \
 		t240/sopen_fef_read.c \
 		test0/sandbox.c \
+		xgethostname.c \
 		physicalunits.c \
 		biosig-network.c \
 		save2gdf.c \
@@ -224,6 +226,7 @@ OBJECTS       = \
 		sopen_hl7aecg.o \
 		biosig-network.o \
 		sandbox.o \
+		xgethostname.o
 
 MinGWOBJECTS  = \
 		win32/crc4scp.obj \
@@ -235,6 +238,7 @@ MinGWOBJECTS  = \
 		win32/sopen_hl7aecg.obj \
 		win32/biosig-network.obj \
 		win32/sandbox.obj \
+		win32/xgethostname.obj
 
 ifneq (,$(findstring WITH_FAMOS, $(DEFINES)))
   OBJECTS      += sopen_famos_read.o
@@ -577,15 +581,15 @@ win64mma: win64/libbiosig.a
 #	MEX-files for Octave and Matlab
 #############################################################
 mex mex4m mex4o oct: libbiosig.a
-	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" OCTAVE_VERSION=$(OCTAVE_VERSION) $@
+	$(MAKE) -C mex DEFINES="$(DEFINES)" CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" OCTAVE_VERSION=$(OCTAVE_VERSION) $@
 	-cp mex/*.mex* ../biosig/t200_FileAccess/
 
 mexw32: win32/libbiosig.a
-	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
+	$(MAKE) -C mex DEFINES="$(DEFINES)" CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
 	-cp mex/*.mexw32 ../biosig/t200_FileAccess/
 	
 mexw64: win64/libbiosig.a
-	$(MAKE) -C mex CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
+	$(MAKE) -C mex DEFINES="$(DEFINES)" CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
 	-cp mex/*.mexw64 ../biosig/t200_FileAccess/
 
 #############################################################
@@ -812,10 +816,10 @@ testbin: save2gdf $(DATA_DIR)t1.edf
 
 testscp: save2gdf $(DATA_DIR)t1.scp
 	# test converting SCP data
-	./save2gdf -f=HL7 $(DATA_DIR)/t1.scp $(TEMP_DIR)/t1.scp.hl7
-	./save2gdf -f=GDF $(TEMP_DIR)/t1.scp.hl7 $(TEMP_DIR)/t1.scp.hl7.gdf
-	./save2gdf -f=SCP $(TEMP_DIR)/t1.scp.hl7.gdf $(TEMP_DIR)/t1.scp.hl7.gdf.scp
-	./save2gdf -f=GDF $(TEMP_DIR)/t1.scp.hl7.gdf.scp $(TEMP_DIR)t1.scp.hl7.gdf.scp.gdf
+	./save2gdf -f=HL7 $(DATA_DIR)t1.scp $(TEMP_DIR)t1.scp.hl7
+	./save2gdf -f=GDF $(TEMP_DIR)t1.scp.hl7 $(TEMP_DIR)t1.scp.hl7.gdf
+	./save2gdf -f=SCP $(TEMP_DIR)t1.scp.hl7.gdf $(TEMP_DIR)t1.scp.hl7.gdf.scp
+	./save2gdf -f=GDF $(TEMP_DIR)t1.scp.hl7.gdf.scp $(TEMP_DIR)t1.scp.hl7.gdf.scp.gdf
 	./save2gdf -f=HL7 $(TEMP_DIR)t1.scp.hl7.gdf.scp.gdf $(TEMP_DIR)t1.scp.hl7.gdf.scp.gdf.hl7
 	./save2gdf -f=SCP $(TEMP_DIR)t1.scp.hl7.gdf.scp.gdf.hl7 $(TEMP_DIR)t1.scp.hl7.gdf.scp.gdf.hl7.scp
 	./save2gdf -f=GDF $(DATA_DIR)t1.scp $(TEMP_DIR)t1.scp.gdf
