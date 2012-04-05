@@ -1,4 +1,5 @@
 /* Copyright (c) 2001 Neal H Walfield <neal@cs.uml.edu>.
+   Copyright (c) 2012 Alois Schloegl <alois.schloegl@ist.ac.at>
    
    This file is placed into the public domain.  Its distribution
    is unlimited.
@@ -44,6 +45,10 @@
 #include <errno.h>
 #include <unistd.h>
 
+#ifdef _WIN32
+  #include <winsock2.h>
+#endif
+
 char *
 xgethostname (void)
 {
@@ -70,6 +75,12 @@ xgethostname (void)
       errno = ENOMEM;
       return NULL;
     }
+
+#ifdef _WIN32
+  WSADATA wsadata;
+  WSAStartup(MAKEWORD(1,1), &wsadata);
+  atexit(&WSACleanup);
+#endif
 
   err = gethostname (buf, size);
   while (err == -1 && errno == ENAMETOOLONG)
