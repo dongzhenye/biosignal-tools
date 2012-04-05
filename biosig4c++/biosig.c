@@ -71,9 +71,7 @@
   #define FILESEP '/'
 #endif
 
-#ifndef HOST_NAME_MAX
-#define HOST_NAME_MAX 256
-#endif
+char * xgethostname (void);
 
 int B4C_ERRNUM  = 0;
 const char *B4C_ERRMSG;
@@ -1454,26 +1452,41 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->ID.Manufacturer.Model        = NULL;
 	hdr->ID.Manufacturer.Version      = NULL;
 	hdr->ID.Manufacturer.SerialNumber = NULL;
+#ifdef DYNAMIC_TECHNICIAN
+	hdr->ID.Technician 	= NULL;
+#else
 	hdr->ID.Technician[0] 	= 0;
+#endif
 	hdr->ID.Hospital 	= "\x00";
+
 	memset(hdr->IPaddr, 0, 16);
 #ifndef WITHOUT_NETWORK
 #ifdef _WIN32
 	WSADATA wsadata;
 	WSAStartup(MAKEWORD(1,1), &wsadata);
 #endif
+
+#ifdef DYNAMIC_TECHNICIAN
+//	hdr->ID.Technician = strdup(getlogin()); 
+	hdr->ID.Technician = strdup(getenv("LOGNAME")); 
+#else
 #ifndef ANDROID
 	// set default technician name to local IP address 
-	getlogin_r(hdr->ID.Technician, min(MAX_LENGTH_TECHNICIAN,LOGIN_NAME_MAX));//NB! max cause buffer overflow
+	getlogin_r(hdr->ID.Technician, MAX_LENGTH_TECHNICIAN);
 #else
 	hdr->ID.Technician[MAX_LENGTH_TECHNICIAN-2]=0;
 #endif
+#endif
+	{
       	// set default IP address to local IP address
-	char localhostname[HOST_NAME_MAX+1];
-	if (!gethostname(localhostname,HOST_NAME_MAX+1)) {
+	char *localhostname;
+	localhostname = xgethostname();
+	if (localhostname) {
 		// TODO: replace gethostbyname by getaddrinfo (for IPv6)
 		struct hostent *host = gethostbyname(localhostname);
 		if (host) memcpy(hdr->IPaddr, host->h_addr, host->h_length);
+		free (localhostname);
+	}
 	}
 #ifdef _WIN32
 	WSACleanup();
@@ -1604,6 +1617,10 @@ void destructHDR(HDRTYPE* hdr) {
 			free(((aECG_TYPE*)hdr->aECG)->Section11.Statements);
     		free(hdr->aECG);
     	}
+
+#ifdef DYNAMIC_TECHNICIAN
+	if (hdr->ID.Technician != NULL) free(hdr->ID.Technician);
+#endif
 
     	if (hdr->AS.bci2000 != NULL) free(hdr->AS.bci2000);
 
@@ -2988,8 +3005,14 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"user-specific events defined\n");
 		    		}
 		    		else if (tag==6) {
 		    			/* Technician  */
+#ifdef DYNAMIC_TECHNICIAN
+					hdr->ID.Technician = (char*)realloc(hdr->ID.Technician,len+1);
+					memcpy(hdr->ID.Technician,Header2+pos+4, len);
+					hdr->ID.Technician[len]=0;
+#else
 		    			memcpy(hdr->ID.Technician,Header2+pos+4,min(len,MAX_LENGTH_TECHNICIAN));
 		    			hdr->ID.Technician[min(len,MAX_LENGTH_TECHNICIAN)]=0;
+#endif
 		    		}
 		    		else if (tag==7) {
 		    			// recording institution
@@ -3829,7 +3852,13 @@ else if (!strncmp(MODE,"r",1)) {
 				strncpy(hdr->ID.Recording, Header1+88+pos+1, 80-pos);
 				hdr->ID.Recording[80-pos-1] = 0;
 				if (strtok(hdr->ID.Recording," ")!=NULL) {
-					strncpy(hdr->ID.Technician, strtok(NULL," "),MAX_LENGTH_TECHNICIAN);
+					char *tech = strtok(NULL," "); 
+#ifdef DYNAMIC_TECHNICIAN
+					if (hdr->ID.Technician) free(hdr->ID.Technician); 
+					hdr->ID.Technician = (tech != NULL) ?  strdup(tech) : NULL; 
+#else
+					strncpy(hdr->ID.Technician, tech, MAX_LENGTH_TECHNICIAN);
+#endif
 					hdr->ID.Manufacturer.Name  = strtok(NULL," ");
 				}
 
@@ -4582,8 +4611,14 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 #endif
 #endif // not WITHOUT_NETWORK
 				}
-				else if (!strcmp(line,"Recording.Technician"))
+				else if (!strcmp(line,"Recording.Technician")) {
+#ifdef DYNAMIC_TECHNICIAN
+					if (hdr->ID.Technician) free(hdr->ID.Technician);
+					hdr->ID.Technician = strdup(val);
+#else
 					strncpy(hdr->ID.Technician,val,MAX_LENGTH_TECHNICIAN);
+#endif
+				}
 				else if (!strcmp(line,"Manufacturer.Name"))
 					hdr->ID.Manufacturer.Name = val;
 				else if (!strcmp(line,"Manufacturer.Model"))
@@ -10502,8 +10537,10 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		if (hdr->T0>1)
 			strftime(tmp,81,"%02d-%b-%04Y",t);
 		else strcpy(tmp,"X");
-		if (!strlen(hdr->ID.Technician)) strcpy(hdr->ID.Technician,"X");
-		size_t len = sprintf(cmd,"Startdate %s X %s ", tmp, hdr->ID.Technician);
+
+		char *tmpstr = hdr->ID.Technician;	
+		if (!tmpstr || !strlen(tmp)) tmpstr = "X";
+		size_t len = sprintf(cmd,"Startdate %s X %s ", tmp, tmpstr);
 	     	memcpy(Header1+88, cmd, len);
 	     	memcpy(Header1+88+len, &hdr->ID.Equipment, 8);
 

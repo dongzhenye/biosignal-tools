@@ -30,7 +30,7 @@
 
 #define SERVER_PORT 54321
 
-#ifdef __WIN32__
+#if defined(__MINGW32__) 
 #include <winsock2.h>
 //#include <ws2tcpip.h>
 
@@ -59,12 +59,12 @@
 #define EADDRNOTAVAIL WSAEADDRNOTAVAIL
 #define EPROTONOSUPPORT WSAEPROTONOSUPPORT
 
-#if 0 //!__linux__ 
+#if 0 //!__linux__
 // needed by MinGW on Windows
 #define creat(a, c)    OpenFile(a, O_WRONLY|O_CREAT|O_TRUNC, c)
 #define write(a,b,c)   WriteFile(a,b,c,0,0)
 #define close(a)       CloseFile(a)
-#endif 
+#endif
 
 #else 
 #include <arpa/inet.h>
@@ -75,8 +75,6 @@
 #include <unistd.h>
 
 #endif
-
-#include <sys/types.h>
 
 
 /* External API definitions */
