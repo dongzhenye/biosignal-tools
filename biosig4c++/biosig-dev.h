@@ -73,9 +73,13 @@
 
 #elif defined(__APPLE__)
 #  include <CoreFoundation/CFByteOrder.h>
-#  define __BIG_ENDIAN  	CFByteOrderBigEndian
-#  define __LITTLE_ENDIAN	CFByteOrderLittleEndian
-#  define __BYTE_ORDER (CFByteOrderGetCurrent)
+#  define __BIG_ENDIAN       4321
+#  define __LITTLE_ENDIAN  1234
+#if (defined(__LITTLE_ENDIAN__) && (__LITTLE_ENDIAN__ == 1))
+    #define __BYTE_ORDER __LITTLE_ENDIAN
+#else
+    #define __BYTE_ORDER __BIG_ENDIAN
+#endif
 #  define bswap_16(x) CFSwapInt16(x)
 #  define bswap_32(x) CFSwapInt32(x)
 #  define bswap_64(x) CFSwapInt64(x)
