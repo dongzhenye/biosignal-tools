@@ -656,9 +656,9 @@ const struct PhysDimIdx
  */
 int strncmpi(const char* str1, const char* str2, size_t n)
 {
-	unsigned int k=0;
-	int r=0;
-	while (!r && str1[k] && str2[k] && (k<n)) {
+	size_t k=0;
+	char r=0;
+	while (r==0 && str1[k]!='\0' && str2[k]!='\0' && (k<n)) {
 		r = tolower(str1[k]) - tolower(str2[k]);
 		k++;
 	}
@@ -673,7 +673,7 @@ int strcmpi(const char* str1, const char* str2)
 	unsigned int k=0;
 	int r;
 	r = tolower(str1[k]) - tolower(str2[k]);
-	while (!r && str1[k] && str2[k]) {
+	while (r==0 && str1[k]!='\0' && str2[k]!='\0') {
 		k++;
 		r = tolower(str1[k]) - tolower(str2[k]);
 	}
@@ -688,7 +688,7 @@ int strcmp8(const char* str1, const char* str2)
 	unsigned int k=0;
 	int r;
 	r = str1[k] - str2[k];
-	while (!r && str1[k] && str2[k]) {
+	while (r==0 && str1[k]!='\0' && str2[k]!='\0') {
 		k++;
 		r = str1[k] - str2[k];
 	}
@@ -757,13 +757,13 @@ uint16_t PhysDimCode(const char* PhysDim0)
 
 	// greedy search - check all codes 0..65535
 	for (k1=0; k1<33; k1++)
-	if (!strncmp(PhysDimFactor[k1],PhysDim0,strlen(PhysDimFactor[k1])) && (PhysDimScale(k1)>0.0))
+	if (strncmp(PhysDimFactor[k1],PhysDim0,strlen(PhysDimFactor[k1]))==0 && (PhysDimScale(k1)>0.0))
 	{ 	// exclude if beginning of PhysDim0 differs from PhysDimFactor and if NAN
-		strcpy(s, PhysDimFactor[k1]);
+		strncpy(s, PhysDimFactor[k1],3);
 		s1 = s+strlen(s);
 		for (k2=0; _physdim[k2].idx < 0xffff; k2++) {
-			strcpy(s1, _physdim[k2].PhysDimDesc);
-			if (!strcmp8(PhysDim0, s)) {
+			strncpy(s1, _physdim[k2].PhysDimDesc, 77);
+			if (strcmp8(PhysDim0, s)==0) {
 		 		if (k1==32) k1 = 19;		// hack for "µ" = "u"
 				return(_physdim[k2].idx+k1);
 			}
@@ -803,7 +803,7 @@ gdf_time tm_time2gdf_time(struct tm *t){
 	
 	if (t == NULL) return(0); 
 
-	int Y,M,s; //h,m,
+	int Y,M,s; // h,m,
 	double D;
 	gdf_time o;
   	const int monthstart[] = {306, 337, 0, 31, 61, 92, 122, 153, 184, 214, 245, 275};
@@ -1866,18 +1866,17 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 
     	else if (!memcmp(Header1,MAGIC_NUMBER_FEF1,sizeof(MAGIC_NUMBER_FEF1)) || !memcmp(Header1,MAGIC_NUMBER_FEF2,sizeof(MAGIC_NUMBER_FEF1))) {
 	    	hdr->TYPE = FEF;
-		char tmp[9];
-		strncpy(tmp,(char*)hdr->AS.Header+8,8);
-		tmp[8]=0;
+		char *tmp = strndup((char*)hdr->AS.Header+8,8);
 		hdr->VERSION = (float)atol(tmp);
+		free(tmp);
     	}
     	else if (!memcmp(Header1,"fLaC",4))
 	    	hdr->TYPE = FLAC;
     	else if (!memcmp(Header1,"GDF",3) && (hdr->HeadLen > 255)) {
 	    	hdr->TYPE = GDF;
-	    	char tmp[6];
-      	    	strncpy(tmp,(char*)hdr->AS.Header+3,5); tmp[5]=0;
+	    	char *tmp = strndup((char*)hdr->AS.Header+3,5);
 	    	hdr->VERSION 	= strtod(tmp,NULL);
+		free(tmp);
 	}
     	else if (!memcmp(Header1,"GIF87a",6))
 	    	hdr->TYPE = GIF;
@@ -2080,9 +2079,9 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
     	}
 	else if ((hdr->HeadLen > 23) && !memcmp(Header1,"# vtk DataFile Version ",23)) {
 		hdr->TYPE = VTK;
-		char tmp[4];
-		strncpy(tmp,(char*)Header1+23,3);
+		char *tmp = strndup((char*)Header1+23,3);
 		hdr->VERSION = strtod(tmp,NULL);
+		free(tmp);
 	}
 	else if (!strncmp(Header1,"Serial number",13))
 		hdr->TYPE = ASCII_IBI;
@@ -2384,10 +2383,10 @@ void struct2gdfbin(HDRTYPE *hdr)
 				if (isspace(hdr->Patient.Id[k]))
 					hdr->Patient.Id[k] = '_';
 
-	     		strcpy(Header1+8, hdr->Patient.Id);
+	     		strncpy(Header1+8, hdr->Patient.Id, l1+1);
 		}
 		else {
-		     	strcpy(Header1+8, "X X");
+		     	strncpy(Header1+8, "X X",4);
 			l1 = 1;
 		}
 

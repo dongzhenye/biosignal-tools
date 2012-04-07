@@ -114,16 +114,28 @@ if (VERBOSE_LEVEL>8) {
 		hdr->Patient.Sex = ival;
 
 	{
-	if (!asn_REAL2double(&SAS->demographics.patientweight->value, &val))
-		hdr->Patient.Weight = (uint8_t)val;
-	if (!asn_REAL2double(&SAS->demographics.patientheight->value, &val))
-		hdr->Patient.Height = (uint8_t)val;
+		if (!asn_REAL2double(&SAS->demographics.patientweight->value, &val))
+			hdr->Patient.Weight = (uint8_t)val;
+		if (!asn_REAL2double(&SAS->demographics.patientheight->value, &val))
+			hdr->Patient.Height = (uint8_t)val;
 
-	strncpy(hdr->Patient.Name,SAS->demographics.characternamegroup->givenname.buf,MAX_LENGTH_NAME);
-	strncat(hdr->Patient.Name," ",MAX_LENGTH_NAME);
-	strncat(hdr->Patient.Name,SAS->demographics.characternamegroup->middlename.buf,MAX_LENGTH_NAME);
-	strncat(hdr->Patient.Name," ",MAX_LENGTH_NAME);
-	strncat(hdr->Patient.Name,SAS->demographics.characternamegroup->familyname.buf,MAX_LENGTH_NAME);
+		char *str1 = SAS->demographics.characternamegroup->givenname.buf;
+		char *str2 = SAS->demographics.characternamegroup->middlename.buf;
+		char *str3 = SAS->demographics.characternamegroup->familyname.buf;
+		size_t l1 = strlen(str1); 
+		size_t l2 = strlen(str2); 
+		size_t l3 = strlen(str3); 
+	
+		if (l1 <= MAX_LENGTH_NAME) {
+			strcpy(hdr->Patient.Name,str1,MAX_LENGTH_NAME);
+		if (l1+l2+1 <= MAX_LENGTH_NAME) {
+			hdr->Patient.Name[l1]=' ';
+			strcpy(hdr->Patient.Name+1+l1,str2);
+		}
+		if (l1+l2+l3+2 <= MAX_LENGTH_NAME) {
+			hdr->Patient.Name[l1+l2+1]=' ';
+			strcpy(hdr->Patient.Name+2+l1+l2,str3);
+		}
 	}
 	
 	/**********************************

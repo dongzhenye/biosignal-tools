@@ -200,19 +200,32 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 		H = SierraECG2.FirstChild("patient").FirstChild("generalpatientdata").FirstChild("patientid");
 		if (H.Element()) memcpy(hdr->Patient.Id, H.Element()->GetText(), MAX_LENGTH_PID);
 		hdr->Patient.Name[0] = 0;
+		size_t NameLength = 0;
 		H = SierraECG2.FirstChild("patient").FirstChild("generalpatientdata").FirstChild("name").FirstChild("firstname");
 		if (H.Element()) {
-			strncat(hdr->Patient.Name, H.Element()->GetText(), MAX_LENGTH_NAME);
+			strncpy(hdr->Patient.Name, H.Element()->GetText(), MAX_LENGTH_NAME);
+			hdr->Patient.Name[MAX_LENGTH_NAME]=0;
+			NameLength = strlen(hdr->Patient.Name);
 		}
 		H = SierraECG2.FirstChild("patient").FirstChild("generalpatientdata").FirstChild("name").FirstChild("middlename");
 		if (H.Element()) {
-			strncat(hdr->Patient.Name, " ", MAX_LENGTH_NAME);
-			strncat(hdr->Patient.Name, H.Element()->GetText(), MAX_LENGTH_NAME);
+			const char *str = H.Element()->GetText();
+			size_t l2 = strlen(str); 
+			if (NameLength+l2+1 < MAX_LENGTH_NAME) {
+				hdr->Patient.Name[NameLength]= ' ';
+				strncpy(hdr->Patient.Name+NameLength+1, str, l2+1);
+				NameLength += l2+1;
+			}
 		}
 		H = SierraECG2.FirstChild("patient").FirstChild("generalpatientdata").FirstChild("name").FirstChild("lastname");
 		if (H.Element()) {
-			strncat(hdr->Patient.Name, " ", MAX_LENGTH_NAME);
-			strncat(hdr->Patient.Name, H.Element()->GetText(), MAX_LENGTH_NAME);
+			const char *str = H.Element()->GetText();
+			size_t l2 = strlen(str); 
+			if (NameLength+l2+1 < MAX_LENGTH_NAME) {
+				hdr->Patient.Name[NameLength]= ' ';
+				strncpy(hdr->Patient.Name+NameLength+1, str, l2+1);
+				NameLength += l2+1;
+			}
 		}
 		H = SierraECG2.FirstChild("patient").FirstChild("generalpatientdata").FirstChild("age").FirstChild("years");
 //		if (H.Element()) hdr->Patient.Age != atoi(H.Element()->GetText()) 
@@ -297,9 +310,15 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 				const char *tmp = H.FirstChild("PID").Element()->GetText();
 				hdr->Patient.Sex = (toupper(tmp[0])=='M') + 2*(toupper(tmp[0])=='F');
 				if (!hdr->FLAG.ANONYMOUS) {
-					strncpy(hdr->Patient.Name, H.FirstChild("Name").FirstChild("FamilyName").Element()->GetText(),MAX_LENGTH_PID);
-					strncat(hdr->Patient.Name, " ",MAX_LENGTH_PID);
-					strncat(hdr->Patient.Name, H.FirstChild("Name").FirstChild("GivenName").Element()->GetText(),MAX_LENGTH_PID);
+					const char *str1 = H.FirstChild("Name").FirstChild("FamilyName").Element()->GetText();
+					const char *str2 = H.FirstChild("Name").FirstChild("GivenName").Element()->GetText();
+					size_t l1 = str1 ? strlen(str1) : 0;
+					size_t l2 = str2 ? strlen(str2) : 0;
+					if (0 < l1 && l1 <= MAX_LENGTH_PID) strncpy(hdr->Patient.Name, str1, l1+1);
+					if (l1+l2+1 < MAX_LENGTH_PID) {	
+						hdr->Patient.Name[l1] = ' ';
+						strncpy(hdr->Patient.Name+l1+1, str2, l2+1);
+					}
 				}
 			}
 
@@ -481,34 +500,52 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 			if (id.Element()) {	
 			    	char *strtmp = strdup(id.Element()->Attribute("root"));
 			    	size_t len = strlen(strtmp); 
-				strncpy(hdr->ID.Recording,strtmp,MAX_LENGTH_RID);
-				free(strtmp); 
-				strncat(hdr->ID.Recording," ",MAX_LENGTH_RID);
-			    	strtmp = strdup(id.Element()->Attribute("extension"));
-			    	len += 1+strlen(strtmp); 
-				strncat(hdr->ID.Recording,strtmp,MAX_LENGTH_RID);
-				free(strtmp); 
-		    		if (len>MAX_LENGTH_RID)	
+				if (len <= MAX_LENGTH_RID) {
+					strcpy(hdr->ID.Recording,strtmp);
+
+					if (strtmp) free(strtmp);
+				    	strtmp = strdup(id.Element()->Attribute("extension"));
+					size_t l1 = strlen(strtmp); 
+					if (len+1+l1 < MAX_LENGTH_RID) {
+					    	len += 1 + l1;
+						hdr->ID.Recording[len] = ' ';
+						strncpy(hdr->ID.Recording+len+1,strtmp,l1+1);
+					} 
+					else 
+						fprintf(stdout,"Warning HL7aECG(read): length of Recording ID exceeds maximum length %i>%i\n",(int)len+1+l1,MAX_LENGTH_PID); 
+				}
+				else 
 					fprintf(stdout,"Warning HL7aECG(read): length of Recording ID exceeds maximum length %i>%i\n",(int)len,MAX_LENGTH_PID); 
-				fprintf(stdout,"IHE (read): length of Recording ID %i,%i\n",(int)len,MAX_LENGTH_PID); 
+
+				if (strtmp) free(strtmp); 
+				if (VERBOSE_LEVEL>7)
+					fprintf(stdout,"IHE (read): length of Recording ID %i,%i\n",(int)len,MAX_LENGTH_PID); 
 			}	
-			if (VERBOSE_LEVEL>8)
+			if (VERBOSE_LEVEL>7)
 				fprintf(stdout,"IHE: [414] RID= %s\n",hdr->ID.Recording); 
 			
 			if (providerOrganization.Element()) {
 				hdr->ID.Hospital = strdup(providerOrganization.FirstChild("name").Element()->GetText());
 			}	
 			
-			if (VERBOSE_LEVEL>8)
+			if (VERBOSE_LEVEL>7)
 				fprintf(stdout,"IHE: [414] hospital %s\n",hdr->ID.Hospital); 
 
 			if (patientPatient.Element()) {
 				if (!hdr->FLAG.ANONYMOUS) {
 				TiXmlHandle Name = patientPatient.FirstChild("name").Element();
 				if (Name.Element()) {
-					strncpy(hdr->Patient.Name, Name.FirstChild("family").Element()->GetText(), MAX_LENGTH_NAME);
-					strncat(hdr->Patient.Name, ", ", MAX_LENGTH_NAME);
-					strncat(hdr->Patient.Name, Name.FirstChild("given").Element()->GetText(), MAX_LENGTH_NAME);
+					char *str1 = strdup(Name.FirstChild("family").Element()->GetText());
+					char *str2 = strdup(Name.FirstChild("given").Element()->GetText());
+					size_t l1 = str1 ? strlen(str1) : 0;
+					size_t l2 = str2 ? strlen(str2) : 0;
+					if (l1 <= MAX_LENGTH_NAME) 
+						strcpy(hdr->Patient.Name, str1);
+					if (l1+l2+2 <= MAX_LENGTH_NAME) {
+						strcpy(hdr->Patient.Name, str1);
+						strcpy(hdr->Patient.Name+l1, ", ");
+						strcpy(hdr->Patient.Name+l1+2, str2);
+					}
 				}
 				}
 				TiXmlHandle Gender = patientPatient.FirstChild("administrativeGenderCode").Element();
