@@ -46,7 +46,7 @@ EXTERN_C void sopen_alpha_read(HDRTYPE* hdr) {
 
 		fprintf(stdout,"Warning: support for alpha format is just experimental.\n"); 
 		
-		char* fn = (char*)calloc(strlen(hdr->FileName)+15,sizeof(char));
+		char* fn = (char*)malloc(strlen(hdr->FileName)+15);
 		strcpy(fn,hdr->FileName); 
 		
 		const size_t bufsiz = 4096; 

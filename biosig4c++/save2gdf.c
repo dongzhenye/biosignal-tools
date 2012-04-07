@@ -50,7 +50,7 @@ int main(int argc, char **argv){
     HDRTYPE 	*hdr; 
     size_t 	count, k1, ne=0;
     uint16_t 	numopt = 0;
-    char 	*source, *dest, tmp[1024], *tmpstr; 
+    char 	*source, *dest, *tmpstr; 
     enum FileFormat SOURCE_TYPE, TARGET_TYPE=GDF; 		// type of file format
     int		COMPRESSION_LEVEL=0;
     int		status; 	
@@ -564,9 +564,11 @@ int main(int argc, char **argv){
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[205] UCAL=%i\n", hdr->FLAG.UCAL);
 
 	/* write file */
+	size_t destlen = strlen(dest); 
+	char *tmp = (char*)malloc(destlen+4);
 	strcpy(tmp,dest);
 	if (hdr->FILE.COMPRESSION)  // add .gz extension to filename  
-		strcat(tmp,".gz");
+		strcpy(tmp+destlen,".gz");
 
 	if (VERBOSE_LEVEL>7) 
 		fprintf(stdout,"[211] z=%i sd=%i\n",hdr->FILE.COMPRESSION,hdr->FILE.Des);
@@ -574,6 +576,7 @@ int main(int argc, char **argv){
 	hdr->FLAG.ANONYMOUS = 1; 	// no personal names are processed 
 
 	hdr = sopen(tmp, "wb", hdr);
+	free(tmp); 
 	if ((status=serror())) {
 		destructHDR(hdr);
 		exit(status); 

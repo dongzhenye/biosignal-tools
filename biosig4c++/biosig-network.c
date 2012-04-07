@@ -268,14 +268,19 @@ int savelink(const char* filename) {
 	if ((SERVER_STATE & STATE_MASK)==STATE_INIT) return(-1);	
 
 	char *logpath = "/tmp/";		// perhaps some other directory 
-	char tmp[5];
+	const char *ext = ".bscs";
 	const char *fn = strrchr(filename,FILESEP);
 	if (fn==NULL) fn = filename; 
 	else fn++;
-	char *logfile = (char*)malloc(strlen(logpath)+strlen(fn)+6+strlen(tmp));
-	strcpy(logfile,logpath); 
-	strcat(logfile,fn); 
-	strcat(logfile,".bscs"); 
+
+	size_t l1 = strlen(logpath);
+	size_t l2 = strlen(fn);
+	size_t l3 = strlen(ext);
+	size_t l4 = 10;
+	char *logfile = (char*)malloc(l1+l2+l3+l4+1);
+	memcpy(logfile, logpath, l1); 
+	memcpy(logfile+l1, fn, l2); 
+	strcpy(logfile+l1+l2, ext); 
 	int k=0; 
 	size_t sl = strlen(logfile);
 	
@@ -283,8 +288,7 @@ int savelink(const char* filename) {
 	// check whether file already exists 
 	while ((fid=fopen(logfile,"r")) != NULL) {
 		fclose(fid);
-		sprintf(tmp,".%i",k);
-		strcpy(logfile+sl,tmp);
+		snprintf(logfile+sl, l4, ".%i", k);
 		k++;
 	}
 	errno = 0; 	// fopen caused errno=2; reset errno 

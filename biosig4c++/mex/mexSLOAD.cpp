@@ -355,17 +355,18 @@ void mexFunction(
 #endif
 		mxSetField(HDR,0,"VERSION",mxCreateDoubleScalar(hdr->VERSION));
 
-		char msg[1024]; 
+		char *msg; 
 		if (status==B4C_CANNOT_OPEN_FILE)
-			sprintf(msg,"Error mexSLOAD: file %s not found.\n",FileName);
+			asprintf(&msg,"Error mexSLOAD: file %s not found.\n",FileName);
 		else if (status==B4C_FORMAT_UNKNOWN)
-			sprintf(msg,"Error mexSLOAD: Cannot open file %s - format %s not known.\n",FileName,GetFileTypeString(hdr->TYPE));
+			asprintf(&msg,"Error mexSLOAD: Cannot open file %s - format %s not known.\n",FileName,GetFileTypeString(hdr->TYPE));
 		else if (status==B4C_FORMAT_UNSUPPORTED)
-			sprintf(msg,"Error mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", FileName, GetFileTypeString(hdr->TYPE), B4C_ERRMSG);
+			asprintf(&msg,"Error mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", FileName, GetFileTypeString(hdr->TYPE), B4C_ERRMSG);
 		else 	
-			sprintf(msg,"Error %i mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", status, FileName, GetFileTypeString(hdr->TYPE), B4C_ERRMSG);
+			asprintf(&msg,"Error %i mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", status, FileName, GetFileTypeString(hdr->TYPE), B4C_ERRMSG);
 			
 		mxSetField(HDR,0,"ErrMsg",mxCreateString(msg));
+		if (msg) free(msg);
 
 	if (VERBOSE_LEVEL>7) 
 		mexPrintf("737: abort mexSLOAD - sopen failed\n");
