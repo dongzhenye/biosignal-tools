@@ -136,9 +136,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"<%6.2f> %i- %s | %s\n",hdr->VERSION, STATUS
 					else if (!strcmp(t,"Sec2Marker") && (hdr->VERSION > 411.89)) 
 						STATUS = 2;
 				}		
-				else if (STATUS == 2) {
-					//sscanf(t1, "%s, %i, %s, %f, %s, %s", &HighPass,&LowPass, &tmp1,&tmp2,pd); 
 
+				else if (STATUS == 2) {
 					if (ns>=hdr->NS) {
 						ns = 0; 
 						STATUS = 3;
@@ -174,12 +173,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"<%6.2f> %i- %s | %s\n",hdr->VERSION, STATUS
 				}	
 				else if (STATUS == 3) {
 					// decode information (filters, PhysDim, etc.) and assign to corresponding channels. 
-					char pd[MAX_LENGTH_PHYSDIM+1];
+					char *pd = NULL;
 					float tmp1, tmp2, HighPass, LowPass;
-					sscanf(t1, "%f, %f, %f, %f, %s", &HighPass,&LowPass, &tmp1,&tmp2,pd); 
+					sscanf(t1, "%f, %f, %f, %f, %as", &HighPass,&LowPass, &tmp1,&tmp2, &pd); 
 					strrchr(pd,',')[0]=0;
 					if (!strcmp(pd,"%%")) pd[1]=0; 
 					uint16_t pdc = PhysDimCode(pd); 
+					if (pd) free(pd); 
 
 					char flag = 0; 
 					for (k=0; k < hdr->NS; k++) {

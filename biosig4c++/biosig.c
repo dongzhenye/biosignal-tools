@@ -4444,9 +4444,9 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 		while (t) {
 			int chno1=-1, chno2=-1;
 			double f1,f2;
-			char label[MAX_LENGTH_LABEL+1];
+			char *label = NULL;
 
-			sscanf(t,"%d %s %d %lf %lf",&chno1,label,&chno2,&f1,&f2);
+			sscanf(t,"%d %as %d %lf %lf",&chno1,&label,&chno2,&f1,&f2);
 
 			k = hdr->NS++;
 			hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL,hdr->NS*sizeof(CHANNEL_TYPE));
@@ -4471,6 +4471,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 			else
 				hc->PhysDimCode = 4256; // "V"
 
+			if (label) free(label); 
 		 	t = strtok(NULL,"\x0a\x0d");
 		}
 
@@ -4934,8 +4935,8 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 
 			else if (status==1) {
 				int  i[4];
-				char item[20];
-				sscanf(ptr,"%s %i %i %i %i",item,i,i+1,i+2,i+3);
+				char *item = NULL;
+				sscanf(ptr,"%as %i %i %i %i",&item,i,i+1,i+2,i+3);
 				if (!strcmp(item,"TargetCode")) {
 					tc_pos = i[2]*8 + i[3];
 					tc_len = i[0];
@@ -4948,6 +4949,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 					fb_pos = i[2]*8 + i[3];
 					fb_len = i[0];
 				}
+				if (item) free(item); 
 			}
 
 			else if (status==2) {
@@ -6119,10 +6121,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	    	size_t eventtablepos = leu32p(hdr->AS.Header+886);
 	    	uint32_t nextfilepos = leu32p(hdr->AS.Header+12);
 
+		if (VERBOSE_LEVEL > 7)
+			fprintf(stdout,"SOPEN: Neuroscan format: minor revision %i eventtablepos: %i nextfilepos: %i\n", minor_revision, (unsigned)eventtablepos, nextfilepos);
 
 		/* make base of filename */
 		size_t i=0, j=0;
-		while (i<strlen(hdr->FileName)) {
+		while (hdr->FileName[i] != '\0') {
 			if ((hdr->FileName[i]=='/') || (hdr->FileName[i]=='\\')) { j=i+1; }
 			i++;
 		}
@@ -6135,12 +6139,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	    	ptr_str = (char*)hdr->AS.Header+137;
 	    	hdr->Patient.Handedness = (ptr_str[0]=='r')*2 + (ptr_str[0]=='R')*2 + (ptr_str[0]=='L') + (ptr_str[0]=='l');
 	    	ptr_str = (char*)hdr->AS.Header+225;
-	    	tm_time.tm_sec  = atoi(strncpy(tmp,ptr_str+16,2));
-    		tm_time.tm_min  = atoi(strncpy(tmp,ptr_str+13,2));
-    		tm_time.tm_hour = atoi(strncpy(tmp,ptr_str+10,2));
-    		tm_time.tm_mday = atoi(strncpy(tmp,ptr_str,2));
-    		tm_time.tm_mon  = atoi(strncpy(tmp,ptr_str+3,2))-1;
-    		tm_time.tm_year = atoi(strncpy(tmp,ptr_str+6,2));
+		tmp[2] = '\0'; 		// make sure tmp is 0-terminated
+	    	tm_time.tm_sec  = atoi(memcpy(tmp,ptr_str+16,2));
+    		tm_time.tm_min  = atoi(memcpy(tmp,ptr_str+13,2));
+    		tm_time.tm_hour = atoi(memcpy(tmp,ptr_str+10,2));
+    		tm_time.tm_mday = atoi(memcpy(tmp,ptr_str,2));
+    		tm_time.tm_mon  = atoi(memcpy(tmp,ptr_str+3,2))-1;
+    		tm_time.tm_year = atoi(memcpy(tmp,ptr_str+6,2));
 
 	    	if (tm_time.tm_year<=80)    	tm_time.tm_year += 100;
 		hdr->T0 = tm_time2gdf_time(&tm_time);
@@ -6159,12 +6164,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			struct stat FileBuf;
 
 			if (VERBOSE_LEVEL>7)
-				fprintf(stdout,"SOPEN: Neuroscan format: minor rev=%i\n", minor_revision);
+				fprintf(stdout,"SOPEN: Neuroscan format: minor rev=%i bpb2:%i bpb4:%i\n", minor_revision, (unsigned)hdr->AS.bpb, (unsigned)bpb4);
 
 		    	switch (minor_revision) {
 		    	case 9:
 		    		// TODO: FIXME
-    				fprintf(stderr,"Warning biosig/sopen (CNT/EEG): minor revision %i is experimental\n",minor_revision);
+    				fprintf(stderr,"Warning biosig/sopen (CNT/EEG): minor revision %i is experimental\n", minor_revision);
 		    		gdftyp = 3;
 		    		hdr->FILE.LittleEndian = 0;
 				stat(hdr->FileName,&FileBuf);
@@ -6180,7 +6185,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
 		    	default:
 	    			if (minor_revision != 16)
-	    				fprintf(stderr,"Warning biosig/sopen (CNT/EEG): minor revision %i not tested\n",minor_revision);
+	    				fprintf(stderr,"Warning biosig/sopen (CNT/EEG): minor revision %i not tested\n", minor_revision);
 
 				if (VERBOSE_LEVEL>7)
 		    			fprintf(stdout,"biosig/sopen (CNT/EEG):  %i %i %i %i %i %i \n", (int)hdr->NRec, hdr->SPR, hdr->NS, (int)eventtablepos, (int)(hdr->AS.bpb * hdr->NRec + hdr->HeadLen), (int)(bpb4 * hdr->NRec + hdr->HeadLen));
@@ -6204,9 +6209,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			eventtablepos = leu32p(hdr->AS.Header+886);
 	    		gdftyp      = hdr->FLAG.CNT32 ? 5 : 3;
 		    	hdr->AS.bpb = hdr->NS*GDFTYP_BITS[gdftyp]/8;
-			hdr->NRec   = (eventtablepos-hdr->HeadLen) / hdr->AS.bpb;
+			hdr->NRec   = (eventtablepos - hdr->HeadLen) / hdr->AS.bpb;
 
-			if (VERBOSE_LEVEL>7)
+			if (VERBOSE_LEVEL > 7)
 	    			fprintf(stdout,"biosig/sopen (CNT):  %i %i %i %i %i \n", (int)hdr->NRec, hdr->SPR, hdr->NS, (int)eventtablepos, (int)(hdr->AS.bpb * hdr->NRec + hdr->HeadLen) );
 		}
 
@@ -9915,7 +9920,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		hdr->AS.bpb = 0;
 		ifseek(hdr,0,SEEK_SET);
 		char line[81];
-		char desc[80];
 		ifgets(line,80,hdr);
 		size_t N = 0;
 		hdr->EVENT.N = 0;
@@ -9924,9 +9928,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			if (isdigit(line[0])) {
 				struct tm t;
 				int ms,rri;
+				char *desc = NULL;
 
-				sscanf(line,"%02u-%02u-%02u %02u:%02u:%02u %03u %s %u",&t.tm_mday,&t.tm_mon,&t.tm_year,&t.tm_hour,&t.tm_min,&t.tm_sec,&ms,desc,&rri);
-				if (t.tm_year<1970) t.tm_year+=100;
+				sscanf(line,"%02u-%02u-%02u %02u:%02u:%02u %03u %as %u", &t.tm_mday, &t.tm_mon, &t.tm_year, &t.tm_hour, &t.tm_min, &t.tm_sec, &ms, &desc, &rri);
+				if (t.tm_year < 1970) t.tm_year += 100;
 				t.tm_mon--;
 				t.tm_isdst = -1;
 
@@ -9953,6 +9958,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 					FreeTextEvent(hdr,N,desc);
 
 				++N;
+				if (desc) free(desc); 
 			}
 			else {
 				strtok(line,":");
@@ -11149,13 +11155,12 @@ size_t sread_raw(size_t start, size_t length, HDRTYPE* hdr, char flag) {
 
 	}
 #ifndef WITHOUT_NETWORK
-	else if (hdr->FILE.Des>0) {
+	else if (hdr->FILE.Des > 0) {
 		// network connection
-		int s = bscs_requ_dat(hdr->FILE.Des,start,length,hdr);
+		int s = bscs_requ_dat(hdr->FILE.Des, start, length,hdr);
 		count = hdr->AS.length;
 
-		if (VERBOSE_LEVEL>7)
-			fprintf(stdout,"sread-raw from network: 222 count=%i\n",(int)count);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"sread-raw from network: 222 count=%i\n",(int)count);
 	}
 #endif
 	else {
