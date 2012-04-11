@@ -62,11 +62,11 @@
 
 
 #ifdef _WIN32
-  extern int getlogin_r(char* name, size_t namesize);
   #include <winsock2.h>
   #define FILESEP '\\'
 #else
   #include <netdb.h>
+  #include <pwd.h>
   #include <unistd.h>
   #define FILESEP '/'
 #endif
@@ -1460,22 +1460,30 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->ID.Hospital 	= "\x00";
 
 	memset(hdr->IPaddr, 0, 16);
+#ifdef DYNAMIC_TECHNICIAN
+	{	// some local variables are used only in this block
+#ifdef _WIN32
+   #if 1
+	// getlogin() a flawfinder level [4] issue, recommended to use getpwuid(geteuid()) but not available on Windows
+	hdr->ID.Technician = strdup(getlogin()); 
+   #else	// this compiles but stops with "Program error" on wine
+	char str[1001];
+	GetUserName(str,1000);	
+	if (VERBOSE_LEVEL>7)  fprintf(stdout,"Name:%s\n",str);
+	hdr->ID.Technician = strdup(str); 
+   #endif
+#else	
+	struct passwd *p = getpwuid(geteuid());	
+	hdr->ID.Technician = strdup(p->pw_gecos); 
+	if (VERBOSE_LEVEL>7)  fprintf(stdout,"Name:%s\nPw:%s\nuid/gui: %i/%i\nreal name: %s\n$HOME:%s\nSHELL:%s\n",p->pw_name,p->pw_passwd,p->pw_uid,p->pw_gid,p->pw_gecos,p->pw_dir,p->pw_shell);
+#endif 
+	}
+#endif
+
 #ifndef WITHOUT_NETWORK
 #ifdef _WIN32
 	WSADATA wsadata;
 	WSAStartup(MAKEWORD(1,1), &wsadata);
-#endif
-
-#ifdef DYNAMIC_TECHNICIAN
-//	hdr->ID.Technician = strdup(getlogin()); 
-	hdr->ID.Technician = strdup(getenv("LOGNAME")); 
-#else
-#ifndef ANDROID
-	// set default technician name to local IP address 
-	getlogin_r(hdr->ID.Technician, MAX_LENGTH_TECHNICIAN);
-#else
-	hdr->ID.Technician[MAX_LENGTH_TECHNICIAN-2]=0;
-#endif
 #endif
 	{
       	// set default IP address to local IP address
@@ -2510,7 +2518,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 
 		     	len = strlen(hdr->CHANNEL[k].Transducer);
 		     	memcpy(Header2+80*k2 + 16*NS, hdr->CHANNEL[k].Transducer, min(len,80));
-                        Header2[80*k2+min(len,80)] = 0; 
+			Header2[80*k2 + min(len,80) + 16*NS] = 0; 
 		     	PhysDim(hdr->CHANNEL[k].PhysDimCode, tmp);
 		     	len = strlen(tmp);
 		     	if (hdr->VERSION < 1.9)

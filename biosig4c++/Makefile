@@ -77,7 +77,7 @@ DEFINES       = -D=WITH_ZLIB
 DEFINES      += -D=__4HAERTEL__
 DEFINES      += -D=WITH_FAMOS
 DEFINES      += -D=WITH_CHOLMOD
-#DEFINES      += -D=WITHOUT_NETWORK
+DEFINES      += -D=WITHOUT_NETWORK
 #DEFINES      += -D=WITH_HDF
 #DEFINES      += -D=WITH_MATIO
 #DEFINES      += -D=WITH_LIBXML2 
@@ -89,7 +89,7 @@ DEFINES      += -D=WITH_CHOLMOD
 #DEFINES      += -D=WITH_EEPROBE		
 #DEFINES      += -D=SOFTCODED_PHYSDIMTABLE	# obsolete
 #DEFINES      += -D=CNT32			# for 32bit Neuroscan format
-#DEFINES       += -D=DYNAMIC_TECHNICIAN		# TODO: this is experimental, fix it and make it the default
+DEFINES      += -D=DYNAMIC_TECHNICIAN		# TODO: this is experimental, fix it and make it the default
 CFLAGS        = -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 CXXFLAGS      = -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 AR            = ar crs
@@ -168,13 +168,13 @@ PathToMinGW64 = $(dir $(CROSS64))..$(nondir $(CROSS64))
 MinGWCC      = $(CROSS)-gcc
 MinGWCXX     = $(CROSS)-g++
 MinGWDEF     = $(DEFINES) 
-MinGWCFLAGS  = -pipe -fPIC  -D_REENTRANT -D=BUILD_DLL $(MinGWDEF) -I$(PathToMinGW)/include/
+MinGWCFLAGS  = -pipe -fPIC  -D_REENTRANT -D=BUILD_DLL $(MinGWDEF) -Iwin32 -I$(PathToMinGW)/include/
 MinGWLIBS    = win32/libbiosig.a -L$(PathToMinGW)/lib/ -lws2_32 $(LDLIBS) # static
 MinGWLINK    = $(MinGWCXX)
 
 MinGW64CC      = $(CROSS64)-gcc
 MinGW64CXX     = $(CROSS64)-g++
-MinGW64CFLAGS  = -pipe -fPIC -O2 -D_REENTRANT -D=BUILD_DLL $(MinGWDEF) -I$(PathToMinGW64)/include/
+MinGW64CFLAGS  = -pipe -fPIC -O2 -D_REENTRANT -D=BUILD_DLL $(MinGWDEF) -Iwin32 -I$(PathToMinGW64)/include/
 MinGW64LIBS    = win64/libbiosig.a -L$(PathToMinGW64)/lib/ -lws2_32 $(LDLIBS) # static
 MinGW64LINK    = $(MinGW64CXX)
 ##########################################################
@@ -231,7 +231,9 @@ OBJECTS       = \
 MinGWOBJECTS  = \
 		win32/crc4scp.obj \
 		win32/biosig.obj \
-		win32/getlogin_r.obj \
+		win32/getlogin.obj \
+		win32/strndup.obj \
+		win32/strnlen.obj \
 		win32/sopen_scp_read.obj \
 		win32/sopen_alpha_read.obj \
 		win32/sopen_scp_write.obj \
@@ -319,10 +321,12 @@ win32/%.obj: t220/%.c  biosig-dev.h biosig.h
 	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
 win32/%.obj: t230/%.c  biosig-dev.h biosig.h 
 	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
-win32/%.obj: t240/%.c  biosig-dev.h biosig.h 
+win32/%.obj: t240/%.c biosig-dev.h biosig.h 
 	$(MinGWCC) -c $(MinGWCFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
 win32/%.obj: test0/%.c  biosig-dev.h biosig.h Makefile
 	$(MinGWCC) -c $(MinGWCFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
+win32/%.obj: win32/%.c 
+	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
 win32/%.obj: XMLParser/%.cpp 
 	$(MinGWCXX) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
 
@@ -338,6 +342,8 @@ win64/%.obj: t240/%.c  biosig-dev.h biosig.h
 	$(MinGW64CC) -c $(MinGW64CFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
 win64/%.obj: test0/%.c  biosig-dev.h biosig.h Makefile
 	$(MinGW64CC) -c $(MinGW64CFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
+win64/%.obj: win32/%.c 
+	$(MinGWCC) -c $(MinGWCFLAGS) -I win32 $(INCPATH) -o "$@" "$<"
 win64/%.obj: XMLParser/%.cpp 
 	$(MinGW64CXX) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
 
@@ -378,8 +384,8 @@ sopen_scp_read.o: t210/sopen_scp_read.c biosig-dev.h biosig.h biosig.h t210/stru
 scp-decode.o: t210/scp-decode.cpp biosig-dev.h biosig.h t210/structures.h t210/codes.h
 	$(CC) -c $(CFLAGS) $(INCPATH) -o "$@" "$<"
 
-getlogin_r.o: win32/getlogin_r.c
-	$(CC) -c $(CFLAGS) $(INCPATH) -o "$@" "$<"
+#getlogin_r.o: win32/getlogin_r.c
+#	$(CC) -c $(CFLAGS) $(INCPATH) -o "$@" "$<"
 
 ########### WIN32 ##################
 
@@ -684,12 +690,11 @@ clean:
 	-$(DELETE) $(TEMP_DIR)/t1.*
 	-$(DELETE) python/biosig.py* _biosig.so
 	-$(DELETE) python/swig_wrap.*
-	-$(DELETE) win32/*.exe  win32/*.o* win32/*.lib win32/*.a  
-	-$(DELETE) win64/*.exe  win64/*.o* win64/*.lib win64/*.a  
-	-$(DELETE) t240/*.o
+	-$(DELETE) win32/*.exe win32/*.o* win32/*.lib win32/*.a
+	-$(DELETE) win64/*.exe win64/*.o* win64/*.lib win64/*.a
+	-$(DELETE) t240/*.o*
 	-$(DELETE) t240/libcnsfef.a
 	-$(DELETE) t240/libbiosig.*
-	-$(DELETE) t240/*.obj
 	-$(DELETE) pdp2gdf
 	-$(MAKE) -C java clean
 	-$(MAKE) -C matlab clean
