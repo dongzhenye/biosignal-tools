@@ -6216,6 +6216,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			// Neuroscan CNT
 			hdr->SPR    = 1;
 			eventtablepos = leu32p(hdr->AS.Header+886);
+			if (nextfilepos > 0) {
+				ifseek (hdr,nextfilepos+52,SEEK_SET);
+				hdr->FLAG.CNT32 = (ifgetc(hdr)==1);
+				ifseek (hdr,count,SEEK_SET);
+			}
+
 	    		gdftyp      = hdr->FLAG.CNT32 ? 5 : 3;
 		    	hdr->AS.bpb = hdr->NS*GDFTYP_BITS[gdftyp]/8;
 			hdr->NRec   = (eventtablepos - hdr->HeadLen) / hdr->AS.bpb;
