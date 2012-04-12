@@ -524,25 +524,16 @@ elseif  strcmp(upper(CNT.FILE.Ext),'CNT'),
         %disp([CNT.NS,h.pnts,h.compsweeps,h.numsamples,h.type,CNT.CNT.minor_revision])
         CNT.CNT.h = h; 
         
-        if (CNT.CNT.minor_revision==8),
-	        CNT.GDFTYP = 3; %'int16';
-                h.numsamples; % might have some meaning 
-        elseif (CNT.CNT.minor_revision==12),
-                CNT.GDFTYP = 3; %'int16';
-        elseif (CNT.CNT.minor_revision==16),
-                CNT.GDFTYP = 3; %'int16';
-        else
-                fprintf(CNT.FILE.stderr,'Warning CNTOPEN: EEG-Format Minor-Revision %i not tested.\n',CNT.CNT.minor_revision);
-        end;
-
-        if ~isempty(strfind(arg2,'32')),        % force 32 bit
-                % if h.type==184
-                CNT.GDFTYP = 5; %'int32';
-                CNT.AS.bpb = CNT.NS*4;	% Bytes per Block
-        else
-                CNT.GDFTYP = 3; %'int16';
-                CNT.AS.bpb = CNT.NS*2;	% Bytes per Block
-        end;
+	CNT.GDFTYP = 3; 	% int16
+	CNT.AS.bpb = CNT.NS*2;	% Bytes per Block
+	if (h.nextfile > 0) 
+		status = fseek(CNT.FILE.FID,h.nextfile+52,'bof');
+		c = fread(CNT.FILE.FID,[1,1],'uchar');
+		if (c==1)
+			CNT.GDFTYP = 5; 	% int32;
+			CNT.AS.bpb = CNT.NS*4;	% Bytes per Block
+		end; 		 
+	end; 	
 
         if h.eventtablepos>CNT.FILE.size,
                 warning('CNTOPEN: eventtablepos %i after end of file %i: \n',h.eventtablepos,CNT.FILE.size);
@@ -550,11 +541,11 @@ elseif  strcmp(upper(CNT.FILE.Ext),'CNT'),
         
 	CNT.AS.spb = CNT.NS;	% Samples per Block
 	CNT.AS.EVENTTABLEPOS = h.eventtablepos;
-	if h.eventtablepos>CNT.FILE.size,
+	if h.eventtablepos > CNT.FILE.size,
                 fprintf(CNT.FILE.stderr,'Warning CNTOPEN: %s is corrupted:\n    - position of eventtable (%i) past end of file (%i).\n',CNT.FileName,h.eventtablepos,CNT.FILE.size);
 	        CNT.SPR    = floor((CNT.FILE.size-CNT.HeadLen)/CNT.AS.bpb);
         else
-	        CNT.SPR    = (h.eventtablepos-CNT.HeadLen)/CNT.AS.bpb;
+	        CNT.SPR    = floor((h.eventtablepos-CNT.HeadLen)/CNT.AS.bpb);
 	end;	
 	CNT.AS.endpos = CNT.SPR;
         
