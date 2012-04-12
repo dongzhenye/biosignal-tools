@@ -1679,7 +1679,8 @@ void destructHDR(HDRTYPE* hdr) {
 }
 
 
-const uint8_t MAGIC_NUMBER_GZIP[] = {31,139,8};
+/*  http://www.ietf.org/rfc/rfc1952.txt   */
+const char *MAGIC_NUMBER_GZIP = "\x1f\x8B\x08";
 
 /****************************************************************************/
 /**                     GETFILETYPE                                        **/
@@ -1892,7 +1893,7 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    	hdr->TYPE = GIF;
     	else if ( (hdr->HeadLen > 21) && !memcmp(Header1,"GALILEO EEG TRACE FILE",22))
 	    	hdr->TYPE = GTF;
-	else if (!memcmp(Header1,MAGIC_NUMBER_GZIP,sizeof(MAGIC_NUMBER_GZIP)))  {
+	else if (!memcmp(Header1,MAGIC_NUMBER_GZIP,strlen(MAGIC_NUMBER_GZIP)))  {
 		hdr->TYPE = GZIP;
 //		hdr->FILE.COMPRESSION = 1;
 	}
@@ -3683,7 +3684,7 @@ else if (!strncmp(MODE,"r",1)) {
 		hdr->AS.Header[count]=0;
 
 
-		if (!memcmp(Header1,MAGIC_NUMBER_GZIP,sizeof(MAGIC_NUMBER_GZIP))) {
+		if (!memcmp(Header1,MAGIC_NUMBER_GZIP,strlen(MAGIC_NUMBER_GZIP))) {
 #ifdef ZLIB_H
 			if (VERBOSE_LEVEL>7) fprintf(stdout,"[221] %i\n",(int)count);
 	
@@ -10028,6 +10029,17 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	else if (hdr->TYPE==WG1) {
 		uint32_t VER = leu32p(hdr->AS.Header); 
 		if (VER==0xAFFE5555) {
+			// TODO: this version is currently not supported.
+			if (count < 5120) {
+				hdr->AS.Header = realloc(hdr->AS.Header, 5120);
+				count += ifread(hdr->AS.Header,5120-count,1,hdr);
+			}
+			hdr->HeadLen = count; 
+			uint16_t gdftyp = 1; 
+			hdr->NS   = leu16p(hdr->AS.Header+0x40);			
+			hdr->NRec = leu16p(hdr->AS.Header+0x110);	// total number of blocks 		
+			uint16_t startblock = leu16p(hdr->AS.Header+0x112);			
+
 	    		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
 	    		B4C_ERRMSG = "ERROR BIOSIG SOPEN(READ): WG1 0x5555FEAF format is not supported yet";
 		}
