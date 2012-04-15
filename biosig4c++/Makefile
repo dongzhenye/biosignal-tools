@@ -29,7 +29,7 @@
 ##### Target: Win32
 ## make win32      - makes save2gdf.exe,libbiosig.lib,libbiosig.dll, for MSWindows, requires MinGW
 ## make mexw32 mex/mexSLOAD.mexw32   - requires MinGW32 and GNUMEX libraries from Matlab/Win32
-## make win64/sigviewer.exe 	- requires sources of SigViewer, and MinGW32 (mingw-cross-env: make suitesparse zlib qt )
+## make win32/sigviewer.exe 	- requires sources of SigViewer, and MinGW32 (mex: make suitesparse zlib qt )
 
 ##### Target: Win64
 ## make win64      - makes save2gdf.exe,libbiosig.lib,libbiosig.dll, for MSWindows, requires MinGW
@@ -45,9 +45,9 @@ LIBEXT        = a
 ###############################
 
 ### User-specified options: its likely you want to change this
-# settings for cross compiler: tested with mingw-cross-env and mce-w64 with make suitesparse zlib qt ; 
+# settings for cross compiler: tested with MXE and mce-w64 with make suitesparse zlib qt ; 
 CROSS   = $HOME/src/mxe/usr/bin/i686-pc-mingw32
-## local mingw-cross-env 
+## local MXE
 ifeq "$(wildcard $(CROSS)-gcc)" ""
 CROSS         = $(shell pwd)/../mxe/usr/bin/i686-pc-mingw32
 endif
@@ -148,7 +148,7 @@ endif
 # Octave - global install  (e.g. from debian package)
 OCTAVE_VERSION = 
 # Octave - local install (e.g. compiled from sources) 
-#OCTAVE_VERSION = -3.4.3
+#OCTAVE_VERSION = -3.6.1
 
 OCT           = mkoctfile$(OCTAVE_VERSION)
 ##########################################################
@@ -343,7 +343,7 @@ win64/%.obj: t240/%.c  biosig-dev.h biosig.h
 win64/%.obj: test0/%.c  biosig-dev.h biosig.h Makefile
 	$(MinGW64CC) -c $(MinGW64CFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
 win64/%.obj: win32/%.c 
-	$(MinGWCC) -c $(MinGWCFLAGS) -I win32 $(INCPATH) -o "$@" "$<"
+	$(MinGW64CC) -c $(MinGW64CFLAGS) -I win32 $(INCPATH) -o "$@" "$<"
 win64/%.obj: XMLParser/%.cpp 
 	$(MinGW64CXX) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
 
@@ -788,10 +788,10 @@ $(DATA_DIR)t1.scp: $(TEMP_DIR)scp/redred/PFE103.scp
 $(DATA_DIR)2003-12\ Schema/example/Example\ aECG.xml:
 	# HL7aECG example data set
 	wget -q -P$(DATA_DIR) https://www.hl7.org/documentcenter/public/wg/rcrim/annecg/aECG%20Release%201%20Schema%20and%20Example.zip
-	unzip -u $(DATA_DIR)"aECG Release 1 Schema and Example.zip"  -d $(DATA_DIR)
+	unzip -u $(DATA_DIR)"aECG Release 1 Schema and Example.zip" -d $(DATA_DIR)
 
 $(TEMP_DIR)t1.hl7: $(DATA_DIR)2003-12\ Schema/example/Example\ aECG.xml
-	$(COPY) $(DATA_DIR)2003-12\ Schema/example/Example\ aECG.xml" $(TEMP_DIR)t1.hl7
+	$(COPY) $(DATA_DIR)2003-12\ Schema/example/Example\ aECG.xml $(TEMP_DIR)t1.hl7
 	#rm -rf "$(TEMP_DIR)aECG Release 1 Schema and Example.zip"
 	#rm -rf "$(TEMP_DIR)2003-12 Schema"
 
