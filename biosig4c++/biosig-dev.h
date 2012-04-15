@@ -45,6 +45,8 @@
 
 #ifdef	__WIN32__
 #define FILESEP '\\'
+char *getlogin (void);
+char *strndup (char const *s, size_t n);
 #else
 #define FILESEP '/'
 #endif
