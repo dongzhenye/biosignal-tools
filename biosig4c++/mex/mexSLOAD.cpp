@@ -1,6 +1,6 @@
 /*
 
-    $Id: mexSLOAD.cpp,v 1.52 2009-04-08 13:03:10 schloegl Exp $
+    $Id$
     Copyright (C) 2007,2008,2009,2010 Alois Schloegl <a.schloegl@ieee.org>
     This file is part of the "BioSig for C/C++" repository 
     (biosig4c++) at http://biosig.sf.net/ 
@@ -355,15 +355,15 @@ void mexFunction(
 #endif
 		mxSetField(HDR,0,"VERSION",mxCreateDoubleScalar(hdr->VERSION));
 
-		char *msg; 
+		char *msg = (char*)malloc(72+23+strlen(FileName)); // 72: max length of constant text, 23: max length of GetFileTypeString()
 		if (status==B4C_CANNOT_OPEN_FILE)
-			asprintf(&msg,"Error mexSLOAD: file %s not found.\n",FileName);
+			sprintf(msg,"Error mexSLOAD: file %s not found.\n",FileName);
 		else if (status==B4C_FORMAT_UNKNOWN)
-			asprintf(&msg,"Error mexSLOAD: Cannot open file %s - format %s not known.\n",FileName,GetFileTypeString(hdr->TYPE));
+			sprintf(msg,"Error mexSLOAD: Cannot open file %s - format %s not known.\n",FileName,GetFileTypeString(hdr->TYPE));
 		else if (status==B4C_FORMAT_UNSUPPORTED)
-			asprintf(&msg,"Error mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", FileName, GetFileTypeString(hdr->TYPE), B4C_ERRMSG);
+			sprintf(msg,"Error mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", FileName, GetFileTypeString(hdr->TYPE), B4C_ERRMSG);
 		else 	
-			asprintf(&msg,"Error %i mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", status, FileName, GetFileTypeString(hdr->TYPE), B4C_ERRMSG);
+			sprintf(msg,"Error %i mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", status, FileName, GetFileTypeString(hdr->TYPE), B4C_ERRMSG);
 			
 		mxSetField(HDR,0,"ErrMsg",mxCreateString(msg));
 		if (msg) free(msg);

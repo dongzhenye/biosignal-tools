@@ -21,7 +21,7 @@ Prerequisites:
 
 == Cross-Compiling on Linux for Windows ===============
 Prerequisites:
-	Cross-compiler (e.g. mingw-cross-env)
+	Cross-compiler (e.g. mxe)
         wine 
 	Mathlink developer files from Windows 
 		e.g. C:\Program Files\Wolfram Research\Mathematica\7.0\SystemFiles\Links\MathLink\DeveloperKit\Windows*

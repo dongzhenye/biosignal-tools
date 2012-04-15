@@ -46,13 +46,13 @@ LIBEXT        = a
 
 ### User-specified options: its likely you want to change this
 # settings for cross compiler: tested with mingw-cross-env and mce-w64 with make suitesparse zlib qt ; 
-CROSS   = $HOME/src/mingw-cross-env/usr/bin/i686-pc-mingw32
+CROSS   = $HOME/src/mxe/usr/bin/i686-pc-mingw32
 ## local mingw-cross-env 
 ifeq "$(wildcard $(CROSS)-gcc)" ""
-CROSS         = $(shell pwd)/../mingw-cross-env/usr/bin/i686-pc-mingw32
+CROSS         = $(shell pwd)/../mxe/usr/bin/i686-pc-mingw32
 endif
 ifeq "$(wildcard $(CROSS)-gcc)" ""
-CROSS         = /usr/local/src/mingw-cross-env/usr/bin/i686-pc-mingw32
+CROSS         = /usr/local/src/mxe/usr/bin/i686-pc-mingw32
 endif
 CROSS64       = $(HOME)/src/mce-w64/usr/bin/x86_64-w64-mingw32
 ifeq "$(wildcard $(CROSS64)-gcc)" ""
@@ -326,7 +326,7 @@ win32/%.obj: t240/%.c biosig-dev.h biosig.h
 win32/%.obj: test0/%.c  biosig-dev.h biosig.h Makefile
 	$(MinGWCC) -c $(MinGWCFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
 win32/%.obj: win32/%.c 
-	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
+	$(MinGWCC) -c $(MinGWCFLAGS) -I win32 $(INCPATH) -o "$@" "$<"
 win32/%.obj: XMLParser/%.cpp 
 	$(MinGWCXX) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
 
