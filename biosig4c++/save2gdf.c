@@ -239,7 +239,6 @@ int main(int argc, char **argv){
 		hdr->aECG = dest;
 	}
 
-	hdr->FileName = source;
 	hdr = sopen(source, "r", hdr);
 #ifdef WITH_PDP 
 	if (B4C_ERRNUM) {

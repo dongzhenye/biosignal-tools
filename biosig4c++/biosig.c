@@ -1410,6 +1410,7 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 		return(NULL);
 	}
 
+	hdr->FileName = NULL;
 	hdr->FILE.OPEN = 0;
 	hdr->FILE.FID = 0;
 	hdr->FILE.POS = 0;
@@ -1666,6 +1667,8 @@ void destructHDR(HDRTYPE* hdr) {
 #endif
 
 	if (VERBOSE_LEVEL>7)  fprintf(stdout,"destructHDR: free HDR\n");
+
+	if (hdr->FileName != NULL) free(hdr->FileName);
 
 	if (hdr != NULL) free(hdr);
 	return;
@@ -3480,7 +3483,10 @@ HDRTYPE* sopen(const char* FileName, const char* MODE, HDRTYPE* hdr)
 	if (hdr==NULL)
 		hdr = constructHDR(0,0);	// initializes fields that may stay undefined during SOPEN
 
-	hdr->FileName = FileName;
+	if (FileName != NULL) {
+		if (hdr->FileName) free(hdr->FileName);
+		hdr->FileName = strdup(FileName);
+	}
 
 	if (VERBOSE_LEVEL>6)
 		fprintf(stdout,"SOPEN( %s, %s) open=%i\n",FileName, MODE, hdr->FILE.OPEN);
@@ -6292,7 +6298,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
 	else if (hdr->TYPE==CTF) {
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"CTF[101]: %s\n",hdr->FileName);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"CTF[101]: %s\n",hdr->FileName);
 
 		hdr->AS.Header  = (uint8_t*)realloc(hdr->AS.Header,1844);
 		hdr->HeadLen    = 1844;
@@ -10626,7 +10632,6 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 	}
 
     	else if (hdr->TYPE==HL7aECG) {
-   		hdr->FileName = FileName;
 		sopen_HL7aECG_write(hdr);
 
 		// hdr->FLAG.SWAP = 0;
@@ -10636,7 +10641,6 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
     	else if (hdr->TYPE==MFER) {
     		uint8_t tag;
     		size_t  len, curPos=0;
-    		hdr->FileName  = FileName;
 	     	hdr->HeadLen   = 32+128+3*6+3 +80000;
 	    	hdr->AS.Header = (uint8_t*)malloc(hdr->HeadLen);
 		memset(Header1, ' ', hdr->HeadLen);
@@ -10862,8 +10866,6 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 	}
 
     	else if (hdr->TYPE==SCP_ECG) {
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN_SCP_WRITE -111\n");
-    		hdr->FileName = FileName;
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN_SCP_WRITE -112\n");
     		sopen_SCP_write(hdr);
     		if (serror()) return(hdr);
@@ -10872,14 +10874,13 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 #ifdef WITH_TMSiLOG
     	else if (hdr->TYPE==TMSiLOG) {
     		// ###FIXME: writing of TMSi-LOG file is experimental and not completed
-    		hdr->FileName = FileName;
-	    	FILE *fid = fopen(FileName,"wb");
+	    	FILE *fid = fopen(hdr->FileName,"wb");
 		fprintf(fid,"FileId=TMSi PortiLab sample log file\n\rVersion=0001\n\r",NULL);
 		struct tm *t = gdf_time2tm_time(hdr->T0);
 		fprintf(fid,"DateTime=%04d/02d/02d-02d:02d:02d\n\r",t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
 		fprintf(fid,"Format=Float32\n\rLength=%f\n\rSignals=%04i\n\r",hdr->NRec*hdr->SPR/hdr->SampleRate,hdr->NS);
-		const char* fn = strrchr(FileName,FILESEP);
-		if (!fn) fn=FileName;
+		const char* fn = strrchr(hdr->FileName,FILESEP);
+		if (!fn) fn=hdr->FileName;
 		size_t len = strcspn(fn,".");
 		char* fn2 = (char*)malloc(len+1);
 		strncpy(fn2,fn,len);
@@ -10899,8 +10900,8 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 
 		// ###FIXME: this belongs into SWRITE
 		// write data file
-		fn2 = (char*) realloc(fn2, strlen(FileName)+5);
-		strcpy(fn2,FileName);
+		fn2 = (char*) realloc(fn2, strlen(hdr->FileName)+5);
+		strcpy(fn2,hdr->FileName);
 		strcpy(strrchr(fn2,'.'),".asc");
     		// hdr->FileName = fn2;
 	    	fid = fopen(fn2,"wb");
@@ -10929,7 +10930,6 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		return(NULL);
 	}
 
-    	hdr->FileName = FileName;
 	if ((hdr->TYPE != ASCII) && (hdr->TYPE != BIN) && (hdr->TYPE != HL7aECG) && (hdr->TYPE != TMSiLOG)){
 	    	hdr = ifopen(hdr,"wb");
 
@@ -11867,7 +11867,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 	size_t bpb8 = bpb8_collapsed_rawdata(hdr);
 
 	if (VERBOSE_LEVEL>7)
-		fprintf(stdout,"swrite sz=%i\n",(int)(hdr->NRec*bpb8>>3));
+		fprintf(stdout,"swrite 307 <%s> sz=%i\n",hdr->FileName,(int)(hdr->NRec*bpb8>>3));
 
 	if ((hdr->NRec*bpb8>0) && (hdr->TYPE != SCP_ECG)) {
 	// memory allocation for SCP is done in SOPEN_SCP_WRITE Section 6
@@ -12080,7 +12080,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 	}	// end for k1
 
 	if (VERBOSE_LEVEL>7)
-		fprintf(stdout,"swrite 315\n");
+		fprintf(stdout,"swrite 315 <%s>\n", hdr->FileName );
 
 #ifndef WITHOUT_NETWORK
 	if (hdr->FILE.Des>0) {
@@ -12267,7 +12267,7 @@ int sclose(HDRTYPE* hdr)
 			hdr->CHANNEL[k].GDFTYP=3;
 	}
 
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"sclose(122) OPEN=%i %s\n",hdr->FILE.OPEN,GetFileTypeString(hdr->TYPE));
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"sclose(122) OPEN=%i %s\n",hdr->FILE.OPEN,GetFileTypeString(hdr->TYPE));
 
 #ifdef WITH_FEF
 	if (hdr->TYPE == FEF) sclose_fef_read(hdr);

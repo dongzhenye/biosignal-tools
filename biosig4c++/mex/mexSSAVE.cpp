@@ -84,7 +84,7 @@ void mexFunction(
 	HDRTYPE		*hdr;
 	size_t 		count;
 	time_t 		T0;
-	char 		FileName[1024];  
+	char 		*FileName;  
 	char 		tmpstr[128];  
 	int 		status; 
 	int		CHAN = 0;
@@ -198,7 +198,7 @@ void mexFunction(
 		hdr->VERSION 	= atof(tmpstr);
 	}
 	if ( (p = mxGetField(prhs[0], 0, "T0") ) != NULL ) 		hdr->T0 	= (gdf_time)getDouble(p, 0);
-	if ( (p = mxGetField(prhs[0], 0, "FileName") ) != NULL ) 	if (~mxGetString(p,FileName,1024)) hdr->FileName = FileName;
+	if ( (p = mxGetField(prhs[0], 0, "FileName") ) != NULL ) 	FileName 	= mxArrayToString(p);
 	if ( (p = mxGetField(prhs[0], 0, "SampleRate") ) != NULL ) 	hdr->SampleRate = getDouble(p, 0);
 	if ( (p = mxGetField(prhs[0], 0, "NS") ) != NULL )	 	hdr->NS         = getDouble(p, 0);
 
@@ -468,7 +468,7 @@ void mexFunction(
 
 	}
 
-	hdr = sopen(hdr->FileName, "w", hdr);
+	hdr = sopen(FileName, "w", hdr);
 	if (serror()) mexErrMsgTxt("mexSSAVE: sopen failed \n");	
 
 	swrite((biosig_data_type*)data, hdr->NRec, hdr);
