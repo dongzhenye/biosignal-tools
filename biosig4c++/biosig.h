@@ -359,14 +359,7 @@ typedef struct {
 
 	struct {
 		char		Recording[MAX_LENGTH_RID+1]; 	/* HL7, EDF, GDF, BDF replaces HDR.AS.RID */
-#ifdef DYNAMIC_TECHNICIAN
-/* TODO change field Technician to dynamic allocated memory
-		this is currently very experimental
-*/
 		char* 		Technician;
-#else
-		char 		Technician[MAX_LENGTH_TECHNICIAN+1];
-#endif
 		char* 		Hospital;	/* recording institution */
 		uint64_t 	Equipment; 	/* identifies this software */
 		struct {

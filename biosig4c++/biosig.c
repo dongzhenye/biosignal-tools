@@ -1452,15 +1452,10 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->ID.Manufacturer.Model        = NULL;
 	hdr->ID.Manufacturer.Version      = NULL;
 	hdr->ID.Manufacturer.SerialNumber = NULL;
-#ifdef DYNAMIC_TECHNICIAN
 	hdr->ID.Technician 	= NULL;
-#else
-	hdr->ID.Technician[0] 	= 0;
-#endif
 	hdr->ID.Hospital 	= "\x00";
 
 	memset(hdr->IPaddr, 0, 16);
-#ifdef DYNAMIC_TECHNICIAN
 	{	// some local variables are used only in this block
 #ifdef _WIN32
    #if 1
@@ -1478,7 +1473,7 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	if (VERBOSE_LEVEL>7)  fprintf(stdout,"Name:%s\nPw:%s\nuid/gui: %i/%i\nreal name: %s\n$HOME:%s\nSHELL:%s\n",p->pw_name,p->pw_passwd,p->pw_uid,p->pw_gid,p->pw_gecos,p->pw_dir,p->pw_shell);
 #endif 
 	}
-#endif
+
 
 #ifndef WITHOUT_NETWORK
 #ifdef _WIN32
@@ -1626,9 +1621,7 @@ void destructHDR(HDRTYPE* hdr) {
     		free(hdr->aECG);
     	}
 
-#ifdef DYNAMIC_TECHNICIAN
 	if (hdr->ID.Technician != NULL) free(hdr->ID.Technician);
-#endif
 
     	if (hdr->AS.bci2000 != NULL) free(hdr->AS.bci2000);
 
@@ -3013,14 +3006,9 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"user-specific events defined\n");
 		    		}
 		    		else if (tag==6) {
 		    			/* Technician  */
-#ifdef DYNAMIC_TECHNICIAN
 					hdr->ID.Technician = (char*)realloc(hdr->ID.Technician,len+1);
 					memcpy(hdr->ID.Technician,Header2+pos+4, len);
 					hdr->ID.Technician[len]=0;
-#else
-		    			memcpy(hdr->ID.Technician,Header2+pos+4,min(len,MAX_LENGTH_TECHNICIAN));
-		    			hdr->ID.Technician[min(len,MAX_LENGTH_TECHNICIAN)]=0;
-#endif
 		    		}
 		    		else if (tag==7) {
 		    			// recording institution
@@ -3861,12 +3849,8 @@ else if (!strncmp(MODE,"r",1)) {
 				hdr->ID.Recording[80-pos-1] = 0;
 				if (strtok(hdr->ID.Recording," ")!=NULL) {
 					char *tech = strtok(NULL," "); 
-#ifdef DYNAMIC_TECHNICIAN
 					if (hdr->ID.Technician) free(hdr->ID.Technician); 
 					hdr->ID.Technician = (tech != NULL) ?  strdup(tech) : NULL; 
-#else
-					strncpy(hdr->ID.Technician, tech, MAX_LENGTH_TECHNICIAN);
-#endif
 					hdr->ID.Manufacturer.Name  = strtok(NULL," ");
 				}
 
@@ -4621,12 +4605,8 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 #endif // not WITHOUT_NETWORK
 				}
 				else if (!strcmp(line,"Recording.Technician")) {
-#ifdef DYNAMIC_TECHNICIAN
 					if (hdr->ID.Technician) free(hdr->ID.Technician);
 					hdr->ID.Technician = strdup(val);
-#else
-					strncpy(hdr->ID.Technician,val,MAX_LENGTH_TECHNICIAN);
-#endif
 				}
 				else if (!strcmp(line,"Manufacturer.Name"))
 					hdr->ID.Manufacturer.Name = val;

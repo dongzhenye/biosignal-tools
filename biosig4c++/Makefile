@@ -89,7 +89,6 @@ DEFINES      += -D=WITHOUT_NETWORK
 #DEFINES      += -D=WITH_EEPROBE		
 #DEFINES      += -D=SOFTCODED_PHYSDIMTABLE	# obsolete
 #DEFINES      += -D=CNT32			# for 32bit Neuroscan format
-DEFINES      += -D=DYNAMIC_TECHNICIAN		# TODO: this is experimental, fix it and make it the default
 CFLAGS        = -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 CXXFLAGS      = -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 AR            = ar crs

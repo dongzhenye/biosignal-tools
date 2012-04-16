@@ -350,17 +350,11 @@ void mexFunction(
 	if ( (p = mxGetField(prhs[0], 0, "ID") ) != NULL ) {
 		if ( (p1 = mxGetField(p, 0, "Recording") ) != NULL ) 
 			if (mxIsChar(p1)) mxGetString(p1, hdr->ID.Recording, MAX_LENGTH_RID+1);
-#ifdef DYNAMIC_TECHNICIAN
 		if ( (p1 = mxGetField(p, 0, "Technician") ) != NULL ) 
 			if (mxIsChar(p1)) {
 				char* str = mxArrayToString(p1);
 				hdr->ID.Technician = strdup(str); 
-				mxFree(str);
 			}
-#else
-		if ( (p1 = mxGetField(p, 0, "Technician") ) != NULL ) 
-			if (mxIsChar(p1)) mxGetString(p1, hdr->ID.Technician, MAX_LENGTH_TECHNICIAN+1);
-#endif
 		if ( (p1 = mxGetField(p, 0, "Hospital") ) != NULL ) 
 			;//FIXME:// if (mxIsChar(p1)) hdr->ID.Hospital=mxGetChars(p1);
 		if ( (p1 = mxGetField(p, 0, "Equipment") ) != NULL ) 
