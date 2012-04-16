@@ -682,13 +682,9 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					aECG->MedicationDrugs = (char*)(PtrCurSect+curSectPos);
 				}
 				else if (tag==22) {
-#ifdef DYNAMIC_TECHNICIAN
 					hdr->ID.Technician = (char*)realloc(hdr->ID.Technician,len1+1);
 					memcpy(hdr->ID.Technician,(char*)(PtrCurSect+curSectPos),len1);
 					hdr->ID.Technician[len1] = 0;
-#else
-					strncpy(hdr->ID.Technician,(char*)(PtrCurSect+curSectPos),MAX_LENGTH_TECHNICIAN);
-#endif
 				}
 				else if (tag==23) {
 				}
