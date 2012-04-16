@@ -144,7 +144,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 	    TiXmlHandle SierraECG = hDoc.FirstChild("restingECG");
 	    TiXmlHandle SierraECG2 = hDoc.FirstChild("restingecgdata");
 
-	    if (VERBOSE_LEVEL>8) fprintf(stdout,"hl7r: [412]\n"); 
+	    if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [412]\n"); 
 
 	    if (SierraECG.Element()) {
 		fprintf(stdout,"Great! Philips Sierra ECG is recognized\n");
@@ -302,7 +302,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 				hdr->ID.Manufacturer.Model = hdr->ID.Manufacturer._field;
 			}				
 
-			if (VERBOSE_LEVEL>8) fprintf(stdout,"hl7r: [413]\n"); 
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [413]\n"); 
 
 			H = geECG.FirstChild("PatientInfo");
 			if (H.Element()) {
@@ -322,7 +322,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 				}
 			}
 
-			if (VERBOSE_LEVEL>8) fprintf(stdout,"hl7r: [413]\n"); 
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [413]\n"); 
 
 			double Cal=0.0, LP=NAN, HP=NAN, Notch=0.0;
 			hdr->NRec= 0;
@@ -339,7 +339,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 					Notch = 60; 
 			}
 			
-			if (VERBOSE_LEVEL>8) fprintf(stdout,"hl7r: [413]\n"); 
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [413]\n"); 
 
 			H = geECG.FirstChild("StripData");
 			TiXmlElement *C = NULL;	
@@ -362,7 +362,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 			C = H.FirstChild("WaveformData").Element();
 			while (C != NULL) {
 
-				if (VERBOSE_LEVEL>8) fprintf(stdout,"hl7r: [413] %i\n",k); 
+				if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [413] %i\n",k); 
 
 				if (k>=NCHAN) {
 					NCHAN = max(12,(NCHAN+1)*2);
@@ -403,7 +403,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 
 			hdr->NS = k;	
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"hl7r: [417] %i\n",hdr->NS); 
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [417] %i\n",hdr->NS); 
 
 
 			C = H.FirstChild("WaveformData").Element();
@@ -411,7 +411,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 			size_t SPR = 0;	
 			for (k=0; k<hdr->NS; k++) {
 
-				if (VERBOSE_LEVEL>8) fprintf(stdout,"hl7r: [415] %i\n",k); 
+				if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [415] %i\n",k); 
 
 				CHANNEL_TYPE *hc = hdr->CHANNEL + k;
 
@@ -450,7 +450,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 			hdr->AS.first = 0; 	
 			hdr->AS.length = hdr->NRec; 	
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"hl7r: [497] %i\n",hdr->NS); 
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [497] %i\n",hdr->NS); 
 
 
 	    }
@@ -738,7 +738,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 		
 		hdr->SampleRate = 1.0/atof(channels.FirstChild("component").FirstChild("sequence").FirstChild("value").FirstChild("increment").Element()->Attribute("value"));
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"hl7r: [517] %f\n",hdr->SampleRate); 
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7r: [517] %f\n",hdr->SampleRate); 
 		
                 /*************** Annotations **********************/
 		TiXmlHandle AnnotationSet = aECG.FirstChild("component").FirstChild("series").FirstChild("subjectOf").FirstChild("annotationSet");
@@ -911,6 +911,9 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 };
 
 EXTERN_C void sopen_HL7aECG_write(HDRTYPE* hdr) {
+
+	if (VERBOSE_LEVEL > 7) fprintf(stdout,"hl7w: [610] <%s>\n",hdr->FileName); 
+
 	size_t k;
 	for (k=0; k<hdr->NS; k++) {
 		hdr->CHANNEL[k].GDFTYP = 16; //float32
@@ -919,6 +922,7 @@ EXTERN_C void sopen_HL7aECG_write(HDRTYPE* hdr) {
 	hdr->SPR *= hdr->NRec;
 	hdr->NRec = 1; 
 	hdr->FILE.OPEN=2;
+
 	return;
 };
 
@@ -932,6 +936,8 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
 	Output:
 		char* HDR.AS.Header 	// contains the content which will be written to the file in SOPEN
 */	
+
+	if (VERBOSE_LEVEL > 7) fprintf(stdout,"hl7c: [910] <%s>\n",hdr->FileName); 
 
     struct tm *t0;
     char tmp[80];	
@@ -947,8 +953,11 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
 	xmlAddChild(node, xmlNewText("some text here"));
 	xmlAddChild(root, node);
  
-	ifopen(hdr, "w");
-	if (hdr->FILE.COMPRESSION) 
+	if (ifopen(hdr, "w")) {
+		B4C_ERRNUM = B4C_CANNOT_WRITE_FILE;
+		B4C_ERRMSG = "Cannot open file for writing";
+	} 
+	else if (hdr->FILE.COMPRESSION) 
 		xmlElemDump(hdr->FILE.gzFID, doc, root);
 	else
 		xmlElemDump(hdr->FILE.FID, doc, root);
@@ -966,7 +975,7 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
     TiXmlDeclaration* decl = new TiXmlDeclaration("1.0", "UTF-8", "");
     doc.LinkEndChild(decl);
     
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"910 %i\n",1);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"910 %i\n",1);
 
     TiXmlElement *root = new TiXmlElement("AnnotatedECG");
     root->SetAttribute("xmlns", "urn:hl7-org:v3");
@@ -987,7 +996,7 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
     rootCode->SetAttribute("codeSystemName", "CPT-4");
     root->LinkEndChild(rootCode);
     
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"910 %i\n",2);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"910 %i\n",2);
 
 	char timelow[24], timehigh[24];
 	gdf_time t1,t2;
@@ -1006,14 +1015,14 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
 	dT = floor(dT*1000);
 	sprintf(timehigh, "%4d%2d%2d%2d%2d%2d.%3d", t0->tm_year+1900, t0->tm_mon+1, t0->tm_mday, t0->tm_hour, t0->tm_min, t0->tm_sec,(int)ceil(dT));
 	for(int i=0; i<18; ++i) {
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"920 %i\n",i);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7c 920 %i\n",i);
 		if(timelow[i] == ' ')
 			timelow[i] = '0';
 		if(timehigh[i] == ' ')
 			timehigh[i] = '0';
 	}
 
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"930\n");
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7c 930\n");
 
     TiXmlElement *effectiveTime = new TiXmlElement("effectiveTime");
     TiXmlElement *effectiveTimeLow = new TiXmlElement("low");
@@ -1024,14 +1033,14 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
     effectiveTime->LinkEndChild(effectiveTimeHigh);
     root->LinkEndChild(effectiveTime);
 
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"931\n");
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7c 931\n");
 
     TiXmlElement *rootComponentOf = new TiXmlElement("componentOf");
     rootComponentOf->SetAttribute("typeCode", "COMP");
     rootComponentOf->SetAttribute("contextConductionInd", "true");
     root->LinkEndChild(rootComponentOf);
 
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"932\n");
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7c 932\n");
 
     TiXmlElement *timePointEvent = new TiXmlElement("timepointEvent");
     timePointEvent->SetAttribute("classCode", "CTTEVENT");
@@ -1068,7 +1077,7 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
     trialSubjectDemographicPerson->SetAttribute("determinerCode", "INSTANCE");
     trialSubject->LinkEndChild(trialSubjectDemographicPerson);
 
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"933\n");
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"933\n");
 
     if (strlen(hdr->Patient.Name)>0)
     if (!hdr->FLAG.ANONYMOUS) 
@@ -1124,7 +1133,7 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
     }
 
 
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"937\n");
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"937\n");
 
     TiXmlElement *subjectAssignmentComponentOf = new TiXmlElement("componentOf");
     subjectAssignmentComponentOf->SetAttribute("typeCode", "COMP");
@@ -1146,7 +1155,7 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
     rootComponent->SetAttribute("contextConductionInd", "true");
     root->LinkEndChild(rootComponent);
     
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"939\n");
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7c 939\n");
 
     TiXmlElement *series = new TiXmlElement("series");
     series->SetAttribute("classCode", "OBSSER");
@@ -1169,7 +1178,7 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
     
     for(int i=3; i; --i){
 
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"950 %i\n",i);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7c 950 %i\n",i);
 
 	    TiXmlElement *seriesControlVariable = new TiXmlElement("controlVariable");
 	    seriesControlVariable->SetAttribute("typeCode", "CTRLV");
@@ -1288,7 +1297,7 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
     if (hdr->CHANNEL[i].OnOff)
     {
 
-	if (VERBOSE_LEVEL>8) fprintf(stdout,"960 %i\n",i);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7c 960 %i\n",i);
 
 
 	sequenceSetComponent = new TiXmlElement("component");
@@ -1337,7 +1346,7 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
 	TiXmlElement *valueDigits = new TiXmlElement("digits");
 	sequenceValue->LinkEndChild(valueDigits);
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"[967] %i %f\n",i,*(float*)(hdr->AS.rawdata + hdr->CHANNEL[i].bi));
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7c [967] %i %f\n",i,*(float*)(hdr->AS.rawdata + hdr->CHANNEL[i].bi));
 
 #ifndef NO_BI
 	Dat=(float*)(hdr->AS.rawdata + hdr->CHANNEL[i].bi);
@@ -1352,26 +1361,24 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
 	pS=S;
 
 	for (unsigned int j=0; j<hdr->CHANNEL[i].SPR; ++j) {
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"969: %i %i %f \n",i, j, Dat [j]);
+		if (VERBOSE_LEVEL>8) fprintf(stdout,"hl7c 969: %i %i %f \n",i, j, Dat [j]);
 		pS+=sprintf(pS,"%g ",Dat[j]);
 	}
 #ifdef NO_BI
 	bi += hdr->CHANNEL[i].SPR*sz;
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"970 %i %i \n%s \n",i, bi, S);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7c 970 %i %i \n%s \n",i, bi, S);
 #else
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"970 %i %i \n%s \n",i, hdr->CHANNEL[i].bi, S);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7c 970 %i %i \n%s \n",i, hdr->CHANNEL[i].bi, S);
 #endif
-//	if (VERBOSE_LEVEL>8) fprintf(stdout,"<%s>\n",digitsStream.str().c_str());
 
 	digitsText = new TiXmlText(S);
 	valueDigits->LinkEndChild(digitsText);
 	delete []S;
     }
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"980 [%i]\n", hdr->FILE.COMPRESSION);
-	doc.SaveFile(hdr->FileName, hdr->FILE.COMPRESSION);
+	int status = doc.SaveFile(hdr->FileName, (char)hdr->FILE.COMPRESSION);
 //	doc.SaveFile(hdr);
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"989\n");
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"hl7c 989  (%i)\n",status);
 
 #endif 
 
