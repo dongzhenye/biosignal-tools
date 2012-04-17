@@ -483,7 +483,7 @@ void mexFunction(
 		mxSetField(HDR,0,"NRec",mxCreateDoubleScalar(hdr->NRec));
 		mxSetField(HDR,0,"SampleRate",mxCreateDoubleScalar(hdr->SampleRate));
 		mxSetField(HDR,0,"Dur",mxCreateDoubleScalar(hdr->SPR/hdr->SampleRate));
-		mxSetField(HDR,0,"FileName",mxCreateCharMatrixFromStrings(1,&hdr->FileName));
+		mxSetField(HDR,0,"FileName",mxCreateString(hdr->FileName));
                 
 		mxSetField(HDR,0,"T0",mxCreateDoubleScalar(ldexp(hdr->T0,-32)));
 

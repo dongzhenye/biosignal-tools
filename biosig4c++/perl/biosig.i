@@ -107,7 +107,7 @@ typedef struct CHANNEL_STRUCT {
 typedef struct {
 	enum FileFormat TYPE; 		/* type of file format */
 	float 		VERSION;	/* GDF version number */ 
-	const char* 	FileName;
+	char* 	        FileName;
 	
 	struct {
 		size_t 			size[2]; /* size {rows, columns} of data block	 */
