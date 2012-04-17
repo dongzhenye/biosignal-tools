@@ -611,7 +611,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 		    	strncpy(hdr->Patient.Id,tmpstr,MAX_LENGTH_PID);
 		}    
 
-		if (VERBOSE_LEVEL>7)
+		if (VERBOSE_LEVEL>7) 
 			fprintf(stdout,"hl7r: [413]\n"); 
 
 		if (!hdr->FLAG.ANONYMOUS) 
@@ -987,7 +987,7 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
     doc.LinkEndChild(root);
 
     TiXmlElement *rootid = new TiXmlElement("id");
-    rootid->SetAttribute("root", strdup(hdr->ID.Recording));
+    rootid->SetAttribute("root", hdr->ID.Recording);
     root->LinkEndChild(rootid);
 	
     TiXmlElement *rootCode = new TiXmlElement("code");

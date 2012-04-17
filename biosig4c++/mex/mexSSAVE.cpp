@@ -355,8 +355,11 @@ void mexFunction(
 				char* str = mxArrayToString(p1);
 				hdr->ID.Technician = strdup(str); 
 			}
-		if ( (p1 = mxGetField(p, 0, "Hospital") ) != NULL ) 
-			;//FIXME:// if (mxIsChar(p1)) hdr->ID.Hospital=mxGetChars(p1);
+		if ( (p1 = mxGetField(p, 0, "Hospital") ) != NULL && mxIsChar(p1) ) {
+                        size_t len = mxGetN(p1)*mxGetN(p1); 
+                        hdr->ID.Hospital = (char)realloc(hdr->ID.Hospital, len+1); 
+                        mxGetString(p1, hdr->ID.Hospital, len);         
+                }        
 		if ( (p1 = mxGetField(p, 0, "Equipment") ) != NULL ) 
 			memcpy(&hdr->ID.Equipment,mxGetData(p1), 8);
 		if ( (p1 = mxGetField(p, 0, "Manufacturer") ) != NULL ) {

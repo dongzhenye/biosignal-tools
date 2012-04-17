@@ -1454,7 +1454,7 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->ID.Manufacturer.Version      = NULL;
 	hdr->ID.Manufacturer.SerialNumber = NULL;
 	hdr->ID.Technician 	= NULL;
-	hdr->ID.Hospital 	= "\x00";
+	hdr->ID.Hospital 	= NULL;
 
 	memset(hdr->IPaddr, 0, 16);
 	{	// some local variables are used only in this block
@@ -1469,9 +1469,19 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->ID.Technician = strdup(str); 
    #endif
 #else	
+	hdr->ID.Technician = strdup(getlogin()); 
+/*      FIXME: seem to cause some memory leaks
 	struct passwd *p = getpwuid(geteuid());	
-	hdr->ID.Technician = strdup(p->pw_gecos); 
+	hdr->ID.Technician = p->pw_gecos;
 	if (VERBOSE_LEVEL>7)  fprintf(stdout,"Name:%s\nPw:%s\nuid/gui: %i/%i\nreal name: %s\n$HOME:%s\nSHELL:%s\n",p->pw_name,p->pw_passwd,p->pw_uid,p->pw_gid,p->pw_gecos,p->pw_dir,p->pw_shell);
+        free(p->pw_name);
+        free(p->pw_passwd);
+        //free(p->pw_gecos);
+        free(p->pw_dir);
+        free(p->pw_shell);
+        free(p);
+*/
+
 #endif 
 	}
 
@@ -1623,6 +1633,7 @@ void destructHDR(HDRTYPE* hdr) {
     	}
 
 	if (hdr->ID.Technician != NULL) free(hdr->ID.Technician);
+	if (hdr->ID.Hospital   != NULL) free(hdr->ID.Hospital);
 
     	if (hdr->AS.bci2000 != NULL) free(hdr->AS.bci2000);
 
@@ -3015,7 +3026,7 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"user-specific events defined\n");
 		    		}
 		    		else if (tag==7) {
 		    			// recording institution
-		    			hdr->ID.Hospital = (char*)(Header2+pos+4);
+		    			hdr->ID.Hospital = strndup((char*)(Header2+pos+4),len);
 		    		}
 
 		    		/* further tags may include
@@ -4409,7 +4420,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 
 	else if (hdr->TYPE==AINF) {
 		ifclose(hdr);
-		const char *filename = hdr->FileName; // keep input file name
+		char *filename = hdr->FileName; // keep input file name
 		char* tmpfile = (char*)calloc(strlen(hdr->FileName)+5,1);
 		strcpy(tmpfile,hdr->FileName);
 		char* ext = strrchr(tmpfile,'.')+1;
@@ -5398,7 +5409,7 @@ if (VERBOSE_LEVEL>8)
 	else if ((hdr->TYPE==BrainVision) || (hdr->TYPE==BrainVisionVAmp)) {
 		/* open and read header file */
 		// ifclose(hdr);
-		const char *filename = hdr->FileName; // keep input file name
+		char *filename = hdr->FileName; // keep input file name
 		char* tmpfile = (char*)calloc(strlen(hdr->FileName)+5,1);
 		strcpy(tmpfile,hdr->FileName);
 		hdr->FileName = tmpfile;
@@ -6302,7 +6313,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
 		hdr->AS.Header  = (uint8_t*)realloc(hdr->AS.Header,1844);
 		hdr->HeadLen    = 1844;
-		const char *f0  = hdr->FileName;
+		char *f0        = hdr->FileName;
 		char *f1 	= (char*)malloc(strlen(f0)+6);
 		strcpy(f1,f0);
 		strcpy(strrchr(f1,'.')+1,"res4");
@@ -6562,7 +6573,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
         			hdr->SampleRate = atof(Header1+pos);
         			break;
         		case 0x00000012:
-        			hdr->ID.Hospital = Header1+pos;
+        			hdr->ID.Hospital = strndup(Header1+pos,len);
         			break;
 
         		case 0x00000003: // units
@@ -6668,7 +6679,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
                 ifseek(hdr,pos,SEEK_SET);
 		hdr->AS.first = 0;
 		hdr->AS.length = 0;
-		hdr->ID.Hospital = "";
 
 		if ((bei64p(hdr->AS.Header+24)==-1) && (bei64p(hdr->AS.Header+24)==-1)) {
 			/* if data length is not present */
@@ -8798,7 +8808,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"[MIT 177] #%i: (%i) %s FMT=%i + %i\n",(int)k+1,(int)nDatFiles,DatFiles[0],fmt,(int)ByteOffset[0]);
 
 		/* MIT: read ATR annotation file */
-		const char *f0 = hdr->FileName;
+		char *f0 = hdr->FileName;
 		char *f1 = (char*) malloc(strlen(hdr->FileName)+5);
 		strcpy(f1,hdr->FileName);
 		strcpy(strrchr(f1,'.')+1,"atr");
@@ -8907,8 +8917,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
         		//uint8_t *Marker=NULL;
         		count = 0;
 
-
-			const char *f0 = hdr->FileName;
+			char *f0 = hdr->FileName;
 			char *f1 = (char*) malloc(strlen(hdr->FileName)+strlen(DatFiles[0])+2);
 			strcpy(f1,hdr->FileName);
 			hdr->FileName = f1;
@@ -8940,13 +8949,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			}
 		}
 
-		if (VERBOSE_LEVEL>8)
+		if (VERBOSE_LEVEL > 7)
 		    	fprintf(stdout,"[MIT 198] #%i: (%i) %s FMT=%i\n",(int)k+1,(int)nDatFiles,DatFiles[0],fmt);
 
 		free(DatFiles);
 		free(ByteOffset);
 
-		if (VERBOSE_LEVEL>8)
+		if (VERBOSE_LEVEL > 7)
 		    	fprintf(stdout,"[MIT 199] #%i: (%i) %s FMT=%i\n",(int)k+1,(int)nDatFiles,DatFiles[0],fmt);
 
 		if (nDatFiles != 1) {
@@ -9158,7 +9167,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
 		if (Header1[345]=='i') {
 			ifclose(hdr);
-			const char *f0 = hdr->FileName;
+			char *f0 = hdr->FileName;
 			char *f1 = (char*)malloc(strlen(hdr->FileName)+4);
 			strcpy(f1,hdr->FileName);
 			strcpy(strrchr(f1,'.') + 1, "img");

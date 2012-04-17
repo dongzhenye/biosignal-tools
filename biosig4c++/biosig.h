@@ -308,7 +308,7 @@ typedef struct {
 
 	enum FileFormat TYPE 	 ATT_ALI; 	/* type of file format */
 	float 		VERSION  ATT_ALI;	/* GDF version number */
-	const char* 	FileName ATT_ALI;
+	char* 	        FileName ATT_ALI;       /* FileName - dynamically allocated, local copy of file name */
 
 	struct {
 		size_t 			size[2] ATT_ALI; /* size {rows, columns} of data block	 */

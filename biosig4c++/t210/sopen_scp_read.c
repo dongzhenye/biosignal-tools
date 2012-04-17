@@ -667,7 +667,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					aECG->Section1.Tag15.VERSION     = *(PtrCurSect+curSectPos+14);
 				}
 				else if (tag==16) {
-					hdr->ID.Hospital = (char*)(PtrCurSect+curSectPos+14);
+					hdr->ID.Hospital = strndup(PtrCurSect+curSectPos+14,len1);
 				}
 				else if (tag==17) {
 				}
