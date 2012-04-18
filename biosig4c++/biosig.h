@@ -159,7 +159,7 @@ enum FileFormat {
 	TIFF, TMS32, TMSiLOG, TRC, UNIPRO, VRML, VTK,
 	WAV, WinEEG, WMF, XML, XPM,
 	Z, ZIP, ZIP2, 
-	SQLite, NeuroLoggerHEX, BESA, ePrime, JSON, SYNERGY, WG1
+	SQLite, NeuroLoggerHEX, BESA, ePrime, JSON, SYNERGY, WG1, Axona
 };
 
 
@@ -168,7 +168,7 @@ extern const char *B4C_ERRMSG;
 
 #define BIOSIG_VERSION_MAJOR 1
 #define BIOSIG_VERSION_MINOR 2
-#define BIOSIG_VERSION_STEPPING 2
+#define BIOSIG_VERSION_STEPPING 3
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR+0.01*BIOSIG_VERSION_MINOR)
 
 extern int VERBOSE_LEVEL; 	// used for debugging

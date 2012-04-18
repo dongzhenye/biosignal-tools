@@ -1765,6 +1765,8 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    	hdr->TYPE = ATES;
     	else if (!memcmp(Header1,"ATF\x09",4))
     	        hdr->TYPE = ATF;
+    	else if (!memcmp(Header1,"ADU1",4) || !memcmp(Header1,"ADU2",4)  )
+    	        hdr->TYPE = Axona;
 
     	else if (!memcmp(Header1,"HeaderLen=",10)) {
 	    	hdr->TYPE = BCI2000;
@@ -2159,6 +2161,7 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ ATES,    	"ATES" },
 	{ ATF,    	"ATF" },
 	{ AU,    	"AU" },
+	{ Axona,    	"Axona" },
 	{ BCI2000,    	"BCI2000" },
 	{ BDF,    	"BDF" },
 	{ BESA,    	"BESA" },
@@ -4512,6 +4515,88 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
     	else if (hdr->TYPE==alpha) {
 		ifclose(hdr); 	// close already opened file (typically its .../alpha.alp)
 		sopen_alpha_read(hdr);
+	}
+
+    	else if (hdr->TYPE==Axona) {
+    		fprintf(stdout, "Axona: is currently very experimental. \n");
+
+    		hdr->AS.bpb 	= 12 + 20 + 2 * 192 + 16;
+    		hdr->NS 	=  4 + 64;
+    		hdr->SPR 	=  3;
+    		hdr->SampleRate = 24e3;
+		struct stat FileBuf;
+		if (stat(hdr->FileName, &FileBuf)==0) hdr->FILE.size = FileBuf.st_size; 
+    		hdr->NRec 	= hdr->FILE.size / hdr->AS.bpb;
+
+		hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
+		CHANNEL_TYPE *hc;
+		for (k = 0; k < hdr->NS; k++) {
+			hc = hdr->CHANNEL + k;
+			// hc->PhysDimCode = 4256; // "V"
+			hc->PhysDimCode   = 0;
+			hc->Transducer[0] = 0; 
+			
+			hc->LeadIdCode = 0;
+			hc->SPR        = hdr->SPR;
+			hc->Cal        = 1.0;
+			hc->Off        = 0.0;
+			hc->OnOff      = 1;
+
+			hc->LeadIdCode = 0;
+			hc->Notch      = NAN;
+			hc->LowPass    = NAN;
+			hc->HighPass   = NAN;
+		}
+
+		for (k = 0; k < hdr->NS - 4; k++) {
+			hc = hdr->CHANNEL + k + 4;
+			sprintf(hc->Label, "#%02i", k+1);
+			hc->GDFTYP  = 3;
+			hc->DigMax  =  32767;
+			hc->DigMin  = -32678;
+			hc->bi      = 32 + 2*k;
+		}
+
+			hc = hdr->CHANNEL;
+			strcpy(hc->Label, "PacketNumber");
+			hc->SPR     = 1;
+			hc->GDFTYP  = 6;	// uint32
+			hc->DigMin  = 0.0;
+			hc->DigMax  = ldexp(1.0, 32) - 1.0;
+			hc->bi      = 4;
+				
+			hc = hdr->CHANNEL + 1;
+			strcpy(hc->Label, "Digital I/O");
+			hc->SPR     = 1;
+			hc->GDFTYP  = 6;	// uint32
+			hc->DigMin  = 0.0;
+			hc->DigMax  = ldexp(1.0, 32) - 1.0;
+			hc->bi      = 8;
+
+			hc = hdr->CHANNEL + 2;
+			strcpy(hc->Label, "FunKey");
+			hc->SPR     = 1;
+			hc->GDFTYP  = 2;	// uint8
+			hc->DigMin  = 0.0; 
+			hc->DigMax  = 255.0;
+			hc->bi      = 416;
+
+			hc = hdr->CHANNEL + 3;
+			strcpy(hc->Label, "Key Code");
+			hc->SPR     = 1;
+			hc->GDFTYP  = 2;	// uint8
+			hc->DigMin  = 0.0; 
+			hc->DigMax  = 255.0;
+			hc->bi 	    = 417;
+
+		for (k = 0; k < hdr->NS; k++) {
+			hc = hdr->CHANNEL + k;
+			hc->PhysMax = hc->DigMax * hc->Cal + hc->Off;
+			hc->PhysMin = hc->DigMin * hc->Cal + hc->Off;
+		}
+
+		hdr->HeadLen = 0; 
+		ifseek(hdr, 0, SEEK_SET); 		
 	}
 
     	else if ((hdr->TYPE==ASCII) || (hdr->TYPE==BIN)) {
@@ -11353,11 +11438,14 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 #endif
 
 	uint16_t MITTYP=0;
+	int stride = 1; 
 	if (hdr->TYPE==MIT) {
 		MITTYP = *(uint16_t*)hdr->AS.auxBUF;
 		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"0x%x 0x%x \n",*(uint32_t*)hdr->AS.rawdata,*(uint32_t*)hdr->AS.rawdata);
-	}
+	} 
+	else if (hdr->TYPE==Axona) 
+		stride = 64; 
 
 	if (VERBOSE_LEVEL>7)
 		fprintf(stdout,"sread 223 alpha12bit=%i SWAP=%i spr=%i   %p\n", ALPHA12BIT, SWAP, hdr->SPR, hdr->AS.rawdata);
@@ -11393,7 +11481,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 
 		// size_t off = (k4+toffset)*hdr->AS.bpb + CHptr->bi + (k5*SZ>>3);
 		// ptr = hdr->AS.rawdata + off;
-		ptr = ptr1 + (k5*SZ>>3);
+		ptr = ptr1 + (stride * k5 * SZ >> 3);
 
 		if (VERBOSE_LEVEL>8)
 			fprintf(stdout,"SREAD 555: k_i = [%d %d %d %d ] 0x%08x[%g] @%p => ",(int)k1,(int)k2,(int)k4,(int)k5,(int)leu32p(ptr),lef64p(ptr),ptr);
@@ -12658,8 +12746,7 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 			if (label==NULL || strlen(label)==0) label = LEAD_ID_TABLE[cp->LeadIdCode];
 
 			if (cp->PhysDimCode) PhysDim(cp->PhysDimCode, p); else p[0] = 0;
-			fprintf(fid,"\n#%02i: %3i %i %-17s\t%5f %5i",
-				(int)k+1,cp->LeadIdCode,cp->bi8,label,cp->SPR*hdr->SampleRate/hdr->SPR,cp->SPR);
+			fprintf(fid,"\n#%02i: %3i %i %-17s\t%5f %5i", (int)k+1, cp->LeadIdCode, cp->bi8, label, cp->SPR*hdr->SampleRate/hdr->SPR, cp->SPR);
 
 			if      (cp->GDFTYP<20)  fprintf(fid," %s  ",gdftyp_string[cp->GDFTYP]);
 			else if (cp->GDFTYP>511) fprintf(fid, " bit%i  ", cp->GDFTYP-511);
