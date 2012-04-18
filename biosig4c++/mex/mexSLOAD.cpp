@@ -356,21 +356,24 @@ void mexFunction(
 		mxSetField(HDR,0,"VERSION",mxCreateDoubleScalar(hdr->VERSION));
 
 		char *msg = (char*)malloc(72+23+strlen(FileName)); // 72: max length of constant text, 23: max length of GetFileTypeString()
-		if (status==B4C_CANNOT_OPEN_FILE)
-			sprintf(msg,"Error mexSLOAD: file %s not found.\n",FileName);
-		else if (status==B4C_FORMAT_UNKNOWN)
-			sprintf(msg,"Error mexSLOAD: Cannot open file %s - format %s not known.\n",FileName,GetFileTypeString(hdr->TYPE));
-		else if (status==B4C_FORMAT_UNSUPPORTED)
-			sprintf(msg,"Error mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", FileName, GetFileTypeString(hdr->TYPE), B4C_ERRMSG);
-		else 	
-			sprintf(msg,"Error %i mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", status, FileName, GetFileTypeString(hdr->TYPE), B4C_ERRMSG);
+		if (msg == NULL) 
+			mxSetField(HDR,0,"ErrMsg",mxCreateString("Error mexSLOAD: Cannot open file\n"));
+		else {	
+		    if (status==B4C_CANNOT_OPEN_FILE)
+			sprintf(msg,"Error mexSLOAD: file %s not found.\n",FileName);		/* Flawfinder: ignore *** sufficient memory is allocated above */
+		    else if (status==B4C_FORMAT_UNKNOWN)
+			sprintf(msg,"Error mexSLOAD: Cannot open file %s - format %s not known.\n",FileName,GetFileTypeString(hdr->TYPE));	/* Flawfinder: ignore *** sufficient memory is allocated above */
+		    else if (status==B4C_FORMAT_UNSUPPORTED)
+			sprintf(msg,"Error mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", FileName, GetFileTypeString(hdr->TYPE), B4C_ERRMSG);	/* Flawfinder: ignore *** sufficient memory is allocated above */
+		    else 	
+			sprintf(msg,"Error %i mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", status, FileName, GetFileTypeString(hdr->TYPE), B4C_ERRMSG); 	/* Flawfinder: ignore *** sufficient memory is allocated above */
 			
-		mxSetField(HDR,0,"ErrMsg",mxCreateString(msg));
-		if (msg) free(msg);
+		    mxSetField(HDR,0,"ErrMsg",mxCreateString(msg));
+		    free(msg);
+		}    
 
 	if (VERBOSE_LEVEL>7) 
 		mexPrintf("737: abort mexSLOAD - sopen failed\n");
-
 
 		destructHDR(hdr);
 

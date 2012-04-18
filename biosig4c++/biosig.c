@@ -2302,7 +2302,13 @@ void struct2gdfbin(HDRTYPE *hdr)
 
 	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw 101 %i \n", hdr->HeadLen);
 
-		/* experimental code: writing header 3, in Tag-Length-Value from
+	     	/****** 
+	     	 *	The size of Header 3 is computed by going through all TLV triples, 
+	     	 *	and compute HeadLen to allocate sufficient amount of memory
+		 *	Header 3 is filled later in a 2nd scan below 
+	     	 ******/	
+
+		/* writing header 3, in Tag-Length-Value from
 			currently only tag=1 is used for storing user-specific events (i.e. free text annotations
 		 */
 	     	uint32_t TagNLen[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -2387,6 +2393,10 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i\n",hdr->HeadLen,TagNLen[1]);
 
 	    	hdr->AS.Header = (uint8_t*) realloc(hdr->AS.Header, hdr->HeadLen);
+	    	if (hdr->AS.Header == NULL) {
+	    		B4C_ERRNUM = B4C_MEMORY_ALLOCATION_FAILED;
+			return; 
+	    	}
 	     	sprintf((char*)hdr->AS.Header,"GDF %4.2f",hdr->VERSION);
 	    	uint8_t* Header2 = hdr->AS.Header+256;
 
@@ -2408,7 +2418,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 
 		if (!hdr->FLAG.ANONYMOUS && (0 < l2) && (l1+l2+1 < maxlen) ) {
 		     	Header1[8+l1] = ' ';
-		     	strcpy(Header1+8+1+l1, hdr->Patient.Name);
+		     	strcpy(Header1+8+1+l1, hdr->Patient.Name);	/* Flawfinder: ignore *** length is already checked with l1+l2+1 */
 		}
 		else if (l1+3 < maxlen)
 		     	strcpy(Header1+8+l1, " X");
@@ -2579,17 +2589,16 @@ void struct2gdfbin(HDRTYPE *hdr)
 		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"GDFw 444 %i %s\n", errno, strerror(errno));
 
-	     	/* define Header3
-	     		currently writing of free text annotations is supported
-
-	     	*/
+	     	/***** 
+	     	 *	This is the 2nd scan of Header3 - memory is allocated, now H3 is filled in with content 
+	     	 *****/
 	    	Header2 = hdr->AS.Header+(NS+1)*256;
 	    	tag = 1;
 	     	if (TagNLen[tag]>0) {
 			leu32a(tag + (TagNLen[tag]<<8), Header2); // Tag=1 & Length of Tag 1
 	     		size_t pos = 4;
 	     		for (k=0; k<hdr->EVENT.LenCodeDesc; k++) {
-	     			strcpy((char*)(Header2+pos),hdr->EVENT.CodeDesc[k]);
+	     			strcpy((char*)(Header2+pos),hdr->EVENT.CodeDesc[k]);     /* Flawfinder: ignore *** memory is allocated after 1st H3 scan above */
 		     		pos += strlen(hdr->EVENT.CodeDesc[k])+1;
 		     	}
 		     	Header2[pos]=0; 	// terminating NULL
@@ -2601,7 +2610,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     	tag = 2;
 	     	if (TagNLen[tag]>0) {
 			leu32a(tag + (TagNLen[tag]<<8), Header2); // Tag=2 & Length of Tag 2
-     			strcpy((char*)(Header2+4),hdr->AS.bci2000);
+     			strcpy((char*)(Header2+4),hdr->AS.bci2000);			/* Flawfinder: ignore *** memory is allocated after 1st H3 scan above */
 			Header2 += 4+TagNLen[tag];
 	     	}
 	     	tag = 3;
@@ -2614,19 +2623,19 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     		memset(Header2+4,0,TagNLen[tag]);
 	     		size_t len = 0;
 
-     			strcpy((char*)(Header2+4), hdr->ID.Manufacturer.Name);
+     			strcpy((char*)(Header2+4), hdr->ID.Manufacturer.Name);		/* Flawfinder: ignore *** memory is allocated after 1st H3 scan above */
 		     	if (hdr->ID.Manufacturer.Name != NULL)
 		     		len += strlen(hdr->ID.Manufacturer.Name);
 
-     			strcpy((char*)(Header2+5+len), hdr->ID.Manufacturer.Model);
+     			strcpy((char*)(Header2+5+len), hdr->ID.Manufacturer.Model);	/* Flawfinder: ignore *** memory is allocated after 1st H3 scan above */
 		     	if (hdr->ID.Manufacturer.Model != NULL)
 		     		len += strlen(hdr->ID.Manufacturer.Model);
 
-     			strcpy((char*)(Header2+6+len), hdr->ID.Manufacturer.Version);
+     			strcpy((char*)(Header2+6+len), hdr->ID.Manufacturer.Version);	/* Flawfinder: ignore *** memory is allocated after 1st H3 scan above */
 		     	if (hdr->ID.Manufacturer.Version != NULL)
 		     		len += strlen(hdr->ID.Manufacturer.Version);
 
-     			strcpy((char*)(Header2+7+len), hdr->ID.Manufacturer.SerialNumber);
+     			strcpy((char*)(Header2+7+len), hdr->ID.Manufacturer.SerialNumber);	/* Flawfinder: ignore *** memory is allocated after 1st H3 scan above */
 		     	if (hdr->ID.Manufacturer.SerialNumber != NULL)
 		     		len += strlen(hdr->ID.Manufacturer.SerialNumber);
 			Header2 += 4+TagNLen[tag];
@@ -2665,7 +2674,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     	tag = 6;
 	     	if (TagNLen[tag]>0) {
 			leu32a(tag + (TagNLen[tag]<<8), Header2); // Tag=6 & Length of Tag 6
-     			strcpy((char*)(Header2+4),hdr->ID.Technician);
+     			strcpy((char*)(Header2+4),hdr->ID.Technician);		/* Flawfinder: ignore *** memory is allocated after 1st H3 scan above */
 			Header2 += 4+TagNLen[tag];
 	     	}
 
@@ -2674,7 +2683,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     	tag = 7;
 	     	if (TagNLen[tag]>0) {
 			leu32a(tag + (TagNLen[tag]<<8), Header2); // Tag=7 & Length of Tag 7
-     			strcpy((char*)(Header2+4),hdr->ID.Hospital);
+     			strcpy((char*)(Header2+4),hdr->ID.Hospital);		/* Flawfinder: ignore *** memory is allocated after 1st H3 scan above */
 			Header2 += 4+TagNLen[tag];
 	     	}
 
@@ -3820,18 +3829,18 @@ else if (!strncmp(MODE,"r",1)) {
 	    	hdr->NRec	= atoi(strncpy(tmp,Header1+236,8));
 	    	//Dur		= atof(strncpy(tmp,Header1+244,8));
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[EDF 211b] #=%li\nT0=%s\n",iftell(hdr),asctime(&tm_time));
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211b] #=%li\nT0=%s\n",iftell(hdr),asctime(&tm_time));
 
 		if (!strncmp(Header1+192,"EDF+",4)) {
 			char ListOfMonth[12][4] = {"JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"};
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[EDF 211c+] <%s>\n",hdr->Patient.Id);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211c+] <%s>\n",hdr->Patient.Id);
 
 	    		strtok(hdr->Patient.Id," ");
 	    		ptr_str = strtok(NULL," ");
 			if (ptr_str!=NULL) {
 				// define Id, Sex, Birthday, Name
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[EDF 211c+] <%p>\n",ptr_str);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211c+] <%p>\n",ptr_str);
 
 	    		hdr->Patient.Sex = (ptr_str[0]=='f')*2 + (ptr_str[0]=='F')*2 + (ptr_str[0]=='M') + (ptr_str[0]=='m');
 	    		ptr_str = strtok(NULL," ");	// startdate
@@ -3840,7 +3849,7 @@ else if (!strncmp(MODE,"r",1)) {
 		    		strcpy(hdr->Patient.Name,tmpptr);
 		    	}
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[EDF 211c] #=%li\n",iftell(hdr));
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211c] #=%li\n",iftell(hdr));
 
 			if (strlen(ptr_str)==11) {
 				struct tm t1;
@@ -3858,7 +3867,7 @@ else if (!strncmp(MODE,"r",1)) {
 		    		hdr->Patient.Birthday = tm_time2gdf_time(&t1);
 		    	}}
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[EDF 211d] <%s>\n",hdr->ID.Recording);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211d] <%s>\n",hdr->ID.Recording);
 
 			if (!strncmp(Header1+88,"Startdate ",10)) {
 				size_t pos = strcspn(Header1+88+10," ")+10;
@@ -3875,7 +3884,7 @@ else if (!strncmp(MODE,"r",1)) {
 		    		strtok(Header1+88," ");
 	    			ptr_str = strtok(NULL," ");
 				// check EDF+ Startdate against T0
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[EDF 211e-] <%s>\n",ptr_str);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211e-] <%s>\n",ptr_str);
 				/* TODO:
 					fix "Startdate X ..."
 
@@ -3883,15 +3892,15 @@ else if (!strncmp(MODE,"r",1)) {
 				if (strcmp(ptr_str,"X")) {
 					int d,m,y;
 					d = atoi(strtok(ptr_str,"-"));
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[EDF 211e] <%s>\n",ptr_str);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211e] <%s>\n",ptr_str);
 					ptr_str = strtok(NULL,"-");
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[EDF 211f] <%s>\n",ptr_str);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211f] <%s>\n",ptr_str);
 	    				strcpy(tmp,ptr_str);
 		    			for (k=0; k<strlen(tmp); ++k) tmp[k]=toupper(tmp[k]);	// convert to uppper case
 		    			for (m=0; m<12; m++) if (!strcmp(tmp,ListOfMonth[m])) break;
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[EDF 211g] <%s>\n",tmp);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211g] <%s>\n",tmp);
 	    				y = atoi(strtok(NULL,"-")) - 1900;
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[EDF 211h] <%i>\n",tm_time.tm_year);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211h] <%i>\n",tm_time.tm_year);
 
 		    			if ((tm_time.tm_mday == d) && (tm_time.tm_mon == m)) {
 		    				tm_time.tm_year = y;
@@ -3903,11 +3912,11 @@ else if (!strncmp(MODE,"r",1)) {
 		    		}
 			}
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[EDF 211z] #=%li\n",iftell(hdr));
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211z] #=%li\n",iftell(hdr));
 
 		}
 		hdr->T0 = tm_time2gdf_time(&tm_time);
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[EDF 212] #=%li\n",iftell(hdr));
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 212] #=%li\n",iftell(hdr));
 
 		if (hdr->NS==0) return(hdr);
 
@@ -5547,7 +5556,7 @@ if (VERBOSE_LEVEL>8)
 					} else
 						strcpy(mrkfile,t+11);
 
-					if (VERBOSE_LEVEL>8)
+					if (VERBOSE_LEVEL>7)
 						fprintf(stdout,"SOPEN marker file <%s>.\n",mrkfile);
 
 					HDRTYPE *hdr2 = sopen(mrkfile,"r",NULL);
