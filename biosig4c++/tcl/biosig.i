@@ -42,24 +42,26 @@ typedef int64_t nrec_t; 	/* type for number of records */
 enum FileFormat {
 	noFile, unknown,
 	ABF, ACQ, ACR_NEMA, AIFC, AIFF, AINF, alpha, ARFF, 
-	ASCII_IBI, ASCII, AU, ASF, ATES, ATF, AVI,
-	BCI2000, BDF, BIN, BKR, BLSC, BMP, BNI, BSCS,
+	ASCII_IBI, ASCII, AU, ASF, ATES, ATF, AVI, Axona,
+	BCI2000, BDF, BESA, BIN, BKR, BLSC, BMP, BNI, BSCS,
 	BrainVision, BrainVisionVAmp, BrainVisionMarker, BZ2,
 	CDF, CFS, CFWB, CNT, CTF, DICOM, DEMG,
 	EBS, EDF, EEG1100, EEProbe, EEProbe2, EEProbeAvr, EGI,
-	EGIS, ELF, EMBLA, ET_MEG, ETG4000, EVENT, EXIF,
+	EGIS, ELF, EMBLA, ePrime, ET_MEG, ETG4000, EVENT, EXIF,
 	FAMOS, FEF, FITS, FLAC, GDF, GDF1,
 	GIF, GTF, GZIP, HDF, HL7aECG, HEKA, 
-	ISHNE, ITX, JPEG, Lexicor,
+	ISHNE, ITX, JPEG, JSON, Lexicor,
 	Matlab, MFER, MIDI, MIT, MM, MSI, MSVCLIB, MS_LNK, 
-	native, NEURON, NetCDF, NEX1, NIFTI, OGG, OpenXDF,
+	native, NeuroLoggerHEX, NetCDF, NEURON, NEX1, NIFTI, 
+	OGG, OpenXDF,
 	PBMA, PBMN, PDF, PDP, Persyst, PGMA, PGMB,
 	PLEXON, PNG, PNM, POLY5, PPMA, PPMB, PS,
 	RDF, RIFF,
-	SASXPT, SCP_ECG, SIGIF, Sigma, SMA, SND, SPSS, STATA, SVG, SXI,
+	SASXPT, SCP_ECG, SIGIF, Sigma, SMA, SND, SQLite, 
+	SPSS, STATA, SVG, SXI, SYNERGY,
 	TIFF, TMS32, TMSiLOG, TRC, UNIPRO, VRML, VTK,
-	WAV, WinEEG, WMF, XML, XPM,
-	Z, ZIP, ZIP2
+	WAV, WG1, WinEEG, WMF, XML, XPM,
+	Z, ZIP, ZIP2, 
 };
 
 
@@ -117,7 +119,6 @@ typedef struct {
 	uint16_t 	NS;		/* number of channels */
 	uint32_t 	SPR;		/* samples per block (when different sampling rates are used, this is the LCM(CHANNEL[..].SPR) */
 	int64_t  	NRec;		/* number of records/blocks -1 indicates length is unknown. */	
-#	uint32_t 	Dur[2];		/* Duration of each block in seconds expressed in the fraction Dur[0]/Dur[1]  */
 	double 		SampleRate;	/* Sampling rate */
 	uint8_t 	IPaddr[6]; 	/* IP address of recording device (if applicable) */
 	uint32_t  	LOC[4];		/* location of recording according to RFC1876 */
@@ -220,7 +221,6 @@ typedef struct {
 	struct {
 //		char 		PID[MAX_LENGTH_PID+1];	/* use HDR.Patient.Id instead */
 //		char* 		RID;		/* recording identification */ 
-//		uint32_t 	spb;		/* total samples per block */
 
 		uint32_t 	bpb;  		/* total bytes per block */
 		uint32_t 	bpb8;  		/* total bits per block */
