@@ -2722,7 +2722,7 @@ int gdfbin2struct(HDRTYPE *hdr)
 	    	hdr->NS   	= leu16p(hdr->AS.Header+252);
 
 		if (hdr->VERSION < 2.21)
-			Dur = (double)leu32p(hdr->AS.Header+248)/(double)leu32p(hdr->AS.Header+244);
+			Dur = (double)leu32p(hdr->AS.Header+244)/(double)leu32p(hdr->AS.Header+248);
 		else
 			Dur = lef64p(hdr->AS.Header+244);
 
