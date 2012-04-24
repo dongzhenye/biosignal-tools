@@ -54,15 +54,21 @@ char *strndup (char const *s, size_t n);
 
 #define GCC_VERSION (__GNUC__ * 10000  + __GNUC_MINOR__ * 100  + __GNUC_PATCHLEVEL__)
 
-#if defined(__MINGW32__) 
+#if 0
+
+#elif defined(__linux__) 
+#  include <endian.h>
+#  include <byteswap.h>
+
+#elif defined(__GLIBC__)	// for Hurd
+#  include <endian.h>
+#  include <byteswap.h>
+
+#elif defined(__MINGW32__) 
    /* use local version because MINGW does not provide byteswap.h */
-#  define __BIG_ENDIAN  	 4321
-#  define __LITTLE_ENDIAN  1234
-#  define __BYTE_ORDER 	__LITTLE_ENDIAN
-#  include "win32/byteswap.h"
-#  define bswap_16(x) __bswap_16(x)
-#  define bswap_32(x) __bswap_32(x)
-#  define bswap_64(x) __bswap_64(x)
+#  define __BIG_ENDIAN		4321
+#  define __LITTLE_ENDIAN  	1234
+#  define __BYTE_ORDER 		__LITTLE_ENDIAN
 
 #elif defined(__NetBSD__)
 #  include <sys/bswap.h>
@@ -86,7 +92,7 @@ char *strndup (char const *s, size_t n);
 #  define bswap_32(x) CFSwapInt32(x)
 #  define bswap_64(x) CFSwapInt64(x)
 
-#elif (defined(BSD) && (BSD >= 199103))
+#elif (defined(BSD) && (BSD >= 199103)) && !defined(__GLIBC__)
 #  include <machine/endian.h>
 #  define __BIG_ENDIAN _BIG_ENDIAN
 #  define __LITTLE_ENDIAN _LITTLE_ENDIAN
@@ -108,9 +114,12 @@ char *strndup (char const *s, size_t n);
 #  define __LITTLE_ENDIAN  	1234
 #  define __BYTE_ORDER 	__BIG_ENDIAN
 
+#else
+#  error Unknown platform
 #endif 
 
-#if 1
+#if defined(__MINGW32__) || defined(__sparc__) 
+
 # ifndef bswap_16
 #  define bswap_16(x)   \
 	((((x) & 0xff00) >> 8) | (((x) & 0x00ff) << 8))
@@ -138,6 +147,16 @@ char *strndup (char const *s, size_t n);
 # endif
 
 #endif
+
+
+#if !defined(__BIG_ENDIAN) && !defined(__LITTLE_ENDIAN) 
+#error  ENDIANITY is not known 
+#endif 
+
+#if !defined(bswap_16) || !defined(bswap_32) || !defined(bswap_64)
+#error SWAP operation not available 
+#endif 
+
 
 
 #ifdef __cplusplus
