@@ -1,7 +1,7 @@
 ####### Makefile for "BioSig for C/C++" #####################
 ###
 ###  $Id$
-###  Copyright (C) 2006,2007,2008,2009,2010,2011 Alois Schloegl <alois.schloegl@gmail.com>
+###  Copyright (C) 2006,2007,2008,2009,2010,2011,2012 Alois Schloegl <alois.schloegl@ist.ac.at>
 ###  This file is part of the "BioSig for C/C++" repository
 ###  (biosig4c++) at http://biosig.sf.net/
 ###
@@ -149,13 +149,17 @@ OCTAVE_VERSION =
 # Octave - local install (e.g. compiled from sources) 
 #OCTAVE_VERSION = -3.6.1
 
-OCT           = mkoctfile$(OCTAVE_VERSION)
+OCT           := mkoctfile$(OCTAVE_VERSION)
 ##########################################################
 
 ##########################################################
 ## set variables for Python
-SWIG          = swig
-PYTHONVER     = $(shell python -c "import sys; print sys.version[:3]")
+SWIG          := swig
+PYTHON        := python
+PYTHONVER     := $(shell $(PYTHON) -c "import sys; print sys.version[:3]")
+PYTHON_INC    := $(shell $(PYTHON) -c 'import numpy.distutils.system_info as si; print " -I".join(si.numpy_info().get_include_dirs())')
+NUMPY_INC     := $(shell $(PYTHON) -c 'import numpy.distutils.misc_util as mu; print " -I".join(mu.get_numpy_include_dirs())')
+
 ##########################################################
  
 ##########################################################
@@ -456,12 +460,17 @@ win64/sigviewer.exe: win64/libbiosig.a win64/libbiosig.dll
 biosig4python : python/_biosig.so python/biosig.py
 
 python/biosig.py python/swig_wrap.cxx: python/swig.i
-	$(SWIG) -c++ -python -I/usr/include -I/usr/share/pyshared/numpy/core/include/numpy -o python/swig_wrap.cxx python/swig.i
-
+	$(SWIG) -c++ -python -I/usr/include -I$(NUMPY_INC) -o python/swig_wrap.cxx python/swig.i 	 
+	 
 python/_biosig.so : python/swig_wrap.cxx  libbiosig.$(LIBEXT)
-	$(CXX) -c $(CXXFLAGS) python/swig_wrap.cxx -o python/swig_wrap.o -I/usr/include/python$(PYTHONVER) -I/usr/share/pyshared/numpy/core/include/numpy
-	$(CXX) -shared python/swig_wrap.o  $(LFLAGS) $(LIBS) -o python/_biosig.so
-
+	echo "$(SWIG)"
+	echo "$(PYTHON)"
+	echo "$(PYTHONVER)"
+	echo "$(PYTHON_INC)"
+	echo "$(NUMPY_INC )"
+	$(CXX) -c $(CXXFLAGS) -I$(PYTHON_INC) -I$(NUMPY_INC)  python/swig_wrap.cxx -o python/swig_wrap.o
+	$(CXX) -shared python/swig_wrap.o $(LFLAGS) $(LIBS) -o python/_biosig.so 	 
+	 
 
 java: libbiosig.$(LIBEXT) java/biosig.i
 	$(MAKE) -C java 
