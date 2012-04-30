@@ -185,7 +185,7 @@ MinGW64LINK    = $(MinGW64CXX)
 # Versioning
 MAJOR_VERSION := $(word 3, $(shell grep '\#define BIOSIG_VERSION_MAJOR' biosig.h))
 MINOR_VERSION := $(word 3, $(shell grep '\#define BIOSIG_VERSION_MINOR' biosig.h))
-STEPPING      := $(word 3, $(shell grep '\#define BIOSIG_VERSION_STEPPING' biosig.h))
+STEPPING      := $(word 3, $(shell grep '\#define BIOSIG_PATCHLEVEL' biosig.h))
 TODAY         := $(shell date +%Y%m%d)
 
 ####### Output directory
