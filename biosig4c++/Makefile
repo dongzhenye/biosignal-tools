@@ -724,6 +724,13 @@ install_octave: mexSLOAD.mex
 	install mex/mexSLOAD.mex* 	$(DESTDIR)/usr/local/share/octave/site-m/
 	install mex/mexSOPEN.mex* 	$(DESTDIR)/usr/local/share/octave/site-m/
 
+install_libbiosig: libbiosig.a libbiosig.so 
+	install biosig.h    	$(DESTDIR)/usr/include
+	install libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)
+	ln -sf libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}
+	ln -sf libbiosig.so.${MAJOR_VERSION} $(LIB)/libbiosig.so
+	install libbiosig.a	$(LIB)
+
 install: save2gdf libbiosig.a libbiosig.so doc/save2gdf.1
 	install -d 		$(BIN)
 	install save2gdf 	$(BIN)
