@@ -468,8 +468,8 @@ python/_biosig.so : python/swig_wrap.cxx  libbiosig.$(LIBEXT)
 	echo "$(PYTHONVER)"
 	echo "$(PYTHON_INC)"
 	echo "$(NUMPY_INC )"
-	$(CXX) -c $(CXXFLAGS) -I$(PYTHON_INC) -I$(NUMPY_INC)  python/swig_wrap.cxx -o python/swig_wrap.o
-	$(CXX) -shared python/swig_wrap.o $(LFLAGS) $(LIBS) -o python/_biosig.so 	 
+	$(CXX) -c $(CXXFLAGS) -I$(PYTHON_INC) -I$(NUMPY_INC) -I$(INCPATH) python/swig_wrap.cxx -o python/swig_wrap.o
+	$(CXX) -shared python/swig_wrap.o $(LFLAGS) $(LIBS) -lpython$(PYTHONVER) -o python/_biosig.so 	 
 	 
 
 java: libbiosig.$(LIBEXT) java/biosig.i
