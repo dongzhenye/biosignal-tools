@@ -18,32 +18,37 @@
 import biosig
 import numpy as S
 
-#def load(fname):
+filename = '/scratch/schloegl/R/data/test/CFS/example_6channels.dat'
+#filename = '/home/as/data/test/CFS/example_6channels.dat'
+
+print 'open file ',filename
+
 HDR = biosig.constructHDR(0, 0)
-#HDR = biosig.sopen('/scratch/schloegl/R/data/test/HekaPatchMaster/AP100427b.dat' , 'r', HDR)
-#HDR = biosig.sopen('/scratch/schloegl/R/data/test/HekaPatchMaster/AP100429a.dat' , 'r', HDR)
-HDR = biosig.sopen('/scratch/schloegl/R/data/test/CFS/example_6channels.dat' , 'r', HDR)
+HDR = biosig.sopen(filename , 'r', HDR)
 
-# show header information 
-biosig.hdr2ascii(HDR,4)  
+status = biosig.serror()	# save and reset error status
+if status:
+    print 'Can not open file ',filename
+else: 
+    # show header information 
+    biosig.hdr2ascii(HDR,4)  
+    #	turn off all channels 
+    #    for i in range(HDR.NS):
+    #        HDR.CHANNEL[i].OnOff = 0
+    #
+    #	turn on specific channels 
+    #    HDR.CHANNEL[0].OnOff = 1
+    #    HDR.CHANNEL[1].OnOff = 1
+    #    HDR.CHANNEL[HDR.NS-1].OnOff = 1
+    #
+    # read data 
+    data = biosig.sread(0, HDR.NRec, HDR)
+    #
+    # close file
+    biosig.sclose(HDR)
+    #
+    # release allocated memory
+    biosig.destructHDR(HDR)
+    #    
+    #return data
 
-
-#	turn off all channels 
-#    for i in range(HDR.NS):
-#        HDR.CHANNEL[i].OnOff = 0
-
-#	turn on specific channels 
-#    HDR.CHANNEL[0].OnOff = 1
-#    HDR.CHANNEL[1].OnOff = 1
-#    HDR.CHANNEL[HDR.NS-1].OnOff = 1
-
-# read data 
-data = biosig.sread(0, HDR.NRec, HDR)
-
-# close file
-biosig.sclose(HDR)
-
-# release allocated memory
-biosig.destructHDR(HDR)
-    
-#return data
