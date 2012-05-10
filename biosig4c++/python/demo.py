@@ -31,7 +31,14 @@ if status:
     print 'Can not open file ',filename
 else: 
     # show header information 
-    biosig.hdr2ascii(HDR,4)  
+    biosig.hdr2ascii(HDR,3)  
+    for k in range(HDR.NS):	
+	# convert C to Python string: get rid of everything after \x00, then remove leading and trailing whitespace
+	str = HDR.CHANNEL[k].Label
+        HDR.CHANNEL[k].Label      = str[0:str.find(chr(0))].strip()
+	str = HDR.CHANNEL[k].Transducer
+    	HDR.CHANNEL[k].Transducer = str[0:str.find(chr(0))].strip()
+	print k,'<',HDR.CHANNEL[k].Label,'>,<',HDR.CHANNEL[k].Transducer,'>'
     #	turn off all channels 
     #    for i in range(HDR.NS):
     #        HDR.CHANNEL[i].OnOff = 0

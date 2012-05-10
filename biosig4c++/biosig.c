@@ -2861,10 +2861,15 @@ int gdfbin2struct(HDRTYPE *hdr)
 			if (VERBOSE_LEVEL>7) fprintf(stdout,"[GDF 252] #=%i/%i\n",k,hdr->NS);
 
 			hc->LeadIdCode = 0;
-			strncpy(hc->Label,(char*)Header2 + 16*k,min(16,MAX_LENGTH_LABEL));
-			hc->Label[min(16,MAX_LENGTH_LABEL)] = 0;
-			memcpy(hc->Transducer,(char*)Header2 + 16*hdr->NS + 80*k,min(MAX_LENGTH_TRANSDUCER,80));
-			hc->Transducer[min(MAX_LENGTH_TRANSDUCER,80)] = 0;
+			size_t len = min(16, MAX_LENGTH_LABEL);
+			strncpy(hc->Label,(char*)Header2 + 16*k, len);
+			hc->Label[len] = 0;
+
+if (VERBOSE_LEVEL>7) fprintf(stdout,"#%2i: <%s> %i %i\n",k,hc->Label,len,strlen(hc->Label)); 
+
+			len = min(MAX_LENGTH_TRANSDUCER, 80);
+			memcpy(hc->Transducer, (char*)Header2 + 16*hdr->NS + 80*k, len);
+			hc->Transducer[len] = 0;
 
 			if (VERBOSE_LEVEL>7) fprintf(stdout,"[GDF 212] #=%i/%i %s\n",k,hdr->NS,hc->Label);
 

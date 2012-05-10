@@ -463,11 +463,6 @@ python/biosig.py python/swig_wrap.cxx: python/swig.i
 	$(SWIG) -c++ -python -I/usr/include -I$(NUMPY_INC) -o python/swig_wrap.cxx python/swig.i 	 
 	 
 python/_biosig.so : python/swig_wrap.cxx  libbiosig.$(LIBEXT)
-	echo "$(SWIG)"
-	echo "$(PYTHON)"
-	echo "$(PYTHONVER)"
-	echo "$(PYTHON_INC)"
-	echo "$(NUMPY_INC )"
 	$(CXX) -c $(CXXFLAGS) -I$(PYTHON_INC) -I$(NUMPY_INC) -I$(INCPATH) python/swig_wrap.cxx -o python/swig_wrap.o
 	$(CXX) -shared python/swig_wrap.o $(LFLAGS) $(LIBS) -lpython$(PYTHONVER) -o python/_biosig.so 	 
 	 
