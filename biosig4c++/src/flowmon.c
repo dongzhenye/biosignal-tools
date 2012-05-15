@@ -16,7 +16,10 @@
  */
 
 /*
-  TODO:
+   Device supported:   
+        VPFlowMate inline from VPInstruments
+
+  DONE(+)/TODO(-):
     + units of flow l/min oder m^3/h ??
     + graceful handling of exit (close all handles even when stopped with <CTRL>-C
     + one file per day, appending
@@ -25,14 +28,9 @@
     - init.d (flowmon start/stop) 
     - fix appending to *.log.gdf file after restart
     - configure serial number, type etc. 
-    
-  DONE:
     + graceful handling of exit (close all handles even when stopped with <CTRL>-C
     + one file per day
-
 */
-
-
 
 
 #include "biosig-dev.h"
@@ -119,6 +117,7 @@ char debugfile[] = "flowmonDD.log.txt";
 
 	const char help[]=
 		"FLOWMON reads data of the flow sensor through the serial terminal and stores it into a data file for archiving.\n"
+		"  This software supports the device 'VPFlowMate inline from VPInstruments'.\n\n"
 		"Usage: flowmon -d devicename [-o outfile] [-D debugfile] [-V#]\n"
 		"   devicename: default value is /dev/ttyS0\n"
 		"   outfile:    logs the recorded data\n"
