@@ -1469,7 +1469,11 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->ID.Technician = strdup(str); 
    #endif
 #else	
-	hdr->ID.Technician = strdup(getlogin()); 
+	char *username = getlogin();
+	if (username)
+		hdr->ID.Technician = strdup(username); 
+	else 
+		hdr->ID.Technician = NULL; 
 /*      FIXME: seem to cause some memory leaks
 	struct passwd *p = getpwuid(geteuid());	
 	hdr->ID.Technician = p->pw_gecos;
@@ -2364,7 +2368,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     	}
 	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
 	     	tag = 6;
-     		TagNLen[tag] = strlen(hdr->ID.Technician);
+     		TagNLen[tag] = hdr->ID.Technician==NULL ? 0 :  strlen(hdr->ID.Technician);
 	     	if (TagNLen[tag]) {
 	     		TagNLen[tag]++;
 	     		hdr->HeadLen += 4+TagNLen[tag];
