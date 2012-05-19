@@ -1469,23 +1469,19 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->ID.Technician = strdup(str); 
    #endif
 #else	
-	char *username = getlogin();
-	if (username)
-		hdr->ID.Technician = strdup(username); 
-	else 
-		hdr->ID.Technician = NULL; 
-/*      FIXME: seem to cause some memory leaks
-	struct passwd *p = getpwuid(geteuid());	
-	hdr->ID.Technician = p->pw_gecos;
-	if (VERBOSE_LEVEL>7)  fprintf(stdout,"Name:%s\nPw:%s\nuid/gui: %i/%i\nreal name: %s\n$HOME:%s\nSHELL:%s\n",p->pw_name,p->pw_passwd,p->pw_uid,p->pw_gid,p->pw_gecos,p->pw_dir,p->pw_shell);
-        free(p->pw_name);
-        free(p->pw_passwd);
-        //free(p->pw_gecos);
-        free(p->pw_dir);
-        free(p->pw_shell);
-        free(p);
-*/
+	char *username = NULL;
+/* TODO: check whether memory leak in glibc's getpwuid is fixed. 
+	for details see: http://sourceware.org/bugzilla/show_bug.cgi?id=14122
 
+	struct passwd *p = NULL; //getpwuid(geteuid());
+	if (p != NULL)
+		username = p->pw_gecos;
+*/
+	if (username == NULL) 
+		username = getlogin(); 
+	if (username) 
+		hdr->ID.Technician = strdup(username); 
+		
 #endif 
 	}
 
@@ -2869,7 +2865,7 @@ int gdfbin2struct(HDRTYPE *hdr)
 			strncpy(hc->Label,(char*)Header2 + 16*k, len);
 			hc->Label[len] = 0;
 
-if (VERBOSE_LEVEL>7) fprintf(stdout,"#%2i: <%s> %i %i\n",k,hc->Label,len,strlen(hc->Label)); 
+if (VERBOSE_LEVEL>7) fprintf(stdout,"#%2i: <%s> %i %i\n",k,hc->Label,(int)len,(int)strlen(hc->Label)); 
 
 			len = min(MAX_LENGTH_TRANSDUCER, 80);
 			memcpy(hc->Transducer, (char*)Header2 + 16*hdr->NS + 80*k, len);
@@ -4559,7 +4555,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 
 		for (k = 0; k < hdr->NS - 4; k++) {
 			hc = hdr->CHANNEL + k + 4;
-			sprintf(hc->Label, "#%02i", k+1);
+			sprintf(hc->Label, "#%02i", (int)k+1);
 			hc->GDFTYP  = 3;
 			hc->DigMax  =  32767;
 			hc->DigMin  = -32678;
@@ -12285,7 +12281,14 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 	}
 	else if ((hdr->TYPE != SCP_ECG) && (hdr->TYPE != HL7aECG)) {
 		// for SCP: writing to file is done in SCLOSE
+	if (VERBOSE_LEVEL>7)
+		fprintf(stdout,"swrite 317 <%s>\n", hdr->FileName );
+
 		count = ifwrite((uint8_t*)(hdr->AS.rawdata), hdr->AS.bpb, hdr->NRec, hdr);
+
+	if (VERBOSE_LEVEL>7)
+		fprintf(stdout,"swrite 319 <%i>\n", (int)count);
+
 	}
 	else { 	// SCP_ECG, HL7aECG#ifdef CHOLMOD_H
 
