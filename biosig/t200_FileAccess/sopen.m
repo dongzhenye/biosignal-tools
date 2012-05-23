@@ -6781,6 +6781,7 @@ elseif strncmp(HDR.TYPE,'MAT',3),
         	
 
         elseif isfield(tmp,'EEG');	% EEGLAB file format 
+                HDR.T0		= 0;
                 HDR.SPR         = tmp.EEG.pnts;
                 HDR.NS          = tmp.EEG.nbchan;
                 HDR.NRec        = tmp.EEG.trials;
@@ -6790,7 +6791,7 @@ elseif strncmp(HDR.TYPE,'MAT',3),
 	        end;        
 
                 if isfield(tmp.EEG.chanlocs,'labels') 
-	                HDR.Label       = tmp.EEG.chanlocs.labels;
+	                HDR.Label       = {tmp.EEG.chanlocs.labels};
 		else
 			HDR.Label = cellstr([repmat('#',HDR.NS,1),int2str([1:HDR.NS]')]);
 		end
@@ -6834,11 +6835,10 @@ elseif strncmp(HDR.TYPE,'MAT',3),
 	                        HDR.EVENT.TYP = [HDR.EVENT.TYP; repmat(hex2dec('0301'), HDR.NRec,1)]; % this is a hack because info on true classlabels is not available
 	                end;
                 end;
-
+		HDR.Calib = sparse(2:HDR.NS+1,1:HDR.NS,1);
 		% HDR.debugging_info = tmp.EEG;
 	        HDR.TYPE = 'native'; 
 
-                
         elseif isfield(tmp,'eeg');	% Scherer
                 fprintf(HDR.FILE.stderr,'Warning SLOAD: Sensitivity not known in %s,\n',HDR.FileName);
                 HDR.NS=size(tmp.eeg,2);
