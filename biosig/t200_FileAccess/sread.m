@@ -280,7 +280,7 @@ elseif strmatch(HDR.TYPE,{'BKR'}),
         THRESHOLD(HDR.AS.TRIGCHAN,:)=NaN; % do not apply overflow detection for Trigger channel 
 
         
-elseif strmatch(HDR.TYPE,{'AIF','SND','WAV','Sigma'})
+elseif strmatch(HDR.TYPE,{'AIF','CNT','SND','WAV','Sigma'})
         if nargin==3,
                 STATUS = fseek(HDR.FILE.FID,HDR.HeadLen+HDR.SampleRate*HDR.AS.bpb*StartPos,'bof');
                 HDR.FILE.POS = HDR.SampleRate*StartPos;
@@ -322,7 +322,7 @@ elseif strmatch(HDR.TYPE,{'BLSC2','CFWB','CNT','DEMG','DDT','ET-MEG','ISHNE','Ni
 	S = []; count = 0;
 	while maxsamples>0,
 		% the maximum block size of 2^23 is a heuristical value 
-    		[s,c] = fread(HDR.FILE.FID, [HDR.NS+tc,min(2^23/HDR.NS,maxsamples)], DT);
+    		[s,c] = fread(HDR.FILE.FID, [HDR.NS+tc,maxsamples], DT);
     		c = c/(HDR.NS+tc);
 		count = count + c;
 		maxsamples = maxsamples - c;

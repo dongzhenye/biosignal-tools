@@ -6799,7 +6799,7 @@ elseif strncmp(HDR.TYPE,'MAT',3),
 
                 if ischar(tmp.EEG.data) && exist(tmp.EEG.data,'file')
                         fid = fopen(tmp.EEG.data,'r','ieee-le');
-                        HDR.data = fread(fid,[HDR.SPR*HDR.NS*HDR.NRec],'float32');
+                        HDR.data = fread(fid,[HDR.NS,HDR.SPR*HDR.NRec],'float32')';
                         fclose(fid);
 			HDR.GDFTYP = 16;
                 elseif isnumeric(tmp.EEG.data)
