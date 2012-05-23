@@ -79,7 +79,6 @@ xgethostname (void)
 #ifdef _WIN32
   WSADATA wsadata;
   WSAStartup(MAKEWORD(1,1), &wsadata);
-  atexit(&WSACleanup);
 #endif
 
   err = gethostname (buf, size);
@@ -91,12 +90,18 @@ xgethostname (void)
       buf = malloc (size + addnull);
       if (! buf)
 	{
+#ifdef _WIN32
+          WSACleanup();
+#endif
 	  errno = ENOMEM;
 	  return NULL;
 	}
       
       err = gethostname (buf, size);
     }
+#ifdef _WIN32
+    WSACleanup();
+#endif
 
   if (err)
     {

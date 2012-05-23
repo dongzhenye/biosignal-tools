@@ -1,7 +1,7 @@
 /*
 
     $Id$
-    Copyright (C) 2000,2005,2007,2008,2009,2010,2011 Alois Schloegl <alois.schloegl@gmail.com>
+    Copyright (C) 2000,2005,2007-2012 Alois Schloegl <alois.schloegl@gmail.com>
     Copyright (C) 2007 Elias Apostolopoulos
     This file is part of the "BioSig for C/C++" repository 
     (biosig4c++) at http://biosig.sf.net/ 
@@ -68,7 +68,7 @@ int main(int argc, char **argv){
 	
     for (k=1; k<argc; k++) {
     	if (!strcmp(argv[k],"-v") || !strcmp(argv[k],"--version") ) {
-		fprintf(stdout,"save2gdf (BioSig4C++) v%04.2f\n", BIOSIG_VERSION);
+		fprintf(stdout,"save2gdf (BioSig4C++) v%04.2f\n", BIOSIG_VERSION*1e-4);
 		fprintf(stdout,"Copyright (C) 2006,2007,2008,2009,2010,2011 by Alois Schloegl and others\n");
 		fprintf(stdout,"This file is part of BioSig http://biosig.sf.net - the free and\n");
 		fprintf(stdout,"open source software library for biomedical signal processing.\n\n");

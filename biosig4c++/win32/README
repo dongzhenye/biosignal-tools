@@ -1,7 +1,7 @@
 Introduction:
 ---------------
 
-The directory ../biosig4c++/windows contains the pre-compiled 
+The directory ../biosig4c++/win{32,64} contains the pre-compiled 
 (i.e. executable) file format converter SAVE2GDF for Windows platform.   
 
 If you compile with -D=WITH_ZLIB, You need to copy zlib1.dll to 
@@ -10,16 +10,21 @@ the SYSTEM or the SYSTEM32 directory.
 File(s): 
 -------------
     README 		this file
-    Qt*.dll		qt library used by sigviewer		
     save2gdf.exe	converter between various file formats.
+    libbiosig.{a,dll}	biosig library
     rec2bin.bat    	converts any raw data format into BIN-format
     			an ASCII-header and Binary channels file
     bin2rec.bat		converts the BIN formated data into any other format (default=GDF)
-    getlogin_r.c	function needed but not supported by Windows
-    eventcodes.txt	table of event codes
-    sigviewer.exe	experimental version of sigviewer 
-    
-    		 
+    sigviewer*.exe	sigviewer - a standalone viewing and scoring software
+	== Matlab binding ==
+    mexSLOAD.mexw32	load whole data file
+    mexSOPEN.mexw32	read header information
+    mexSSAVE.mexw32	save file 
+	== Mathematica ==
+    sload.exe		mathlink/mathematica binding
+    mySLOAD.nb		mathematica notebook - how to use sload in Mathematica
+
+
 Compilation: 
 -------------
 The files were already compiled with MinGW and WITH_ZLIB for the i386-platform.
@@ -57,8 +62,8 @@ If you have any questions you can also contact the mailinglist
 https://lists.sourceforge.net/lists/listinfo/biosig-general
 
 
-    $Id: README,v 1.2 2008/08/23 22:12:27 schloegl Exp $
-    Copyright (C) 2008,2009,2010 Alois Schloegl <a.schloegl@ieee.org>
+    $Id$
+    Copyright (C) 2008,2009,2010,2012 Alois Schloegl <alois.schloegl@ist.ac.at>
     This function is part of the "BioSig for C/C++" repository 
     (BioSig4C++) at http://biosig.sf.net/ 
 
