@@ -304,6 +304,23 @@ void bef64a(  double i, uint8_t* r);
 #define max(a,b)	(((a) > (b)) ? (a) : (b))
 #define fix(m)     	(m<0 ? ceil(m) : floor(m))
 
+
+/*
+    The macro IS_SET() can be used to test for defines in 
+	if (IS_SET(...)) {
+	}
+    as well as in 
+        #if (IS_SET(...)) 
+	#endif
+    http://www.thepowerbase.com/2012/04/latest-release-of-linux-contains-code-developed-via-google-plus/
+*/
+#define macrotest_1 ,
+#define IS_SET(macro) is_set_(macro)
+#define is_set_(value) is_set__(macrotest_##value)
+#define is_set__(comma) is_set___(comma 1, 0)
+#define is_set___(_, v, ...) v
+
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 	global constants and variables
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
