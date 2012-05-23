@@ -99,7 +99,7 @@ sloadtm.win64.c : sload.tm
 
 sload.w64.obj : sload.c
 	${CCw64} -c -I${INCDIRwin64} $< -o $@
-loadtm.w64.obj : sloadtm.win64.c
+sloadtm.w64.obj : sloadtm.win64.c
 	${CCw64} -c -I${INCDIRwin64} $< -o $@
 
 sload.w64.exe : sload.obj sloadtm.w64.obj ../win64/libbiosig.a
