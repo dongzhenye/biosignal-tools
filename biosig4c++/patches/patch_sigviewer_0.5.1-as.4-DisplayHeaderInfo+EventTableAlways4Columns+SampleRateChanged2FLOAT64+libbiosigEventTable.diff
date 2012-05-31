@@ -100,7 +100,7 @@ Index: src/version.txt
 +++ src/version.txt	(working copy)
 @@ -1,2 +1,2 @@
 -0.5.1
-+0.5.1-as.5
++0.5.1-v1.3
  
 Index: src/file_handling_impl/sinus_dummy_reader.cpp
 ===================================================================
