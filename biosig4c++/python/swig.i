@@ -82,7 +82,8 @@ typedef struct CHANNEL_STRUCT {
 	double		Off;			/* bias */
 
 	char		OnOff;
-	char		Label[MAX_LENGTH_LABEL+1]; 		/* Label of channel */
+	char		Label[MAX_LENGTH_LABEL+1
+]; 		/* Label of channel */
 	uint16_t	LeadIdCode;				/* Lead identification code */
 	char 		Transducer[MAX_LENGTH_TRANSDUCER+1];	/* transducer e.g. EEG: Ag-AgCl electrodes */
 	char 		PhysDim[MAX_LENGTH_PHYSDIM+1] ;		/* physical dimension */
@@ -270,7 +271,7 @@ int RerefCHANNEL(HDRTYPE *hdr, void *ReRef, char rrtype);
 const char* GetFileTypeString(enum FileFormat FMT);
 
 uint16_t PhysDimCode(char* PhysDim0);
-char* 	PhysDim(uint16_t PhysDimCode, char *PhysDimText);
+char* 	PhysDim3(uint16_t PhysDimCode);
 
 void 	sort_eventtable(HDRTYPE *hdr);
 void 	convert2to4_eventtable(HDRTYPE *hdr);

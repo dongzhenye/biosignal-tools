@@ -554,9 +554,7 @@ void mexFunction(
 			mxSetCell(Label,k1,mxCreateString(hdr->CHANNEL[k].Label));
 			mxSetCell(Transducer,k1,mxCreateString(hdr->CHANNEL[k].Transducer));
 			
-			char p[MAX_LENGTH_PHYSDIM+1];
-			PhysDim(hdr->CHANNEL[k].PhysDimCode,p);			
-			mxSetCell(PhysDim1,k1,mxCreateString(p));
+			mxSetCell(PhysDim1,k1,mxCreateString(PhysDim3(hdr->CHANNEL[k].PhysDimCode)));
 			k1++;
 		} 
 

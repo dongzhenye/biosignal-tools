@@ -255,7 +255,7 @@ int RerefCHANNEL(HDRTYPE *hdr, void *ReRef, char rrtype);
 const char* GetFileTypeString(enum FileFormat FMT);
 
 uint16_t PhysDimCode(char* PhysDim0);
-char* 	PhysDim(uint16_t PhysDimCode, char *PhysDimText);
+char* 	PhysDim3(uint16_t PhysDimCode);
 
 void 	sort_eventtable(HDRTYPE *hdr);
 void 	convert2to4_eventtable(HDRTYPE *hdr);
