@@ -77,8 +77,8 @@ typedef struct CHANNEL_STRUCT {
 	char		Label[MAX_LENGTH_LABEL+1]; 		/* Label of channel */
 	uint16_t	LeadIdCode;				/* Lead identification code */
 	char 		Transducer[MAX_LENGTH_TRANSDUCER+1];	/* transducer e.g. EEG: Ag-AgCl electrodes */
-	char 		PhysDim[MAX_LENGTH_PHYSDIM+1] ;		/* physical dimension */
-			/*PhysDim is now obsolete - use function PhysDim(PhysDimCode,PhysDimText) instead */
+//	char 		PhysDim[MAX_LENGTH_PHYSDIM+1] ;		/* physical dimension */
+			/*PhysDim is now obsolete - use function PhysDim3(PhysDimCode) instead */
 	uint16_t	PhysDimCode;		/* code for physical dimension */
 	/* char* 	PreFilt;		// pre-filtering */
 
