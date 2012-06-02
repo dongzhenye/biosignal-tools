@@ -731,17 +731,33 @@ char* PhysDim(uint16_t PhysDimCode, char *PhysDim)
 {
 	// converting PhysDimCode -> PhysDim
 	uint16_t k=0;
-	size_t l2 = strlen(PhysDimFactor[PhysDimCode & 0x001F]);	
-	memcpy(PhysDim,PhysDimFactor[PhysDimCode & 0x001F],l2);
+	uint8_t l2 = strlen(PhysDimFactor[PhysDimCode & 0x001F]);	
 
 	PhysDimCode &= ~0x001F;
-	for (k=0; _physdim[k].idx<0xffff; k++)
+	for (k=0; _physdim[k].idx < 0xffff; k+=0x0020)
 	if (PhysDimCode == _physdim[k].idx) {
+		memcpy(PhysDim, PhysDimFactor[PhysDimCode & 0x001F], l2);
 		strncpy(PhysDim+l2, _physdim[k].PhysDimDesc, MAX_LENGTH_PHYSDIM+1-l2);
 		PhysDim[MAX_LENGTH_PHYSDIM]='\0';
-		break;
+		return(PhysDim);
 	}
-	return(PhysDim);
+	return(NULL);
+}
+
+char* PhysDim2(uint16_t PhysDimCode)
+{
+	// converting PhysDimCode -> PhysDim
+	uint16_t k  = 0;
+	uint16_t l2 = strlen(PhysDimFactor[PhysDimCode & 0x001F]);	
+
+	for (k = 0; _physdim[k].idx < 0xffff; k+=0x0020)
+	if  ( (PhysDimCode & ~0x001F) == _physdim[k].idx) {
+		char *PhysDim = (char*)malloc(l2 + 1 + strlen(_physdim[k].PhysDimDesc));
+		memcpy(PhysDim, PhysDimFactor[PhysDimCode & 0x001F], l2);
+		strcpy(PhysDim+l2, _physdim[k].PhysDimDesc);
+		return(PhysDim);
+	}
+	return(NULL);
 }
 
 uint16_t PhysDimCode(const char* PhysDim0)
@@ -771,6 +787,38 @@ uint16_t PhysDimCode(const char* PhysDim0)
 	}
 	return(0);
 }
+
+/*------------------------------------------------------------------------
+ *	Table of Physical Units
+ * 
+ * This part can be better optimized with a more sophisticated hash table 
+ *------------------------------------------------------------------------*/
+
+char *PhysDimTable[0x10000];
+static char FlagInit_PhysDimTable = 0; 
+
+void ClearPhysDimTable() {
+	uint16_t k;
+	for (k = 0; k < 0xffff; k++) {
+		char *o = PhysDimTable[k];
+		if (o) free(o); 
+	}
+}
+
+
+const char* PhysDim3(uint16_t PhysDimCode) {
+	if (!FlagInit_PhysDimTable) {
+		FlagInit_PhysDimTable = 0; 
+		atexit(&ClearPhysDimTable);
+	}
+
+	char **o = PhysDimTable+PhysDimCode; 
+	if (*o==NULL) 
+		*o = PhysDim2(PhysDimCode);
+
+	return( (const char*) *o);
+}
+
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 	Conversion of time formats between Unix and GDF format.

@@ -169,7 +169,7 @@ extern const char *B4C_ERRMSG;
 
 #define BIOSIG_VERSION_MAJOR 1
 #define BIOSIG_VERSION_MINOR 3
-#define BIOSIG_PATCHLEVEL 0
+#define BIOSIG_PATCHLEVEL 1
 // for backward compatibility 
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
@@ -241,6 +241,7 @@ typedef int64_t 		nrec_t;	/* type for number of records */
 /*
 	This structure defines the header for each channel (variable header)
  */
+// TODO: change fixed length strings to dynamically allocated strings
 #define MAX_LENGTH_LABEL 	40	// TMS: 40
 #define MAX_LENGTH_TRANSDUCER 	80
 #define MAX_LENGTH_PHYSDIM 	20
@@ -259,6 +260,8 @@ typedef int64_t 		nrec_t;	/* type for number of records */
 	not clear whether this alignment definition is equivalent to the one above:
 	This might be crucial for a mixed compiler environment 
 	e.g. libbiosig compiled with MinGW used in a MS VC++ project
+	Nevertheless, there are too many GNUC dependencies, so it probably will not 
+	compile with anything else but GNUC.
 */
 #pragma pack(8)	
 #define ATT_ALI
@@ -674,13 +677,17 @@ char* PhysDim(uint16_t PhysDimCode, char *PhysDimText);
 /* converts HDR.CHANNEL[k].PhysDimCode into a readable Physical Dimension
    the memory for PhysDim must be preallocated, its maximum length is
    defined by (MAX_LENGTH_PHYSDIM+1)
+   Use of PhysDim() is deprecated - use instead PhysDim3()
+ --------------------------------------------------------------- */
+
+const char* PhysDim3(uint16_t PhysDimCode);
+/* converts HDR.CHANNEL[k].PhysDimCode into a readable Physical Dimension
  --------------------------------------------------------------- */
 
 double PhysDimScale(uint16_t PhysDimCode);
 /* returns scaling factor of physical dimension
 	e.g. 0.001 for milli, 1000 for kilo etc.
  --------------------------------------------------------------- */
-
 
 void sort_eventtable(HDRTYPE *hdr);
 /* sort event table with respect to hdr->EVENT.POS
