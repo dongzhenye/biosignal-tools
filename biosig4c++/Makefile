@@ -418,7 +418,7 @@ win32/sigviewer.exe: win32/libbiosig.a win32/libbiosig.dll $(PathToSigViewerWIN3
 	-$(COPY) win32/libbiosig.a $(PathToSigViewerWIN32)/extern/lib
 	sed -i 's|\([[:space:]]*-lbiosig\)\([ #\\]*\)$$|\1 -lcholmod -lz -lcurl \2|' $(PathToSigViewerWIN32)/src/src.pro
 	-(cd $(PathToSigViewerWIN32)/src; $(CROSS)-qmake; make)
-	#-(cd $(PathToSigViewerWIN32); svn revert -R .; svn up -r 557; patch -p0 <../biosig4c++/patches/patch_sigviewer_0.5.2.diff; cd src; $(CROSS32)-qmake; $(MAKE);)
+	#-(cd $(PathToSigViewerWIN32); svn revert -R .; svn up -r 557; patch -p0 <../biosig4c++/patches/patch_sigviewer_0.5.2.diff; cd src; $(CROSS)-qmake; $(MAKE);)
 	-$(COPY) $(PathToSigViewerWIN32)/bin/release/sigviewer.exe win32/sigviewer-$(shell cat $(PathToSigViewerWIN32)/src/version.txt)-win32.exe
 
 ########### WIN64 ##################
@@ -525,7 +525,7 @@ win64/libcnsfef.a:
 	$(MAKE) CROSS64=$(CROSS64) -C t240 ../win64/libcnsfef.a 
 
 win64/libbiosig.dll: $(MinGW64OBJECTS) biosig.h biosig-dev.h
-	$(MinGW64LINK) -shared -fPIC  $(MinGW64OBJECTS) $(MinGW64LIBS) -o "$@" -Wl,--output-def,win32/libbiosig.def,--out-implib,win32/libbiosig.dll.a
+	$(MinGW64LINK) -shared -fPIC  $(MinGW64OBJECTS) $(MinGW64LIBS) -o "$@" -Wl,--output-def,win64/libbiosig.def,--out-implib,win64/libbiosig.dll.a
 	-$(COPY) "$@" $(PathToSigViewerWIN64)/extern/lib/
 
 win64/save2gdf.exe: save2gdf.c win64/libbiosig.a
