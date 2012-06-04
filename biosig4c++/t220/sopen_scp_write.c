@@ -301,22 +301,19 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 
 			// Tag 16 (max len = 80)
 			if (VERBOSE_LEVEL>7) fprintf(stdout,"Section 1 Tag 16 \n");
-
-			if (hdr->ID.Hospital) {
-			    len = strlen(hdr->ID.Hospital); 
-			    if (len>0) {
+			len = hdr->ID.Hospital ? strlen(hdr->ID.Hospital) : 0; 
+			if (len > 0) {
 				*(ptr+sectionStart+curSectLen) = 16;	// tag
 				len = min(64,len+1);
 				leu16a(len, ptr+sectionStart+curSectLen+1);	// length
 				strncpy((char*)(ptr+sectionStart+curSectLen+3),hdr->ID.Hospital,len);
 				curSectLen += 3+len;
-			    }
 			}
 
 			// Tag 20 (max len = 64 ) 
 			if (VERBOSE_LEVEL>7) fprintf(stdout,"Section 1 Tag 20 \n");
 			len = aECG->ReferringPhysician ? strlen(aECG->ReferringPhysician) : 0;
-			if (len>0) {
+			if (len > 0) {
 				*(ptr+sectionStart+curSectLen) = 20;	// tag
 				len = min(64,len+1);
 				leu16a(len, ptr+sectionStart+curSectLen+1);	// length
@@ -336,15 +333,15 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			};	 
 
 			// Tag 22 (max len = 40 )
-			len = strlen(hdr->ID.Technician); 
 			if (VERBOSE_LEVEL>7) fprintf(stdout,"Section 1 Tag 22 \n");
-			if (len>0) {
+			len = hdr->ID.Technician ? strlen(hdr->ID.Technician) : 0; 
+			if (len > 0) {
 				*(ptr+sectionStart+curSectLen) = 22;	// tag
 				len = min(64,len+1);
 				leu16a(len, ptr+sectionStart+curSectLen+1);	// length
 				strncpy((char*)(ptr+sectionStart+curSectLen+3),hdr->ID.Technician,len);
 				curSectLen += 3+len;
-			};	 
+			}
 
 			// Tag 24 ( len = 1 ) 
 			if (VERBOSE_LEVEL>7) fprintf(stdout,"Section 1 Tag 24 \n");
