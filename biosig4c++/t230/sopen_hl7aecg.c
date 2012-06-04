@@ -1328,19 +1328,16 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
 	sequenceValue->SetAttribute("xsi:type", "SLIST_PQ");
 	sequence->LinkEndChild(sequenceValue);
 
-	// store physical unit in tmp 
-	PhysDim(hdr->CHANNEL[i].PhysDimCode,tmp); 
-
 	valueHead = new TiXmlElement("origin");
 	valueHead->SetDoubleAttribute("value", hdr->CHANNEL[i].Off);
 	// valueHead->SetDoubleAttribute("value", 0);
-	valueHead->SetAttribute("unit", tmp);
+	valueHead->SetAttribute("unit", PhysDim3(hdr->CHANNEL[i].PhysDimCode));
 	sequenceValue->LinkEndChild(valueHead);
 
 	valueIncrement = new TiXmlElement("scale");
 	valueIncrement->SetDoubleAttribute("value", hdr->CHANNEL[i].Cal);
 	//valueIncrement->SetDoubleAttribute("value", 1);
-	valueIncrement->SetAttribute("unit", tmp);
+	valueIncrement->SetAttribute("unit", PhysDim3(hdr->CHANNEL[i].PhysDimCode));
 	sequenceValue->LinkEndChild(valueIncrement);
 
 	TiXmlElement *valueDigits = new TiXmlElement("digits");

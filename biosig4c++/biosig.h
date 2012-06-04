@@ -244,7 +244,6 @@ typedef int64_t 		nrec_t;	/* type for number of records */
 // TODO: change fixed length strings to dynamically allocated strings
 #define MAX_LENGTH_LABEL 	40	// TMS: 40
 #define MAX_LENGTH_TRANSDUCER 	80
-#define MAX_LENGTH_PHYSDIM 	20
 #define MAX_LENGTH_PID	 	80  	// length of Patient ID: MFER<65, GDF<67, EDF/BDF<81, etc.
 #define MAX_LENGTH_RID		80	// length of Recording ID: EDF,GDF,BDF<80, HL7 ?
 #define MAX_LENGTH_NAME 	132	// max length of personal name: MFER<=128, EBS<=33*4
@@ -280,10 +279,7 @@ typedef struct CHANNEL_STRUCT {
 	char		Label[MAX_LENGTH_LABEL+1] ATT_ALI; 	/* Label of channel */
 	uint16_t	LeadIdCode ATT_ALI;	/* Lead identification code */
 	char 		Transducer[MAX_LENGTH_TRANSDUCER+1] ATT_ALI;	/* transducer e.g. EEG: Ag-AgCl electrodes */
-	char 		PhysDim[MAX_LENGTH_PHYSDIM+1] ATT_ALI ATT_DEPREC;	/* physical dimension */
-			/*PhysDim is now obsolete - use function PhysDim(PhysDimCode,PhysDimText) instead */
-	uint16_t	PhysDimCode ATT_ALI;	/* code for physical dimension */
-	/* char* 	PreFilt;	// pre-filtering */
+	uint16_t	PhysDimCode ATT_ALI;	/* code for physical dimension - PhysDim3(PhysDimCode) returns corresponding string */
 
 	float 		TOffset 	ATT_ALI;	/* time delay of sampling */
 	float 		LowPass		ATT_ALI;	/* lowpass filter */
@@ -671,13 +667,6 @@ enum FileFormat GetFileTypeFromString(const char *);
 uint16_t PhysDimCode(const char* PhysDim0);
 /* Encodes  Physical Dimension as 16bit integer according to
    ISO/IEEE 11073-10101:2004 Vital Signs Units of Measurement
- --------------------------------------------------------------- */
-
-char* PhysDim(uint16_t PhysDimCode, char *PhysDimText);
-/* converts HDR.CHANNEL[k].PhysDimCode into a readable Physical Dimension
-   the memory for PhysDim must be preallocated, its maximum length is
-   defined by (MAX_LENGTH_PHYSDIM+1)
-   Use of PhysDim() is deprecated - use instead PhysDim3()
  --------------------------------------------------------------- */
 
 const char* PhysDim3(uint16_t PhysDimCode);

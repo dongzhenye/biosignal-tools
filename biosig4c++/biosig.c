@@ -727,6 +727,7 @@ double PhysDimScale(uint16_t PhysDimCode)
 	return (scale[PhysDimCode & 0x001f]);
 }
 
+/*
 char* PhysDim(uint16_t PhysDimCode, char *PhysDim)
 {
 	// converting PhysDimCode -> PhysDim
@@ -743,6 +744,7 @@ char* PhysDim(uint16_t PhysDimCode, char *PhysDim)
 	}
 	return(NULL);
 }
+*/
 
 char* PhysDim2(uint16_t PhysDimCode)
 {
@@ -2588,12 +2590,13 @@ void struct2gdfbin(HDRTYPE *hdr)
 		     	len = strlen(hdr->CHANNEL[k].Transducer);
 		     	memcpy(Header2+80*k2 + 16*NS, hdr->CHANNEL[k].Transducer, min(len,80));
 			Header2[80*k2 + min(len,80) + 16*NS] = 0; 
-		     	PhysDim(hdr->CHANNEL[k].PhysDimCode, tmp);
-		     	len = strlen(tmp);
+		     	
+			tmpstr = PhysDim3(hdr->CHANNEL[k].PhysDimCode);
+		     	len = strlen(tmpstr);
 		     	if (hdr->VERSION < 1.9)
-		     		memcpy(Header2+ 8*k2 + 96*NS, tmp, min(8,len));
+		     		memcpy(Header2+ 8*k2 + 96*NS, tmpstr, min(8,len));
 		     	else {
-		     		memcpy(Header2+ 6*k2 + 96*NS, tmp, min(6,len));
+		     		memcpy(Header2+ 6*k2 + 96*NS, tmpstr, min(6,len));
 				leu16a(hdr->CHANNEL[k].PhysDimCode, Header2+ 2*k2 + 102*NS);
 			};
 
@@ -2957,7 +2960,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"#%2i: <%s> %i %i\n",k,hc->Label,(int)len,(i
 			}
 			else {
 				hc->PhysDimCode = leu16p(Header2+ 2*k + 102*hdr->NS);
-				// PhysDim(hc->PhysDimCode,hc->PhysDim);
 
 				hc->DigMin   = lef64p(Header2+ 8*k + 120*hdr->NS);
 				hc->DigMax   = lef64p(Header2+ 8*k + 128*hdr->NS);
@@ -4601,7 +4603,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 			hc->HighPass   = NAN;
 		}
 
-		for (k = 0; k < hdr->NS - 4; k++) {
+		for (k = 0; k+4 < hdr->NS; k++) {
 			hc = hdr->CHANNEL + k + 4;
 			sprintf(hc->Label, "#%02i", (int)k+1);
 			hc->PhysDimCode = 4256; // "V"
@@ -4662,7 +4664,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 		if (e==NULL) e = H1.FileName+strlen(H1.FileName); 
 		strcpy(e,".bin"); 
 		ifopen(&H1, "r"); 
-		int MaxLineLen = 1000; 
+		unsigned MaxLineLen = 1000; 
 		char *line = malloc(MaxLineLen);
 		double PhysMax = NAN; 
 		//char* ifgets(char *str, int n, HDRTYPE* hdr) {
@@ -4709,8 +4711,9 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 				if (e==NULL) continue; // ignore value because its invalid 
 				hdr->SampleRate = fs;
 			}
-			else if (!strcmp(tag,""))
+			else if (!strcmp(tag,"")) {
 				;
+			}
 		}
 		free(line); 
 		ifclose(&H1); 
@@ -6306,9 +6309,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		    	hc->GDFTYP 	= CFWB_GDFTYP[gdftyp-1];
 		    	hc->SPR 	= 1; // *(int32_t*)(Header1+56);
 		    	strncpy(hc->Label, (char*)Header2, min(32,MAX_LENGTH_LABEL));
-		    	char p[MAX_LENGTH_PHYSDIM+1];
-		    	strncpy(p, (char*)Header2+32, min(16,MAX_LENGTH_PHYSDIM));
-		    	p[MAX_LENGTH_PHYSDIM] = 0;
+		    	char p[17];
+		    	memcpy(p, (char*)Header2+32, 16);
+		    	p[16] = 0;
 		    	hc->PhysDimCode = PhysDimCode(p);
 		    	hc->LeadIdCode  = 0;
 		    	hc->Cal	= lef64p(Header2+64);
@@ -6795,21 +6798,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
         			for (k=0; k < hdr->NS; k++) {
 					CHANNEL_TYPE *hc = hdr->CHANNEL + k;
        					hc->Cal = strtod(ptr, &ptr);
-       					int c = 0;
-       					char physdim[MAX_LENGTH_PHYSDIM+1];
-        				while (bei32p(ptr)) {
-
-						if (VERBOSE_LEVEL>8)
-							fprintf(stdout,"0x03: [%i %i] %c\n",k,c,*ptr);
-
-        					if (*ptr && (c<=MAX_LENGTH_PHYSDIM)) {
-        						physdim[c++] = *ptr;
-        					}
-        					ptr++;
-        				}
-        				ptr += 4;
-					physdim[c] = 0;
-					hc->PhysDimCode = PhysDimCode(physdim);
+					hc->PhysDimCode = PhysDimCode(ptr);
         			}
         			}
         			break;
@@ -10272,7 +10261,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	else if (hdr->TYPE==WG1) {
 		uint32_t VER = leu32p(hdr->AS.Header); 
 		if (VER==0xAFFE5555) {
-			// TODO: this version is currently not supported.
+			// FIXME: this version is currently not implemented
 			if (count < 5120) {
 				hdr->AS.Header = realloc(hdr->AS.Header, 5120);
 				count += ifread(hdr->AS.Header,5120-count,1,hdr);
@@ -10282,6 +10271,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			hdr->NS   = leu16p(hdr->AS.Header+0x40);			
 			hdr->NRec = leu16p(hdr->AS.Header+0x110);	// total number of blocks 		
 			uint16_t startblock = leu16p(hdr->AS.Header+0x112);			
+			// FIXME: 
 
 	    		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
 	    		B4C_ERRMSG = "ERROR BIOSIG SOPEN(READ): WG1 0x5555FEAF format is not supported yet";
@@ -10314,10 +10304,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		// set HDR.PhysDim - this part will become obsolete
 /*
 		k1 = hdr->CHANNEL[k].PhysDimCode;
-		if (k1>0)
-			PhysDim(k1,hdr->CHANNEL[k].PhysDim);
-		else
-			hdr->CHANNEL[k].PhysDimCode = PhysDimCode(hdr->CHANNEL[k].PhysDim);
+		if (k1>0) hdr->CHANNEL[k].PhysDim = PhysDim3(k1);
 */
 		// set HDR.PhysDimCode
 		if (hdr->CHANNEL[k].LeadIdCode == 0) {
@@ -10480,7 +10467,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 	    		}
 
 	    		fprintf(fid,"Transducer\t= %s\n",hdr->CHANNEL[k].Transducer);
-	    		fprintf(fid,"PhysicalUnits\t= %s\n",PhysDim(hdr->CHANNEL[k].PhysDimCode,tmp));
+	    		fprintf(fid,"PhysicalUnits\t= %s\n",PhysDim3(hdr->CHANNEL[k].PhysDimCode));
 	    		fprintf(fid,"PhysDimCode\t= %i\n",hdr->CHANNEL[k].PhysDimCode);
 	    		fprintf(fid,"DigMax   \t= %f\n",hdr->CHANNEL[k].DigMax);
 	    		fprintf(fid,"DigMin   \t= %f\n",hdr->CHANNEL[k].DigMin);
@@ -10597,12 +10584,11 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 
 			hdr->CHANNEL[k].SPR = hdr->SPR;
 			hdr->CHANNEL[k].GDFTYP = gdftyp;
-    			char physdim[MAX_LENGTH_PHYSDIM+1];
     			char Label[MAX_LENGTH_LABEL+1];
     			strcpy(Label,hdr->CHANNEL[k].Label);
     			size_t k1;
     			for (k1=0; Label[k1]; k1++) if (Label[k1]==',') Label[k1]=1;
-	    		fprintf(fid,"Ch%d=%s,,1,%s\r\n",k+1,Label,PhysDim(hdr->CHANNEL[k].PhysDimCode,physdim));
+	    		fprintf(fid,"Ch%d=%s,,1,%s\r\n",k+1,Label,PhysDim3(hdr->CHANNEL[k].PhysDimCode));
     		}
     		fprintf(fid,"\r\n\r\n[Coordinates]\r\n");
     		// fprintf(fid,"; Each entry: Ch<Channel number>=<Radius>,<Theta>,<Phi>\n\r");
@@ -10727,9 +10713,11 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		     	size_t len = strlen(tmpstr);
 		     	memcpy(Header2+96*k2, tmpstr, min(len,32));
 
-		     	PhysDim(hdr->CHANNEL[k].PhysDimCode, tmp);
-		     	len = strlen(tmp);
-		     	memcpy(Header2+96*k2+32, tmp, min(len,32));
+		     	tmpstr = PhysDim3(hdr->CHANNEL[k].PhysDimCode);
+			if (tmpstr != NULL) {
+			     	len = strlen(tmpstr)+1;
+			     	memcpy(Header2+96*k2+32, tmpstr, min(len,32));
+			}
 
 			lef64a(hdr->CHANNEL[k].Cal, Header2+96*k2+64);
 			lef64a(hdr->CHANNEL[k].Off, Header2+96*k2+72);
@@ -10847,13 +10835,17 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 			//fprintf(stderr,"Warning: Label (%s) of channel %i is to long.\n",hdr->CHANNEL[k].Label,k);
 		     	fprintf(stderr,"Warning: Label of channel %i,%i is too long (%i>16).\n",k,k2, (int)len);
 		     	memcpy(Header2+16*k2,tmpstr,min(len,16));
+
 		     	len = strlen(hdr->CHANNEL[k].Transducer);
 			if (len>80) fprintf(stderr,"Warning: Transducer of channel %i,%i is too long (%i>80).\n",k,k2, (int)len);
 		     	memcpy(Header2+80*k2 + 16*NS,hdr->CHANNEL[k].Transducer,min(len,80));
-		     	PhysDim(hdr->CHANNEL[k].PhysDimCode, tmp);
-		     	len = strlen(tmp);
-		     	if (len>8) fprintf(stderr,"Warning: Physical Dimension (%s) of channel %i is too long (%i>8).\n",tmp,k,(int)len);
-		     	memcpy(Header2 + 8*k2 + 96*NS, tmp, min(len,8));
+
+		     	tmpstr = PhysDim3(hdr->CHANNEL[k].PhysDimCode);
+		     	if (tmpstr) {
+				len = strlen(tmpstr);
+			     	if (len>8) fprintf(stderr,"Warning: Physical Dimension (%s) of channel %i is too long (%i>8).\n",tmpstr,k,(int)len);
+			     	memcpy(Header2 + 8*k2 + 96*NS, tmpstr, min(len,8));
+			}
 
 			if (ftoa8(tmp,hdr->CHANNEL[k].PhysMin))
 				fprintf(stderr,"Warning: PhysMin (%f)(%s) of channel %i does not fit into 8 bytes of EDF header.\n",hdr->CHANNEL[k].PhysMin,tmp,k);
@@ -11138,9 +11130,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		fn2[len]=0;
 		for (k=0; k<hdr->NS; k++) {
 			fprintf(fid,"Signal%04d.Name=%s\n\r",k+1,hdr->CHANNEL[k].Label);
-			char tmp[MAX_LENGTH_PHYSDIM+1];
-			PhysDim(hdr->CHANNEL[k].PhysDimCode,tmp);
-			fprintf(fid,"Signal%04d.UnitName=%s\n\r",k+1,tmp);
+			fprintf(fid,"Signal%04d.UnitName=%s\n\r",k+1,PhysDim3(hdr->CHANNEL[k].PhysDimCode));
 			fprintf(fid,"Signal%04d.Resolution=%f\n\r",k+1,hdr->CHANNEL[k].Cal);
 			fprintf(fid,"Signal%04d.StoreRate=%f\n\r",k+1,hdr->SampleRate);
 			fprintf(fid,"Signal%04d.File=%s.asc\n\r",k+1,fn2);
@@ -11158,9 +11148,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 	    	fid = fopen(fn2,"wb");
 	    	fprintf(fid,"%d\tHz\n\r\n\rN",hdr->SampleRate);
 		for (k=0; k<hdr->NS; k++) {
-			char tmp[MAX_LENGTH_PHYSDIM+1];
-			PhysDim(hdr->CHANNEL[k].PhysDimCode,tmp);
-			fprintf(fid,"\t%s(%s)",hdr->CHANNEL[k].Label,tmp);
+			fprintf(fid,"\t%s(%s)", hdr->CHANNEL[k].Label, PhysDim3(hdr->CHANNEL[k].PhysDimCode));
 		}
 		for (k1=0; k1<hdr->SPR*hdr->NRec; k1++) {
 			fprintf(fid,"\n%i",k1);
@@ -12727,7 +12715,7 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
 		fprintf(fid,"\t\t\"ChannelNumber\"\t: %i,\n", (int)k+1);
 		fprintf(fid,"\t\t\"Label\"\t: \"%s\",\n", hc->Label);
 		fprintf(fid,"\t\t\"Transducer\"\t: \"%s\",\n", hc->Transducer);
-		fprintf(fid,"\t\t\"PhysicalUnit\"\t: \"%s\",\n", PhysDim(hc->PhysDimCode,tmp));
+		fprintf(fid,"\t\t\"PhysicalUnit\"\t: \"%s\",\n", PhysDim3(hc->PhysDimCode));
 		if (!isnan(hc->PhysMax)) fprintf(fid,"\t\t\"PhysicalMaximum\"\t: %g,\n", hc->PhysMax);
 		if (!isnan(hc->PhysMin)) fprintf(fid,"\t\t\"PhysicalMinimum\"\t: %g,\n", hc->PhysMin);
 		if (!isnan(hc->DigMax))  fprintf(fid,"\t\t\"DigitalMaximum\"\t: %f,\n", hc->DigMax);
@@ -12896,11 +12884,9 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
        			cp = hdr->CHANNEL+k;
 #endif
 
-			char p[MAX_LENGTH_PHYSDIM+1];
 			const char *label = cp->Label;
 			if (label==NULL || strlen(label)==0) label = LEAD_ID_TABLE[cp->LeadIdCode];
 
-			if (cp->PhysDimCode) PhysDim(cp->PhysDimCode, p); else p[0] = 0;
 			fprintf(fid,"\n#%02i: %3i %i %-17s\t%5f %5i", (int)k+1, cp->LeadIdCode, cp->bi8, label, cp->SPR*hdr->SampleRate/hdr->SPR, cp->SPR);
 
 			if      (cp->GDFTYP<20)  fprintf(fid," %s  ",gdftyp_string[cp->GDFTYP]);
@@ -12908,7 +12894,7 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 			else if (cp->GDFTYP>255) fprintf(fid, " bit%i  ", cp->GDFTYP-255);
 
 			fprintf(fid,"%e %e %s\t%g\t%g\t%5f\t%5f\t%5f\t%5f\t%5f\t%5g\t%5f\t%5f\t%5f",
-				cp->Cal, cp->Off, p,
+				cp->Cal, cp->Off, PhysDim3(cp->PhysDimCode),
 				cp->PhysMax, cp->PhysMin, cp->DigMax, cp->DigMin,cp->HighPass,cp->LowPass,cp->Notch,cp->TOffset,
 				cp->XYZ[0],cp->XYZ[1],cp->XYZ[2]);
 			//fprintf(fid,"\t %3i", cp->SPR);
