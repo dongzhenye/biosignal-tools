@@ -34,6 +34,8 @@
 /**                 DEFINITIONS, TYPEDEFS AND MACROS                       **/
 /**                                                                        **/
 /****************************************************************************/
+#include "physicalunits.h"
+
 #ifndef __BIOSIG_EXT_H__
 #define __BIOSIG_EXT_H__
 
@@ -51,7 +53,6 @@ typedef char			int8_t;
 #else
     #include <stdint.h>
 #endif
-
 
 #ifdef WITH_HDF5
     #include <hdf5.h>
@@ -661,21 +662,6 @@ const char* GetFileTypeString(enum FileFormat FMT);
 
 enum FileFormat GetFileTypeFromString(const char *);
 /*	returns file format from string
- --------------------------------------------------------------- */
-
-
-uint16_t PhysDimCode(const char* PhysDim0);
-/* Encodes  Physical Dimension as 16bit integer according to
-   ISO/IEEE 11073-10101:2004 Vital Signs Units of Measurement
- --------------------------------------------------------------- */
-
-const char* PhysDim3(uint16_t PhysDimCode);
-/* converts HDR.CHANNEL[k].PhysDimCode into a readable Physical Dimension
- --------------------------------------------------------------- */
-
-double PhysDimScale(uint16_t PhysDimCode);
-/* returns scaling factor of physical dimension
-	e.g. 0.001 for milli, 1000 for kilo etc.
  --------------------------------------------------------------- */
 
 void sort_eventtable(HDRTYPE *hdr);

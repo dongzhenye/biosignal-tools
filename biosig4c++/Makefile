@@ -228,6 +228,7 @@ OBJECTS       = \
 		sopen_scp_write.o \
 		sopen_hl7aecg.o \
 		biosig-network.o \
+		physicalunits.o \
 		sandbox.o \
 		xgethostname.o
 
@@ -242,6 +243,7 @@ MinGWOBJECTS  = \
 		win32/sopen_scp_write.obj \
 		win32/sopen_hl7aecg.obj \
 		win32/biosig-network.obj \
+		win32/physicalunits.obj \
 		win32/sandbox.obj \
 		win32/xgethostname.obj
 
@@ -724,6 +726,7 @@ install_octave: mexSLOAD.mex
 
 install_libbiosig: libbiosig.a libbiosig.so 
 	install biosig.h    	$(DESTDIR)/usr/include
+	install physicalunits.h    	$(DESTDIR)/usr/include
 	install libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)
 	ln -sf libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}
 	ln -sf libbiosig.so.${MAJOR_VERSION} $(LIB)/libbiosig.so
@@ -740,6 +743,7 @@ install: save2gdf libbiosig.a libbiosig.so doc/save2gdf.1
 	#install bin2rec  	$(BIN)
 	install -d		$(LIB) $(DESTDIR)/usr/include
 	install biosig.h    	$(DESTDIR)/usr/include
+	install physicalunits.h    	$(DESTDIR)/usr/include
 	install libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)
 	ln -sf libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}
 	ln -sf libbiosig.so.${MAJOR_VERSION} $(LIB)/libbiosig.so
@@ -761,6 +765,7 @@ uninstall remove:
 	-rm $(BIN)/sigviewer
 	-rm $(BIN)/eventcodes.txt
 	-rm $(DESTDIR)/usr/include/biosig.h
+	-rm $(DESTDIR)/usr/include/physicalunits.h
 	-rm $(LIB)/libbiosig.*
 	-rm $(DESTDIR)/usr/share/man/man1/save2gdf.1
 	-rm $(DESTDIR)/usr/share/man/man1/mexSLOAD.1
