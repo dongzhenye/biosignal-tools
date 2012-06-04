@@ -645,8 +645,11 @@ endif
 
 
 ###	FLOWMON
-bin/flowmon : src/flowmon.c
-	$(CXX) $(INCPATH) $(DEFINES) "$<" -I. -Wall -Wextra $(LIBS) -o "$@"
+flowmon.o: src/flowmon2.c Makefile
+	$(CC)  -c -o "$@" $(DEFINES) $(CFLAGS) "$<"
+        
+bin/flowmon: flowmon.o libbiosig.a
+	$(LINK) "$<"  $(LFLAGS) $(LIBS) -o "$@"
 
 
 #############################################################
