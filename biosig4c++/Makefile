@@ -357,7 +357,9 @@ win64/%.obj: XMLParser/%.cpp
 #	eventcodes and units: conversion from ascii to C code
 #############################################################
 
-biosig.o win32/biosig.obj win64/biosig.obj: eventcodes.i eventcodegroups.i units.i biosig.c biosig.h biosig-dev.h Makefile
+biosig.o win32/biosig.obj win64/biosig.obj: eventcodes.i eventcodegroups.i biosig.c biosig.h biosig-dev.h Makefile
+
+physicalunits.o win32/physicalunits.obj win64/physicalunits.obj: units.i
 
 eventcodes.i eventcodegroups.i : extern/eventcodes.txt
 	gawk -f eventcodes.awk "$<"
@@ -563,9 +565,6 @@ save2gdf: save2gdf.o libbiosig.$(LIBEXT) Makefile
 
 pdp2gdf: pdp2gdf.o libbiosig.$(LIBEXT)
 	$(LINK) $(CXXFLAGS) pdp2gdf.o $(LFLAGS) $(LIBS) -o pdp2gdf
-
-physicalunits: physicalunits.o libbiosig.$(LIBEXT)
-	$(LINK) $(CXXFLAGS) physicalunits.o $(LFLAGS) $(LIBS) -o physicalunits
 
 bscs: biosig_client biosig_server sandbox.o biosig.o
 biosig_client: biosig_client.c libbiosig.$(LIBEXT) biosig-network.o Makefile
