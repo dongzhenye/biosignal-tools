@@ -56,12 +56,13 @@ int main (int argc, char *argv[]) {
 
 	
 	char path2keys[1024];
+	char *str;
 #ifdef _WIN32
-	char *str = strncpy(path2keys,getenv("HOME"),1023);
+	str = strncpy(path2keys,getenv("HOME"),1023);
 #elif 0
-	// TODO: getpwuid can cause a memory leak
+	// TODO: getpwuid can cause a memory leak in glibc2.15 and earlier 
 	struct passwd *p = getpwuid(geteuid());	
-	char *str = strncpy(path2keys,p->pw_dir,1023);
+	str = strncpy(path2keys,p->pw_dir,1023);
 	//path2keys = strdup(p->pw_dir); 
 	if (VERBOSE_LEVEL>7)  fprintf(stdout,"Name:%s\nPw:%s\nuid/gui: %i/%i\nreal name: %s\n$HOME:%s\nSHELL:%s\n",p->pw_name,p->pw_passwd,p->pw_uid,p->pw_gid,p->pw_gecos,p->pw_dir,p->pw_shell);
 #endif
