@@ -4604,6 +4604,9 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 		for (k = 0; k < hdr->NS - 4; k++) {
 			hc = hdr->CHANNEL + k + 4;
 			sprintf(hc->Label, "#%02i", (int)k+1);
+			hc->PhysDimCode = 4256; // "V"
+			hc->PhysDimCode = 4274; // "mV"
+			hc->PhysDimCode = 4275; // "uV"
 			hc->GDFTYP  = 3;
 			hc->DigMax  =  32767;
 			hc->DigMin  = -32678;
@@ -4649,7 +4652,69 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 		}
 
 		hdr->HeadLen = 0; 
-		ifseek(hdr, 0, SEEK_SET); 		
+		ifseek(hdr, 0, SEEK_SET); 	
+
+		HDRTYPE H1; 
+		H1.FileName = malloc(strlen(hdr->FileName)+5); 
+		H1.FILE.COMPRESSION = 1; 	// try always with zlib, libz reverts to  no compression anyway. 
+		strcpy(H1.FileName,hdr->FileName); 
+		char *e = strrchr(H1.FileName,'.');
+		if (e==NULL) e = H1.FileName+strlen(H1.FileName); 
+		strcpy(e,".bin"); 
+		ifopen(&H1, "r"); 
+		int MaxLineLen = 1000; 
+		char *line = malloc(MaxLineLen);
+		double PhysMax = NAN; 
+		//char* ifgets(char *str, int n, HDRTYPE* hdr) {
+		while (!ifeof(&H1)) {
+			ifgets(line, MaxLineLen, hdr); 
+			if (MaxLineLen <= strlen(line)) {
+				fprintf(stderr,"Warning (Axona): line ## in file <%s> exceeds maximum length\n",H1.FileName); 
+			}
+			char *tag = strtok(line," \t\n\r"); 
+			char *val = strtok(NULL,"\n\r"); 
+			if (tag==NULL || val==NULL)
+				;
+			else if (!strcmp(tag,"trial date"))
+				;
+			else if (!strcmp(tag,"trial time"))
+				;
+			else if (!strcmp(tag,"experimenter"))
+				hdr->ID.Technician = strdup(val);
+			else if (!strcmp(tag,"sw_version"))
+				;
+			else if (!strcmp(tag,"ADC_fullscale_mv")) {
+				char *e; 
+				PhysMax = strtod(val, &e);
+				if (e==NULL) continue; // ignore value because its invalid 
+				
+			}
+			else if (!strncmp(tag,"gain_ch_",4)) {
+				char *e; 
+				size_t ch = strtol(tag+8, &e, 10);
+				if (e==NULL || ch >= hdr->NS) continue; // ignore value because its invalid 
+				double Cal = strtod(val, &e);
+				if (e==NULL) continue; // ignore value because its invalid 
+
+				hdr->CHANNEL[ch].Cal = 1.0/Cal; 
+				hdr->CHANNEL[ch].Off = 0.0; 
+				hdr->CHANNEL[ch].PhysMax = +PhysMax; 
+				hdr->CHANNEL[ch].PhysMin = -PhysMax; 
+				hdr->CHANNEL[ch].DigMax  = +PhysMax/Cal; 
+				hdr->CHANNEL[ch].DigMin  = -PhysMax/Cal;
+			}
+			else if (!strcmp(tag,"rawrate")) {
+				char *e; 
+				double fs = strtod(val, &e);
+				if (e==NULL) continue; // ignore value because its invalid 
+				hdr->SampleRate = fs;
+			}
+			else if (!strcmp(tag,""))
+				;
+		}
+		free(line); 
+		ifclose(&H1); 
+		free(H1.FileName); 	
 	}
 
     	else if ((hdr->TYPE==ASCII) || (hdr->TYPE==BIN)) {
@@ -7884,6 +7949,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		int c = ifgetc(hdr);  //  read first character
     		while (!ifeof(hdr)) {
 
+	        if (VERBOSE_LEVEL>8)
+                        fprintf(stdout,"[721] start reading %s,v%4.2f format (%i)\n",GetFileTypeString(hdr->TYPE),hdr->VERSION,(int)iftell(hdr));
+
 			int i = 0; 			
 			while ( (c != -1) &&  (c != 10) &&  (c != 13) && (i < IGOR_MAXLENLINE) ) {
 				// terminate when any line break occurs 
@@ -7892,6 +7960,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			}; 	
 			line[i] = 0;
 			while (isspace(c)) c = ifgetc(hdr); 	// keep first non-space character of next line in buffer 
+
+	        if (VERBOSE_LEVEL>8)
+                        fprintf(stdout,"\t[723] <%s> (%i)\n",line,(int)iftell(hdr));
 
 			if (!strncmp(line,"BEGIN",5)) {
 	    			flagData = 1;
@@ -7958,18 +8029,30 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	    		}
 	    		else if (!strncmp(line,"WAVES",5)) {
 
+               if (VERBOSE_LEVEL>7)
+                        fprintf(stdout,"[761]<%s>#%i: %i/%i\n",line,(int)ns,(int)spr,(int)hdr->SPR);
+
 				char *p;
 				p = strrchr(line,'_'); 
+				ns = 0; 
+				sweepNo = 0; 
+				if (p != NULL) {
+					chanNo  = atoi(p+1); 
+					if (chanNo > 0)
+						ns = chanNo - 1; // if decoding fails, assume there is only a single channel 					
 
-				chanNo  = atoi(p+1); 
-				ns = chanNo ? chanNo - 1 : 0; // if decoding fails, assume there is only a single channel 					
-				p[0] = 0;
-
-				p = strrchr(line,'_'); 
-				sweepNo = atoi(p+1); 
+					p[0] = 0;
+					p = strrchr(line,'_'); 
+					if (p != NULL) {
+						sweepNo = atoi(p+1); 
+						p[0] = 0;
+					}
+				}
 				if (sweepNo == 0) hdr->NRec = 1; // if decoding fails, assume there is only a single sweep
 				else if (sweepNo > hdr->NRec) hdr->NRec = sweepNo; 
-				p[0] = 0;
+
+               if (VERBOSE_LEVEL>7)
+                        fprintf(stdout,"[765]<%s>#%i: %i/%i\n",line,(int)ns,(int)spr,(int)hdr->SPR);
 
 				flagSupported &= (ns==0) || (chanNo == PrevChanNo+1); 	// reset flag if channel number does not increment by one.
 				flagSupported &= (ns==0 && sweepNo==PrevSweepNo+1) || (sweepNo == PrevSweepNo); 	// reset flag if sweep number does not increment by one when chanNo==0.
@@ -7978,8 +8061,15 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 					hdr->NS = ns+1;
 					hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
 				}
+
+               if (VERBOSE_LEVEL>7)
+                        fprintf(stdout,"[767]<%s>#%i: %i/%i\n",line,(int)ns,(int)spr,(int)hdr->SPR);
+
 				CHANNEL_TYPE* hc = hdr->CHANNEL + ns;
 	    			strncpy(hc->Label, line+6, MAX_LENGTH_LABEL);
+
+               if (VERBOSE_LEVEL>7)
+                        fprintf(stdout,"[769]<%s>#%i: %i/%i\n",line,(int)ns,(int)spr,(int)hdr->SPR);
 
  				hc->OnOff    = 1;
         			hc->GDFTYP   = 17;
@@ -8067,17 +8157,22 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	    		}
 	    		else if (!strncmp(line,"WAVES",5)) {
 				// decode channel number and sweep number
+
+				chanNo = 0; 
+				sweepNo= 0;
 				char *p;
 				p = strrchr(line,'_'); 
-				chanNo  = atoi(p+1); 
-				chanNo = chanNo ? chanNo-1 : 0; 	// if decoding fails, assume there is only a single channel. 
-				p[0] = 0;
-
-				p = strrchr(line,'_'); 
-				sweepNo = atoi(p+1); 
-				if (sweepNo) sweepNo--; 	// if decoding fails, assume there is only a single sweep 					
-				p[0] = 0;
-
+				if (p != NULL) {
+					chanNo  = atoi(p+1); 
+					if (chanNo > 0) chanNo--; 	// if decoding fails, assume there is only a single channel. 
+					p[0] = 0;
+					p = strrchr(line,'_'); 
+					if (p!=NULL) {
+						sweepNo = atoi(p+1); 
+						p[0] = 0;
+					}
+					if (sweepNo > 0) sweepNo--; 	// if decoding fails, assume there is only a single sweep 					
+				}
 				spr = 0;
 				if (sweepNo > 0 && chanNo==0) {
 					hdr->EVENT.POS[sweepNo-1] = SPR;

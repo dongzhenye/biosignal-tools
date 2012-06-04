@@ -72,7 +72,7 @@ PathToSigViewerWIN64 = ../sigviewer4win64
 CC            = gcc
 CXX           = g++
 #DEFINES      = -D=WITHOUT_SCP_DECODE
-DEFINES       = -D=WITH_ZLIB 
+DEFINES      += -D=WITH_ZLIB 
 #DEFINES      += -D=WITH_CURL
 DEFINES      += -D=__4HAERTEL__
 DEFINES      += -D=WITH_FAMOS
