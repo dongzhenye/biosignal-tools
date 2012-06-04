@@ -752,7 +752,7 @@ char* PhysDim2(uint16_t PhysDimCode)
 	uint16_t k  = 0;
 	uint16_t l2 = strlen(PhysDimFactor[PhysDimCode & 0x001F]);	
 
-	for (k = 0; _physdim[k].idx < 0xffff; k+=0x0020)
+	for (k = 0; _physdim[k].idx < 0xffff; k++)
 	if  ( (PhysDimCode & ~0x001F) == _physdim[k].idx) {
 		char *PhysDim = (char*)malloc(l2 + 1 + strlen(_physdim[k].PhysDimDesc));
 		memcpy(PhysDim, PhysDimFactor[PhysDimCode & 0x001F], l2);
@@ -794,30 +794,36 @@ uint16_t PhysDimCode(const char* PhysDim0)
  *	Table of Physical Units
  * 
  * This part can be better optimized with a more sophisticated hash table 
+ *
+ * These functions are thread safe except for the call to PhysDim2 which updates
+   the table (it does a malloc). Everything else is just read operation, and 
+   the content is defined only by PhysDimFactor and PhysDimIdx, which are constant. 
+   Thus the 	
  *------------------------------------------------------------------------*/
 
-char *PhysDimTable[0x10000];
+static char *PhysDimTable[0x10000];
 static char FlagInit_PhysDimTable = 0; 
 
 void ClearPhysDimTable() {
-	uint16_t k;
-	for (k = 0; k < 0xffff; k++) {
-		char *o = PhysDimTable[k];
-		if (o) free(o); 
+	uint32_t k = 0;
+	while (k < 0x10000) {
+		char *o = PhysDimTable[k++];
+		if (o != NULL) free(o); 
 	}
+	FlagInit_PhysDimTable = 0; 
 }
-
 
 const char* PhysDim3(uint16_t PhysDimCode) {
 	if (!FlagInit_PhysDimTable) {
-		FlagInit_PhysDimTable = 0; 
+		memset(PhysDimTable, 0, 0x10000 * sizeof(char*));
 		atexit(&ClearPhysDimTable);
+		FlagInit_PhysDimTable = 1; 
 	}
 
+	// mutex_lock();
 	char **o = PhysDimTable+PhysDimCode; 
-	if (*o==NULL) 
-		*o = PhysDim2(PhysDimCode);
-
+	if (*o==NULL) *o = PhysDim2(PhysDimCode);
+	// mutex_unlock();
 	return( (const char*) *o);
 }
 
@@ -12884,17 +12890,19 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
        			cp = hdr->CHANNEL+k;
 #endif
 
-			const char *label = cp->Label;
-			if (label==NULL || strlen(label)==0) label = LEAD_ID_TABLE[cp->LeadIdCode];
+			const char *tmpstr = cp->Label;
+			if (tmpstr==NULL || strlen(tmpstr)==0) tmpstr = LEAD_ID_TABLE[cp->LeadIdCode];
 
-			fprintf(fid,"\n#%02i: %3i %i %-17s\t%5f %5i", (int)k+1, cp->LeadIdCode, cp->bi8, label, cp->SPR*hdr->SampleRate/hdr->SPR, cp->SPR);
+			fprintf(fid,"\n#%02i: %3i %i %-17s\t%5f %5i", (int)k+1, cp->LeadIdCode, cp->bi8, tmpstr, cp->SPR*hdr->SampleRate/hdr->SPR, cp->SPR);
 
 			if      (cp->GDFTYP<20)  fprintf(fid," %s  ",gdftyp_string[cp->GDFTYP]);
 			else if (cp->GDFTYP>511) fprintf(fid, " bit%i  ", cp->GDFTYP-511);
 			else if (cp->GDFTYP>255) fprintf(fid, " bit%i  ", cp->GDFTYP-255);
 
+			tmpstr = PhysDim3(cp->PhysDimCode);
+			if (tmpstr==NULL) tmpstr="\0";
 			fprintf(fid,"%e %e %s\t%g\t%g\t%5f\t%5f\t%5f\t%5f\t%5f\t%5g\t%5f\t%5f\t%5f",
-				cp->Cal, cp->Off, PhysDim3(cp->PhysDimCode),
+				cp->Cal, cp->Off, tmpstr,
 				cp->PhysMax, cp->PhysMin, cp->DigMax, cp->DigMin,cp->HighPass,cp->LowPass,cp->Notch,cp->TOffset,
 				cp->XYZ[0],cp->XYZ[1],cp->XYZ[2]);
 			//fprintf(fid,"\t %3i", cp->SPR);
