@@ -27,6 +27,9 @@
 
 #include <ctype.h>
 #include <errno.h>
+#ifndef _WIN32
+# include <pwd.h>
+#endif
 #include <sys/stat.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -53,10 +56,18 @@ int main (int argc, char *argv[]) {
 
 	
 	char path2keys[1024];
-	char *str = strcpy(path2keys,getenv("HOME"));
+#ifdef _WIN32
+	char *str = strncpy(path2keys,getenv("HOME"),1023);
+#elif 0
+	// TODO: getpwuid can cause a memory leak
+	struct passwd *p = getpwuid(geteuid());	
+	char *str = strncpy(path2keys,p->pw_dir,1023);
+	//path2keys = strdup(p->pw_dir); 
+	if (VERBOSE_LEVEL>7)  fprintf(stdout,"Name:%s\nPw:%s\nuid/gui: %i/%i\nreal name: %s\n$HOME:%s\nSHELL:%s\n",p->pw_name,p->pw_passwd,p->pw_uid,p->pw_gid,p->pw_gecos,p->pw_dir,p->pw_shell);
+#endif
 	str += strlen(path2keys);
 	str[0] = FILESEP;
-	str = memcpy(str+1,".biosig",7)+7;
+	str = (char*)memcpy(str+1,".biosig",7)+7;
 	str[0] = FILESEP;
 	str[1] = 0;
 	size_t path2keysLength = strlen(path2keys); 

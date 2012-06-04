@@ -243,7 +243,7 @@ void DoJob(int ns)
 				else if (LEN == 8) 		// open(r)
 				{
 		   			count = recv(ns, &msg.LOAD, 8, 0);
-					ID = leu64p(&msg.LOAD);
+					ID = leu64p((uint8_t*)&msg.LOAD);
 
 					c64ta(ID, filename); 
 					// ToDo: replace SOPEN with simple function, e.g. access to event table not needed here 
@@ -698,7 +698,7 @@ if (VERBOSE_LEVEL>8) fprintf(stdout,"SND HDR RPLY: %08x\n",msg.STATE);
  ****************************************************************************************/
 
 	   			count = recv(ns, &msg.LOAD, 8, 0);
-				ID = leu64p(&msg.LOAD);
+				ID = leu64p((uint8_t*)&msg.LOAD);
 				c64ta(ID, filename); 
 
 				if (VERBOSE_LEVEL>7) fprintf(stdout,"get file: %s\n",filename); 
