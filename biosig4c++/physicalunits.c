@@ -1,8 +1,7 @@
 /*
 
-    $Id: biosig.c 2985 2012-06-04 20:15:50Z schloegl $
-    Copyright (C) 2005,2006,2007,2008,2009,2010,2011,2012 Alois Schloegl <alois.schloegl@gmail.com>
-    Copyright (C) 2011 Stoyan Mihaylov
+    $Id$
+    Copyright (C) 2005-2012 Alois Schloegl <alois.schloegl@gmail.com>
     This file is part of the "BioSig for C/C++" repository
     (biosig4c++) at http://biosig.sf.net/
 
@@ -32,6 +31,9 @@
 #include <sys/stat.h>
 */
 
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "physicalunits.h"
 
 /* physical units are defined in
@@ -159,7 +161,7 @@ void ClearPhysDimTable() {
 	FlagInit_PhysDimTable = 0; 
 }
 
-const char* PhysDim3(uint16_t PhysDimCode) {
+const char* PhysDim(uint16_t PhysDimCode) {
 	if (!FlagInit_PhysDimTable) {
 		memset(PhysDimTable, 0, 0x10000 * sizeof(char*));
 		atexit(&ClearPhysDimTable);

@@ -359,7 +359,7 @@ win64/%.obj: XMLParser/%.cpp
 
 biosig.o win32/biosig.obj win64/biosig.obj: eventcodes.i eventcodegroups.i biosig.c biosig.h biosig-dev.h Makefile
 
-physicalunits.o win32/physicalunits.obj win64/physicalunits.obj: units.i
+physicalunits.o win32/physicalunits.obj win64/physicalunits.obj: units.i physicalunits.h 
 
 eventcodes.i eventcodegroups.i : extern/eventcodes.txt
 	gawk -f eventcodes.awk "$<"
@@ -417,7 +417,7 @@ $(PathToSigViewerWIN32)/src/src.pro: $(PathToSigViewerWIN32)
 win32/sigviewer.exe: win32/libbiosig.a win32/libbiosig.dll $(PathToSigViewerWIN32)
 	#-$(COPY) ../biosig/doc/eventcodes.txt $(PathToSigViewerWIN32)/src/
 	-$(DELETE) $(PathToSigViewerWIN32)/extern/include/*.h
-	-$(COPY) biosig.h $(PathToSigViewerWIN32)/extern/include
+	-$(COPY) biosig.h physicalunits.h $(PathToSigViewerWIN32)/extern/include
 	-$(DELETE) $(PathToSigViewerWIN32)/extern/lib/lib*
 	-$(COPY) win32/libbiosig.a $(PathToSigViewerWIN32)/extern/lib
 	sed -i 's|\([[:space:]]*-lbiosig\)\([ #\\]*\)$$|\1 -lcholmod -lz -lcurl \2|' $(PathToSigViewerWIN32)/src/src.pro
@@ -448,7 +448,7 @@ $(PathToSigViewerWIN64)/src/src.pro: $(PathToSigViewerWIN64)
 win64/sigviewer.exe: win64/libbiosig.a win64/libbiosig.dll 
 	#-$(COPY) ../biosig/doc/eventcodes.txt $(PathToSigViewerWIN64)/src/
 	-$(DELETE) $(PathToSigViewerWIN64)/extern/include/*.h
-	-$(COPY) biosig.h $(PathToSigViewerWIN64)/extern/include
+	-$(COPY) biosig.h physicalunits.h $(PathToSigViewerWIN64)/extern/include
 	-$(DELETE) $(PathToSigViewerWIN64)/extern/lib/lib*
 	-$(COPY) win64/libbiosig.a $(PathToSigViewerWIN64)/extern/lib
 	sed -i 's|\([[:space:]]*-lbiosig\)\([ #\\]*\)$$|\1 -lcholmod -lz -lcurl\2|' $(PathToSigViewerWIN64)/src/src.pro
@@ -613,7 +613,7 @@ sigviewer: $(PathToSigViewer)/bin/sigviewer
 
 $(PathToSigViewer)/bin/sigviewer: libbiosig.$(LIBEXT) biosig.h
 	-$(DELETE) $(PathToSigViewer)/extern/include/*
-	-$(COPY) biosig.h $(PathToSigViewer)/extern/include
+	-$(COPY) biosig.h physicalunits.h $(PathToSigViewer)/extern/include
 	-$(DELETE) $(PathToSigViewer)/extern/lib/lib*
 	-$(COPY) libbiosig.a $(PathToSigViewer)/extern/lib
 	sed -i 's|\([[:space:]]*-lbiosig\)\([ #\\]*\)$$|\1 $(LDLIBS) \2|' $(PathToSigViewer)/src/src.pro

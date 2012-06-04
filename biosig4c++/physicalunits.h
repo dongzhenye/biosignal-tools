@@ -1,6 +1,6 @@
 /*
-% $Id: biosig.h,v 1.140 2009/04/09 15:06:55 schloegl Exp $
-% Copyright (C) 2005,2006,2007,2008,2009,2010,2011,2012 Alois Schloegl <alois.schloegl@gmail.com>
+% $Id$
+% Copyright (C) 2005-2012 Alois Schloegl <alois.schloegl@gmail.com>
 % This file is part of the "BioSig for C/C++" repository
 % (biosig4c++) at http://biosig.sf.net/
 
@@ -20,20 +20,12 @@
 
  */
 
-
-/* test whether HDR.CHANNEL[].{bi,bi8} can be replaced, reduction of header size by about 3%
-   currently this is not working, because FAMOS seems to need it.
-//#define NO_BI
-*/
-
-
-/* External API definitions */
-
-/****************************************************************************/
-/**                                                                        **/
-/**                 DEFINITIONS, TYPEDEFS AND MACROS                       **/
-/**                                                                        **/
-/****************************************************************************/
+/****************************************************************************
+ **                                                                        **
+ **    Conversion functions for encoded physical units according to        **
+ **    ISO/IEEE 11073-10101:2004 Vital Signs Units of Measurement          **
+ **                                                                        **
+ ****************************************************************************/
 #ifndef __PHYSICALUNITS_H__
 #define __PHYSICALUNITS_H__
 
@@ -42,9 +34,6 @@ typedef unsigned short		uint16_t;
 #else
     #include <stdint.h>
 #endif
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
 
 
 #ifdef __cplusplus
@@ -56,9 +45,13 @@ uint16_t PhysDimCode(const char* PhysDim);
    ISO/IEEE 11073-10101:2004 Vital Signs Units of Measurement
  --------------------------------------------------------------- */
 
-const char* PhysDim3(uint16_t PhysDimCode);
-/* converts HDR.CHANNEL[k].PhysDimCode into a readable Physical Dimension
+const char* PhysDim(uint16_t PhysDimCode);
+/* converts PhysDimCode into a readable Physical Dimension
  --------------------------------------------------------------- */
+
+#define PhysDim3(x) PhysDim(x)
+/* PhysDim3() is an alias used in some legacy applications */
+
 
 double PhysDimScale(uint16_t PhysDimCode);
 /* returns scaling factor of physical dimension
