@@ -395,8 +395,8 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 	en1064.FLAG.BIMODAL  = 0;
 	en1064.Section4.len_ms	 = 0;
 	
-#ifndef WITHOUT_SCP_DECODE
 	struct pointer_section section[_NUM_SECTION];
+#ifndef WITHOUT_SCP_DECODE
 	struct DATA_DECODE decode;
 	struct DATA_RECORD record;
 	struct DATA_INFO textual;
@@ -464,7 +464,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 	for (K=1; K<NSections; K++)	{
 		// this is needed because fields are not always sorted
 		curSect = leu32p(ptr+6+16+K*10); 
-		if (curSect < NSections) {
+		if (curSect < _NUM_SECTION) {
 			section[curSect].ID 	= curSect; 	
 			section[curSect].length = leu32p(ptr+6+16+K*10+2); 	
 			section[curSect].index  = leu32p(ptr+6+16+K*10+6)-1;
@@ -473,14 +473,14 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 	for (K=1; K<NSections; K++)	{
 
-	if (VERBOSE_LEVEL>8)
+	if (VERBOSE_LEVEL>7)
 		fprintf(stdout,"%s(%i) ",hdr->FileName,K);
 		
 		curSect           = section[K].ID;
 		len		  = section[K].length;
 		sectionStart 	  = section[K].index;
 
-	if (VERBOSE_LEVEL>8)
+	if (VERBOSE_LEVEL>7)
 		fprintf(stdout,"SCP Section %i %i len=%i secStart=%i HeaderLength=%i\n",K,curSect,len,(int)sectionStart,hdr->HeadLen);
 
 	if (len==0) continue;	 /***** empty section *****/
