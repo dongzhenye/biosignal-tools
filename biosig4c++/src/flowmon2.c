@@ -488,8 +488,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"FLOWMON 020\n");
         if (outFile) {
                 // open once write all data into single log file
                 hdr->FILE.COMPRESSION = flag_GZIP;
-//		hdr = sopen(outFile, "a", hdr);
-		hdr = sopen(outFile, "w", hdr);
+		hdr = sopen(outFile, "a", hdr);
 		if (VERBOSE_LEVEL>7) hdr2ascii(hdr,stdout,4);
 
                 if (VERBOSE_LEVEL>7) fprintf(stdout,"FLOWMON 010 %i\n", (int)hdr->NRec);
@@ -555,7 +554,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"FLOWMON 020\n");
 			hdr->NRec = -1;
                         sprintf(logfile,"flowmon%04i%02i%02i.log.gdf",T.tm_year+1900,T.tm_mon+1,T.tm_mday);
                         hdr->FILE.COMPRESSION = flag_GZIP;
-                        hdr = sopen(logfile, "w", hdr);
+                        hdr = sopen(logfile, "a", hdr);
 
                 if (VERBOSE_LEVEL>7) fprintf(stdout,"FLOWMON 120 %p\n", hdr);
 

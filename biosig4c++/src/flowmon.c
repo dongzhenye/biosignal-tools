@@ -355,7 +355,7 @@ char debugfile[] = "flowmonDD.log.txt";
 			hdr->CHANNEL[2].PhysDimCode = 2976; // make sure stored unit is in "m3/h"
                         sprintf(logfile,"flowmon%04i%02i%02i.log.gdf",T.tm_year+1900,T.tm_mon+1,T.tm_mday);
                         hdr->FILE.COMPRESSION = flag_GZIP;
-                        hdr = sopen(logfile, "w", hdr);
+                        hdr = sopen(logfile, "a", hdr);
 
                 if (VERBOSE_LEVEL>7) fprintf(stdout,"FLOWMON 120 %p\n", hdr);
 
