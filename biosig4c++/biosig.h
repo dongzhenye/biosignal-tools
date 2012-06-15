@@ -60,6 +60,7 @@ typedef char			int8_t;
 #ifdef WITH_NIFTI
     #include <nifti1.h>
 #endif
+#include "physicalunits.h"
 
 
 #ifdef __cplusplus

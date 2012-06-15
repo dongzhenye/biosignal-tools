@@ -731,7 +731,7 @@ install_libbiosig: libbiosig.a libbiosig.so
 	ln -sf libbiosig.so.${MAJOR_VERSION} $(LIB)/libbiosig.so
 	install libbiosig.a	$(LIB)
 
-install: save2gdf libbiosig.a libbiosig.so doc/save2gdf.1
+install: save2gdf libbiosig.a doc/save2gdf.1
 	install -d 		$(BIN)
 	install save2gdf 	$(BIN)
 	install heka2itx 	$(BIN)
@@ -743,9 +743,6 @@ install: save2gdf libbiosig.a libbiosig.so doc/save2gdf.1
 	install -d		$(LIB) $(DESTDIR)/usr/include
 	install biosig.h    	$(DESTDIR)/usr/include
 	install physicalunits.h    	$(DESTDIR)/usr/include
-	install libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)
-	ln -sf libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}
-	ln -sf libbiosig.so.${MAJOR_VERSION} $(LIB)/libbiosig.so
 	install libbiosig.a	$(LIB)
 	mkdir -p  		$(DESTDIR)/usr/share/man/man1
 	install doc/*.1  	$(DESTDIR)/usr/share/man/man1
