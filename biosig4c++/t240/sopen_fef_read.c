@@ -127,14 +127,15 @@ if (VERBOSE_LEVEL>8) {
 		size_t l3 = strlen(str3); 
 	
 		if (l1 <= MAX_LENGTH_NAME) {
-			strcpy(hdr->Patient.Name,str1,MAX_LENGTH_NAME);
+			strcpy(hdr->Patient.Name, str1);
+		}
 		if (l1+l2+1 <= MAX_LENGTH_NAME) {
 			hdr->Patient.Name[l1]=' ';
-			strcpy(hdr->Patient.Name+1+l1,str2);
+			strcpy(hdr->Patient.Name+1 + l1, str2);
 		}
 		if (l1+l2+l3+2 <= MAX_LENGTH_NAME) {
 			hdr->Patient.Name[l1+l2+1]=' ';
-			strcpy(hdr->Patient.Name+2+l1+l2,str3);
+			strcpy(hdr->Patient.Name+2+l1+l2, str3);
 		}
 	}
 	
@@ -157,11 +158,11 @@ if (VERBOSE_LEVEL>8) {
 
 	/******* Manufacturer ************/		
 //	asn_fprint(stdout, &asn_DEF_MedicalDeviceSystemSection, &STS->medicaldevicesystem);
-	strncpy(hdr->ID.Manufacturer._field,STS->medicaldevicesystem.systemmodel.manufacturer.buf,MAX_LENGTH_MANUF);
+	strncpy(hdr->ID.Manufacturer._field, (const char*)STS->medicaldevicesystem.systemmodel.manufacturer.buf, MAX_LENGTH_MANUF);
 	int LEN = strlen(hdr->ID.Manufacturer._field)+1; 
 	hdr->ID.Manufacturer.Name = hdr->ID.Manufacturer._field;
 
-	strncpy(hdr->ID.Manufacturer._field+LEN, STS->medicaldevicesystem.systemmodel.model_number.buf, MAX_LENGTH_MANUF-LEN);
+	strncpy(hdr->ID.Manufacturer._field+LEN, (const char*)STS->medicaldevicesystem.systemmodel.model_number.buf, MAX_LENGTH_MANUF-LEN);
 	hdr->ID.Manufacturer.Model = hdr->ID.Manufacturer._field+LEN;
 	
 	/******* Multimedia ************/		
@@ -199,7 +200,7 @@ if (VERBOSE_LEVEL>8) {
 
 			CHANNEL_TYPE *hc = hdr->CHANNEL+k;
 
-		      	strncpy(hc->Label, RTSADDS->labelstring->buf, MAX_LENGTH_LABEL);
+		      	strncpy(hc->Label, (const char*)RTSADDS->labelstring->buf, MAX_LENGTH_LABEL);
 
 			if (!asn_INTEGER2long(RTSADDS->unitcode,&ival))
 			      	hc->PhysDimCode= (uint16_t)ival;
@@ -207,7 +208,7 @@ if (VERBOSE_LEVEL>8) {
 			      	hc->PhysDimCode= 0;
 
 			if (!hc->PhysDimCode) 
-				hc->PhysDimCode = PhysDimCode(RTSADDS->unitlabelstring->buf);
+				hc->PhysDimCode = PhysDimCode((const char*)RTSADDS->unitlabelstring->buf);
 			
 			//******************* samplerate *****************/
 			unsigned long n=0, d=0;
@@ -287,7 +288,7 @@ if (VERBOSE_LEVEL>8) {
 			} else 	
 			{
 			      	hc->HighPass  = -1;
-			      	hc->LowPass   = INF;
+			      	hc->LowPass   = INFINITY;
 			}
 
 			// TODO: MetricCalEntry, MetricCalType,
@@ -298,7 +299,7 @@ if (VERBOSE_LEVEL>8) {
 		      	hc->bi 	      = 0;
 	      		hc->OnOff     = 1;
 	      		hc->Notch     = -1;
-		      	hc->Impedance = INF;
+		      	hc->Impedance = INFINITY;
 		      	hc->XYZ[0] 	= 0.0;
 	      		hc->XYZ[1] 	= 0.0;
 		      	hc->XYZ[2] 	= 0.0;
@@ -320,12 +321,13 @@ if (VERBOSE_LEVEL>8) {
 		MeasuredDataSection_t *MDS = SPS->measureddata.list.array[k];
 //		asn_fprint(stdout, &asn_DEF_RealTimeSampleArrayMeasuredDataSection, RTSAMDS);
 
-		int n2,N2 = 0; 
+		unsigned n2,N2 = 0; 
+		size_t listlen = MDS->realtimesas->list.count; 
 		hdr->SPR = 1; 
-		for (n2=0; n2 < MDS->realtimesas->list.count; n2++) {
+		for (n2=0; n2 <listlen ; n2++) {
 			CHANNEL_TYPE *hc = hdr->CHANNEL+n2;
 			RealTimeSampleArrayMeasuredDataSection_t *RTSAMDS = MDS->realtimesas->list.array[n2];
-//			if (VERBOSE_LEVEL>8)
+//			if (VERBOSE_LEVEL>7)
 //				asn_fprint(stdout, &asn_DEF_RealTimeSampleArrayMeasuredDataSection, MDS->realtimesas->list.array[n2]);
 
 			asn_INTEGER2long(&RTSAMDS->numberofsubblocks,&nrec);
@@ -335,7 +337,7 @@ if (VERBOSE_LEVEL>8) {
 
 			// &RTSAMDS->metriclist //
 			if (VERBOSE_LEVEL>7) 
-				fprintf(stdout,"%i blk: %i   #subblocks:%i subblocklength:%i/%i subblocksize:%i size:%i \n",n2,k,nrec,n,d,spr,RTSAMDS->data.size);
+				fprintf(stdout,"%i/%i blk: %i   #subblocks:%i subblocklength:%i/%i subblocksize:%i size:%i \n",(int)n2,(int)listlen,(int)k,(int)nrec,(int)n,(int)d,(int)spr,(int)RTSAMDS->data.size);
 			//RTSAMDS->data->buf
 			//RTSAMDS->data.size
 			
