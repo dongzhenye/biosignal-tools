@@ -45,7 +45,7 @@ function [HDR,H1,h2] = sopen(arg1,PERMISSION,CHAN,MODE,arg5,arg6)
 
 
 %	$Id$
-%	(C) 1997-2006,2007,2008,2009,2011 by Alois Schloegl <a.schloegl@ieee.org>	
+%	(C) 1997-2006,2007,2008,2009,2011,2012 by Alois Schloegl <alois.schloegl@gmail.com>	
 %    	This is part of the BIOSIG-toolbox http://biosig.sf.net/
 %
 %    BioSig is free software: you can redistribute it and/or modify
@@ -2172,7 +2172,7 @@ elseif strcmp(HDR.TYPE,'FEF'),		% FEF/Vital format included
                 HDR = fefopen(HDR);
         end;
         
-        fprintf(HDR.FILE.stderr,'Warning SOPEN: Implementing Vital/FEF format not completed yet. Contact <a.schloegl@ieee.org> if you are interested in this feature.\n');
+        fprintf(HDR.FILE.stderr,'Warning SOPEN: Implementing Vital/FEF format not completed yet. Contact <Biosig-general@lists.sourceforge.net> if you are interested in this feature.\n');
         HDR.FILE.FID = -1;
         return;        
 
@@ -2190,7 +2190,7 @@ elseif strcmp(HDR.TYPE,'SCP'),	%
 elseif strcmp(HDR.TYPE,'EBS'),
         HDR.FILE.FID = fopen(HDR.FileName,[HDR.FILE.PERMISSION,'b'],'ieee-be');
         
-        fprintf(HDR.FILE.stderr,'Warning SOPEN: Implementing EBS format not completed yet. Contact <a.schloegl@ieee.org> if you are interested in this feature.\n');
+        fprintf(HDR.FILE.stderr,'Warning SOPEN: Implementing EBS format not completed yet. Contact <Biosig-general@lists.sourceforge.net> if you are interested in this feature.\n');
         
         %%%%% (1) Fixed Header (32 bytes) %%%%%
         HDR.VERSION = fread(HDR.FILE.FID,[1,8],'uint8');	%
@@ -4658,7 +4658,7 @@ elseif strcmp(HDR.TYPE,'TEAM'),		% Nicolet TEAM file format
                 end;
                 HDR.TRIGGER.Date(k,1) = HDR.TRIGGER.Date(k,1) + 1900;
         end;
-        fprintf(HDR.FILE.stderr,'Warning SOPEN: Implementing Nicolet TEAM file format not completed yet. Contact <a.schloegl@ieee.org> if you are interested in this feature.\n');
+        fprintf(HDR.FILE.stderr,'Warning SOPEN: Implementing Nicolet TEAM file format not completed yet. Contact <Biosig-general@lists.sourceforge.net> if you are interested in this feature.\n');
         fclose(HDR.FILE.FID);
         
         
@@ -4750,7 +4750,7 @@ elseif strcmp(HDR.TYPE,'WFT'),	% implementation of this format is not finished y
         
         fseek(HDR.FILE.FID,HDR.HeadLen,'bof');
         
-        fprintf(HDR.FILE.stderr,'Warning SOPEN: Implementing Nicolet WFT file format not completed yet. Contact <a.schloegl@ieee.org> if you are interested in this feature.\n');
+        fprintf(HDR.FILE.stderr,'Warning SOPEN: Implementing Nicolet WFT file format not completed yet. Contact <Biosig-general@lists.sourceforge.net> if you are interested in this feature.\n');
         fclose(HDR.FILE.FID);
         
         
@@ -5149,7 +5149,7 @@ elseif strcmp(HDR.TYPE,'RG64'),
 elseif strcmp(HDR.TYPE,'DDF'),
         
         % implementation of this format is not finished yet.
-        fprintf(HDR.FILE.stderr,'Warning SOPEN: Implementing DASYLAB format not completed yet. Contact <a.schloegl@ieee.org> if you are interested in this feature.\n');
+        fprintf(HDR.FILE.stderr,'Warning SOPEN: Implementing DASYLAB format not completed yet. Contact <Biosig-general@lists.sourceforge.net> if you are interested in this feature.\n');
         %HDR.FILE.FID = -1;
         %return;
         
@@ -6016,7 +6016,7 @@ elseif strcmp(HDR.TYPE,'MAT4') && any(HDR.FILE.PERMISSION=='r'),
     	if isfield(HDR,'ADI')
                 HDR.TYPE = 'ADI', % ADICHT-data, converted into a Matlab 4 file
     		
-	        fprintf(HDR.FILE.stderr,'Format not tested yet. \nFor more information contact <a.schloegl@ieee.org> Subject: Biosig/Dataformats \n',HDR.FILE.PERMISSION);	
+	        fprintf(HDR.FILE.stderr,'Format not tested yet. \nFor more information contact <Biosig-general@lists.sourceforge.net> Subject: Biosig/Dataformats \n',HDR.FILE.PERMISSION);	
 
                 %% set internal sampling rate to 1000Hz (default). Set HDR.iFs=[] if no resampling should be performed 
                 HDR.iFs = []; %1000;
@@ -7636,7 +7636,7 @@ elseif strcmp(HDR.TYPE,'ISHNE'),
         if any(HDR.FILE.PERMISSION=='r'),
                 HDR.FILE.FID = fopen(HDR.FileName,[HDR.FILE.PERMISSION,'b'],'ieee-le');
                 
-                fprintf(HDR.FILE.stderr,'Format not tested yet. \nFor more information contact <a.schloegl@ieee.org> Subject: Biosig/Dataformats \n',HDR.FILE.PERMISSION);	
+                fprintf(HDR.FILE.stderr,'Format not tested yet. \nFor more information contact <Biosig-general@lists.sourceforge.net> Subject: Biosig/Dataformats \n',HDR.FILE.PERMISSION);	
                 
                 HDR.FILE.OPEN = 1;
                 fseek(HDR.FILE.FID,10,'bof');
@@ -8043,7 +8043,7 @@ elseif strncmp(HDR.TYPE,'SEG2',4),
                         optstrings = fread(HDR.FILE.FID,HDR.SEG2.blocksize(k)-32,'uint8');
                 end; 
                 
-                fprintf(HDR.FILE.stderr,'Format %s not implemented yet. \nFor more information contact <a.schloegl@ieee.org> Subject: Biosig/Dataformats \n',HDR.TYPE);	
+                fprintf(HDR.FILE.stderr,'Format %s not implemented yet. \nFor more information contact <Biosig-general@lists.sourceforge.net> Subject: Biosig/Dataformats \n',HDR.TYPE);	
                 fclose(HDR.FILE.FID);
                 HDR.FILE.FID = -1;
                 HDR.FILE.OPEN = 0;
@@ -10440,7 +10440,7 @@ elseif strcmp(HDR.TYPE,'unknown'),
         end; 
         
 else
-        %fprintf(HDR.FILE.stderr,'SOPEN does not support your data format yet. Contact <a.schloegl@ieee.org> if you are interested in this feature.\n');
+        %fprintf(HDR.FILE.stderr,'SOPEN does not support your data format yet. Contact <Biosig-general@lists.sourceforge.net> if you are interested in this feature.\n');
         HDR.FILE.FID = -1;	% this indicates that file could not be opened. 
         return;
 end;

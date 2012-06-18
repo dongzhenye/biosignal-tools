@@ -265,6 +265,7 @@
 ### private: units with no standardized code
 #,"kgf m [J]",,Left Stroke Work (LSW)
 #,"kgf m min-1 [W]",,Left Cardiac Work (LCW)
+65152,"V/s",,""
 65184,"m/m",,""
 65216,"km/h",,"velocity kilometer per hour"
 65248,"g s-2 [J m-2, gf m-1]",,"Left Stroke Work Index (LSWI)"

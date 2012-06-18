@@ -15,6 +15,8 @@ function [HDR] = save2gdf(arg1,arg2,arg3);
 %   destfile	destination file in BKR format 
 %	if destfile is empty or a directory, sourcefile but with extension .bkr is used.
 %   options
+%	'spikes'
+%	'bursts'
 %       gain            Gain factor for unscaled EEG data (e.g. old Matlab files) 
 %       'removeDC'      removes mean
 %       'autoscale k:l'	uses only channels from k to l for scaling

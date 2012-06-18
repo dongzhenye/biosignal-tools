@@ -269,6 +269,8 @@ for k = 1:length(HDR.EVENT.POS);
 	elseif 1,
 	elseif HDR.EVENT.TYP(k)==0,
 		;
+	elseif HDR.EVENT.TYP(k)==hex2dec('7ffe'),
+		;
 	elseif (isfield(HDR.EVENT,'CodeDesc') && (HDR.EVENT.TYP(k) <= length(HDR.EVENT.CodeDesc)))
 		fprintf(fid,'\t%s',HDR.EVENT.CodeDesc{HDR.EVENT.TYP(k)});
 	else
