@@ -1278,6 +1278,28 @@ void FreeTextEvent(HDRTYPE* hdr,size_t N_EVENT, char* annotation) {
 	}
 }
 
+/*------------------------------------------------------------------------
+      returns clear text description of n-th event
+  -------------------------------------------------------------- */
+const char* GetEventDescription(HDRTYPE *hdr, size_t N) {
+        if (hdr==NULL || N >= hdr->EVENT.N) return NULL; 
+        uint16_t TYP = hdr->EVENT.TYP[N]; 
+
+        if (TYP < hdr->EVENT.LenCodeDesc) // user-specified events, TYP < 256
+                return hdr->EVENT.CodeDesc[TYP]; 
+
+        // event definition according to GDF's eventcodes.txt table
+        uint16_t k = 0;
+        while (ETD[k].typ < hdr->EVENT.LenCodeDesc) k++;  
+        for (; ETD[k].typ!=0; k++) 
+                if (ETD[k].typ==TYP) 
+                        return ETD[k].desc;
+        
+        fprintf(stderr,"Warning: event code 0x%04x not defined\n",TYP);
+
+        return NULL;
+}
+
 /****************************************************************************/
 /**                                                                        **/
 /**                     EXPORTED FUNCTIONS                                 **/

@@ -171,7 +171,7 @@ extern const char *B4C_ERRMSG;
 
 #define BIOSIG_VERSION_MAJOR 1
 #define BIOSIG_VERSION_MINOR 3
-#define BIOSIG_PATCHLEVEL 2
+#define BIOSIG_PATCHLEVEL 3
 // for backward compatibility 
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
@@ -676,6 +676,11 @@ void convert2to4_eventtable(HDRTYPE *hdr);
 void convert4to2_eventtable(HDRTYPE *hdr);
 /* converts event table from [TYP,POS,CHN,DUR} to {TYP,POS} format
 	all CHN[k] must be 0
+  -------------------------------------------------------------- */
+
+const char* GetEventDescription(HDRTYPE *hdr, size_t n);
+/* returns clear text description of n-th event, 
+   considers also user-defined events. 
   -------------------------------------------------------------- */
 
 #ifdef __cplusplus
