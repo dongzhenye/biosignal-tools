@@ -1,11 +1,35 @@
+/*
+
+    $Id$
+    Copyright (C) 2012 Alois Schloegl <alois.schloegl@gmail.com>
+    This file is part of the "BioSig for C/C++" repository
+    (biosig4c++) at http://biosig.sf.net/
+
+
+    BioSig is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 3
+    of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct biosig_annotation_struct{                           /* this structure is used for annotations */
-        size_t onset;                                /* onset time of the event, expressed in units of 100 nanoSeconds and relative to the starttime in the header */
-        size_t duration;                              /* duration time, this is a null-terminated ASCII text-string */
-        const char *annotation; /* description of the event in UTF-8, this is a null terminated string */
+struct biosig_annotation_struct {       /* this structure is used for annotations */
+        size_t onset;                   /* onset time of the event, expressed in units of 100 nanoSeconds and relative to the starttime in the header */
+        size_t duration;                /* duration time, this is a null-terminated ASCII text-string */
+        const char *annotation; 	/* description of the event in UTF-8, this is a null terminated string */
        };
 
 
@@ -13,14 +37,14 @@ struct biosig_annotation_struct{                           /* this structure is 
 int biosig_lib_version(void);
 int biosig_open_file_readonly(const char *path, HDRTYPE *hdr, int read_annotations);
 int biosig_close_file(int handle);
-int biosig_read_physical_samples(int handle, int biosig_signal, int n, double *buf);
-int biosig_read_digital_samples(int handle, int biosig_signal, int n, int *buf);
-long long biosig_seek(int handle, int biosig_signal, long long offset, int whence);
-long long biosig_tell(int handle, int biosig_signal);
+int biosig_read_physical_samples(int handle, size_t n, double *buf);
+//int biosig_read_digital_samples(int handle, size_t n, int *buf);
+size_t biosig_seek(int handle, int biosig_signal, size_t offset, int whence);
+size_t biosig_tell(int handle);
 void biosig_rewind(int handle, int biosig_signal);
-int biosig_get_annotation(int handle, int n, struct biosig_annotation_struct *annot);
-int biosig_open_file_writeonly(const char *path, int filetype, int number_of_signals);
-int biosig_set_samplefrequency(int handle, int biosig_signal, int samplefrequency);
+int biosig_get_annotation(int handle, size_t n, struct biosig_annotation_struct *annot);
+int biosig_open_file_writeonly(const char *path, enum FileFormat filetype, int number_of_signals);
+int biosig_set_samplefrequency(int handle, int biosig_signal,  double samplefrequency);
 int biosig_set_physical_maximum(int handle, int biosig_signal, double phys_max);
 int biosig_set_physical_minimum(int handle, int biosig_signal, double phys_min);
 int biosig_set_digital_maximum(int handle, int biosig_signal, int dig_max);
@@ -29,7 +53,7 @@ int biosig_set_label(int handle, int biosig_signal, const char *label);
 int biosig_set_prefilter(int handle, int biosig_signal, const char *prefilter);
 int biosig_set_transducer(int handle, int biosig_signal, const char *transducer);
 int biosig_set_physical_dimension(int handle, int biosig_signal, const char *phys_dim);
-int biosig_set_startdatetime(int handle, int startdate_year, int startdate_month, int startdate_day,
+int biosig_set_startdatetime(int handle, int startdate_year, int startdate_month, int startdate_day, int starttime_hour, int starttime_minute, int starttime_second);
 int biosig_set_patientname(int handle, const char *patientname);
 int biosig_set_patientcode(int handle, const char *patientcode);
 int biosig_set_gender(int handle, int gender);
@@ -43,16 +67,16 @@ int biosig_write_physical_samples(int handle, double *buf);
 int biosig_blockwrite_physical_samples(int handle, double *buf);
 int biosig_write_digital_samples(int handle, int *buf);
 int biosig_blockwrite_digital_samples(int handle, int *buf);
-int biosig_write_annotation_utf8(int handle, long long onset, long long duration, const char *description);
-int biosig_write_annotation_latin1(int handle, long long onset, long long duration, const char *description);
+int biosig_write_annotation_utf8(int handle, size_t onset, size_t duration, const char *description);
+int biosig_write_annotation_latin1(int handle, size_t onset, size_t duration, const char *description);
 int biosig_set_datarecord_duration(int handle, double duration);
 
 
 #if defined(EDFLIB_INCLUDED)
 
 struct edf_annotation_struct{                           /* this structure is used for annotations */
-        long long onset;                                /* onset time of the event, expressed in units of 100 nanoSeconds and relative to the starttime in the header */
-        char duration[16];                              /* duration time, this is a null-terminated ASCII text-string */
+        size_t onset;                                /* onset time of the event, expressed in units of 100 nanoSeconds and relative to the starttime in the header */
+        size_t duration;                              /* duration time, this is a null-terminated ASCII text-string */
         char annotation[EDFLIB_MAX_ANNOTATION_LEN + 1]; /* description of the event in UTF-8, this is a null terminated string */
        };
 
@@ -66,7 +90,7 @@ int edfread_digital_samples(int handle, int edfsignal, int n, int *buf);
 long long edfseek(int handle, int biosig_signal, long long offset, int whence);
 long long edftell(int handle, int biosig_signal);
 int edfrewind(int handle, int edfsignal);
-//#define edf_get_annotation(int handle, int n, struct edf_annotation_struct *annot);
+//#define edf_get_annotation(a,b,c)               biosig_get_annotation(a,b,c) 
 int edf_get_annotation(int handle, int n, struct edf_annotation_struct *annot);
 #define edfopen_file_writeonly(a,b,c)		biosig_open_file_writeonly(a,b,c)		
 #define edf_set_samplefrequency(a,b,c)		biosig_set_samplefrequency(a,b,c)
