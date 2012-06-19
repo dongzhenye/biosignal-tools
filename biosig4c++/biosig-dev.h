@@ -508,14 +508,6 @@ int NumberOfChannels(HDRTYPE *hdr);
  ------------------------------------------------------------------------*/
 
 void FreeGlobalEventCodeTable();
-void FreeTextEvent(HDRTYPE* hdr,size_t N_EVENT, char* annotation);
-/*------------------------------------------------------------------------
-	adds free text annotation to event table    
-	the EVENT.TYP is identified from the table EVENT.CodeDesc
-	if annotations is not listed in CodeDesc, it is added to CodeDesc
-	The table is limited to 256 entries, because the table EventCodes
-	allows only codes 0-255 as user specific entry.
-  ------------------------------------------------------------------------*/
 
 size_t	sread_raw(size_t START, size_t LEN, HDRTYPE* hdr, char flag);
 /* sread_raw: 

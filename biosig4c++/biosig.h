@@ -683,6 +683,16 @@ const char* GetEventDescription(HDRTYPE *hdr, size_t n);
    considers also user-defined events. 
   -------------------------------------------------------------- */
 
+void FreeTextEvent(HDRTYPE* hdr, size_t N, const char* annotation);
+/*------------------------------------------------------------------------
+	adds free text annotation to event table for the N-th event.   
+	the EVENT.TYP[N] is identified from the table EVENT.CodeDesc
+	if annotations is not listed in CodeDesc, it is added to CodeDesc
+	The table is limited to 256 entries, because the table EventCodes
+	allows only codes 0-255 as user specific entry. If the description
+	table contains more than 255 entries, an error is set. 
+  ------------------------------------------------------------------------*/
+
 #ifdef __cplusplus
 }
 #endif

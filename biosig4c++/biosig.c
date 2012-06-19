@@ -1233,7 +1233,7 @@ void LoadGlobalEventCodeTable()
 	The table is limited to 256 entries, because the table EventCodes
 	allows only codes 0-255 as user specific entry.
   ------------------------------------------------------------------------*/
-void FreeTextEvent(HDRTYPE* hdr,size_t N_EVENT, char* annotation) {
+void FreeTextEvent(HDRTYPE* hdr,size_t N_EVENT, const char* annotation) {
 	/* free text annotations encoded as user specific events (codes 1-255) */
 
 	size_t k;
