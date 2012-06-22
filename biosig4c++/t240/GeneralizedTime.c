@@ -98,6 +98,40 @@ static long GMTOFF(struct tm a){
 
 #endif	/* __CYGWIN__ */
 
+#ifdef __MINGW32__
+
+#define	ATZVARS do {							\
+	char tzoldbuf[64];						\
+	char *tzold
+#define	ATZSAVETZ do {							\
+	tzold = getenv("TZ");						\
+	if(tzold) {							\
+		size_t tzlen = strlen(tzold);				\
+		if(tzlen < sizeof(tzoldbuf)) {				\
+			tzold = memcpy(tzoldbuf, tzold, tzlen + 1);	\
+		} else {						\
+			char *dupptr = tzold;				\
+			tzold = MALLOC(tzlen + 1);			\
+			if(tzold) memcpy(tzold, dupptr, tzlen + 1);	\
+		}							\
+		putenv("TZ= UTC");					\
+	}								\
+	tzset();							\
+} while(0)
+#define	ATZOLDTZ do {							\
+	if (tzold) {							\
+		putenv("TZ= UTC");					\
+		*tzoldbuf = 0;						\
+		if(tzold != tzoldbuf)					\
+			FREEMEM(tzold);					\
+	} else {							\
+		putenv("TZ= ");						\
+	}								\
+	tzset();							\
+} while(0); } while(0);
+
+#else //******* not defined __MinGW32__  ***/
+
 #define	ATZVARS do {							\
 	char tzoldbuf[64];						\
 	char *tzold
@@ -127,6 +161,8 @@ static long GMTOFF(struct tm a){
 	}								\
 	tzset();							\
 } while(0); } while(0);
+
+#endif 
 
 #ifdef	_EMULATE_TIMEGM
 static time_t timegm(struct tm *tm) {
