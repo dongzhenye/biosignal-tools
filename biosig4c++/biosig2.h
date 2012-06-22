@@ -35,7 +35,9 @@ struct biosig_annotation_struct {       /* this structure is used for annotation
 
 
 int biosig_lib_version(void);
+
 int biosig_open_file_readonly(const char *path, HDRTYPE *hdr, int read_annotations);
+
 int biosig_close_file(int handle);
 int biosig_read_physical_samples(int handle, size_t n, double *buf);
 //int biosig_read_digital_samples(int handle, size_t n, int *buf);

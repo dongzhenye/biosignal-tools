@@ -1,3 +1,4 @@
+
 Index: src/file_handling/basic_header.h
 ===================================================================
 --- src/file_handling/basic_header.h	(revision 557)
@@ -90,7 +91,7 @@ Index: src/src.pro
                 $$_PRO_FILE_PWD_/.
  LIBS += -L$$_PRO_FILE_PWD_/../extern/lib \
 -    -lbiosig# \
-+    -lbiosig -lcholmod -lz -lcurl \
++    -lbiosig -lcholmod -lz \
      #-lGDF
  
  macx:INCLUDEPATH += /opt/local/include

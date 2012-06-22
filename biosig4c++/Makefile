@@ -56,6 +56,9 @@ CROSS         = /usr/local/src/mxe/usr/bin/i686-pc-mingw32
 endif
 CROSS64       = $(HOME)/src/mce-w64/usr/bin/x86_64-w64-mingw32
 ifeq "$(wildcard $(CROSS64)-gcc)" ""
+CROSS64       = $(shell pwd)/../mce-w64/usr/bin/x86_64-static-mingw32
+endif
+ifeq "$(wildcard $(CROSS64)-gcc)" ""
 CROSS64       = $(shell pwd)/../mce-w64/usr/bin/i686-pc-mingw32
 endif
 ifeq "$(wildcard $(CROSS64)-gcc)" ""

@@ -42,15 +42,16 @@ int biosig_lib_version(void) {
 }
 
 int biosig_open_file_readonly(const char *path, HDRTYPE *hdr, int read_annotations) {
+/* 
+
+	on success returns handle. 
+*/
 	int k = 0;
 	while (k < hdrlistlen && hdrlist[k].hdr != NULL) k++;
-	if (k>=hdrlistlen) return(-1);
+	if (k >= hdrlistlen) return(-1);
 	hdr = sopen(path,"r",hdr); 
-	if (k >=hdrlistlen) {
-		return -1;
-	}
 	hdrlist[k].hdr = hdr;
-	return(0);
+	return(k);
 }
 
 int biosig_close_file(int handle) {
@@ -379,12 +380,12 @@ int biosig_write_annotation(int handle, size_t onset, size_t duration, const cha
 }
 
 int biosig_write_annotation_utf8(int handle, size_t onset, size_t duration, const char *description) {
-	//TODO
-	return (-1);
+	fprintf(stdout,"biosig_write_annotation_latin1(): It's recommended to use biosig_write_annotation() instead.\n");
+	return ( biosig_write_annotation(handle, onset, duration, description) );
 }
 int biosig_write_annotation_latin1(int handle, size_t onset, size_t duration, const char *description) {
-	//TODO
-	return (-1);
+	fprintf(stdout,"biosig_write_annotation_latin1(): It's recommended to use biosig_write_annotation() instead.\n");
+	return ( biosig_write_annotation(handle, onset, duration, description) );
 }
 
 int biosig_set_datarecord_duration(int handle, double duration) {
@@ -472,7 +473,7 @@ int edfwrite_annotation(int handle, size_t onset, size_t duration, const char *d
 	/* onset and duration are multiples of 100 microseconds */
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
 	HDRTYPE *hdr = hdrlist[handle].hdr;
-	return (biosig_write_annotation(handle, onset*1e-4*hdr->EVENT.SampleRate, duration*1e-4*hdr->EVENT.SampleRate, const char *description))
+	return (biosig_write_annotation(handle, onset*1e-4*hdr->EVENT.SampleRate, duration*1e-4*hdr->EVENT.SampleRate, description))
 }
 
 #endif 
