@@ -60,7 +60,6 @@ typedef char			int8_t;
 #ifdef WITH_NIFTI
     #include <nifti1.h>
 #endif
-#include "physicalunits.h"
 
 
 #ifdef __cplusplus
@@ -692,6 +691,20 @@ void FreeTextEvent(HDRTYPE* hdr, size_t N, const char* annotation);
 	allows only codes 0-255 as user specific entry. If the description
 	table contains more than 255 entries, an error is set. 
   ------------------------------------------------------------------------*/
+
+uint16_t PhysDimCode(const char* PhysDim);
+/* Encodes  Physical Dimension as 16bit integer according to
+   ISO/IEEE 11073-10101:2004 Vital Signs Units of Measurement
+ --------------------------------------------------------------- */
+
+const char* PhysDim3(uint16_t PhysDimCode);
+/* converts HDR.CHANNEL[k].PhysDimCode into a readable Physical Dimension
+ --------------------------------------------------------------- */
+
+double PhysDimScale(uint16_t PhysDimCode);
+/* returns scaling factor of physical dimension
+	e.g. 0.001 for milli, 1000 for kilo etc.
+ --------------------------------------------------------------- */
 
 #ifdef __cplusplus
 }
