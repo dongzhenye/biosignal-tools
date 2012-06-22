@@ -51,6 +51,9 @@ EXTERN_C void sopen_fef_read(HDRTYPE* hdr) {
 	B4C_ERRMSG = "ASN1/FEF currently not supported";
 
 #else 
+
+	fprintf(stdout,"ASN1: Warning FEF/ASN.1 decoding very experimental. Tested only with TaskForceMonitor (TFM). You are warned. \n");
+
 	static asn_TYPE_descriptor_t *pduType = &asn_DEF_SessionArchiveSection;
 	SessionArchiveSection_t *SAS = NULL;
 	SessionTestSection_t *STS = NULL;
@@ -337,21 +340,25 @@ if (VERBOSE_LEVEL>8) {
 
 			// &RTSAMDS->metriclist //
 			if (VERBOSE_LEVEL>7) 
-				fprintf(stdout,"%i/%i blk: %i   #subblocks:%i subblocklength:%i/%i subblocksize:%i size:%i \n",(int)n2,(int)listlen,(int)k,(int)nrec,(int)n,(int)d,(int)spr,(int)RTSAMDS->data.size);
+				fprintf(stdout,"%i/%i blk: %i/%i #subblocks:%i subblocklength:%i/%i subblocksize:%i size:%i \n",(int)n2,(int)listlen,(int)k,(int)N,(int)nrec,(int)n,(int)d,(int)spr,(int)RTSAMDS->data.size);
 			//RTSAMDS->data->buf
 			//RTSAMDS->data.size
 			
 			hc->bufptr = RTSAMDS->data.buf; 
 			hc->SPR = (RTSAMDS->data.size<<3)/GDFTYP_BITS[hc->GDFTYP]; 
-			if (hc->SPR>9) {
-				// FIXME: 
-				hdr->SPR = lcm(hdr->SPR,hc->SPR);
-		      	}		
-	      		hc->OnOff = (hc->SPR>9);
-			hc->bi  = 0; 
-			hc->bi8 = 0; 
+			if (hdr->SPR < hc->SPR) hdr->SPR = hc->SPR;
 		}
 	}
+
+	for (k=0; k<hdr->NS; k++) {
+		CHANNEL_TYPE *hc = hdr->CHANNEL+k;
+		double d = ((double)hdr->SPR)/hc->SPR; 
+		hc->OnOff = (d==floor(d)) && hc->SPR>8;  // do not show non-signal data. TODO: use this data to decode event information
+		hc->bi  = 0; 
+		hc->bi8 = 0; 
+
+	}
+
 	hdr->NRec = 1; 
 	hdr->AS.first = 0;
 	hdr->AS.length = 1;
