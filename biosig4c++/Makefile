@@ -429,7 +429,7 @@ $(PathToSigViewerWIN32):
 $(PathToSigViewerWIN32)/src/src.pro: $(PathToSigViewerWIN32)
 	svn up -r 557 ../sigviewer4win32
 
-win32/sigviewer.exe: win32/libbiosig.a win32/libbiosig.dll $(PathToSigViewerWIN32)
+win32/sigviewer.exe: win32/libbiosig.a win32/libbiosig.dll
 	#-$(COPY) ../biosig/doc/eventcodes.txt $(PathToSigViewerWIN32)/src/
 	-$(DELETE) $(PathToSigViewerWIN32)/extern/include/*.h
 	-$(COPY) biosig.h physicalunits.h $(PathToSigViewerWIN32)/extern/include
