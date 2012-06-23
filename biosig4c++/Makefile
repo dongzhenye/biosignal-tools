@@ -427,7 +427,7 @@ $(PathToSigViewerWIN32):
 	svn co https://sigviewer.svn.sourceforge.net/svnroot/sigviewer/trunk ../sigviewer4win32
 
 $(PathToSigViewerWIN32)/src/src.pro: $(PathToSigViewerWIN32)
-	svn up ../sigviewer4win32
+	svn up -r 557 ../sigviewer4win32
 
 win32/sigviewer.exe: win32/libbiosig.a win32/libbiosig.dll $(PathToSigViewerWIN32)
 	#-$(COPY) ../biosig/doc/eventcodes.txt $(PathToSigViewerWIN32)/src/
@@ -439,7 +439,7 @@ win32/sigviewer.exe: win32/libbiosig.a win32/libbiosig.dll $(PathToSigViewerWIN3
 	echo 0.5.2-v${BIOSIG_VERSION} > $(PathToSigViewerWIN32)/src/version.txt
 	-(cd $(PathToSigViewerWIN32)/src; $(CROSS)-qmake; make)
 	#-(cd $(PathToSigViewerWIN32); svn revert -R .; svn up -r 557; patch -p0 <../biosig4c++/patches/patch_sigviewer_0.5.2.diff; cd src; $(CROSS)-qmake; $(MAKE);)
-	-$(COPY) $(PathToSigViewerWIN32)/bin/release/sigviewer.exe win32/sigviewer-0.5.2-v${BIOSIG_VERSION}-win32.exe
+	-$(COPY) $(PathToSigViewerWIN32)/bin/release/sigviewer.exe win32/sigviewer.exe
 
 ########### WIN64 ##################
 
@@ -459,7 +459,7 @@ $(PathToSigViewerWIN64):
 	svn co https://sigviewer.svn.sourceforge.net/svnroot/sigviewer/trunk ../sigviewer4win64
 
 $(PathToSigViewerWIN64)/src/src.pro: $(PathToSigViewerWIN64) 
-	svn up ../sigviewer4win64
+	svn up -r 557 ../sigviewer4win64
 
 win64/sigviewer.exe: win64/libbiosig.a win64/libbiosig.dll 
 	#-$(COPY) ../biosig/doc/eventcodes.txt $(PathToSigViewerWIN64)/src/
@@ -471,7 +471,7 @@ win64/sigviewer.exe: win64/libbiosig.a win64/libbiosig.dll
 	echo 0.5.2-v${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} > $(PathToSigViewerWIN64)/src/version.txt
 	-(cd $(PathToSigViewerWIN64)/src; $(CROSS64)-qmake; make)
 	#-(cd $(PathToSigViewerWIN64); svn revert -R .; svn up -r 557; patch -p0 <../biosig4c++/patches/patch_sigviewer_0.5.2.diff; cd src; $(CROSS64)-qmake; $(MAKE);)
-	-$(COPY) $(PathToSigViewerWIN64)/bin/release/sigviewer.exe win64/sigviewer-0.5.2-v${BIOSIG_VERSION}-win64.exe
+	-$(COPY) $(PathToSigViewerWIN64)/bin/release/sigviewer.exe win64/sigviewer.exe
 
 
 #############################################################
@@ -649,6 +649,12 @@ sigviewer: $(PathToSigViewer)/bin/sigviewer
 	$(COPY) $(PathToSigViewer)/bin/release/sigviewer bin/sigviewer-$(TODAY)
 	ln -sf sigviewer-$(TODAY) bin/sigviewer 
 
+$(PathToSigViewer): 
+	svn co https://sigviewer.svn.sourceforge.net/svnroot/sigviewer/trunk ../sigviewer
+
+$(PathToSigViewer)/src/src.pro: $(PathToSigViewer) 
+	svn up -r 557 ../sigviewer
+
 $(PathToSigViewer)/bin/sigviewer: libbiosig.$(LIBEXT) biosig.h
 	-$(DELETE) $(PathToSigViewer)/extern/include/*
 	-$(COPY) biosig.h physicalunits.h $(PathToSigViewer)/extern/include
@@ -658,7 +664,7 @@ $(PathToSigViewer)/bin/sigviewer: libbiosig.$(LIBEXT) biosig.h
 	echo 0.5.2-v${BIOSIG_VERSION} > $(PathToSigViewer)/src/version.txt
 	(cd $(PathToSigViewer)/src; qmake; $(MAKE);)
 	#(cd $(PathToSigViewer); svn revert -R .; svn up -r 557; patch -p0 <../biosig4c++/patches/patch_sigviewer_0.5.2.diff; cd src; qmake; $(MAKE);)
-	-$(COPY) $(PathToSigViewer)/bin/release/sigviewer bin/sigviewer-0.5.2-v${BIOSIG_VERSION}
+	-$(COPY) $(PathToSigViewer)/bin/release/sigviewer bin/sigviewer
 
 docs: 	docs/save2gdf.txt  docs/mexSLOAD.txt
 	asciidoc -d manpage docs/save2gdf.txt
