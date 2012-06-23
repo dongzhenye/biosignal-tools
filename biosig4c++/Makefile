@@ -92,8 +92,8 @@ DEFINES      += -D=WITH_FEF
 #DEFINES      += -D=WITH_EEPROBE		
 #DEFINES      += -D=SOFTCODED_PHYSDIMTABLE	# obsolete
 #DEFINES      += -D=CNT32			# for 32bit Neuroscan format
-CFLAGS        = -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
-CXXFLAGS      = -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
+CFLAGS        += -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
+CXXFLAGS      += -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 AR            = ar crs
 INCPATH       = -I /usr/include/libxml2/ -I/opt/local/include/
 #INCPATH       = -I /usr/local/include/gdcm-2.0/
@@ -108,10 +108,10 @@ LIBS_dynamic  = -lbiosig
 LFLAGS_static = -L/usr/local/lib/ -L/opt/local/lib
 LIBS_static   = libbiosig.a
 ifeq ($(LIBEXT),so)
-  LFLAGS      = $(LFLAGS_dynamic)
+  LFLAGS      += $(LFLAGS_dynamic)
   LIBS        = $(LIBS_dynamic)
 else
-  LFLAGS      = $(LFLAGS_static)
+  LFLAGS      += $(LFLAGS_static)
   LIBS        = $(LIBS_static)
 endif
 ifneq (,$(findstring WITH_ZLIB, $(DEFINES)))
