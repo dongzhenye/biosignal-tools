@@ -191,10 +191,11 @@ MinGW64LINK    = $(MinGW64CXX)
 ##########################################################
 
 # Versioning
-MAJOR_VERSION := $(word 3, $(shell grep '\#define BIOSIG_VERSION_MAJOR' biosig.h))
-MINOR_VERSION := $(word 3, $(shell grep '\#define BIOSIG_VERSION_MINOR' biosig.h))
-STEPPING      := $(word 3, $(shell grep '\#define BIOSIG_PATCHLEVEL' biosig.h))
-TODAY         := $(shell date +%Y%m%d)
+MAJOR_VERSION  := $(word 3, $(shell grep '\#define BIOSIG_VERSION_MAJOR' biosig.h))
+MINOR_VERSION  := $(word 3, $(shell grep '\#define BIOSIG_VERSION_MINOR' biosig.h))
+STEPPING       := $(word 3, $(shell grep '\#define BIOSIG_PATCHLEVEL' biosig.h))
+BIOSIG_VERSION := ${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING}
+TODAY          := $(shell date +%Y%m%d)
 
 ####### Output directory
 
@@ -435,10 +436,10 @@ win32/sigviewer.exe: win32/libbiosig.a win32/libbiosig.dll $(PathToSigViewerWIN3
 	-$(DELETE) $(PathToSigViewerWIN32)/extern/lib/lib*
 	-$(COPY) win32/libbiosig.a $(PathToSigViewerWIN32)/extern/lib
 	$(SED) -i 's|\([[:space:]]*-lbiosig\)\([ #\\]*\)$$|\1 -lcholmod -lz -lcurl \2|' $(PathToSigViewerWIN32)/src/src.pro
-	echo 0.5.2-v${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} > $(PathToSigViewerWIN32)/src/version.txt
+	echo 0.5.2-v${BIOSIG_VERSION} > $(PathToSigViewerWIN32)/src/version.txt
 	-(cd $(PathToSigViewerWIN32)/src; $(CROSS)-qmake; make)
 	#-(cd $(PathToSigViewerWIN32); svn revert -R .; svn up -r 557; patch -p0 <../biosig4c++/patches/patch_sigviewer_0.5.2.diff; cd src; $(CROSS)-qmake; $(MAKE);)
-	-$(COPY) $(PathToSigViewerWIN32)/bin/release/sigviewer.exe win32/sigviewer-$(shell cat $(PathToSigViewerWIN32)/src/version.txt)-win32.exe
+	-$(COPY) $(PathToSigViewerWIN32)/bin/release/sigviewer.exe win32/sigviewer-0.5.2-v${BIOSIG_VERSION}-win32.exe
 
 ########### WIN64 ##################
 
@@ -470,7 +471,7 @@ win64/sigviewer.exe: win64/libbiosig.a win64/libbiosig.dll
 	echo 0.5.2-v${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} > $(PathToSigViewerWIN64)/src/version.txt
 	-(cd $(PathToSigViewerWIN64)/src; $(CROSS64)-qmake; make)
 	#-(cd $(PathToSigViewerWIN64); svn revert -R .; svn up -r 557; patch -p0 <../biosig4c++/patches/patch_sigviewer_0.5.2.diff; cd src; $(CROSS64)-qmake; $(MAKE);)
-	-$(COPY) $(PathToSigViewerWIN64)/bin/release/sigviewer.exe win64/sigviewer-$(shell cat $(PathToSigViewerWIN64)/src/version.txt)-win64.exe
+	-$(COPY) $(PathToSigViewerWIN64)/bin/release/sigviewer.exe win64/sigviewer-0.5.2-v${BIOSIG_VERSION}-win64.exe
 
 
 #############################################################
@@ -646,7 +647,6 @@ mexw64: win64/libbiosig.a
 
 sigviewer: $(PathToSigViewer)/bin/sigviewer 
 	$(COPY) $(PathToSigViewer)/bin/release/sigviewer bin/sigviewer-$(TODAY)
-	$(COPY) $(PathToSigViewer)/bin/release/sigviewer bin/sigviewer-$(shell cat $(PathToSigViewer)/src/version.txt)
 	ln -sf sigviewer-$(TODAY) bin/sigviewer 
 
 $(PathToSigViewer)/bin/sigviewer: libbiosig.$(LIBEXT) biosig.h
@@ -655,9 +655,10 @@ $(PathToSigViewer)/bin/sigviewer: libbiosig.$(LIBEXT) biosig.h
 	-$(DELETE) $(PathToSigViewer)/extern/lib/lib*
 	-$(COPY) libbiosig.a $(PathToSigViewer)/extern/lib
 	$(SED) -i 's|\([[:space:]]*-lbiosig\)\([ #\\]*\)$$|\1 $(LDLIBS) \2|' $(PathToSigViewer)/src/src.pro
-	echo 0.5.2-v${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} > $(PathToSigViewer)/src/version.txt
+	echo 0.5.2-v${BIOSIG_VERSION} > $(PathToSigViewer)/src/version.txt
 	(cd $(PathToSigViewer)/src; qmake; $(MAKE);)
 	#(cd $(PathToSigViewer); svn revert -R .; svn up -r 557; patch -p0 <../biosig4c++/patches/patch_sigviewer_0.5.2.diff; cd src; qmake; $(MAKE);)
+	-$(COPY) $(PathToSigViewer)/bin/release/sigviewer bin/sigviewer-0.5.2-v${BIOSIG_VERSION}
 
 docs: 	docs/save2gdf.txt  docs/mexSLOAD.txt
 	asciidoc -d manpage docs/save2gdf.txt
