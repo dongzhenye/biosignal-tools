@@ -64,6 +64,10 @@ endif
 ifeq "$(wildcard $(CROSS64)-gcc)" ""
 CROSS64       = /usr/local/src/mce-w64/usr/bin/i686-pc-mingw32
 endif
+IO_H_FILE   := $(subst /usr/bin/,/usr/,$(CROSS))/include/io.h
+IO_H_FILE64 := $(subst /usr/bin/,/usr/,$(CROSS64))/include/io.h
+
+
 # settings for mex files
 MEX_OPTION    = -largeArrayDims # turn on for 64 bit Matlab, otherwise empty
 # directory for sources of sigviewer
@@ -138,6 +142,7 @@ DELETE        = rm
 COPY          = cp -f
 DATA_DIR      = data/
 TEMP_DIR      = test/
+SED           = sed
 
 ##########################################################
 ## set Matlab and Octave variables
@@ -321,39 +326,45 @@ lib:	libbiosig.a win32/libbiosig.dll win32/libbiosig.a win64/libbiosig.a
 %.o: XMLParser/%.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
 
-win32/%.obj: %.c  biosig-dev.h biosig.h Makefile
-	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
-win32/%.obj: t210/%.c  biosig-dev.h biosig.h 
-	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
-win32/%.obj: t220/%.c  biosig-dev.h biosig.h 
-	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
-win32/%.obj: t230/%.c  biosig-dev.h biosig.h 
-	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
-win32/%.obj: t240/%.c biosig-dev.h biosig.h 
-	$(MinGWCC) -c $(MinGWCFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
-win32/%.obj: test0/%.c  biosig-dev.h biosig.h Makefile
-	$(MinGWCC) -c $(MinGWCFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
-win32/%.obj: win32/%.c 
-	$(MinGWCC) -c $(MinGWCFLAGS) -I win32 $(INCPATH) -o "$@" "$<"
-win32/%.obj: XMLParser/%.cpp 
-	$(MinGWCXX) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
+### exclude declaration of sopen in <io.h>
+$(IO_H_FILE):
+	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE) > win32/io.h
+$(IO_H_FILE64):
+	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE64) > win64/io.h
 
-win64/%.obj: %.c  biosig-dev.h biosig.h Makefile
-	$(MinGW64CC) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
+win32/%.obj: %.c  biosig-dev.h biosig.h Makefile $(IO_H_FILE)
+	$(MinGWCC) -c $(MinGWCFLAGS) -o "$@" "$<"
+win32/%.obj: t210/%.c  biosig-dev.h biosig.h 
+	$(MinGWCC) -c $(MinGWCFLAGS) -o "$@" "$<"
+win32/%.obj: t220/%.c  biosig-dev.h biosig.h 
+	$(MinGWCC) -c $(MinGWCFLAGS) -o "$@" "$<"
+win32/%.obj: t230/%.c  biosig-dev.h biosig.h 
+	$(MinGWCC) -c $(MinGWCFLAGS) -o "$@" "$<"
+win32/%.obj: t240/%.c biosig-dev.h biosig.h 
+	$(MinGWCC) -c $(MinGWCFLAGS) -I t240 -o "$@" "$<"
+win32/%.obj: test0/%.c  biosig-dev.h biosig.h Makefile 
+	$(MinGWCC) -c $(MinGWCFLAGS) -I t240 -o "$@" "$<"
+win32/%.obj: win32/%.c 
+	$(MinGWCC) -c $(MinGWCFLAGS) -I win32 -o "$@" "$<"
+win32/%.obj: XMLParser/%.cpp 
+	$(MinGWCXX) -c $(MinGWCFLAGS) -o "$@" "$<"
+
+win64/%.obj: %.c biosig-dev.h biosig.h Makefile $(IO_H_FILE64)
+	$(MinGW64CC) -c $(MinGW64CFLAGS) -o "$@" "$<"
 win64/%.obj: t210/%.c  biosig-dev.h biosig.h 
-	$(MinGW64CC) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
+	$(MinGW64CC) -c $(MinGW64CFLAGS) -o "$@" "$<"
 win64/%.obj: t220/%.c  biosig-dev.h biosig.h 
-	$(MinGW64CC) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
+	$(MinGW64CC) -c $(MinGW64CFLAGS) -o "$@" "$<"
 win64/%.obj: t230/%.c  biosig-dev.h biosig.h 
-	$(MinGW64CC) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
+	$(MinGW64CC) -c $(MinGW64CFLAGS) -o "$@" "$<"
 win64/%.obj: t240/%.c  biosig-dev.h biosig.h 
-	$(MinGW64CC) -c $(MinGW64CFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
+	$(MinGW64CC) -c $(MinGW64CFLAGS) -I t240 -o "$@" "$<"
 win64/%.obj: test0/%.c  biosig-dev.h biosig.h Makefile
-	$(MinGW64CC) -c $(MinGW64CFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
+	$(MinGW64CC) -c $(MinGW64CFLAGS) -I t240 -o "$@" "$<"
 win64/%.obj: win32/%.c 
-	$(MinGW64CC) -c $(MinGW64CFLAGS) -I win32 $(INCPATH) -o "$@" "$<"
+	$(MinGW64CC) -c $(MinGW64CFLAGS) -I win32 -o "$@" "$<"
 win64/%.obj: XMLParser/%.cpp 
-	$(MinGW64CXX) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
+	$(MinGW64CXX) -c $(MinGW64CFLAGS) -o "$@" "$<"
 
 
 #############################################################
@@ -400,16 +411,16 @@ scp-decode.o: t210/scp-decode.cpp biosig-dev.h biosig.h t210/structures.h t210/c
 ########### WIN32 ##################
 
 win32/sopen_scp_read.obj: t210/sopen_scp_read.c biosig-dev.h biosig.h t210/structures.h
-	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
+	$(MinGWCC) -c $(MinGWCFLAGS) -o "$@" "$<"
 
 win32/scp-decode.obj: t210/scp-decode.cpp biosig-dev.h biosig.h t210/structures.h t210/codes.h
-	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
+	$(MinGWCC) -c $(MinGWCFLAGS) -o "$@" "$<"
 
 win32/sopen_hl7aecg.obj: t230/sopen_hl7aecg.c biosig-dev.h biosig.h 
-	$(MinGWCXX) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
+	$(MinGWCXX) -c $(MinGWCFLAGS) -o "$@" "$<"
 
 win32/getlogin_r.obj: win32/getlogin_r.c
-	$(MinGWCC) -c $(MinGWCFLAGS) $(INCPATH) -o "$@" "$<"
+	$(MinGWCC) -c $(MinGWCFLAGS) -o "$@" "$<"
 
 $(PathToSigViewerWIN32): 
 	svn co https://sigviewer.svn.sourceforge.net/svnroot/sigviewer/trunk ../sigviewer4win32
@@ -423,7 +434,7 @@ win32/sigviewer.exe: win32/libbiosig.a win32/libbiosig.dll $(PathToSigViewerWIN3
 	-$(COPY) biosig.h physicalunits.h $(PathToSigViewerWIN32)/extern/include
 	-$(DELETE) $(PathToSigViewerWIN32)/extern/lib/lib*
 	-$(COPY) win32/libbiosig.a $(PathToSigViewerWIN32)/extern/lib
-	sed -i 's|\([[:space:]]*-lbiosig\)\([ #\\]*\)$$|\1 -lcholmod -lz -lcurl \2|' $(PathToSigViewerWIN32)/src/src.pro
+	$(SED) -i 's|\([[:space:]]*-lbiosig\)\([ #\\]*\)$$|\1 -lcholmod -lz -lcurl \2|' $(PathToSigViewerWIN32)/src/src.pro
 	-(cd $(PathToSigViewerWIN32)/src; $(CROSS)-qmake; make)
 	#-(cd $(PathToSigViewerWIN32); svn revert -R .; svn up -r 557; patch -p0 <../biosig4c++/patches/patch_sigviewer_0.5.2.diff; cd src; $(CROSS)-qmake; $(MAKE);)
 	-$(COPY) $(PathToSigViewerWIN32)/bin/release/sigviewer.exe win32/sigviewer-$(shell cat $(PathToSigViewerWIN32)/src/version.txt)-win32.exe
@@ -431,16 +442,16 @@ win32/sigviewer.exe: win32/libbiosig.a win32/libbiosig.dll $(PathToSigViewerWIN3
 ########### WIN64 ##################
 
 win64/sopen_scp_read.obj: t210/sopen_scp_read.c biosig-dev.h biosig.h t210/structures.h
-	$(MinGW64CC) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
+	$(MinGW64CC) -c $(MinGW64CFLAGS) -o "$@" "$<"
 
 win64/scp-decode.obj: t210/scp-decode.cpp biosig-dev.h biosig.h t210/structures.h t210/codes.h
-	$(MinGW64CC) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
+	$(MinGW64CC) -c $(MinGW64CFLAGS) -o "$@" "$<"
 
 win64/sopen_hl7aecg.obj: t230/sopen_hl7aecg.c biosig-dev.h biosig.h
-	$(MinGW64CXX) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
+	$(MinGW64CXX) -c $(MinGW64CFLAGS) -o "$@" "$<"
 
 win64/getlogin_r.obj: win32/getlogin_r.c
-	$(MinGW64CC) -c $(MinGW64CFLAGS) $(INCPATH) -o "$@" "$<"
+	$(MinGW64CC) -c $(MinGW64CFLAGS) -o "$@" "$<"
 
 $(PathToSigViewerWIN64): 
 	svn co https://sigviewer.svn.sourceforge.net/svnroot/sigviewer/trunk ../sigviewer4win64
@@ -454,7 +465,7 @@ win64/sigviewer.exe: win64/libbiosig.a win64/libbiosig.dll
 	-$(COPY) biosig.h physicalunits.h $(PathToSigViewerWIN64)/extern/include
 	-$(DELETE) $(PathToSigViewerWIN64)/extern/lib/lib*
 	-$(COPY) win64/libbiosig.a $(PathToSigViewerWIN64)/extern/lib
-	sed -i 's|\([[:space:]]*-lbiosig\)\([ #\\]*\)$$|\1 -lcholmod -lz -lcurl\2|' $(PathToSigViewerWIN64)/src/src.pro
+	$(SED) -i 's|\([[:space:]]*-lbiosig\)\([ #\\]*\)$$|\1 -lcholmod -lz -lcurl\2|' $(PathToSigViewerWIN64)/src/src.pro
 	-(cd $(PathToSigViewerWIN64)/src; $(CROSS64)-qmake; make)
 	#-(cd $(PathToSigViewerWIN64); svn revert -R .; svn up -r 557; patch -p0 <../biosig4c++/patches/patch_sigviewer_0.5.2.diff; cd src; $(CROSS64)-qmake; $(MAKE);)
 	-$(COPY) $(PathToSigViewerWIN64)/bin/release/sigviewer.exe win64/sigviewer-$(shell cat $(PathToSigViewerWIN64)/src/version.txt)-win64.exe
@@ -642,7 +653,7 @@ $(PathToSigViewer)/bin/sigviewer: libbiosig.$(LIBEXT) biosig.h
 	-$(COPY) biosig.h physicalunits.h $(PathToSigViewer)/extern/include
 	-$(DELETE) $(PathToSigViewer)/extern/lib/lib*
 	-$(COPY) libbiosig.a $(PathToSigViewer)/extern/lib
-	sed -i 's|\([[:space:]]*-lbiosig\)\([ #\\]*\)$$|\1 $(LDLIBS) \2|' $(PathToSigViewer)/src/src.pro
+	$(SED) -i 's|\([[:space:]]*-lbiosig\)\([ #\\]*\)$$|\1 $(LDLIBS) \2|' $(PathToSigViewer)/src/src.pro
 	(cd $(PathToSigViewer)/src; qmake; $(MAKE);)
 	#(cd $(PathToSigViewer); svn revert -R .; svn up -r 557; patch -p0 <../biosig4c++/patches/patch_sigviewer_0.5.2.diff; cd src; qmake; $(MAKE);)
 
