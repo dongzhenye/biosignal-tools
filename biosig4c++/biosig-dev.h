@@ -34,14 +34,49 @@
 #ifndef __BIOSIG_INTERNAL_H__
 #define __BIOSIG_INTERNAL_H__
 
-#include "biosig.h"
-
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <sys/param.h>
 #include <time.h>
 
+/*
+	Including ZLIB enables reading gzipped files (they are decompressed on-the-fly)
+	The output files can be zipped, too.
+ */
+
+#ifdef WITH_ZLIB
+#include <zlib.h>
+#ifndef ZLIB_H
+    #if defined(__MINGW64__)
+	#include "win64/zlib/zlib.h"
+    #elif defined(__MINGW32__)
+	#include "win32/zlib/include/zlib.h"
+    #endif
+#endif
+#endif
+
+#ifdef WITH_CHOLMOD
+    #ifdef __APPLE__
+        #include <ufsparse/cholmod.h>
+    #else
+        #include <suitesparse/cholmod.h>
+    #endif
+#endif
+
+#ifdef WITH_HDF5
+    #include <hdf5.h>
+#endif
+#ifdef WITH_NIFTI
+    #include <nifti1.h>
+#endif
+
+
+#ifdef WITH_GSL
+    #include <gsl/gsl_matrix_double.h>
+#endif
+
+#include "biosig.h"
 
 #ifdef	__WIN32__
 #define FILESEP '\\'
