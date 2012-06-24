@@ -52,6 +52,8 @@ typedef char			int8_t;
 #else
     #include <stdint.h>
 #endif
+#include <stdio.h>
+#include <time.h>
 
 #ifdef __cplusplus
 #define EXTERN_C extern "C"
