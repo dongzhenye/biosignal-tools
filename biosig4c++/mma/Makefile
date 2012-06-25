@@ -52,12 +52,14 @@ win win32 : sload.exe
 
 sloadtm.c : sload.tm
 	${MPREP} $< -o $@
+	# enable macro expansion
+	sed -i 's# __DATE__# ",__DATE__," ",__TIME__,"#' $@
 
 sload : sload.o sloadtm.o ../libbiosig.a
 	${CC} sloadtm.o sload.o -L${LIBDIR} -l${MLLIB} ${EXTRALIBS} -o $@
-        # copy to users directory if available
-        -cp $@ ../../mma/
-        -cp $@ ../../mma/sload-$(shell date +%Y%m%d)
+	# copy to users directory if available
+	-cp $@ ../../mma/
+	-cp $@ ../../mma/sload-$(shell date +%Y%m%d)
 
 
 ###########################################
@@ -75,6 +77,7 @@ MPREPwin     = ${CADDSDIRwin}/bin/mprep.exe
 
 sloadtm.win32.c : sload.tm
 	wine ${MPREPwin} $? -o $@
+	sed -i 's# __DATE__# ",__DATE__," ",__TIME__,"#' $@
 
 sload.obj : sload.c
 	${CCw32} -c -I${INCDIRwin} $< -o $@
@@ -83,9 +86,9 @@ sloadtm.obj : sloadtm.win32.c
 
 sload.exe : sload.obj sloadtm.obj ../win32/libbiosig.a
 	${CCw32} sload.obj sloadtm.obj -static-libgcc -static-libstdc++ -L${LIBDIRwin} -l${MLLIBwin} ${EXTRALIBSwin} -o $@
-        # copy to users directory if available
-        -cp $@ ../../mma/
-        -cp $@ ../../mma/sload-$(shell date +%Y%m%d).exe
+	# copy to users directory if available
+	-cp $@ ../../mma/
+	-cp $@ ../../mma/sload-$(shell date +%Y%m%d).exe
 
 
 ###########################################
@@ -103,6 +106,7 @@ MPREPwin64     = ${CADDSDIRwin64}/bin/mprep.exe
 
 sloadtm.win64.c : sload.tm
 	wine ${MPREPwin64} $? -o $@
+	sed -i 's# __DATE__# ",__DATE__," ",__TIME__,"#' $@
 
 sload.w64.obj : sload.c
 	${CCw64} -c -I${INCDIRwin64} $< -o $@
@@ -111,9 +115,9 @@ sloadtm.w64.obj : sloadtm.win64.c
 
 sload.w64.exe : sload.obj sloadtm.w64.obj ../win64/libbiosig.a
 	${CCw64} sload.w64.obj sloadtm.w64.obj -static-libgcc -static-libstdc++ -L${LIBDIRwin64} -l${MLLIBwin64} ${EXTRALIBSwin64} -o $@
-        # copy to users directory if available
-        -cp $@ ../../mma/
-        -cp $@ ../../mma/sload-$(shell date +%Y%m%d).win64.exe
+	# copy to users directory if available
+	-cp $@ ../../mma/
+	-cp $@ ../../mma/sload-$(shell date +%Y%m%d).win64.exe
 
 	
 ###########################################

@@ -14,9 +14,5 @@
  all sweeps from file \"abc.dat\".\n
  The output ist a list with two elements, the first containing the 2-dim array of data samples, the second contains the time axis in seconds.\n
  \nNOTE: If sweeps were sampled with different sampling rates, all data is converted to the
- least common multiple of the various sampling rates. (e.g. loading a 20kHz and a 25kHz sweep simultaneously, both sweeps are converted to 100kHz)."
-
-
- 
-
-
+ least common multiple of the various sampling rates. (e.g. loading a 20kHz and a 25kHz sweep simultaneously, both sweeps are converted to 100kHz).
+ \n\nCompiled on __DATE__"
