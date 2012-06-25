@@ -12563,6 +12563,15 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
         size_t k;
 	char tmp[41];
 
+       size_t NumberOfSweeps = (hdr->SPR*hdr->NRec > 0); 
+        size_t NumberOfUserSpecifiedEvents = 0; 
+        for (k = 0; k < hdr->EVENT.N; k++) {
+                if (hdr->EVENT.TYP[k] < 255) 
+                        NumberOfUserSpecifiedEvents++;
+                else if (hdr->EVENT.TYP[k]==0x7ffe) 
+                        NumberOfSweeps++;
+        }
+
         fprintf(fid,"\n{\n");
         fprintf(fid,"\t\"TYPE\"\t: \"%s\",\n",GetFileTypeString(hdr->TYPE));
         fprintf(fid,"\t\"VERSION\"\t: %4.2f,\n",hdr->VERSION);
@@ -12575,6 +12584,8 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
 	if (!isnan(hdr->SampleRate)) fprintf(fid,"\t\"Samplingrate\"\t: %f,\n",hdr->SampleRate);
 	strftime(tmp,40,"%Y-%m-%d %H:%M:%S",gdf_time2tm_time(hdr->T0));
 	fprintf(fid,"\t\"StartOfRecording\"\t: \"%s\",\n",tmp);
+	fprintf(fid,"\t\"NumberOfSweeps\"\t: %d,\n",(unsigned)NumberOfSweeps);
+	fprintf(fid,"\t\"NumberOfGroupsOrUserSpecifiedEvents\"\t: %d,\n",(unsigned)NumberOfUserSpecifiedEvents);
 
 	fprintf(fid,"\t\"Patient\"\t: {\n");
 	fprintf(fid,"\t\t\"Name\"\t: \"%s\",\n", hdr->Patient.Name);
@@ -12599,7 +12610,7 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
                 fprintf(fid,"\n\t\t{\n");
 		fprintf(fid,"\t\t\"ChannelNumber\"\t: %i,\n", (int)k+1);
 		fprintf(fid,"\t\t\"Label\"\t: \"%s\",\n", hc->Label);
-		fprintf(fid,"\t\t\"Transducer\"\t: \"%s\",\n", hc->Transducer);
+		if (hc->Transducer!=NULL && strlen(hc->Transducer)>0) fprintf(fid,"\t\t\"Transducer\"\t: \"%s\",\n", hc->Transducer);
 		fprintf(fid,"\t\t\"PhysicalUnit\"\t: \"%s\",\n", PhysDim3(hc->PhysDimCode));
 		if (!isnan(hc->PhysMax)) fprintf(fid,"\t\t\"PhysicalMaximum\"\t: %g,\n", hc->PhysMax);
 		if (!isnan(hc->PhysMin)) fprintf(fid,"\t\t\"PhysicalMinimum\"\t: %g,\n", hc->PhysMin);
@@ -12608,9 +12619,14 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
 		if (!isnan(hc->Cal))     fprintf(fid,"\t\t\"scaling\"\t: %g,\n", hc->Cal);
 		if (!isnan(hc->Off))     fprintf(fid,"\t\t\"offset\"\t: %g,\n", hc->Off);
 		if (!isnan(hc->TOffset)) fprintf(fid,"\t\t\"TimeDelay\"\t: %g,\n", hc->TOffset);
-/*      TODO: fix for NAN and INFINITY
-		fprintf(fid,"\t\t\"Filter\" : {\n\t\t\t\"Lowpass\"\t: %g,\n\t\t\t\"Highpass\"\t: %g,\n\t\t\t\"Notch\"\t: %g\n\t\t},\n", hc->LowPass,hc->HighPass,hc->Notch);
-*/
+		uint8_t flag = (0 < hc->LowPass && hc->LowPass<INFINITY) | ((0 < hc->HighPass && hc->HighPass<INFINITY)<<1) | ((0 < hc->Notch && hc->Notch<INFINITY)<<2); 
+		if (flag) {
+			fprintf(fid,"\t\t\"Filter\" : {\n");
+			if (flag & 0x01) fprintf(fid,"\t\t\t\"Lowpass\"\t: %g%c\n",hc->LowPass, flag & 0x06 ? ',' : ' '); 
+			if (flag & 0x02) fprintf(fid,"\t\t\t\"Highpass\"\t: %g%c\n",hc->HighPass, flag & 0x04 ? ',' : ' ' ); 
+			if (flag & 0x03) fprintf(fid,"\t\t\t\"Notch\"\t: %g\n",hc->Notch); 
+			fprintf(fid,"\n\t\t},\n");
+		}
 		switch (hc->PhysDimCode & 0xffe0) {
 		case 4256: // Volt       
 			if (!isnan(hc->Impedance)) fprintf(fid,"\t\t\"Impedance\"\t: %g,\n", hc->Impedance);
