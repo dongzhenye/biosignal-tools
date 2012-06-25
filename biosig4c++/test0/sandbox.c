@@ -726,6 +726,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 
 							/* TODO: fix remaining channel header  */
 							/* LowPass, HighPass, Notch, Impedance, */
+							hc->LowPass = NAN; 
+							hc->HighPass = NAN;
+							hc->Notch = NAN;
+							hc->Impedance = NAN;	
 
 							DT = (double*) realloc(DT, hdr->NS*sizeof(double));
 							DT[ns] = dT;
@@ -812,6 +816,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
  			return;
 		}
 
+		hdr->ID.Manufacturer.Name = "HEKA/Patchmaster"; 
 		void* tmpptr = realloc(hdr->AS.rawdata, hdr->NRec * hdr->AS.bpb);
 		if (tmpptr!=NULL) 
 			hdr->AS.rawdata = (uint8_t*) tmpptr;
