@@ -55,6 +55,9 @@ sloadtm.c : sload.tm
 
 sload : sload.o sloadtm.o ../libbiosig.a
 	${CC} sloadtm.o sload.o -L${LIBDIR} -l${MLLIB} ${EXTRALIBS} -o $@
+        # copy to users directory if available
+        -cp $@ ../../mma/
+        -cp $@ ../../mma/sload-$(shell date +%Y%m%d)
 
 
 ###########################################
@@ -80,6 +83,10 @@ sloadtm.obj : sloadtm.win32.c
 
 sload.exe : sload.obj sloadtm.obj ../win32/libbiosig.a
 	${CCw32} sload.obj sloadtm.obj -static-libgcc -static-libstdc++ -L${LIBDIRwin} -l${MLLIBwin} ${EXTRALIBSwin} -o $@
+        # copy to users directory if available
+        -cp $@ ../../mma/
+        -cp $@ ../../mma/sload-$(shell date +%Y%m%d).exe
+
 
 ###########################################
 #   Win64 - cross-compilation 
@@ -104,7 +111,9 @@ sloadtm.w64.obj : sloadtm.win64.c
 
 sload.w64.exe : sload.obj sloadtm.w64.obj ../win64/libbiosig.a
 	${CCw64} sload.w64.obj sloadtm.w64.obj -static-libgcc -static-libstdc++ -L${LIBDIRwin64} -l${MLLIBwin64} ${EXTRALIBSwin64} -o $@
-
+        # copy to users directory if available
+        -cp $@ ../../mma/
+        -cp $@ ../../mma/sload-$(shell date +%Y%m%d).win64.exe
 
 	
 ###########################################
