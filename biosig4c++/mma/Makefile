@@ -32,7 +32,7 @@ CADDSDIR  = ${MLINKDIR}/${SYS}/CompilerAdditions
 INCDIR    = ${CADDSDIR}
 LIBDIR    = ${CADDSDIR}
 
-EXTRALIBS = -lm -lpthread -lrt -lstdc++ $(LDLIBS) -L.. -lbiosig# Set these with appropriate libs for your system.
+EXTRALIBS = -lm -lpthread -lrt -lstdc++ $(LDLIBS) # Set these with appropriate libs for your system.
 
 MPREP     = ${CADDSDIR}/mprep
 
@@ -47,16 +47,16 @@ win win32 : sload.exe
 	make -C .. win64/libbiosig.a
 
 
-.c.o :
-	${CC} -c -I${INCDIR} $<
+.c.o:
+	${CC} -c -I${INCDIR} "$<"
 
-sloadtm.c : sload.tm
-	${MPREP} $< -o $@
+sloadtm.c: sload.tm
+	${MPREP} "$<" -o "$@"
 	# enable macro expansion
-	sed -i 's# __DATE__# ",__DATE__," ",__TIME__,"#' $@
+	sed -i 's# __DATE__# ",__DATE__," ",__TIME__,"#' "$@"
 
-sload : sload.o sloadtm.o ../libbiosig.a
-	${CC} sloadtm.o sload.o -L${LIBDIR} -l${MLLIB} ${EXTRALIBS} -o $@
+sload: sload.o sloadtm.o ../libbiosig.a
+	${CC} sloadtm.o sload.o -L${LIBDIR} -l${MLLIB} ${EXTRALIBS} ../libbiosig.a -o $@
 	# copy to users directory if available
 	-cp $@ ../../mma/
 	-cp $@ ../../mma/sload-$(shell date +%Y%m%d)
@@ -76,16 +76,16 @@ EXTRALIBSwin =  ../win32/libbiosig.a -lgdi32 -lm -lpthread -lstdc++ -lws2_32 $(L
 MPREPwin     = ${CADDSDIRwin}/bin/mprep.exe
 
 sloadtm.win32.c : sload.tm
-	wine ${MPREPwin} $? -o $@
-	sed -i 's# __DATE__# ",__DATE__," ",__TIME__,"#' $@
+	wine ${MPREPwin} $? -o "$@"
+	sed -i 's# __DATE__# ",__DATE__," ",__TIME__,"#' "$@"
 
 sload.obj : sload.c
-	${CCw32} -c -I${INCDIRwin} $< -o $@
+	${CCw32} -c -I${INCDIRwin} $< -o "$@"
 sloadtm.obj : sloadtm.win32.c
-	${CCw32} -c -I${INCDIRwin} $< -o $@
+	${CCw32} -c -I${INCDIRwin} $< -o "$@"
 
 sload.exe : sload.obj sloadtm.obj ../win32/libbiosig.a
-	${CCw32} sload.obj sloadtm.obj -static-libgcc -static-libstdc++ -L${LIBDIRwin} -l${MLLIBwin} ${EXTRALIBSwin} -o $@
+	${CCw32} sload.obj sloadtm.obj -static-libgcc -static-libstdc++ -L${LIBDIRwin} -l${MLLIBwin} ${EXTRALIBSwin} -o "$@"
 	# copy to users directory if available
 	-cp $@ ../../mma/
 	-cp $@ ../../mma/sload-$(shell date +%Y%m%d).exe
@@ -105,16 +105,16 @@ EXTRALIBSwin64 =  ../win64/libbiosig.a -lgdi32 -lm -lpthread -lstdc++ -lws2_32 $
 MPREPwin64     = ${CADDSDIRwin64}/bin/mprep.exe
 
 sloadtm.win64.c : sload.tm
-	wine ${MPREPwin64} $? -o $@
-	sed -i 's# __DATE__# ",__DATE__," ",__TIME__,"#' $@
+	wine ${MPREPwin64} $? -o "$@"
+	sed -i 's# __DATE__# ",__DATE__," ",__TIME__,"#' "$@"
 
 sload.w64.obj : sload.c
-	${CCw64} -c -I${INCDIRwin64} $< -o $@
+	${CCw64} -c -I${INCDIRwin64} $< -o "$@"
 sloadtm.w64.obj : sloadtm.win64.c
-	${CCw64} -c -I${INCDIRwin64} $< -o $@
+	${CCw64} -c -I${INCDIRwin64} $< -o "$@"
 
 sload.w64.exe : sload.obj sloadtm.w64.obj ../win64/libbiosig.a
-	${CCw64} sload.w64.obj sloadtm.w64.obj -static-libgcc -static-libstdc++ -L${LIBDIRwin64} -l${MLLIBwin64} ${EXTRALIBSwin64} -o $@
+	${CCw64} sload.w64.obj sloadtm.w64.obj -static-libgcc -static-libstdc++ -L${LIBDIRwin64} -l${MLLIBwin64} ${EXTRALIBSwin64} -o "$@"
 	# copy to users directory if available
 	-cp $@ ../../mma/
 	-cp $@ ../../mma/sload-$(shell date +%Y%m%d).win64.exe

@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       157,          7]
-NotebookDataLength[      9471,        205]
-NotebookOptionsPosition[      9193,        191]
-NotebookOutlinePosition[      9530,        206]
-CellTagsIndexPosition[      9487,        203]
+NotebookDataLength[      9836,        211]
+NotebookOptionsPosition[      9537,        196]
+NotebookOutlinePosition[      9895,        212]
+CellTagsIndexPosition[      9852,        209]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -98,8 +98,9 @@ Cell[BoxData[
             " ", "\"\<sload.exe\>\"", ",", "\[IndentingNewLine]", 
             "\"\<Windows-x86-64\>\"", ",", " ", "\"\<sload.exe\>\"", ",", 
             "\[IndentingNewLine]", "\"\<Linux-x86-64\>\"", ",", " ", 
-            "\"\<sload\>\""}], "\[IndentingNewLine]", "]"}], 
-          "\[IndentingNewLine]", "]"}]}], ";", "\[IndentingNewLine]", 
+            "\"\</scratch/schloegl/src/biosig4c++/mma/sload\>\""}], 
+           "\[IndentingNewLine]", "]"}], "\[IndentingNewLine]", "]"}]}], ";", 
+        "\[IndentingNewLine]", 
         RowBox[{"data", " ", "=", " ", 
          RowBox[{"sload", "[", 
           RowBox[{"filename", ",", "sweeps"}], "]"}]}], ";", 
@@ -139,7 +140,8 @@ Cell[BoxData[
    3.5199806627277665`*^9, 3.519980674071444*^9}, {3.520006832039811*^9, 
    3.520006858540068*^9}, {3.5200069516304865`*^9, 3.5200069738178444`*^9}, {
    3.5200072973938985`*^9, 3.520007442783593*^9}, {3.5200452788136187`*^9, 
-   3.520045350254847*^9}, {3.5287739788324213`*^9, 3.528773986388357*^9}}],
+   3.520045350254847*^9}, {3.5287739788324213`*^9, 3.528773986388357*^9}, {
+   3.5496155605201683`*^9, 3.549615589801598*^9}}],
 
 Cell[BoxData[
  RowBox[{
@@ -157,10 +159,11 @@ Cell[BoxData[
     RowBox[{"Switch", "[", 
      RowBox[{
      "$SystemID", ",", "\[IndentingNewLine]", "\"\<Windows\>\"", ",", " ", 
-      "\"\<C:\\\\data\\\\AP100427b.dat\>\"", ",", "\[IndentingNewLine]", 
-      "\"\<Windows-x86-64\>\"", ",", " ", 
-      "\"\<C:\\\\data\\\\mma/AP100427b.dat\>\"", ",", "\[IndentingNewLine]", 
-      "\"\<Linux-x86-64\>\"", ",", " ", "\"\</home/data/AP100427b.dat\>\""}], 
+      "\"\<K:\\\\aschloegl\\\\mma\\\\AP100427b.dat\>\"", ",", 
+      "\[IndentingNewLine]", "\"\<Windows-x86-64\>\"", ",", " ", 
+      "\"\<K:\\\\aschloegl\\\\mma\\\\AP100427b.dat\>\"", ",", 
+      "\[IndentingNewLine]", "\"\<Linux-x86-64\>\"", ",", " ", 
+      "\"\</fs/group/jonasgrp/aschloegl/mma/AP100427b.dat\>\""}], 
      "\[IndentingNewLine]", "]"}]}], "\[IndentingNewLine]", 
    "\[IndentingNewLine]", 
    RowBox[{
@@ -187,10 +190,13 @@ Cell[BoxData[
   3.520006868285538*^9, 3.520006886419143*^9}, {3.5200071094263515`*^9, 
   3.5200072102225814`*^9}, {3.5200072451598577`*^9, 3.5200072750190415`*^9}, {
   3.528787036180324*^9, 3.528787110864997*^9}, {3.5382845652299757`*^9, 
-  3.5382846614577017`*^9}}]
+  3.5382846614577017`*^9}, {3.549615465329794*^9, 3.5496154794021807`*^9}, {
+  3.549615523967299*^9, 3.5496155245441732`*^9}, {3.549615636162397*^9, 
+  3.549615649314818*^9}, {3.5496157473455763`*^9, 3.549615753000841*^9}}]
 },
 WindowSize->{740, 867},
-WindowMargins->{{124, Automatic}, {Automatic, 3}},
+WindowMargins->{{120, Automatic}, {Automatic, 0}},
+ShowSelection->True,
 FrontEndVersion->"8.0 for Linux x86 (64-bit) (February 23, 2011)",
 StyleDefinitions->"Default.nb"
 ]
@@ -205,11 +211,10 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[557, 20, 6389, 121, 669, "Input"],
-Cell[6949, 143, 2240, 46, 282, "Input"]
+Cell[557, 20, 6488, 123, 624, "Input"],
+Cell[7048, 145, 2485, 49, 264, "Input"]
 }
 ]
 *)
 
 (* End of internal cache information *)
-

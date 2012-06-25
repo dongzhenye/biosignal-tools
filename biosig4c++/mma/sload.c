@@ -51,7 +51,7 @@ if (VERBOSE_LEVEL > 5)
 	fprintf(stdout,"open filename <%s>NoOfChans=%i\n", fn, hdr->NS);
 
 	// ********** read data ********************
-	hdr->FLAG.ROW_BASED_CHANNELS = 1;
+	hdr->FLAG.ROW_BASED_CHANNELS = 0;
 	sread(NULL, 0, hdr->NRec*hdr->SPR, hdr);
 
 #ifdef _WIN32
