@@ -541,7 +541,7 @@ Index: src/file_handling_impl/biosig_basic_header.cpp
 -        p[MAX_LENGTH_PHYSDIM] = 0;
 -        PhysDim(raw_header->CHANNEL[channel_index].PhysDimCode, p);
 -        QString phys_y_dim_label = QString (p).trimmed();
-+        QString phys_y_dim_label = QString (PhysDim3(raw_header->CHANNEL[channel_index].PhysDimCode)).trimmed();
++        QString phys_y_dim_label = QString (PhysDim(raw_header->CHANNEL[channel_index].PhysDimCode)).trimmed();
          if (phys_y_dim_label.compare("uV") == 0)
              phys_y_dim_label = QString (QChar((ushort)0xb5)).append("V");
 -        QSharedPointer<SignalChannel> channel (new SignalChannel(channel_index, label,
@@ -823,7 +823,7 @@ Index: src/base/signal_channel.cpp
 +     scale_ = (C.PhysMax - C.PhysMin) / (C.DigMax - C.DigMin); 	 
 +     offset_ = C.PhysMin - C.DigMin * scale_; 	 
 +*/
-+     phys_y_dimension_label_ = QString(PhysDim3(hdr->CHANNEL[ch].PhysDimCode));
++     phys_y_dimension_label_ = QString(PhysDim(hdr->CHANNEL[ch].PhysDimCode));
 +     samplerate_ = hdr->SampleRate * hdr->CHANNEL[ch].SPR / hdr->SPR; 
 +}
 +
@@ -851,7 +851,7 @@ Index: src/base/signal_channel.cpp
 +     scale_ = (C.PhysMax - C.PhysMin) / (C.DigMax - C.DigMin); 	 
 +     offset_ = C.PhysMin - C.DigMin * scale_; 	 
 +*/
-+     phys_y_dimension_label_ = QString(PhysDim3(C.PhysDimCode));
++     phys_y_dimension_label_ = QString(PhysDim(C.PhysDimCode));
 +     samplerate_ = -1.0; 
 +}
  
