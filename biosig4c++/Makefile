@@ -185,7 +185,7 @@ MinGWLINK    = $(MinGWCXX)
 
 MinGW64CC      = $(CROSS64)-gcc
 MinGW64CXX     = $(CROSS64)-g++
-MinGW64CFLAGS  = -pipe -fPIC -O2 -D_REENTRANT -D=BUILD_DLL $(MinGWDEF) -Iwin32 -I$(PathToMinGW64)/include/
+MinGW64CFLAGS  = -pipe -fPIC -O2 -D_REENTRANT -D=BUILD_DLL $(MinGWDEF) -Iwin64 -I$(PathToMinGW64)/include/
 MinGW64LIBS    = win64/libbiosig.a -L$(PathToMinGW64)/lib/ -lws2_32 $(LDLIBS) # static
 MinGW64LINK    = $(MinGW64CXX)
 ##########################################################

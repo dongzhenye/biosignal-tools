@@ -453,7 +453,7 @@ void mexFunction(
 				hdr->.AS.auxBUF contains the \0-terminated CodeDesc strings, 
 				hdr->EVENT.CodeDesc contains the pointer to the strings 
 			*/ 
-			hdr->EVENT.CodeDesc = (typeof(hdr->EVENT.CodeDesc)) realloc(hdr->EVENT.CodeDesc, hdr->EVENT.LenCodeDesc*sizeof(char*));
+			hdr->EVENT.CodeDesc = (const char**) realloc(hdr->EVENT.CodeDesc, hdr->EVENT.LenCodeDesc*sizeof(char*));
 			hdr->AS.auxBUF = (uint8_t*)realloc(hdr->AS.auxBUF, memsiz*sizeof(char));  
 
 			// first element is always the empty string. 
