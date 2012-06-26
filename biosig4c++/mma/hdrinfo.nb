@@ -1,0 +1,136 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 8.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       157,          7]
+NotebookDataLength[      5227,        127]
+NotebookOptionsPosition[      4953,        113]
+NotebookOutlinePosition[      5290,        128]
+CellTagsIndexPosition[      5247,        125]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", "\[IndentingNewLine]", "   ", 
+   RowBox[{
+    RowBox[{
+    "HDRINFO", " ", "displays", " ", "and", " ", "load", " ", "header", " ", 
+     "information", " ", "\[IndentingNewLine]", "  ", "Copyright", " ", 
+     "2012", " ", "Alois", " ", "Schloegl"}], ",", " ", 
+    RowBox[{
+    "IST", " ", "Austria", "\[IndentingNewLine]", "  ", "This", " ", "file", 
+     " ", "is", " ", "part", " ", "of", " ", "the", " ", 
+     "\"\<BioSig for C/C++\>\"", " ", "repository"}]}], "\[IndentingNewLine]",
+    "*)"}], "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"hdrinfo", "[", "filename_", "]"}], ":=", " ", 
+    RowBox[{"Module", " ", "[", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"data", ",", "tmpfile"}], "}"}], ",", " ", 
+      "\[IndentingNewLine]", 
+      RowBox[{"(*", " ", 
+       RowBox[{"hdrinfo", ":", " ", 
+        RowBox[{"loads", " ", "header", " ", "information"}]}], " ", "*)"}], 
+      "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{"cmd", "=", 
+        RowBox[{"Switch", "[", 
+         RowBox[{
+         "$SystemID", ",", "\[IndentingNewLine]", "\"\<Windows\>\"", ",", 
+          " ", "\"\<save2gdf.exe\>\"", ",", "\[IndentingNewLine]", 
+          "\"\<Windows-x86-64\>\"", ",", " ", "\"\<save2gdf.exe\>\"", ",", 
+          "\[IndentingNewLine]", "\"\<Linux-x86-64\>\"", ",", " ", 
+          "\"\<save2gdf\>\""}], "\[IndentingNewLine]", "]"}]}], ";", 
+       "\[IndentingNewLine]", 
+       RowBox[{"tmpfile", " ", "=", " ", 
+        RowBox[{
+         RowBox[{"Close", "[", 
+          RowBox[{"OpenWrite", "[", "]"}], "]"}], "<>", "\"\<.json\>\""}]}], 
+       ";", " ", 
+       RowBox[{"(*", 
+        RowBox[{"generate", " ", "temporary", " ", "file", " ", "name"}], 
+        "*)"}], "\[IndentingNewLine]", 
+       RowBox[{"genjson", " ", "=", " ", 
+        RowBox[{
+        "cmd", "<>", "\"\< -JSON \>\"", "<>", "filename", "<>", "\"\< >\>\"", 
+         "<>", "tmpfile"}]}], ";", "\[IndentingNewLine]", 
+       RowBox[{"if", " ", "[", " ", 
+        RowBox[{
+         RowBox[{"Run", "[", "genjson", "]"}], ",", "\[IndentingNewLine]", 
+         RowBox[{
+          RowBox[{"data", " ", "=", " ", 
+           RowBox[{"Import", "[", "tmpfile", "]"}]}], ";", 
+          "\[IndentingNewLine]", 
+          RowBox[{"DeleteFile", "[", "tmpfile", "]"}], ";"}], 
+         "\[IndentingNewLine]", ",", " ", 
+         RowBox[{"(*", " ", "else", " ", "*)"}], "\[IndentingNewLine]", 
+         RowBox[{"data", " ", "=", 
+          RowBox[{"\"\<Error: \>\"", "<>", "genjson"}]}]}], "]"}], ";", 
+       "\[IndentingNewLine]", "data"}]}], " ", 
+     RowBox[{"(*", 
+      RowBox[{"return", " ", "data"}], "*)"}], "\[IndentingNewLine]", "]"}]}],
+    ";"}]}]], "Input",
+ CellChangeTimes->{{3.549629158504901*^9, 3.549629170130159*^9}, {
+   3.549629449780353*^9, 3.549629514687158*^9}, {3.549629547721328*^9, 
+   3.5496296265299463`*^9}, {3.549629687725093*^9, 3.549629703360276*^9}, 
+   3.54962977341358*^9, {3.549630151456252*^9, 3.549630152559639*^9}, {
+   3.5496301960280857`*^9, 3.54963020231166*^9}, {3.549685938148636*^9, 
+   3.549685992192819*^9}, {3.549686157908474*^9, 3.549686234365384*^9}, 
+   3.549686270908731*^9, {3.5496863808964453`*^9, 3.549686386742732*^9}, {
+   3.5496864769054127`*^9, 3.549686487136797*^9}, {3.549686657558148*^9, 
+   3.5496866582649813`*^9}, {3.5496867271982393`*^9, 3.549686736202159*^9}, {
+   3.54968677962817*^9, 3.549686812913516*^9}, {3.549687058712535*^9, 
+   3.5496871004421997`*^9}, {3.5496871433137903`*^9, 3.549687200175086*^9}, {
+   3.549687356240291*^9, 3.5496874137587767`*^9}, {3.549687450381692*^9, 
+   3.549687456568447*^9}, {3.549687745559799*^9, 3.5496877739738894`*^9}, {
+   3.549692919038081*^9, 3.549692930395233*^9}, 3.549693000865054*^9, {
+   3.549693037640031*^9, 3.549693128103745*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", 
+   RowBox[{"Example", " ", "use", " ", "of", " ", 
+    RowBox[{"hdrinfo", "[", "]"}]}], " ", "*)"}], "\[IndentingNewLine]", 
+  RowBox[{
+  "hdrinfo", "[", "\"\</fs/group/jonasgrp/aschloegl/mma/AP100427b.dat\>\"", 
+   "]"}]}]], "Input",
+ CellChangeTimes->{{3.5496862480206747`*^9, 3.549686261722828*^9}, {
+  3.549686311546583*^9, 3.549686313996677*^9}, {3.5496863586248703`*^9, 
+  3.549686363548751*^9}, {3.549686662556019*^9, 3.549686663269039*^9}, {
+  3.549687422505166*^9, 3.549687422882725*^9}, {3.549692871992826*^9, 
+  3.5496929051331453`*^9}}]
+},
+WindowSize->{740, 867},
+WindowMargins->{{Automatic, 139}, {Automatic, 64}},
+FrontEndVersion->"8.0 for Linux x86 (64-bit) (November 7, 2010)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[557, 20, 3800, 77, 390, "Input"],
+Cell[4360, 99, 589, 12, 48, "Input"]
+}
+]
+*)
+
+(* End of internal cache information *)
