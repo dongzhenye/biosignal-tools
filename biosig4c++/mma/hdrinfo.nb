@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       157,          7]
-NotebookDataLength[      5227,        127]
-NotebookOptionsPosition[      4953,        113]
-NotebookOutlinePosition[      5290,        128]
-CellTagsIndexPosition[      5247,        125]
+NotebookDataLength[      5905,        138]
+NotebookOptionsPosition[      5610,        123]
+NotebookOutlinePosition[      5967,        139]
+CellTagsIndexPosition[      5924,        136]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -23,14 +23,15 @@ Cell[BoxData[
   RowBox[{"(*", "\[IndentingNewLine]", "   ", 
    RowBox[{
     RowBox[{
-    "HDRINFO", " ", "displays", " ", "and", " ", "load", " ", "header", " ", 
-     "information", " ", "\[IndentingNewLine]", "  ", "Copyright", " ", 
-     "2012", " ", "Alois", " ", "Schloegl"}], ",", " ", 
+    "$Id", "\[IndentingNewLine]", "  ", "HDRINFO", " ", "displays", " ", 
+     "and", " ", "load", " ", "header", " ", "information", " ", 
+     "\[IndentingNewLine]", "  ", "Copyright", " ", "2012", " ", "Alois", " ",
+      "Schloegl"}], ",", " ", 
     RowBox[{
     "IST", " ", "Austria", "\[IndentingNewLine]", "  ", "This", " ", "file", 
      " ", "is", " ", "part", " ", "of", " ", "the", " ", 
      "\"\<BioSig for C/C++\>\"", " ", "repository"}]}], "\[IndentingNewLine]",
-    "*)"}], "\[IndentingNewLine]", 
+    "\t", "\[IndentingNewLine]", "*)"}], "\[IndentingNewLine]", 
   RowBox[{
    RowBox[{
     RowBox[{"hdrinfo", "[", "filename_", "]"}], ":=", " ", 
@@ -41,8 +42,18 @@ Cell[BoxData[
       "\[IndentingNewLine]", 
       RowBox[{"(*", " ", 
        RowBox[{"hdrinfo", ":", " ", 
-        RowBox[{"loads", " ", "header", " ", "information"}]}], " ", "*)"}], 
-      "\[IndentingNewLine]", 
+        RowBox[{
+        "imports", " ", "header", " ", "information", " ", 
+         "\[IndentingNewLine]", " ", "It", " ", "uses", " ", 
+         RowBox[{"save2gdf", ".", "exe"}], " ", "to", " ", "export", " ", 
+         "the", " ", "header", " ", "information", " ", "into", " ", "JSON", 
+         " ", "format", " ", "\[IndentingNewLine]", "   ", "which", " ", "is",
+          " ", "then", " ", "imported", " ", "into", " ", 
+         RowBox[{"Mathematica", ".", " ", "save2gdf", ".", "exe"}], " ", 
+         "must", " ", "be", " ", "available", " ", "within", " ", "the", " ", 
+         "PATH", " ", 
+         RowBox[{"directories", "."}]}]}], " ", "\[IndentingNewLine]", "*)"}],
+       "\[IndentingNewLine]", 
       RowBox[{
        RowBox[{"cmd", "=", 
         RowBox[{"Switch", "[", 
@@ -73,11 +84,8 @@ Cell[BoxData[
            RowBox[{"Import", "[", "tmpfile", "]"}]}], ";", 
           "\[IndentingNewLine]", 
           RowBox[{"DeleteFile", "[", "tmpfile", "]"}], ";"}], 
-         "\[IndentingNewLine]", ",", " ", 
-         RowBox[{"(*", " ", "else", " ", "*)"}], "\[IndentingNewLine]", 
-         RowBox[{"data", " ", "=", 
-          RowBox[{"\"\<Error: \>\"", "<>", "genjson"}]}]}], "]"}], ";", 
-       "\[IndentingNewLine]", "data"}]}], " ", 
+         "\[IndentingNewLine]", ","}], "]"}], ";", "\[IndentingNewLine]", 
+       "data"}]}], " ", 
      RowBox[{"(*", 
       RowBox[{"return", " ", "data"}], "*)"}], "\[IndentingNewLine]", "]"}]}],
     ";"}]}]], "Input",
@@ -95,7 +103,9 @@ Cell[BoxData[
    3.549687356240291*^9, 3.5496874137587767`*^9}, {3.549687450381692*^9, 
    3.549687456568447*^9}, {3.549687745559799*^9, 3.5496877739738894`*^9}, {
    3.549692919038081*^9, 3.549692930395233*^9}, 3.549693000865054*^9, {
-   3.549693037640031*^9, 3.549693128103745*^9}}],
+   3.549693037640031*^9, 3.549693128103745*^9}, {3.5496941453484497`*^9, 
+   3.54969426979417*^9}, {3.5496943318532343`*^9, 3.549694337386425*^9}, {
+   3.549694371584571*^9, 3.5496943890200043`*^9}}],
 
 Cell[BoxData[
  RowBox[{
@@ -112,7 +122,8 @@ Cell[BoxData[
   3.5496929051331453`*^9}}]
 },
 WindowSize->{740, 867},
-WindowMargins->{{Automatic, 139}, {Automatic, 64}},
+WindowMargins->{{Automatic, 241}, {Automatic, 0}},
+ShowSelection->True,
 FrontEndVersion->"8.0 for Linux x86 (64-bit) (November 7, 2010)",
 StyleDefinitions->"Default.nb"
 ]
@@ -127,8 +138,8 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[557, 20, 3800, 77, 390, "Input"],
-Cell[4360, 99, 589, 12, 48, "Input"]
+Cell[557, 20, 4457, 87, 480, "Input"],
+Cell[5017, 109, 589, 12, 48, "Input"]
 }
 ]
 *)
