@@ -353,7 +353,7 @@ typedef struct {
 		uint32_t 	*POS ATT_ALI;	/* starting position [in samples] using a 0-based indexing */
 		uint32_t 	*DUR ATT_ALI;	/* duration [in samples] */
 		uint16_t 	*CHN ATT_ALI;	/* channel number; 0: all channels  */
-		char		**CodeDesc ATT_ALI;	/* describtion of "free text"/"user specific" events (encoded with TYP=0..255 */
+		const char*	*CodeDesc ATT_ALI;	/* describtion of "free text"/"user specific" events (encoded with TYP=0..255 */
 		uint16_t	LenCodeDesc ATT_ALI;	/* length of CodeDesc Table */
 	} EVENT ATT_ALI;
 

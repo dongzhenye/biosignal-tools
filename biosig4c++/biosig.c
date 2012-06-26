@@ -7761,7 +7761,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
     		hdr->FILE.LittleEndian = !atol(tmp);
     		ifseek(hdr,32,SEEK_SET);
 
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"ASN1 [401] %i\n",count);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"ASN1 [401] %i\n",(int)count);
 		sopen_fef_read(hdr);
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"ASN1 [491]\n");
 #else
@@ -12563,7 +12563,7 @@ int hdr2json(HDRTYPE* hdr, FILE *fid)
         size_t k;
 	char tmp[41];
 
-       size_t NumberOfSweeps = (hdr->SPR*hdr->NRec > 0); 
+	size_t NumberOfSweeps = (hdr->SPR*hdr->NRec > 0); 
         size_t NumberOfUserSpecifiedEvents = 0; 
         for (k = 0; k < hdr->EVENT.N; k++) {
                 if (hdr->EVENT.TYP[k] < 255) 

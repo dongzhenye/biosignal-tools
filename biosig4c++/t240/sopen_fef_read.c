@@ -88,7 +88,7 @@ fprintf(stdout,"%i/%i\n",pos,hdr->HeadLen);
 		pos += rval.consumed;
 	}
 */
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"%i/%i\nASN1: BER DECODING DONE\n",pos,hdr->HeadLen);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%i/%i\nASN1: BER DECODING DONE\n",(unsigned)pos,hdr->HeadLen);
 
 if (VERBOSE_LEVEL>8) {
 //	asn_fprint(stdout, &asn_DEF_SessionArchiveSection, SAS);
@@ -122,9 +122,9 @@ if (VERBOSE_LEVEL>8) {
 		if (!asn_REAL2double(&SAS->demographics.patientheight->value, &val))
 			hdr->Patient.Height = (uint8_t)val;
 
-		char *str1 = SAS->demographics.characternamegroup->givenname.buf;
-		char *str2 = SAS->demographics.characternamegroup->middlename.buf;
-		char *str3 = SAS->demographics.characternamegroup->familyname.buf;
+		char *str1 = (char*)SAS->demographics.characternamegroup->givenname.buf;
+		char *str2 = (char*)SAS->demographics.characternamegroup->middlename.buf;
+		char *str3 = (char*)SAS->demographics.characternamegroup->familyname.buf;
 		size_t l1 = strlen(str1); 
 		size_t l2 = strlen(str2); 
 		size_t l3 = strlen(str3); 
@@ -191,7 +191,7 @@ if (VERBOSE_LEVEL>8) {
 	
 	hdr->NS = N;
 	hdr->CHANNEL = (CHANNEL_TYPE*)calloc(hdr->NS,sizeof(CHANNEL_TYPE));
-	int k; 
+	typeof(hdr->NS) k; 
 	uint64_t FsN=1,FsD=1;
 	for (k=0; k<hdr->NS; k++)	{
 	
@@ -214,7 +214,7 @@ if (VERBOSE_LEVEL>8) {
 				hc->PhysDimCode = PhysDimCode((const char*)RTSADDS->unitlabelstring->buf);
 			
 			//******************* samplerate *****************/
-			unsigned long n=0, d=0;
+			long int n=0, d=0;
 			asn_INTEGER2long(&RTSADDS->sampleperiod.denominator, &d);
 			asn_INTEGER2long(&RTSADDS->sampleperiod.numerator,&n);
 			if (VERBOSE_LEVEL>7) fprintf(stdout,"#%i: %li %li\n",k,n,d);
@@ -308,23 +308,23 @@ if (VERBOSE_LEVEL>8) {
 		      	hc->XYZ[2] 	= 0.0;
 	}
 	size_t d = gcd(FsD,FsN);
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"Fs=%i/%i\n",FsN,FsD);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"Fs=%i/%i\n",(unsigned)FsN,(unsigned)FsD);
 	hdr->SampleRate = ((double)(FsD/d))/((double)(FsN/d));
 	hdr->SPR = FsD;
 
 	/************** Measured Data Section MeasDS ***********************/
 	N = SPS->measureddata.list.count;
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"Number of MeasuredData %i\n",N);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"Number of MeasuredData %i\n",(unsigned)N);
 //	asn_fprint(stdout, &asn_DEF_SessionPhaseSection, SPS);
 	
 	for (k=0; k<N; k++) 
 	{
-		long int nrec,dur,spr,n,d; 
+		long int nrec,spr,n,d; 
 
 		MeasuredDataSection_t *MDS = SPS->measureddata.list.array[k];
 //		asn_fprint(stdout, &asn_DEF_RealTimeSampleArrayMeasuredDataSection, RTSAMDS);
 
-		unsigned n2,N2 = 0; 
+		unsigned n2; 
 		size_t listlen = MDS->realtimesas->list.count; 
 		hdr->SPR = 1; 
 		for (n2=0; n2 <listlen ; n2++) {
