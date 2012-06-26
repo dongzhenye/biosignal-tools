@@ -262,6 +262,11 @@
 6624,"m s-2", "meter per second squared", "acceleration"
 6624,"m/s²", "meter per second squared", "acceleration"
 6656,"rad s2-2", "radians per second squared", "(angular) acceleration" 
+6688,"ft min-1",,"Foot per minute"
+6720,"In min-1",,"Inch per minute"
+6752,"ft min-1",,"Step per minute"
+6784,"kcal","Energy","Calorie (equal to 4.184 Joule)"
+6816,"rpm","Cadence","Revolution per minute"
 ### private: units with no standardized code
 #,"kgf m [J]",,Left Stroke Work (LSW)
 #,"kgf m min-1 [W]",,Left Cardiac Work (LCW)
