@@ -29,12 +29,29 @@
 #include "biosig2.h"
 
 
-#define hdrlistlen 256
+#define hdrlistlen 64
 struct hdrlist_t {
-	HDRTYPE *hdr;
+	HDRTYPE *hdr;		// header information as defined in level 1 interface
+	//const char *filename; // name of file, is always hdr->FileName
+	uint16_t NS; 	// number of effective channels, CHANNEL[].OnOff are ignored
+	size_t *chanpos; 	// position of file handle for each channel
 } ; 
 
 struct hdrlist_t hdrlist[hdrlistlen];
+
+CHANNEL_TYPE *getChannelHeader(HDRTYPE *hdr, uint16_t channel) {
+	// returns channel header - skip Off-channels
+	CHANNEL_TYPE *hc = hdr->CHANNEL;
+	typeof(hdr->NS) chan = 0; 
+	while (1) {
+		if (hc->OnOff) {
+			if (chan==channel) return hc;
+			chan++;
+		}
+		hc++;
+	}
+	return NULL;
+}
 
 
 int biosig_lib_version(void) {
@@ -49,14 +66,24 @@ int biosig_open_file_readonly(const char *path, HDRTYPE *hdr, int read_annotatio
 	int k = 0;
 	while (k < hdrlistlen && hdrlist[k].hdr != NULL) k++;
 	if (k >= hdrlistlen) return(-1);
-	hdr = sopen(path,"r",hdr); 
+	hdr = sopen(path,"r",hdr);
 	hdrlist[k].hdr = hdr;
+	//hdrlist[k].filename = hdr->FileName;
+	hdrlist[k].NS  = 0; 
+	for (k=0; k<hdr->NS; k++) 
+		hdrlist[k].NS++;
+	hdrlist[k].chanpos  = calloc(hdrlist[k].NS,sizeof(size_t)); 
+
 	return(k);
 }
 
 int biosig_close_file(int handle) {
 	destructHDR(hdrlist[handle].hdr);
 	hdrlist[handle].hdr = NULL;
+	if (hdrlist[handle].chanpos) free(hdrlist[handle].chanpos);
+	hdrlist[handle].NS  = 0; 
+	//hdrlist[handle].filename = NULL;
+	
 #if 0
 	int k;
 	for (k=0; k<hdrlistlen; k++)
@@ -66,20 +93,55 @@ int biosig_close_file(int handle) {
 	return(0);
 }
 
-int biosig_read_physical_samples(int handle, size_t n, double *buf) {
-	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
+int biosig_read_samples(int handle, size_t channel, size_t n, double *buf, unsigned char UCAL) {
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL || hdrlist[handle].NS<=channel ) return(-1);
 	HDRTYPE *hdr = hdrlist[handle].hdr;
-	// TODO 
-//	sread(NULL,n/hdr->CHANNEL[biosig_signal].SPR,);
+
+	CHANNEL_TYPE *hc = getChannelHeader(hdr,channel);
+
+	size_t stride = 1; // stride between consecutive samples of same channel, depends on data orientation hdr->FLAG.ROW_BASED_CHANNELS
+	size_t div = hdr->SPR/hc->SPR; 	// stride if sample rate of channel is smaller than the overall sampling rate
+
+	size_t POS = hdrlist[handle].chanpos[channel]*div;	// 
+	size_t LEN = n*div;
+	size_t startpos = POS/hdr->SPR;  // round towards 0
+	size_t endpos = (POS+LEN)/hdr->SPR + ((POS+LEN)%hdr->SPR != 0);  // round towards infinity
+
+	if (hdr->AS.first > startpos || (endpos-startpos) > hdr->AS.length || hdr->FLAG.UCAL!=UCAL) {
+		// read data when not in data buffer hdr->data.block
+		hdr->FLAG.UCAL = UCAL; 
+		sread(NULL, startpos, endpos - startpos, hdr);
+	}	
+
+	// when starting position is not aligned with start of data
+	size_t offset = hdr->AS.first * hdr->SPR - POS; 
+
+	// find starting position and stride of data 
+	double *data = hdr->data.block;
+	if (hdr->FLAG.ROW_BASED_CHANNELS) {
+		stride = hdr->data.size[0];
+		data = hdr->data.block + channel + offset * stride;
+	} 
+	else {
+		data = hdr->data.block + offset + channel * hdr->data.size[0];
+	}
+	size_t k;
+	for (k = 0; k < n; k++) {
+		buf[k] = data[k*div*stride];	// copy data into output buffer
+	}
+	hdrlist[handle].chanpos[channel] += n; // update position pointer of channel chan
 	return (0);
 }
 
-int biosig_read_digital_samples(int handle, int biosig_signal, int n, int *buf) {
-	// TODO
-	return (0);
+int biosig_read_physical_samples(int handle, size_t biosig_signal, size_t n, double *buf) {
+	return biosig_read_samples(handle, biosig_signal, n, buf, (unsigned char)(0));
 }
 
-size_t biosig_seek(int handle, int biosig_signal, size_t offset, int whence) {
+int biosig_read_digital_samples(int handle, size_t biosig_signal, size_t n, double *buf) {
+	return biosig_read_samples(handle, biosig_signal, n, buf, (unsigned char)(1));
+}
+
+size_t biosig_seek(int handle, long long offset, int whence) {
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
 	HDRTYPE *hdr = hdrlist[handle].hdr;
 	sseek(hdr, offset, whence);
@@ -437,24 +499,33 @@ int edfread_digital_samples(int handle, int edfsignal, int n, int *buf) {
 }
 
 long long edfseek(int handle, int biosig_signal, long long offset, int whence) {
-	fprintf(stderr,"Warning edfseek: argument 'edfsignal' ignored - use biosig_seek instead.\n");
-	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL || hdrlist[handle].NS<=channel ) return(-1);
 	HDRTYPE *hdr = hdrlist[handle].hdr;
-	sseek(hdr, offset, whence);
-	return (hdr->FILE.POS);
+
+	switch (whence) 
+	case SEEK_SET:
+		hdrlist[handle].chanpos[channel] = n; // update position pointer of channel chan
+		break;
+	case SEEK_CUR:
+		hdrlist[handle].chanpos[channel] += n; // update position pointer of channel chan
+		break;
+	case SEEK_END:
+		CHANNEL_TYPE *hc = getChannelHeader(hdr,channel)
+		hdrlist[handle].chanpos[channel] = hdr->NRec*hc->SPR + n; // update position pointer of channel chan
+		break;
+
+	return (hdrlist[handle].chanpos[channel]);
 }
 
 long long edftell(int handle, int biosig_signal) {
-	fprintf(stderr,"Warning edftell: argument 'edfsignal' ignored - use biosig_tell instead.\n");
-	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
-	return(stell(hdrlist[handle].hdr));
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL || hdrlist[handle].NS<=channel ) return(-1);
+	return ( hdrlist[handle].chanpos[channel] );
 }
 
-int edfrewind(int handle, int edfsignal) {
-/* It is equivalent to: (void) edf_seek(int handle, int biosig_signal, 0LL, biosig_SEEK_SET) */
-	fprintf(stderr,"Warning edfrewind: argument 'edfsignal' ignored - use biosig_rewind instead.\n");
-	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
-	srewind(hdrlist[handle].hdr);
+int edfrewind(int handle, int channel) {
+/* It is equivalent to: (void) edf_seek(int handle, int biosig_signal, 0LL, SEEK_SET) */
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL || hdrlist[handle].NS<=channel ) return(-1);
+	hdrlist[handle].chanpos[channel] = 0;
 	return(0);
 }
 

@@ -39,9 +39,12 @@ int biosig_lib_version(void);
 int biosig_open_file_readonly(const char *path, HDRTYPE *hdr, int read_annotations);
 
 int biosig_close_file(int handle);
-int biosig_read_physical_samples(int handle, size_t n, double *buf);
-//int biosig_read_digital_samples(int handle, size_t n, int *buf);
-size_t biosig_seek(int handle, int biosig_signal, size_t offset, int whence);
+int biosig_read_samples(int handle, size_t channel, size_t n, double *buf, unsigned char UCAL);
+int biosig_read_physical_samples(int handle, size_t channel, size_t n, double *buf);
+int biosig_read_digital_samples(int handle, size_t channel, size_t n, double *buf);
+//#define biosig_read_physical_samples(a,b,c,d) biosig_read_samples(a,b,c,d,0) 
+//#define biosig_read_digital_samples(a,b,c,d)  biosig_read_samples(a,b,c,d,1) 
+size_t biosig_seek(int handle, long long offset, int whence);
 size_t biosig_tell(int handle);
 void biosig_rewind(int handle, int biosig_signal);
 int biosig_get_annotation(int handle, size_t n, struct biosig_annotation_struct *annot);
