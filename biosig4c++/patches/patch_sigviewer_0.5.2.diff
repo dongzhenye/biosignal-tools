@@ -1071,7 +1071,7 @@ Index: src/gui_impl/dialogs/about_dialog.ui
  &lt;td style=&quot;border: none;&quot;&gt;
  &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Sans Serif'; font-size:11pt; font-weight:600;&quot;&gt;SigViewer [VERSION-NUMBER]&lt;/span&gt;&lt;/p&gt;
 -&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;a href=&quot;http://sigviewer.sf.net&quot;&gt;&lt;span style=&quot; font-family:'Sans Serif'; font-size:8pt; text-decoration: underline; color:#0000ff;&quot;&gt;http://sigviewer.sourceforge.net/&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;
-+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;a href=&quot;http://sigviewer.sf.net&quot;&gt;&lt;span style=&quot; font-family:'Sans Serif'; font-size:8pt; text-decoration: underline; color:#0000ff;&quot;&gt;http://biosig.sourceforge.net/&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;
++&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;a href=&quot;http://biosig.sf.net&quot;&gt;&lt;span style=&quot; font-family:'Sans Serif'; font-size:8pt; text-decoration: underline; color:#0000ff;&quot;&gt;http://biosig.sourceforge.net/&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;
  &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Sans Serif'; font-size:8pt; text-decoration: underline; color:#0000ff;&quot;&gt;&lt;/p&gt;
  &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Sans Serif'; font-size:8pt;&quot;&gt;Clemens Brunner (Coordinator)&lt;/span&gt;&lt;/p&gt;
  &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Sans Serif'; font-size:8pt;&quot;&gt;Christoph Eibel&lt;/span&gt;&lt;/p&gt;
@@ -1437,7 +1437,7 @@ Index: src/base/signal_channel.cpp
 +     scale_ = (C.PhysMax - C.PhysMin) / (C.DigMax - C.DigMin); 	 
 +     offset_ = C.PhysMin - C.DigMin * scale_; 	 
 +*/
-+     phys_y_dimension_label_ = QString(PhysDim(hdr->CHANNEL[ch].PhysDimCode));
++     phys_y_dimension_label_ = QString(PhysDim3(hdr->CHANNEL[ch].PhysDimCode));
 +     samplerate_ = hdr->SampleRate * hdr->CHANNEL[ch].SPR / hdr->SPR; 
 +}
 +
@@ -1466,7 +1466,7 @@ Index: src/base/signal_channel.cpp
 +     scale_ = (C.PhysMax - C.PhysMin) / (C.DigMax - C.DigMin); 	 
 +     offset_ = C.PhysMin - C.DigMin * scale_; 	 
 +*/
-+     phys_y_dimension_label_ = QString(PhysDim(C.PhysDimCode));
++     phys_y_dimension_label_ = QString(PhysDim3(C.PhysDimCode));
 +     samplerate_ = -1.0; 
  }
  

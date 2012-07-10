@@ -82,8 +82,7 @@ typedef struct CHANNEL_STRUCT {
 	double		Off;			/* bias */
 
 	char		OnOff;
-	char		Label[MAX_LENGTH_LABEL+1
-]; 		/* Label of channel */
+	char		Label[MAX_LENGTH_LABEL+1]; 		/* Label of channel */
 	uint16_t	LeadIdCode;				/* Lead identification code */
 	char 		Transducer[MAX_LENGTH_TRANSDUCER+1];	/* transducer e.g. EEG: Ag-AgCl electrodes */
 //	char 		PhysDim[MAX_LENGTH_PHYSDIM+1] ;		/* physical dimension */

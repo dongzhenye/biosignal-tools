@@ -21,17 +21,8 @@
 
 */
 
-/*
-#include <ctype.h>
-#include <errno.h>
-#include <float.h>
-#include <locale.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-*/
-
 #include <math.h>
+#include <stdio.h>	// only needed for deprecated function PhysDim() 
 #include <stdlib.h>
 #include <string.h>
 #include "physicalunits.h"
@@ -92,6 +83,27 @@ double PhysDimScale(uint16_t PhysDimCode)
 	  };
 
 	return (scale[PhysDimCode & 0x001f]);
+}
+
+// DEPRECATED: USE INSTEAD  PhysDim3(uint16_t PhysDimCode)
+char* PhysDim(uint16_t PhysDimCode, char *PhysDim)
+{
+#define MAX_LENGTH_PHYSDIM      20	// DEPRECATED - DO NOT USE
+	fprintf(stderr,"deprecated function PhysDim() is used - use PhysDim3() instead\n"); 
+	// converting PhysDimCode -> PhysDim
+	uint16_t k=0;
+	size_t l2 = strlen(PhysDimFactor[PhysDimCode & 0x001F]);	
+	memcpy(PhysDim,PhysDimFactor[PhysDimCode & 0x001F],l2);
+
+	PhysDimCode &= ~0x001F;
+	for (k=0; _physdim[k].idx<0xffff; k++)
+	if (PhysDimCode == _physdim[k].idx) {
+		strncpy(PhysDim+l2, _physdim[k].PhysDimDesc, MAX_LENGTH_PHYSDIM+1-l2);
+		PhysDim[MAX_LENGTH_PHYSDIM]='\0';
+		break;
+	}
+	return(PhysDim);
+#undef MAX_LENGTH_PHYSDIM
 }
 
 char* PhysDim2(uint16_t PhysDimCode)
@@ -161,7 +173,7 @@ void ClearPhysDimTable() {
 	FlagInit_PhysDimTable = 0; 
 }
 
-const char* PhysDim(uint16_t PhysDimCode) {
+const char* PhysDim3(uint16_t PhysDimCode) {
 	if (!FlagInit_PhysDimTable) {
 		memset(PhysDimTable, 0, 0x10000 * sizeof(char*));
 		atexit(&ClearPhysDimTable);

@@ -134,7 +134,7 @@ extern const char *B4C_ERRMSG;
 
 #define BIOSIG_VERSION_MAJOR 1
 #define BIOSIG_VERSION_MINOR 3
-#define BIOSIG_PATCHLEVEL 4
+#define BIOSIG_PATCHLEVEL 5
 // for backward compatibility 
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
@@ -209,6 +209,7 @@ typedef int64_t 		nrec_t;	/* type for number of records */
 // TODO: change fixed length strings to dynamically allocated strings
 #define MAX_LENGTH_LABEL 	40	// TMS: 40
 #define MAX_LENGTH_TRANSDUCER 	80
+#define MAX_LENGTH_PHYSDIM      20	// DEPRECATED - DO NOT USE 
 #define MAX_LENGTH_PID	 	80  	// length of Patient ID: MFER<65, GDF<67, EDF/BDF<81, etc.
 #define MAX_LENGTH_RID		80	// length of Recording ID: EDF,GDF,BDF<80, HL7 ?
 #define MAX_LENGTH_NAME 	132	// max length of personal name: MFER<=128, EBS<=33*4
@@ -244,6 +245,7 @@ typedef struct CHANNEL_STRUCT {
 	char		Label[MAX_LENGTH_LABEL+1] ATT_ALI; 	/* Label of channel */
 	uint16_t	LeadIdCode ATT_ALI;	/* Lead identification code */
 	char 		Transducer[MAX_LENGTH_TRANSDUCER+1] ATT_ALI;	/* transducer e.g. EEG: Ag-AgCl electrodes */
+        char            PhysDim[MAX_LENGTH_PHYSDIM+1] ATT_ALI ATT_DEPREC;       /* DONOT USE - use PhysDim3(PhysDimCode) instead */
 	uint16_t	PhysDimCode ATT_ALI;	/* code for physical dimension - PhysDim3(PhysDimCode) returns corresponding string */
 
 	float 		TOffset 	ATT_ALI;	/* time delay of sampling */
@@ -661,12 +663,17 @@ uint16_t PhysDimCode(const char* PhysDim);
    ISO/IEEE 11073-10101:2004 Vital Signs Units of Measurement
  --------------------------------------------------------------- */
 
-const char* PhysDim(uint16_t PhysDimCode);
-/* converts PhysDimCode into a readable Physical Dimension
+char* PhysDim(uint16_t PhysDimCode, char *PhysDimText);
+/* DEPRECATED: USE INSTEAD PhysDim3(uint16_t PhysDimCode) 
+   It's included just for backwards compatibility
+   converts HDR.CHANNEL[k].PhysDimCode into a readable Physical Dimension
+   the memory for PhysDim must be preallocated, its maximum length is
+   defined by (MAX_LENGTH_PHYSDIM+1)
  --------------------------------------------------------------- */
 
-#define PhysDim3(x) PhysDim(x)
-/* PhysDim3() is an alias used in some legacy applications */
+const char* PhysDim3(uint16_t PhysDimCode);
+/* converts PhysDimCode into a readable Physical Dimension
+ --------------------------------------------------------------- */
 
 double PhysDimScale(uint16_t PhysDimCode);
 /* returns scaling factor of physical dimension

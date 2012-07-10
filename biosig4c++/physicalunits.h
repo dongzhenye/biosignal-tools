@@ -45,13 +45,9 @@ uint16_t PhysDimCode(const char* PhysDim);
    ISO/IEEE 11073-10101:2004 Vital Signs Units of Measurement
  --------------------------------------------------------------- */
 
-const char* PhysDim(uint16_t PhysDimCode);
+const char* PhysDim3(uint16_t PhysDimCode);
 /* converts PhysDimCode into a readable Physical Dimension
  --------------------------------------------------------------- */
-
-#define PhysDim3(x) PhysDim(x)
-/* PhysDim3() is an alias used in some legacy applications */
-
 
 double PhysDimScale(uint16_t PhysDimCode);
 /* returns scaling factor of physical dimension
