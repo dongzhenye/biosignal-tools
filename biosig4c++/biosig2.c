@@ -269,7 +269,11 @@ int biosig_set_label(int handle, int biosig_signal, const char *label) {
 	return (0);
 }
 
-//int biosig_set_prefilter(int handle, int biosig_signal, const char *prefilter);
+int biosig_set_prefilter(int handle, int biosig_signal, const char *prefilter) {
+        // TODO: parse prefilter and call biosig_set_{highpass,lowpass,notch}filter
+        return fprintf(stderr,"Warning: biosig_set_prefilter(...) is not implemented, yet.\n");
+}
+        
 int biosig_set_highpassfilter(int handle, int biosig_signal, double frequency) {
 
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
@@ -563,13 +567,16 @@ int edf_blockwrite_physical_samples(int handle, double *buf) {
 	return fprintf(stderr,"this function is not implemented, yet.\n");
 }
 
+/*
 int edfwrite_digital_samples(int handle, int *buf) {
 	return fprintf(stderr,"this function is not implemented, yet.\n");
 }
+*/
 
 int edf_blockwrite_digital_samples(int handle, int *buf) {
 	return fprintf(stderr,"this function is not implemented, yet.\n");
 }
+
 
 #endif 
 
