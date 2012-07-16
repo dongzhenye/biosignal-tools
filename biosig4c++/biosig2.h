@@ -21,6 +21,13 @@
 
 */
 
+
+#ifndef __LIBBIOSIG2_H__
+#define __LIBBIOSIG2_H__
+
+#include "biosig.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -30,7 +37,6 @@ struct biosig_annotation_struct {       /* this structure is used for annotation
         size_t duration;                /* duration time, this is a null-terminated ASCII text-string */
         const char *annotation; 	/* description of the event in UTF-8, this is a null terminated string */
        };
-
 
 
 int biosig_lib_version(void);
@@ -86,10 +92,41 @@ int biosig_set_datarecord_duration(int handle, double duration);
 #define EDFLIB_FILETYPE_EDFPLUS              1
 #define EDFLIB_FILETYPE_BDF                  2
 #define EDFLIB_FILETYPE_BDFPLUS              3
+#define EDFLIB_MALLOC_ERROR                 -1
+#define EDFLIB_NO_SUCH_FILE_OR_DIRECTORY    -2
+#define EDFLIB_FILE_CONTAINS_FORMAT_ERRORS  -3
+#define EDFLIB_MAXFILES_REACHED             -4
+#define EDFLIB_FILE_READ_ERROR              -5
+#define EDFLIB_FILE_ALREADY_OPENED          -6
 #define EDFLIB_FILETYPE_ERROR               -7
+#define EDFLIB_FILE_WRITE_ERROR             -8
+#define EDFLIB_NUMBER_OF_SIGNALS_INVALID    -9
+#define EDFLIB_FILE_IS_DISCONTINUOUS       -10
+#define EDFLIB_INVALID_READ_ANNOTS_VALUE   -11
+
+/* values for annotations */
+#define EDFLIB_DO_NOT_READ_ANNOTATIONS 0
+#define EDFLIB_READ_ANNOTATIONS        1
+#define EDFLIB_READ_ALL_ANNOTATIONS    2
+
+/* the following defines are possible errors returned by edfopen_file_writeonly() */
+#define EDFLIB_NO_SIGNALS                  -20
+#define EDFLIB_TOO_MANY_SIGNALS            -21
+#define EDFLIB_NO_SAMPLES_IN_RECORD        -22
+#define EDFLIB_DIGMIN_IS_DIGMAX            -23
+#define EDFLIB_DIGMAX_LOWER_THAN_DIGMIN    -24
+#define EDFLIB_PHYSMIN_IS_PHYSMAX          -25
+
+#define EDFLIB_TIME_DIMENSION (10000000LL)
+#define EDFLIB_MAXSIGNALS 256
+#define EDFLIB_MAX_ANNOTATION_LEN 512
+
+#define EDFSEEK_SET 0
+#define EDFSEEK_CUR 1
+#define EDFSEEK_END 2
 
 
-struct edf_annotation_struct{                           /* this structure is used for annotations */
+struct edf_annotation_struct {                       /* this structure is used for annotations */
         size_t onset;                                /* onset time of the event, expressed in units of 100 nanoSeconds and relative to the starttime in the header */
         size_t duration;                              /* duration time, this is a null-terminated ASCII text-string */
         char annotation[EDFLIB_MAX_ANNOTATION_LEN + 1]; /* description of the event in UTF-8, this is a null terminated string */
@@ -97,7 +134,7 @@ struct edf_annotation_struct{                           /* this structure is use
 
 int edfopen_file_writeonly(const char *path, int filetype, int number_of_signals);
 #define edfopen_file_readonly(a,b,c) 		biosig_open_file_readonly(a,b,c) 
-#define edfclose_file(handle) 			biosig_close(handle)
+#define edfclose_file(handle) 			biosig_close_file(handle)
 int edfread_physical_samples(int handle, int edfsignal, int n, double *buf);
 int edfread_digital_samples(int handle, int edfsignal, int n, int *buf);
 long long edfseek(int handle, int biosig_signal, long long offset, int whence);
@@ -115,33 +152,26 @@ int biosig_open_file_writeonly(const char *path, enum FileFormat filetype, int n
 #define edf_set_label(a,b,c) 			biosig_set_label(a,b,c)
 #define edf_set_prefilter(a,b,c) 		biosig_set_prefilter(a,b,c)
 #define edf_set_transducer(a,b,c) 		biosig_set_transducer(a,b,c)
-#define edf_set_physical_dimension(a,b,c) 	biosig_set_physical_maximum(a,b,c)
-#define edf_set_startdatetime(a,b,c,d,e,f)	biosig_set_startdatetime(a,b,c,d,e,f)
+#define edf_set_physical_dimension(a,b,c) 	biosig_set_physical_dimension(a,b,c)
+#define edf_set_startdatetime(a,b,c,d,e,f,g)	biosig_set_startdatetime(a,b,c,d,e,f,g)
 #define edf_set_patientname(a,b)		biosig_set_patientname(a,b)
 #define edf_set_patientcode(a,b)		biosig_set_patientcode(a,b)
 //#define edf_set_gender(a,b)			biosig_set_gender(a,b)
 int edf_set_gender(int handle, int gender);
-#define edf_set_birthdate(a,b,c)		biosig_set_birthdate(a,b,c)
+#define edf_set_birthdate(a,b,c,d)		biosig_set_birthdate(a,b,c,d)
 #define edf_set_patient_additional(a,b)		biosig_set_patient_additional(a,b)
 #define edf_set_admincode(a,b)			biosig_set_admincode(a,b)
 #define edf_set_technician(a,b)			biosig_set_technician(a,b)
 #define edf_set_equipment(a,b)			biosig_set_equipment(a,b)
-//#define edf_set_recording_additional(a,b)	biosig_set_recording_additional(a,b)
-//#define edfwrite_physical_samples(a,b)	biosig_write_physical_samples(a,b)
-//#define edf_blockwrite_physical_samples(a,b)	biosig_blockwrite_physical_samples(a,b)
-//#define edfwrite_digital_samples(a,b)		biosig_write_digital_samples(a,b)
-//#define edf_blockwrite_digital_samples(a,b)	biosig_blockwrite_digital_samples(a,b)
-//#define edfwrite_annotation_utf8(int handle, long long onset, long long duration, const char *description);
-//#define edfwrite_annotation_latin1(int handle, long long onset, long long duration, const char *description);
-/*
+
 int edf_set_recording_additional(int handle, const char *recording_additional);
 int edfwrite_physical_samples(int handle, double *buf);
 int edf_blockwrite_physical_samples(int handle, double *buf);
 int edfwrite_digital_samples(int handle, int *buf);
 int edf_blockwrite_digital_samples(int handle, int *buf);
-int edfwrite_annotation_utf8(int handle, long long onset, long long duration, const char *description);
-int edfwrite_annotation_latin1(int handle, long long onset, long long duration, const char *description);
-*/
+
+#define edfwrite_annotation_utf8(a,b,c,d) 	biosig_write_annotation_utf8(a,b,c,d) 
+#define edfwrite_annotation_latin1(a,b,c,d) 	biosig_write_annotation_latin1(a,b,c,d) 
 #define edf_set_datarecord_duration(a,b)	biosig_set_datarecord_duration(a,b)
 
 #endif 
@@ -151,3 +181,5 @@ int edfwrite_annotation_latin1(int handle, long long onset, long long duration, 
 } /* extern "C" */
 #endif
 
+
+#endif
