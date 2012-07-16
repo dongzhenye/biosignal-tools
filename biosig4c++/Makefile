@@ -328,10 +328,10 @@ lib:	libbiosig.a win32/libbiosig.dll win32/libbiosig.a win64/libbiosig.a
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
 
 ### exclude declaration of sopen in <io.h>
-$(IO_H_FILE):
-	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE) > win32/io.h
-$(IO_H_FILE64):
-	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE64) > win64/io.h
+win32/io.h: $(IO_H_FILE)
+	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE) > "$@"
+win64/io.h: $(IO_H_FILE64)
+	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE64) > "$@"
 
 win32/%.obj: %.c  biosig-dev.h biosig.h Makefile $(IO_H_FILE)
 	$(MinGWCC) -c $(MinGWCFLAGS) -o "$@" "$<"
