@@ -552,31 +552,23 @@ int edfwrite_annotation(int handle, size_t onset, size_t duration, const char *d
    TODO: the following functions neeed to be implemented 	
 */
 int edf_set_recording_additional(int handle, const char *recording_additional) {
-	fprintf(stderr,"this function is not implemented, yet.\n");
+	return fprintf(stderr,"this function is not implemented, yet.\n");
 }
 
 int edfwrite_physical_samples(int handle, double *buf) {
-	fprintf(stderr,"this function is not implemented, yet.\n");
+	return fprintf(stderr,"this function is not implemented, yet.\n");
 }
 
 int edf_blockwrite_physical_samples(int handle, double *buf) {
-	fprintf(stderr,"this function is not implemented, yet.\n");
+	return fprintf(stderr,"this function is not implemented, yet.\n");
 }
 
 int edfwrite_digital_samples(int handle, int *buf) {
-	fprintf(stderr,"this function is not implemented, yet.\n");
+	return fprintf(stderr,"this function is not implemented, yet.\n");
 }
 
 int edf_blockwrite_digital_samples(int handle, int *buf) {
-	fprintf(stderr,"this function is not implemented, yet.\n");
-}
-
-int edfwrite_annotation_utf8(int handle, long long onset, long long duration, const char *description) {
-	fprintf(stderr,"this function is not implemented, yet.\n");
-}
-
-int edfwrite_annotation_latin1(int handle, long long onset, long long duration, const char *description) {
-	fprintf(stderr,"this function is not implemented, yet.\n");
+	return fprintf(stderr,"this function is not implemented, yet.\n");
 }
 
 #endif 
