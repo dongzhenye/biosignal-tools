@@ -21,7 +21,6 @@
 
 */
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -77,7 +76,18 @@ int biosig_write_annotation_latin1(int handle, size_t onset, size_t duration, co
 int biosig_set_datarecord_duration(int handle, double duration);
 
 
-#if defined(EDFLIB_INCLUDED)
+#if defined(MAKE_EDFLIB)
+
+// definitions according to edflib v1.09
+#define edflib_version()			(109)
+#define EDFLIB_MAX_ANNOTATION_LEN 	512
+
+#define EDFLIB_FILETYPE_EDF                  0
+#define EDFLIB_FILETYPE_EDFPLUS              1
+#define EDFLIB_FILETYPE_BDF                  2
+#define EDFLIB_FILETYPE_BDFPLUS              3
+#define EDFLIB_FILETYPE_ERROR               -7
+
 
 struct edf_annotation_struct{                           /* this structure is used for annotations */
         size_t onset;                                /* onset time of the event, expressed in units of 100 nanoSeconds and relative to the starttime in the header */
@@ -86,8 +96,6 @@ struct edf_annotation_struct{                           /* this structure is use
        };
 
 int edfopen_file_writeonly(const char *path, int filetype, int number_of_signals);
-int edf_set_gender(int handle, int gender);
-#define edflib_version()			(109)
 #define edfopen_file_readonly(a,b,c) 		biosig_open_file_readonly(a,b,c) 
 #define edfclose_file(handle) 			biosig_close(handle)
 int edfread_physical_samples(int handle, int edfsignal, int n, double *buf);
@@ -97,7 +105,8 @@ long long edftell(int handle, int biosig_signal);
 int edfrewind(int handle, int edfsignal);
 //#define edf_get_annotation(a,b,c)               biosig_get_annotation(a,b,c) 
 int edf_get_annotation(int handle, int n, struct edf_annotation_struct *annot);
-#define edfopen_file_writeonly(a,b,c)		biosig_open_file_writeonly(a,b,c)		
+//#define edfopen_file_writeonly(a,b,c)		biosig_open_file_writeonly(a,b,c)		
+int biosig_open_file_writeonly(const char *path, enum FileFormat filetype, int number_of_signals);
 #define edf_set_samplefrequency(a,b,c)		biosig_set_samplefrequency(a,b,c)
 #define edf_set_physical_maximum(a,b,c) 	biosig_set_physical_maximum(a,b,c)
 #define edf_set_physical_minimum(a,b,c) 	biosig_set_physical_minimum(a,b,c)
@@ -110,7 +119,8 @@ int edf_get_annotation(int handle, int n, struct edf_annotation_struct *annot);
 #define edf_set_startdatetime(a,b,c,d,e,f)	biosig_set_startdatetime(a,b,c,d,e,f)
 #define edf_set_patientname(a,b)		biosig_set_patientname(a,b)
 #define edf_set_patientcode(a,b)		biosig_set_patientcode(a,b)
-#define edf_set_gender(a,b)			biosig_set_gender(a,b)
+//#define edf_set_gender(a,b)			biosig_set_gender(a,b)
+int edf_set_gender(int handle, int gender);
 #define edf_set_birthdate(a,b,c)		biosig_set_birthdate(a,b,c)
 #define edf_set_patient_additional(a,b)		biosig_set_patient_additional(a,b)
 #define edf_set_admincode(a,b)			biosig_set_admincode(a,b)

@@ -93,9 +93,10 @@ DEFINES      += -D=WITH_FEF
 #DEFINES      += -D=WITH_DICOM
 #DEFINES      += -D=WITH_GDCM
 #DEFINES      += -D=WITH_GSL
-#DEFINES      += -D=WITH_EEPROBE		
+#DEFINES      += -D=WITH_EEPROBE
 #DEFINES      += -D=SOFTCODED_PHYSDIMTABLE	# obsolete
-#DEFINES      += -D=CNT32			# for 32bit Neuroscan format
+DEFINES      += -D=MAKE_EDFLIB
+
 CFLAGS        += -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 CXXFLAGS      += -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 AR            = ar crs
@@ -312,7 +313,7 @@ lib:	libbiosig.a win32/libbiosig.dll win32/libbiosig.a win64/libbiosig.a
 .c.o:
 	$(CC) -c $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
 
-%.o: %.c biosig.h biosig-dev.h Makefile
+%.o: %.c biosig.h biosig-dev.h
 	$(CC) -c $(CFLAGS) $(INCPATH) -o "$@" "$<"
 %.o: t210/%.c biosig.h biosig-dev.h
 	$(CC) -c $(CFLAGS) $(INCPATH) -o "$@" "$<"
@@ -322,7 +323,7 @@ lib:	libbiosig.a win32/libbiosig.dll win32/libbiosig.a win64/libbiosig.a
 	$(CC) -c $(CFLAGS) $(INCPATH) -o "$@" "$<"
 %.o: t240/%.c biosig.h biosig-dev.h
 	$(CC) -c $(CFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
-%.o: test0/%.c biosig.h biosig-dev.h Makefile
+%.o: test0/%.c biosig.h biosig-dev.h
 	$(CC) -c $(CFLAGS) $(INCPATH) -o "$@" "$<"
 %.o: XMLParser/%.cpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
@@ -333,7 +334,7 @@ win32/io.h: $(IO_H_FILE)
 win64/io.h: $(IO_H_FILE64)
 	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE64) > "$@"
 
-win32/%.obj: %.c  biosig-dev.h biosig.h Makefile $(IO_H_FILE)
+win32/%.obj: %.c  biosig-dev.h biosig.h $(IO_H_FILE)
 	$(MinGWCC) -c $(MinGWCFLAGS) -o "$@" "$<"
 win32/%.obj: t210/%.c  biosig-dev.h biosig.h 
 	$(MinGWCC) -c $(MinGWCFLAGS) -o "$@" "$<"
@@ -343,14 +344,14 @@ win32/%.obj: t230/%.c  biosig-dev.h biosig.h
 	$(MinGWCC) -c $(MinGWCFLAGS) -o "$@" "$<"
 win32/%.obj: t240/%.c biosig-dev.h biosig.h 
 	$(MinGWCC) -c $(MinGWCFLAGS) -I t240 -o "$@" "$<"
-win32/%.obj: test0/%.c  biosig-dev.h biosig.h Makefile 
+win32/%.obj: test0/%.c  biosig-dev.h biosig.h 
 	$(MinGWCC) -c $(MinGWCFLAGS) -I t240 -o "$@" "$<"
 win32/%.obj: win32/%.c 
 	$(MinGWCC) -c $(MinGWCFLAGS) -I win32 -o "$@" "$<"
 win32/%.obj: XMLParser/%.cpp 
 	$(MinGWCXX) -c $(MinGWCFLAGS) -o "$@" "$<"
 
-win64/%.obj: %.c biosig-dev.h biosig.h Makefile $(IO_H_FILE64)
+win64/%.obj: %.c biosig-dev.h biosig.h $(IO_H_FILE64)
 	$(MinGW64CC) -c $(MinGW64CFLAGS) -o "$@" "$<"
 win64/%.obj: t210/%.c  biosig-dev.h biosig.h 
 	$(MinGW64CC) -c $(MinGW64CFLAGS) -o "$@" "$<"
@@ -360,7 +361,7 @@ win64/%.obj: t230/%.c  biosig-dev.h biosig.h
 	$(MinGW64CC) -c $(MinGW64CFLAGS) -o "$@" "$<"
 win64/%.obj: t240/%.c  biosig-dev.h biosig.h 
 	$(MinGW64CC) -c $(MinGW64CFLAGS) -I t240 -o "$@" "$<"
-win64/%.obj: test0/%.c  biosig-dev.h biosig.h Makefile
+win64/%.obj: test0/%.c  biosig-dev.h biosig.h
 	$(MinGW64CC) -c $(MinGW64CFLAGS) -I t240 -o "$@" "$<"
 win64/%.obj: win32/%.c 
 	$(MinGW64CC) -c $(MinGW64CFLAGS) -I win32 -o "$@" "$<"
@@ -372,7 +373,7 @@ win64/%.obj: XMLParser/%.cpp
 #	eventcodes and units: conversion from ascii to C code
 #############################################################
 
-biosig.o win32/biosig.obj win64/biosig.obj: eventcodes.i eventcodegroups.i biosig.c biosig.h biosig-dev.h Makefile
+biosig.o win32/biosig.obj win64/biosig.obj: eventcodes.i eventcodegroups.i biosig.c biosig.h biosig-dev.h
 
 physicalunits.o win32/physicalunits.obj win64/physicalunits.obj: units.i physicalunits.h 
 
@@ -521,11 +522,11 @@ win32/libbiosig.dll: $(MinGWOBJECTS) biosig.h biosig-dev.h
 	$(MinGWLINK) -shared -fPIC  $(MinGWOBJECTS) $(MinGWLIBS) -o "$@" -Wl,--output-def,win32/libbiosig.def,--out-implib,win32/libbiosig.dll.a
 	-$(COPY) "$@" $(PathToSigViewerWIN32)/extern/lib/
 
-win32/libbiosig2.a: $(MinGWOBJECTS) win32/biosig.obj win32/libcnsfef.a biosig.h biosig-dev.h
+win32/libbiosig2.a: $(MinGWOBJECTS) win32/biosig2.obj win32/libcnsfef.a biosig.h biosig-dev.h
 	-$(DELETE) "$@"
-	$(CROSS)-$(AR) "$@" $(MinGWOBJECTS) win32/biosig.obj t240/*.obj
-win32/libbiosig2.dll: $(MinGWOBJECTS) win32/biosig.obj biosig.h biosig-dev.h
-	$(MinGWLINK) -shared -fPIC  $(MinGWOBJECTS) win32/biosig.obj $(MinGWLIBS) -o "$@" -Wl,--output-def,win32/libbiosig2.def,--out-implib,win32/libbiosig2.dll.a
+	$(CROSS)-$(AR) "$@" $(MinGWOBJECTS) win32/biosig2.obj t240/*.obj
+win32/libbiosig2.dll: $(MinGWOBJECTS) win32/biosig2.obj biosig.h biosig-dev.h
+	$(MinGWLINK) -shared -fPIC  $(MinGWOBJECTS) win32/biosig2.obj $(MinGWLIBS) -o "$@" -Wl,--output-def,win32/libbiosig2.def,--out-implib,win32/libbiosig2.dll.a
 
 win32/save2gdf.exe: save2gdf.c win32/libbiosig.a
 	$(MinGWLINK) $(MinGWCFLAGS) "$<" $(MinGWLIBS) -o "$@"
@@ -599,17 +600,17 @@ libbiosig2.so: $(OBJECTS) biosig2.o t240/libcnsfef.a biosig.h biosig-dev.h
 	ln -sf libbiosig2.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} libbiosig2.so.${MAJOR_VERSION}
 	ln -sf libbiosig2.so.${MAJOR_VERSION} libbiosig2.so
 
-save2gdf: save2gdf.o libbiosig.$(LIBEXT) Makefile
+save2gdf: save2gdf.o libbiosig.$(LIBEXT)
 	$(LINK) $(CXXFLAGS) save2gdf.o $(LFLAGS) $(LIBS) -o save2gdf
 
 pdp2gdf: pdp2gdf.o libbiosig.$(LIBEXT)
 	$(LINK) $(CXXFLAGS) pdp2gdf.o $(LFLAGS) $(LIBS) -o pdp2gdf
 
 bscs: biosig_client biosig_server sandbox.o biosig.o
-biosig_client: biosig_client.c libbiosig.$(LIBEXT) biosig-network.o Makefile
+biosig_client: biosig_client.c libbiosig.$(LIBEXT) biosig-network.o
 	$(LINK) $(CXXFLAGS) biosig_client.c  biosig-network.o $(LFLAGS) $(LIBS) -o biosig_client
 
-biosig_server: biosig_server.c libbiosig.$(LIBEXT) biosig-network.o Makefile
+biosig_server: biosig_server.c libbiosig.$(LIBEXT) biosig-network.o
 	$(LINK) $(CXXFLAGS) biosig_server.c  biosig-network.o $(LFLAGS) $(LIBS) -o biosig_server
 
 
@@ -692,7 +693,7 @@ endif
 
 
 ###	FLOWMON
-flowmon.o: src/flowmon2.c Makefile
+flowmon.o: src/flowmon2.c
 	$(CC)  -c -o "$@" $(DEFINES) $(CFLAGS) "$<"
         
 bin/flowmon: flowmon.o libbiosig.a

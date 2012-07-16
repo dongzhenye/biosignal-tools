@@ -463,7 +463,7 @@ int biosig_set_datarecord_duration(int handle, double duration) {
 }
 
 
-#if defined(EDFLIB_INCLUDED)
+#if defined(MAKE_EDFLIB)
 
 int edfopen_file_writeonly(const char *path, int filetype, int number_of_signals) {
 	enum FileFormat fmt=unknown; 
@@ -471,14 +471,14 @@ int edfopen_file_writeonly(const char *path, int filetype, int number_of_signals
 	case EDFLIB_FILETYPE_EDF:
 	case EDFLIB_FILETYPE_EDFPLUS:
 		fmt = EDF;
-		break
+		break;
 	case EDFLIB_FILETYPE_BDF:
 	case EDFLIB_FILETYPE_BDFPLUS:
 		fmt = EDF;
-		break
+		break;
 	default:
 		return(-1); 
-
+	}
 	return(biosig_open_file_writeonly(path, fmt, number_of_signals));
 }
 
@@ -498,26 +498,27 @@ int edfread_digital_samples(int handle, int edfsignal, int n, int *buf) {
 	return(-1);
 }
 
-long long edfseek(int handle, int biosig_signal, long long offset, int whence) {
+long long edfseek(int handle, int channel, long long offset, int whence) {
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL || hdrlist[handle].NS<=channel ) return(-1);
 	HDRTYPE *hdr = hdrlist[handle].hdr;
 
-	switch (whence) 
+	switch (whence) {
 	case SEEK_SET:
-		hdrlist[handle].chanpos[channel] = n; // update position pointer of channel chan
+		hdrlist[handle].chanpos[channel] = offset; // update position pointer of channel chan
 		break;
 	case SEEK_CUR:
-		hdrlist[handle].chanpos[channel] += n; // update position pointer of channel chan
+		hdrlist[handle].chanpos[channel] += offset; // update position pointer of channel chan
 		break;
-	case SEEK_END:
-		CHANNEL_TYPE *hc = getChannelHeader(hdr,channel)
-		hdrlist[handle].chanpos[channel] = hdr->NRec*hc->SPR + n; // update position pointer of channel chan
+	case SEEK_END: {
+		CHANNEL_TYPE *hc = getChannelHeader(hdr,channel);
+		hdrlist[handle].chanpos[channel] = hdr->NRec*hc->SPR + offset; // update position pointer of channel chan
 		break;
-
+		}
+	}	
 	return (hdrlist[handle].chanpos[channel]);
 }
 
-long long edftell(int handle, int biosig_signal) {
+long long edftell(int handle, int channel) {
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL || hdrlist[handle].NS<=channel ) return(-1);
 	return ( hdrlist[handle].chanpos[channel] );
 }
@@ -529,7 +530,7 @@ int edfrewind(int handle, int channel) {
 	return(0);
 }
 
-int edf_get_annotation(int handle, int n, struct edf_annotation_struct *annot){
+int edf_get_annotation(int handle, int n, struct edf_annotation_struct *annot) {
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
 	HDRTYPE *hdr = hdrlist[handle].hdr;
 
@@ -542,9 +543,9 @@ int edf_get_annotation(int handle, int n, struct edf_annotation_struct *annot){
 
 int edfwrite_annotation(int handle, size_t onset, size_t duration, const char *description) {
 	/* onset and duration are multiples of 100 microseconds */
-	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
+	if (handle < 0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
 	HDRTYPE *hdr = hdrlist[handle].hdr;
-	return (biosig_write_annotation(handle, onset*1e-4*hdr->EVENT.SampleRate, duration*1e-4*hdr->EVENT.SampleRate, description))
+	return (biosig_write_annotation(handle, onset*1e-4*hdr->EVENT.SampleRate, duration*1e-4*hdr->EVENT.SampleRate, description));
 }
 
 #endif 
