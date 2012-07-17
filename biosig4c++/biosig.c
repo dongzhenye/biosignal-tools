@@ -1808,6 +1808,8 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    	hdr->TYPE = ELF;
     	else if ( (hdr->HeadLen > 14) && !memcmp(Header1,"Embla data file",15))
 	    	hdr->TYPE = EMBLA;
+    	else if ( (hdr->HeadLen > 4) && ( !memcmp(Header1,"PBJ",3) || !memcmp(Header1,"BPC",3) ) )
+	    	hdr->TYPE = EMSA;
     	else if (strstr(Header1,"Subject") && strstr(Header1,"Target.OnsetTime") && strstr(Header1,"Target.RTTime") && strstr(Header1,"Target.RESP"))
 	    	hdr->TYPE = ePrime;
     	else if (!memcmp(Header1,"[Header]",8))
@@ -2124,6 +2126,7 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ EGIS,    	"EGIS" },
 	{ ELF,    	"ELF" },
 	{ EMBLA,    	"EMBLA" },
+	{ EMSA,    	"EMSA" },
 	{ ePrime,    	"ePrime" },
 	{ ET_MEG,    	"ET-MEG" },
 	{ ETG4000,    	"ETG4000" },
@@ -7381,6 +7384,195 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		strncpy(hdr->CHANNEL[k].Label,buf+0x116,MAX_LENGTH_LABEL);
 	}
 #endif
+	else if (hdr->TYPE==EMSA) {
+		
+		hdr->NS = (uint8_t)hdr->AS.Header[3];
+		hdr->HeadLen = 1024 + hdr->NS*512; 
+	    	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header, hdr->HeadLen);
+		count  += ifread(hdr->AS.Header+count, 1, hdr->HeadLen-count, hdr);
+
+		if (count < hdr->HeadLen) {
+			B4C_ERRNUM = B4C_INCOMPLETE_FILE;
+			B4C_ERRMSG = "EMSA file corrupted"; 
+		}
+		hdr->HeadLen = count;
+		
+		sprintf(hdr->Patient.Id,"%05i",leu32p(hdr->AS.Header+4));
+		unsigned seq_nr = hdr->AS.Header[8];
+		uint16_t fs = leu16p(hdr->AS.Header+9);
+		if (fs % 10)
+			hdr->SPR = fs;
+		else
+			hdr->SPR = fs/10;
+		
+		hdr->AS.bpb = 2*hdr->NS*hdr->SPR;
+		hdr->NRec = (hdr->FILE.size - hdr->HeadLen) / hdr->AS.bpb;
+		hdr->SampleRate = fs; 
+
+		{
+			struct tm t;
+			char tmp[9];
+			// Birthday 
+			strncpy(tmp, (char)(hdr->AS.Header+169), 8); 
+			for (k=0; k<8; k++) 
+				if (tmp[k]<'0' || tmp[k]>'9') 
+					B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
+			tmp[8] = 0; t.tm_mday = atoi(tmp+6); 
+			tmp[6] = 0; t.tm_mon = atoi(tmp+4)-1; 
+			tmp[4] = 0; t.tm_year  = atoi(tmp+4)-1900; 
+			t.tm_hour = 12;
+			t.tm_min = 0;
+			t.tm_sec = 0;
+			hdr->Patient.Birthday = tm_time2gdf_time(&t); 
+
+			// startdate
+			strncpy(tmp, (char)hdr->AS.Header+205, 8); 
+			for (k=0; k<8; k++) 
+				if (tmp[k]<'0' || tmp[k]>'9') 
+					B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
+			tmp[8] = 0; t.tm_mday  = atoi(tmp+6); 
+			tmp[6] = 0; t.tm_mon = atoi(tmp+4)-1; 
+			tmp[4] = 0; t.tm_year  = atoi(tmp+4)-1900; 
+
+			// starttime
+			strncpy(tmp, (char)hdr->AS.Header+214, 8); 
+			for (k=0; k<8; k++) {
+				if ((k==2 || k==5) && tmp[k] != ':') 
+					B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
+				else if (tmp[k]<'0' || tmp[k]>'9') 
+					B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
+			}
+			tmp[8] = 0; t.tm_sec = atoi(tmp+6); 
+			tmp[5] = 0; t.tm_min = atoi(tmp+3); 
+			tmp[2] = 0; t.tm_hour= atoi(tmp); 
+			hdr->T0 = tm_time2gdf_time(&t); 
+
+			if (B4C_ERRNUM) 
+				B4C_ERRMSG = "Reading EMSA file failed - invalid data / time format"; 
+			
+		}
+
+		size_t len = min(MAX_LENGTH_NAME,30);
+		strncpy(hdr->Patient.Name, hdr->AS.Header+11, len);
+		hdr->Patient.Name[len]=0;		
+
+		// equipment 
+		len = min(MAX_LENGTH_MANUF,40);
+		strncpy(hdr->ID.Manufacturer._field, hdr->AS.Header+309, len);
+		hdr->ID.Manufacturer._field[len]=0;		
+
+		char c = toupper(hdr->AS.Header[203]);
+		hdr->Patient.Sex = (c=='M') + (c=='F')*2; 
+		c = hdr->AS.Header[204];
+		hdr->Patient.Handedness = (c=='D') + (c=='E')*2; //D->1: right-handed, E->2: left-handed, 0 unknown
+
+		hdr->Patient.Weight = atoi((char*)(hdr->AS.Header+351));
+
+		hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
+		for (k=0; k < hdr->NS; k++) {
+			CHANNEL_TYPE* hc = hdr->CHANNEL+k;
+			hc->OnOff    = 1;
+			hc->GDFTYP   = 3;
+			hc->SPR      = hdr->SPR;
+			hc->Cal      = 0.1;
+			hc->Off      = 0.0;
+			hc->Transducer[0] = '\0';
+			hc->LowPass  = NAN;
+			hc->HighPass = NAN;
+			hc->PhysMax  =  3276.7;
+			hc->PhysMin  = -3276.8;
+			hc->DigMax   =  32767;
+			hc->DigMin   = -32768;
+		    	hc->LeadIdCode  = 0;
+		    	hc->PhysDimCode = 4275;	//uV
+	    		hc->bi   = k*hdr->SPR*2;
+
+		    	char *label = (char)(hdr->AS.Header+1034+k*512);
+		    	len    = min(16,MAX_LENGTH_LABEL);
+			if ( (hdr->AS.Header[1025+k*512]=='E') && strlen(label)<13) {
+			    	strcpy(hc->Label, "EEG ");
+			    	strcat(hc->Label, label);
+			} 
+			else
+			    	strncpy(hc->Label, label, len);
+
+		}
+
+		/* read event file */
+		char* tmpfile = (char*)calloc(strlen(hdr->FileName)+4,1);
+		strcpy(tmpfile, hdr->FileName);
+		char* ext = strrchr(tmpfile,'.');
+		if (ext != NULL) 
+			strcpy(ext+1,"LBK");
+		else 		
+			strcat(tmpfile,".LBK");
+
+		FILE *fid = fopen(tmpfile,"rb"); 
+		if (fid==NULL) {
+			if (ext != NULL) 
+				strcpy(ext+1,"lbk");
+			else 		
+				strcat(tmpfile,".lbk");
+		}
+		if (fid != NULL) {
+			size_t N_EVENTS = 0; 
+			const int sz = 69; 
+			char buf[sz+1]; 
+			hdr->EVENT.SampleRate = hdr->SampleRate;
+			while (!feof(fid)) {
+				if (fread(buf,sz,1,fid) <= 0) break;
+				
+				// starttime
+				char *tmp = buf;
+				for (k=0; k<8; k++) {
+					if ((k==2 || k==5) && tmp[k] != ':') 
+						B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
+					else if (tmp[k]<'0' || tmp[k]>'9') 
+						B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
+				}
+				tmp[2] = 0; 
+				tmp[5] = 0; 
+				tmp[8] = 0; 
+				size_t tstart = atoi(tmp)*3600 + atoi(tmp+3)*60 + atoi(tmp+6); 
+
+				fread(buf,sz,1,fid);
+				
+				// endtime
+				tmp = buf+9;
+				for (k=0; k<8; k++) {
+					if ((k==2 || k==5) && tmp[k] != ':') 
+						B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
+					else if (tmp[k]<'0' || tmp[k]>'9') 
+						B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
+				}
+				tmp[2] = 0; 
+				tmp[5] = 0; 
+				tmp[8] = 0; 
+				size_t tend = atoi(tmp)*3600 + atoi(tmp+3)*60 + atoi(tmp+6); 
+				if (tend<tstart) tend+=24*3600; 
+
+				tmp = buf+18;
+				k=68; 
+				while (k>18 && isspace(buf[k])) k--; 
+				buf[k+1]=0;
+
+				if (hdr->EVENT.N+2 >= N_EVENTS) {
+					// memory allocation if needed
+					N_EVENTS = max(128, N_EVENTS*2);
+					hdr->EVENT.POS = (uint32_t*) realloc(hdr->EVENT.POS, N_EVENTS * sizeof(*hdr->EVENT.POS) );
+					hdr->EVENT.TYP = (uint16_t*) realloc(hdr->EVENT.TYP, N_EVENTS * sizeof(*hdr->EVENT.TYP) );
+					hdr->EVENT.DUR = (uint32_t*) realloc(hdr->EVENT.DUR, N_EVENTS * sizeof(*hdr->EVENT.DUR) );
+					hdr->EVENT.CHN = (uint16_t*) realloc(hdr->EVENT.CHN, N_EVENTS * sizeof(*hdr->EVENT.CHN) );
+				}
+				FreeTextEvent(hdr,hdr->EVENT.N,(char*)buf);
+				hdr->EVENT.POS[hdr->EVENT.N] = tstart*hdr->EVENT.SampleRate; 
+				hdr->EVENT.DUR[hdr->EVENT.N] = (tend-tstart)*hdr->EVENT.SampleRate; 
+				hdr->EVENT.CHN[hdr->EVENT.N] = 0;
+				hdr->EVENT.N++;  
+			}
+		}
+		free(tmpfile);
+	}
 
     	else if (hdr->TYPE==ePrime) {
 		/* read file */
