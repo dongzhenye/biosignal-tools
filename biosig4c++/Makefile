@@ -100,7 +100,7 @@ DEFINES      += -D=MAKE_EDFLIB
 CFLAGS        += -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 CXXFLAGS      += -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 AR            = ar crs
-INCPATH       = -I /usr/include/libxml2/ -I/opt/local/include/
+#INCPATH       = -I /usr/include/libxml2/ -I/opt/local/include/
 #INCPATH       = -I /usr/local/include/gdcm-2.0/
 #		../gdcm-2.0.10/Source/DataStructureAndEncodingDefinition \
 #		../gdcm-2.0.10/Source/InformationObjectDefinition  	\
@@ -108,9 +108,9 @@ INCPATH       = -I /usr/include/libxml2/ -I/opt/local/include/
 #		../gdcm-2.0.10/Source/DataDictionary 			\
 #		../gdcm-2.0.10/Source/Common
 LINK          = $(CXX)
-LFLAGS_dynamic = -L/usr/local/lib/ -L/opt/local/lib -L.
+LFLAGS_dynamic = -L.
 LIBS_dynamic  = -lbiosig
-LFLAGS_static = -L/usr/local/lib/ -L/opt/local/lib
+LFLAGS_static =
 LIBS_static   = libbiosig.a
 ifeq ($(LIBEXT),so)
   LFLAGS      += $(LFLAGS_dynamic)
@@ -766,9 +766,9 @@ install_ttl2trig: bin/ttl2trig
 	install bin/ttl2trig $(BIN)
 
 install_octave: mexSLOAD.mex 
-	mkdir -p  		$(DESTDIR)/usr/local/share/octave/site-m/
-	install mex/mexSLOAD.mex* 	$(DESTDIR)/usr/local/share/octave/site-m/
-	install mex/mexSOPEN.mex* 	$(DESTDIR)/usr/local/share/octave/site-m/
+	mkdir -p  		$(DESTDIR)/usr/share/octave/site-m/
+	install mex/mexSLOAD.mex* 	$(DESTDIR)/usr/share/octave/site-m/
+	install mex/mexSOPEN.mex* 	$(DESTDIR)/usr/share/octave/site-m/
 
 install_libbiosig: libbiosig.a libbiosig.so 
 	install biosig.h    	$(DESTDIR)/usr/include

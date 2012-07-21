@@ -32,6 +32,12 @@ LIBS          = $(LDLIBS)
 LFLAGS        = 
 COPY          = cp
 
+ifeq ($(LIBEXT),so)
+  LIBS        += -L.. -lbiosig
+else
+  LIBS        += ../libbiosig.$(LIBEXT)
+endif
+
 mex: mex4m mex4o 
 win32 win mexw32: mexSLOAD.mexw32 mexSOPEN.mexw32 mexSSAVE.mexw32
 win64 mexw64: mexSLOAD.mexw64 mexSOPEN.mexw64 mexSSAVE.mexw64
@@ -73,10 +79,10 @@ mex4m: mexSLOAD.$(MEX_EXT) mexSOPEN.$(MEX_EXT) mexSSAVE.$(MEX_EXT)
 mexSLOAD: mexSLOAD.$(MEX_EXT) 
 mexSOPEN: mexSOPEN.$(MEX_EXT)
 %.$(MEX_EXT): %.cpp ../libbiosig.$(LIBEXT) Makefile
-	$(MEX) $(MEX_OPTION) $(DEFINES) "$<" $(LFLAGS) ../libbiosig.$(LIBEXT) $(LIBS)
+	$(MEX) $(MEX_OPTION) $(DEFINES) "$<" $(LFLAGS) $(LIBS)
 	-$(COPY) $@ ../../biosig/t200_FileAccess/
 mexSOPEN.$(MEX_EXT): mexSLOAD.cpp ../libbiosig.$(LIBEXT) Makefile
-	$(MEX) $(MEX_OPTION) -DmexSOPEN $(DEFINES) mexSLOAD.cpp  ../libbiosig.$(LIBEXT) $(LIBS) -output mexSOPEN
+	$(MEX) $(MEX_OPTION) -DmexSOPEN $(DEFINES) mexSLOAD.cpp $(LIBS) -output mexSOPEN
 	-$(COPY) mexSOPEN.$(MEX_EXT) ../../biosig/t200_FileAccess/
 endif
 
@@ -85,10 +91,10 @@ endif
 ### MEX-files for Octave
 mex4o:  mexSLOAD.mex mexSOPEN.mex mexSSAVE.mex
 %.mex:  %.cpp ../libbiosig.$(LIBEXT) Makefile
-	$(OCT)  $(DEFINES) -v -g --mex "$<" ../libbiosig.$(LIBEXT) $(LIBS)
+	$(OCT)  $(DEFINES) -v -g --mex "$<" $(LIBS)
 	-$(COPY) $@ ../../biosig/t200_FileAccess/
 mexSOPEN.mex:  mexSLOAD.cpp ../libbiosig.$(LIBEXT) Makefile
-	$(OCT) -D=mexSOPEN $(DEFINES) -v -g --mex mexSLOAD.cpp ../libbiosig.$(LIBEXT) $(LIBS) -o mexSOPEN.mex
+	$(OCT) -D=mexSOPEN $(DEFINES) -v -g --mex mexSLOAD.cpp $(LIBS) -o mexSOPEN.mex
 	-$(COPY) mexSOPEN.mex ../../biosig/t200_FileAccess/
 #physicalunits.mex:  physicalunits.cpp libbiosig.$(LIBEXT)
 #	$(OCT) -v -g --mex physicalunits.cpp $(LFLAGS) $(LIBS)
