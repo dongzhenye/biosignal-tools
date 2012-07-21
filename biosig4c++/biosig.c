@@ -10507,11 +10507,12 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		char *e = strrchr(fn,'.');
 		if (e==NULL) { 
 			fn[k] = '.';
-			e = fn+k+1;
+			e = fn+k;
 		}
-		*e = (hdr->TYPE == ASCII ? 'a' : 's');
-		e++;
-		
+
+		e[1] = (hdr->TYPE == ASCII ? 'a' : 's');
+		e+=2; 
+
     		for (k=0; k<hdr->NS; k++)
     		if (hdr->CHANNEL[k].OnOff) {
     			if (hdr->FILE.COMPRESSION) sprintf(e,"%02i_gz",(int)k+1);
@@ -12427,10 +12428,10 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 		char *e = strrchr(fn,'.');
 		if (e==NULL) { 
 			fn[k1] = '.';
-			e = fn+k1+1;
+			e = fn+k1;
 		}
-		*e = (hdr->TYPE == ASCII ? 'a' : 's');
-		e++;
+		e[1] = (hdr->TYPE == ASCII ? 'a' : 's');
+		e+=2;
 		
 		for (k1=0; k1<hdr->NS; k1++)
     		if (hdr->CHANNEL[k1].OnOff) {
