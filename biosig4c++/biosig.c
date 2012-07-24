@@ -1887,6 +1887,8 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 		}
     	else if ( (hdr->HeadLen > 344) && (!memcmp(Header1+344,"ni1",4) || !memcmp(Header1+344,"n+1",4) ) )
 	    	hdr->TYPE = NIFTI;
+    	else if (!memcmp(Header1,"NEURALEV",8) || !memcmp(Header1,"N.EV.",6) )
+	    	hdr->TYPE = NEV;
     	else if (!memcmp(Header1,"NEX1",4))
 	    	hdr->TYPE = NEX1;
     	else if ( (hdr->HeadLen > 31) && !memcmp(Header1,"Logging Start\x0aLogger SW Version: ",31))
@@ -2158,6 +2160,7 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ native,    	"native" },
 	{ NeuroLoggerHEX, "NeuroLoggerHEX"},
 	{ NetCDF,    	"NetCDF" },
+	{ NEV,    	"NEV" },
 	{ NEX1,    	"NEX1" },
 	{ NIFTI,    	"NIFTI" },
 	{ NEURON,    	"NEURON" },
@@ -7413,7 +7416,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			struct tm t;
 			char tmp[9];
 			// Birthday 
-			strncpy(tmp, (char)(hdr->AS.Header+169), 8); 
+			strncpy(tmp, (char*)(hdr->AS.Header+169), 8); 
 			for (k=0; k<8; k++) 
 				if (tmp[k]<'0' || tmp[k]>'9') 
 					B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
@@ -7426,7 +7429,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			hdr->Patient.Birthday = tm_time2gdf_time(&t); 
 
 			// startdate
-			strncpy(tmp, (char)hdr->AS.Header+205, 8); 
+			strncpy(tmp, (char*)hdr->AS.Header+205, 8); 
 			for (k=0; k<8; k++) 
 				if (tmp[k]<'0' || tmp[k]>'9') 
 					B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
@@ -7435,7 +7438,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			tmp[4] = 0; t.tm_year  = atoi(tmp+4)-1900; 
 
 			// starttime
-			strncpy(tmp, (char)hdr->AS.Header+214, 8); 
+			strncpy(tmp, (char*)hdr->AS.Header+214, 8); 
 			for (k=0; k<8; k++) {
 				if ((k==2 || k==5) && tmp[k] != ':') 
 					B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
@@ -7453,12 +7456,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		}
 
 		size_t len = min(MAX_LENGTH_NAME,30);
-		strncpy(hdr->Patient.Name, hdr->AS.Header+11, len);
+		strncpy(hdr->Patient.Name, (char*)hdr->AS.Header+11, len);
 		hdr->Patient.Name[len]=0;		
 
 		// equipment 
 		len = min(MAX_LENGTH_MANUF,40);
-		strncpy(hdr->ID.Manufacturer._field, hdr->AS.Header+309, len);
+		strncpy(hdr->ID.Manufacturer._field, (char*)hdr->AS.Header+309, len);
 		hdr->ID.Manufacturer._field[len]=0;		
 
 		char c = toupper(hdr->AS.Header[203]);
@@ -7487,7 +7490,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		    	hc->PhysDimCode = 4275;	//uV
 	    		hc->bi   = k*hdr->SPR*2;
 
-		    	char *label = (char)(hdr->AS.Header+1034+k*512);
+		    	char *label = (char*)(hdr->AS.Header+1034+k*512);
 		    	len    = min(16,MAX_LENGTH_LABEL);
 			if ( (hdr->AS.Header[1025+k*512]=='E') && strlen(label)<13) {
 			    	strcpy(hc->Label, "EEG ");
@@ -9451,6 +9454,154 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		B4C_ERRMSG = "NeuroLogger HEX format not supported, yet";
 		return(hdr);
 
+	}
+
+	else if (hdr->TYPE==NEV) {
+
+		fprintf(stdout,"Support for NEV format is under construction - most likely its not useful yet.\n"); 		
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (NEV)\n"); 		
+
+		hdr->VERSION = beu16p(hdr->AS.Header+8)>>8;
+		switch beu16p(hdr->AS.Header+8) {
+		case 0x0100:	// readnev1
+		case 0x0101:	// readnev1_1
+		case 0x0200:	// readnev2
+			//B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+			break;
+		default: 
+			B4C_ERRNUM = B4C_FORMAT_UNKNOWN;
+		}
+		const int H1Len = 28+16+32+256+4; 
+
+		/* read Basic Header */
+		// uint16_t fileFormat = beu16p(hdr->AS.Header+10);	
+		uint32_t HeadLen = leu32p(hdr->AS.Header+12);	
+		if (HeadLen < H1Len) {
+			B4C_ERRNUM = B4C_INCOMPLETE_FILE;
+			return(hdr);
+		}
+		hdr->AS.bpb = leu32p(hdr->AS.Header+16);	
+		uint32_t TimeStepFrequency = leu32p(hdr->AS.Header+20);	
+		// samples = TimeStepFrequency / 10; // Freq in 0.1 seconds
+		hdr->SampleRate = leu32p(hdr->AS.Header+24);	
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (NEV) [210] %d %d \n", (int)count, (int)HeadLen); 		
+
+		if (count<HeadLen) {
+			hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,HeadLen);
+			count += ifread(hdr->AS.Header+count, 1, HeadLen-count, hdr);
+		}
+		uint32_t extHdrN = leu32p(hdr->AS.Header+H1Len-4);	
+
+		if (count < H1Len + 32*extHdrN) {
+			hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,HeadLen);
+			count += ifread(hdr->AS.Header+count, 1, HeadLen-count, hdr);
+		}
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (NEV) [220] %d %d %d \n", extHdrN, (int)count, (int)HeadLen); 		
+
+		struct tm t; 
+		t.tm_year = leu32p(hdr->AS.Header+28);	
+		t.tm_mon  = leu32p(hdr->AS.Header+30);	
+		//t.tm_wday = beu32p(hdr->AS.Header+32);	
+		t.tm_mday = leu32p(hdr->AS.Header+34);	
+		t.tm_hour = leu32p(hdr->AS.Header+36);	
+		t.tm_min  = leu32p(hdr->AS.Header+38);	
+		t.tm_sec  = leu32p(hdr->AS.Header+40);	
+		//milliseconds = beu32p(hdr->AS.Header+42);	
+		hdr->T0   = tm_time2gdf_time(&t);
+
+		double time_interval = 1e3 * (hdr->AS.bpb-8) / TimeStepFrequency;
+
+		 if (VERBOSE_LEVEL>7) hdr2ascii(hdr,stdout,2);
+
+		//******** read Extended Header *********
+		const char *nameOfElectrode, *extraComment, *continuedComment, *mapfile;
+		
+		const char *H2 = (char*)hdr->AS.Header + H1Len;
+		hdr->NS = 0; 
+    		for (k = 0; k < extHdrN; k++) {
+			const char *identifier =  H2 + k*32;		
+
+			if (VERBOSE_LEVEL>8) {
+				char tmp[9];tmp[8]=0; 
+				char tmp24[25];tmp24[25]=0; 
+				memcpy(tmp,identifier,8);
+				memcpy(tmp24,identifier+8,24);
+				
+				fprintf(stdout,"SOPEN (NEV) [225] %d %d <%s> <%s>\n",k,hdr->NS,tmp,tmp24); 		
+			}
+
+			if (!memcmp (identifier, "NEUEVWAV",8)) hdr->NS++;
+		}
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (NEV) [230]\n"); 		
+
+		hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
+
+		uint16_t NS = 0; 
+    		for (k = 0; k < extHdrN; k++) {
+			const char *identifier =  H2 + k*32;		
+			if (!memcmp (identifier, "ARRAYNME",8)) {
+				nameOfElectrode = identifier + 8;
+			}
+			else if (!memcmp (identifier, "ECOMMENT",8)) {
+				extraComment = identifier + 8;
+			}
+			else if (!memcmp (identifier, "CCOMMENT",8)) {
+				continuedComment = identifier + 8;
+			}
+			else if (!memcmp (identifier, "MAPFILE",8)) {
+				mapfile = identifier + 8;
+			}
+			else if (!memcmp (identifier, "NEUEVWAV",8)) {
+				//neuralEventWaveform = identifier + 8;
+				CHANNEL_TYPE *hc = hdr->CHANNEL+(NS++);
+				sprintf(hc->Label,"#%d",leu16p(identifier + 8));	// electrodeId
+				// (uint8_t)(identifier + 8 + 2);	// module
+				// (uint8_t)(identifier + 8 + 3);	// channel
+				hc->OnOff = 1;
+				hc->Cal = leu16p(identifier+ 8 + 4);	// scaling factor
+				// beu16p(identifier + 8 + 6);	// energyTreshold
+				hc->Off = 0;
+				hc->DigMax = lei16p(identifier + 8 + 8);	// high threshold
+				hc->DigMin = lei16p(identifier + 8 + 10);	// low threshold
+				// (uint8_t)(identifier + 8 + 11);	// sortedUnitsInChannel
+				hc->GDFTYP = 2 * identifier[8 + 12];	// bytesPerWaveformSample
+				hc->PhysMax = hc->DigMax*hc->Cal;
+				hc->PhysMin = hc->DigMin*hc->Cal;
+				hc->LeadIdCode = 0;
+				hc->Transducer[0] = 0;
+				hc->PhysDimCode = 0;
+				hc->TOffset = 0;
+				hc->LowPass = NAN;
+				hc->HighPass = NAN;
+				hc->Notch = NAN;
+				hc->XYZ[0] = 0;
+				hc->XYZ[2] = 0;
+				hc->XYZ[3] = 0;
+				hc->Impedance = NAN;
+
+				
+				hc->SPR =
+				hc->bi =
+				hc->bi8 =
+				hc->bufptr = 0;
+ 
+			}
+			else if (!memcmp (identifier, "NSASEXEV",8)) {
+				char *nsas = identifier + 8;
+			}
+			else  {
+/*
+				// IGNORE 	
+				B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+				B4C_ERRMSG = "NEV: unknown extended header";			
+*/
+			}
+		}
+		return(hdr);
 	}
 
 	else if (hdr->TYPE==NIFTI) {

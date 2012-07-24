@@ -126,7 +126,7 @@ enum FileFormat {
 	TIFF, TMS32, TMSiLOG, TRC, UNIPRO, VRML, VTK,
 	WAV, WG1, WinEEG, WMF, XML, XPM,
 	Z, ZIP, ZIP2, 
-	EMSA
+	EMSA, NEV
 };
 
 
