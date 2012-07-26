@@ -1,6 +1,6 @@
 function d = signal_deconvolution(r,t,fs,highpass,lowpass)
 % SIGNAL_DECONVOLUTION deconvolves some raw data with some given template in order
-%   to improve the detection of miniature epsp's, and ipsp's. 
+%   to improve the detection of miniature epsc's, and ipsc's. 
 %
 % d = SIGNAL_DECONVOLUTION(raw,template,samplerate,highpass,lowpass)
 % ... SIGNAL_DECONVOLUTION(raw,template,samplerate,[highpass,lowpass])
@@ -20,9 +20,9 @@ function d = signal_deconvolution(r,t,fs,highpass,lowpass)
 % see also: get_local_maxima_above_threshold
 %
 % References: 
-%  A. Pernía-Andrade, S.P. Goswami, Y. Stickler, U. Fröbe, A. Schlögl, and P. Jonas 2012
-%  A deconvolution-based method with high sensitivity and temporal resolution for detection of spontaneous synaptic currents in vitro and in vivo
-%  IST Austria
+%  A. Pernía-Andrade, S.P. Goswami, Y. Stickler, U. Fröbe, A. Schlögl, and P. Jonas (2012)
+%  A deconvolution-based method with high sensitivity and temporal resolution for 
+%    detection of spontaneous synaptic currents in vitro and in vivo, IST Austria. 
 
 %  $Id$
 %  Copyright (C) 2012 by Alois Schloegl, IST Austria <alois.schloegl@ist.ac.at>	
@@ -46,8 +46,16 @@ D = R./H;
 
 %% filter in frequency domain
 f = [0:size(r,1)-1] * fs / size(r,1);
-ixf = ( ( B(1)<f & f<B(2) ) | ( fs-B(2)<f & f < fs-B(1) ) ); 
-D(~ixf) = 0; 
+if 0,
+    %% rectangular window 
+    D( f<B(1) | ( B(2) < f & f < fs-B(2) ) | fs-B(1) < f ) = 0; 
+else 
+    %% Gaussian window 
+    w = 1/sqrt(2*pi*B(2)/fs) * exp (-0.5*min([f;fs-f]/B(2),[],1).^2);
+    w( f<B(1) | fs-B(1) < f ) = 0; 
+    D = fs*w(:).*D;
+end; 
+
 
 %% convert from frequency domain into time domain. 
 d = real(ifft(D));
