@@ -1034,8 +1034,8 @@ end;
 			%% decode EDF+/BDF+ annotations
                         N = 0; 
                         onset = []; dur=[]; Desc = {};
-			[s,t] = strtok(HDR.EDFplus.ANNONS,0);
-    			while ~isempty(s)
+			t = HDR.EDFplus.ANNONS;
+    			while ~isempty(t)
 				% remove leading 0
 				t  = t(find(t>0,1):end);
 
