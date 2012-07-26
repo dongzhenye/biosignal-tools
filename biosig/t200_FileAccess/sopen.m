@@ -1036,21 +1036,29 @@ end;
                         onset = []; dur=[]; Desc = {};
 			[s,t] = strtok(HDR.EDFplus.ANNONS,0);
     			while ~isempty(s)
-    				N  = N + 1; 
-    				ix = find(s==20);
-    				[s1,s2] = strtok(s(1:ix(1)-1),21);
-    				s1;
+				% remove leading 0
+				t  = t(find(t>0,1):end);
+
+				ix = find(t==20,2); 		
+				if isempty(ix) break; end;
+
+				% next event 
+    				N = N + 1; 
+				[s1,s2] = strtok(t(1:ix(1)-1),21);
+				s3 = t(ix(1)+1:ix(2)-1);
+
     				tmp = str2double(s1);
     				onset(N,1) = tmp;
-   				tmp = str2double(s2(2:end));
-   				if  ~isempty(tmp)
+   				if  ~isempty(s2)
+	   				tmp = str2double(s2(2:end));
    					dur(N,1) = tmp; 	
    				else 
    					dur(N,1) = 0; 	
    				end;
-    				Desc{N} = char(s(ix(1)+1:end-1));
-				[s,t] = strtok(t,0);
+				if all(s3(2:2:end)==0) s3 = s3(1:2:end); end; %% unicode to ascii - FIXME 
+    				Desc{N} = s3;
 	                        HDR.EVENT.TYP(N,1) = length(Desc{N});
+				t = t(ix(2)+1:end);
     			end;		
                         HDR.EVENT.POS = onset * HDR.SampleRate;
                         if any(HDR.EVENT.POS - ceil(HDR.EVENT.POS))
