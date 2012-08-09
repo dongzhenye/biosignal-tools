@@ -614,7 +614,7 @@ end;
 			if ~isfield(HDR,'THRESHOLD')
 	                        HDR.THRESHOLD  = [HDR.DigMin',HDR.DigMax'];       % automated overflow detection 
 	                        if (HDR.VERSION <= 0) && HDR.FLAG.OVERFLOWDETECTION,   % in case of EDF and OVERFLOWDETECTION
-					HHDR.FLAG.OVERFLOWDETECTION = 0;
+					HDR.FLAG.OVERFLOWDETECTION = 0;
 	                        	fprintf(2,'WARNING SOPEN(EDF): Automated Overflowdetection not supported for EDF and BDF data, because \n'); 
 					fprintf(2,'   Physical Max/Min values of EDF/BDF data are not necessarily defining the dynamic range.\n'); 
 	                        	fprintf(2,'   For more information see: http://dx.doi.org/10.1016/S1388-2457(99)00172-8 (A. Schloegl et al. Quality Control ... Clin. Neurophysiol. 1999, Dec; 110(12): 2165 - 2170).\n'); 
@@ -1067,6 +1067,7 @@ end;
                         end
                         HDR.EVENT.DUR = dur * HDR.SampleRate;
                         HDR.EVENT.CHN = zeros(N,1); 
+                        %% TODO: use eventcodes.txt for predefined event types e.g. QRS->0x501
                         [HDR.EVENT.CodeDesc, CodeIndex, HDR.EVENT.TYP] = unique(Desc(1:N)');
 		end
 
