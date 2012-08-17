@@ -12,8 +12,8 @@ function [signal,H] = sload(FILENAME,varargin)
 % [signal,header] = sload(..., PropertyName1,PropertyValue1,...)
 %  	PropertyName(s)		PropertyValue
 %	'UCAL'			-		data uncalibrated (not scaled)
-%				ON		data uncalibrated (not scaled)
-%				OFF		data calibrated (scaled) [default]
+%				'On'		data uncalibrated (not scaled)
+%				'Off'		data calibrated (scaled) [default]
 %	'OVERFLOWDETECTION'	'On'		[default] 
 %				'Off'		no overflow detection 
 %	'OUTPUT'		'single'	single precision data [default: 'double'] 
@@ -39,7 +39,7 @@ function [signal,H] = sload(FILENAME,varargin)
 %       [s,HDR]=sread(HDR,duration_segmentM); 
 %       HDR = sclose(HDR); 
 %
-% see also: SVIEW, SOPEN, SREAD, SCLOSE, SAVE2BKR, TLOAD
+% see also: SVIEW, SOPEN, SREAD, SCLOSE, SAVE2BKR, BDF2BIOSIG_EVENTS, TLOAD
 %
 % In order to increase the speed, install mexSLOAD.mex from biosig4c++
 %
