@@ -52,10 +52,16 @@ fs = rHDR.SampleRate;
 
 % deconvolution and filteriong
 d = signal_deconvolution(r, t, fs, B); 
+
+% get local maxima above threshold
+TH = quantile(d,1-1e-3);
+pos = get_local_maxima_above_threshold(d,TH);
 	
 % display brief segment 
-t = [1:100000]'+0e5;
-plot(t/fs,[zscore(r), zscore(d)*5-10](t,:))
-legend({'Raw data','Deconvolved data'});
-
+xlim = [15,20];
+t = [1:length(r)]'/fs;
+subplot(2,1,1); plot(t,r); set(gca,'xlim',xlim);
+legend({'Raw data'});
+subplot(2,1,2); plot(t,d,'g-',t(pos),TH,'ro'); set(gca,'xlim',xlim);
+legend({'Deconvolved data','local max above threshold'});
 
