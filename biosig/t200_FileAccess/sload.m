@@ -12,6 +12,8 @@ function [signal,H] = sload(FILENAME,varargin)
 % [signal,header] = sload(..., PropertyName1,PropertyValue1,...)
 %  	PropertyName(s)		PropertyValue
 %	'UCAL'			-		data uncalibrated (not scaled)
+%				ON		data uncalibrated (not scaled)
+%				OFF		data calibrated (scaled) [default]
 %	'OVERFLOWDETECTION'	'On'		[default] 
 %				'Off'		no overflow detection 
 %	'OUTPUT'		'single'	single precision data [default: 'double'] 
@@ -45,7 +47,7 @@ function [signal,H] = sload(FILENAME,varargin)
 
 
 %	$Id$
-%	Copyright (C) 1997-2007,2008,2009,2010,2011 by Alois Schloegl 
+%	Copyright (C) 1997-2007,2008,2009,2010,2011,2012 by Alois Schloegl 
 %    	This is part of the BIOSIG-toolbox http://biosig.sf.net/
 
 %
