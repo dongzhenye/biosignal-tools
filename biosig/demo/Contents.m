@@ -9,13 +9,22 @@
 % DEMO7   % Multivariate autoregressive parameters              
 % DEMO8   % overflow detection based on [1]
 % DEMO9   % AAR-based HRV analysis
+% DEMO10  % Demonstrates deconvolution method on spontaneous synaptic currents [2]
 % 
 % REFERENCES: 
 % [1] A. Schlögl, B. Kemp, T. Penzel, D. Kunz, S.-L. Himanen,A. Värri, G. Dorffner, G. Pfurtscheller.
-%   Quality Control of polysomnographic Sleep Data by Histogram and Entropy Analysis. %   Clin. Neurophysiol. 1999, Dec; 110(12): 2165 - 2170.%   http://dx.doi.org/10.1016/S1388-2457(99)00172-8
+%   Quality Control of polysomnographic Sleep Data by Histogram and Entropy Analysis. 
+%   Clin. Neurophysiol. 1999, Dec; 110(12): 2165 - 2170.
+%   http://dx.doi.org/10.1016/S1388-2457(99)00172-8
+% [2] Alejandro Javier Pernía-Andrade, Sarit Pati Goswami, Yvonne Stickler, 
+%      Ulrich Fröbe, Alois Schlögl, and Peter Jonas (submitted) 
+%  A deconvolution-based method with high sensitivity and temporal
+%  resolution for detection of spontaneous synaptic currents in vitro and
+%  in vivo.
 
-% $Id: Contents.m,v 1.10 2008-10-13 13:06:41 schloegl Exp $
-% Copyright (C) 2003-2005, 2008 by Alois Schloegl <a.schloegl@ieee.org>	
+
+% $Id$
+% Copyright (C) 2003-2005, 2008,2012 by Alois Schloegl <alois.schloegl@gmail.com>	
 % This is part of the BIOSIG-toolbox http://biosig.sf.net/
 
 % This library is free software; you can redistribute it and/or
@@ -43,6 +52,7 @@ DEMO6   % lumped circuit model
 DEMO7   % Multivariate autoregressive parameters              
 DEMO8   % Quality Control: Overflow detection based on [1]	
 DEMO9   % AAR-based HRV analysis
+DEMO10  % Demonstrates deconvolution method on spontaneous synaptic currents [2]
 
     % This test was applied for the OPENECG programming contest. 
 SCPTEST.M % test of SCP-ECG files can be accessed. 
