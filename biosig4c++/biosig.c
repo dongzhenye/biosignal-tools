@@ -52,6 +52,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <wchar.h>
+#include <stringprep.h>
 
 #ifdef WITH_CURL
 #  include <curl/curl.h>
@@ -1895,6 +1897,8 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    	hdr->TYPE = NeuroLoggerHEX;
     	else if (!memcmp(Header1,"Neuron",6))
 	    	hdr->TYPE = NEURON;
+    	else if (!memcmp(Header1,"[FileInfo]",10))
+	    	hdr->TYPE = Persyst;
     	else if (!memcmp(Header1,"SXDF",4))
 	    	hdr->TYPE = OpenXDF;
     	else if (!memcmp(Header1,"PLEX",4))
@@ -2164,6 +2168,7 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ NEX1,    	"NEX1" },
 	{ NIFTI,    	"NIFTI" },
 	{ NEURON,    	"NEURON" },
+	{ Persyst,    	"Persyst" },
 	{ OGG,    	"OGG" },
 	{ PDP,    	"PDP" },
 	{ RDF,    	"RDF" },
@@ -3956,7 +3961,7 @@ else if (!strncmp(MODE,"r",1)) {
 			uint32_t nbytes = nbits>>3;
 			hdr->AS.bpb    += nbytes;
 
-			if (VERBOSE_LEVEL>8)
+			if (VERBOSE_LEVEL>7)
 				fprintf(stdout,"[EDF 216] #%i/%i/%i/%i/%i/%i\n",(int)k,hdr->NS,nbytes,hdr->AS.bpb,hc->SPR,hdr->SPR);
 
 			hc->LowPass  = NAN;
@@ -3970,7 +3975,7 @@ else if (!strncmp(MODE,"r",1)) {
 			for (kk=0; kk<80; kk++) PreFilt[kk] = toupper(PreFilt[kk]);	
 			PreFilt[80] = 0;
 
-			if (VERBOSE_LEVEL>8)
+			if (VERBOSE_LEVEL>7)
 				fprintf(stdout,"#%i# <%s>\n",(int)k,PreFilt);
 
 			char *s1;
@@ -3981,7 +3986,7 @@ else if (!strncmp(MODE,"r",1)) {
 			s1 = strstr(PreFilt,"NOTCH:");
 			if (s1) hc->Notch    = strtod(s1+6, &s1);
 
-			if (VERBOSE_LEVEL>8)
+			if (VERBOSE_LEVEL>7)
 				fprintf(stdout,"#%i# HP: %fHz  LP:%fHz NOTCH=%f\n",(int)k,hc->HighPass,hc->LowPass,hc->Notch);
 				
 			if ((hdr->TYPE==EDF) && !strncmp(Header1+192,"EDF+",4) && !strcmp(hc->Label,"EDF Annotations")) {
@@ -3993,7 +3998,7 @@ else if (!strncmp(MODE,"r",1)) {
 				AnnotationChannel = k+1;
 			}
 			if ((hdr->TYPE==BDF) && !strcmp(hc->Label,"Status")) {
-				hc->OnOff = 1;
+				hc->OnOff = 0;
 				StatusChannel = k+1;
 			}
 
@@ -4032,12 +4037,12 @@ else if (!strncmp(MODE,"r",1)) {
 
 			/* convert EDF+/BDF+ annotation channel into event table */
 
-				char *p0,*p1,*p2;
 				N_EVENT=0;
-				Marker[len]=255; // stop marker;
+				Marker[len]=20; // stop marker;
 				double Onset,Duration;
 				char FLAG_NONZERO_DURATION = 0;
-				p1 = (char*)Marker;
+//				char Desc[1000]; 
+				char *Desc; 
 
 				for (k=0; k<len; ) {
 
@@ -4051,37 +4056,57 @@ else if (!strncmp(MODE,"r",1)) {
 						hdr->EVENT.TYP = (uint16_t*)realloc(hdr->EVENT.TYP, hdr->EVENT.N*sizeof(*hdr->EVENT.TYP));
 						hdr->EVENT.CHN = (uint16_t*)realloc(hdr->EVENT.CHN, hdr->EVENT.N*sizeof(*hdr->EVENT.CHN));
 					}
+					
+					char *s0 = Marker+k; 		// Onset 
+					char *s2 = NULL; 
+					while (Marker[k] != 20) {
+						if (Marker[k] == 21) s2=Marker+k+1;	// Duration
+						k++;
+					}
+					if (k>=len) break;
+					Marker[k++]=0;
+					char *s3 = Marker+k;		// annotation
 
-					Onset = strtod(p1+k, &p2);
-					p0 = p2;
-					if (*p2==21) {
-						Duration = strtod(p2+1,&p0);
+					while (Marker[k] != 20) k++;
+					if (k>=len) break;
+					Marker[k++]=0;
+
+#if 1
+					Desc=stringprep_convert(s3,"UTF8","ISO1646"); 
+fprintf(stdout,"Desc: <%s>\n",Desc);
+#else
+
+//* TODO	: support of 10646 Unicode encoding				
+					//mbstowcs(Desc, s3, 1000); 
+					wcstombs(Desc, s3, 1000); 
+					stringprep_unichar_to_utf8 (s3, Desc)
+					Desc[1000-1] = 0; 
+				
+ //*/
+#endif
+					Onset = atof(s0);
+					if (s2 != NULL) {
+						Duration = atof(s2);
 						FLAG_NONZERO_DURATION = 1;
 					}
-					else if (*p2==20)
+					else
 						Duration = 0;
-					else {  /* sanity check */
-						fprintf(stdout,"Warning EDF+: corrupted annotation channel - decoding of event #%i <%s> failed.\n",(int)N_EVENT+1,p1+k);
-						break; // do not decode any further events.
-					}
 
-					p0[strlen(p0)-1] = 0;	// remove last ascii(20)
 					hdr->EVENT.POS[N_EVENT] = (uint32_t)round(Onset * hdr->EVENT.SampleRate);	// 0-based indexing
 					hdr->EVENT.DUR[N_EVENT] = (uint32_t)round(Duration * hdr->EVENT.SampleRate);
 					hdr->EVENT.CHN[N_EVENT] = 0;
-					hdr->EVENT.TYP[N_EVENT] = min(255,strlen(p0+1));	// this is a hack, maps all codes into "user specific events"
 
 					/* conversion from free text annotations to biosig event codes */
-					if (!strcmp(p0+1,"QRS")) hdr->EVENT.TYP[N_EVENT] = 0x0501;
+					if (!strcmp(Desc,"QRS")) hdr->EVENT.TYP[N_EVENT] = 0x0501;
 					else {
-						FreeTextEvent(hdr,N_EVENT,p0+1);
+						FreeTextEvent(hdr,N_EVENT,Desc);
 					}
-
+					if (Desc) free(Desc); 
+			
 					// if (VERBOSE_LEVEL>8)
 					//	fprintf(stdout,"%i,EDF+: %i\t%i\t%03i:\t%f\t%f\t%s\t%s\n",sizeof(char**),len,k,N_EVENT,Onset,Duration,p2+1,p0+1);
 
 					N_EVENT++;
-					while ((Marker[k] > 0) && (k<len)) k++;	// search for end of annotation
 				}
 				hdr->EVENT.N = N_EVENT;
 				if (!FLAG_NONZERO_DURATION){
@@ -4155,7 +4180,6 @@ else if (!strncmp(MODE,"r",1)) {
 					}
 					d0 = d1;
 				}
-
 				free(Marker);
 
 		}	/* End reading BDF Status channel */
@@ -9649,20 +9673,64 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
     	else if (hdr->TYPE==Persyst) {
 
-		while (~ifeof(hdr)) {
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [225]\n"); 		
+
+		int c=1;	
+		while (~ifeof(hdr) && c) {
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [25] %d\n",count); 		
+
 			hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,count*2+1);
-		    	count += ifread(hdr->AS.Header + count, 1, count, hdr);
+		    	c = ifread(hdr->AS.Header + count, 1, count, hdr);
+			count += c;
 		}
 		hdr->AS.Header[count] = 0;
 		ifclose(hdr);
+		hdr->NRec = 1; 
+
+		int32_t gdftyp = 3;
+		double Cal; 
 		int status = 0;
 		size_t pos=0;
-		char *line = strtok(Header1,"\n\r");
-		while (pos<count) {
+		char *remHDR=(char*)hdr->AS.Header;
+		const char *FirstName=NULL, *MiddleName=NULL, *SurName=NULL;
+		char *datfile = NULL;
+		struct tm RecTime; 	
+		size_t NEvent = 0;
+		char *line;
+		while (*remHDR != '\0') {
+			line = strsep(&remHDR,"\n\r");
+			remHDR += strspn(remHDR,"\n\r");
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [250] %d<%s>\n",status,line); 		
+			
+
 			if (!strncmp(line,"[FileInfo]",10))
 				status = 1;
-			else if (!strncmp(line,"[ChannelMap]",12))
+			else if (!strncmp(line,"[ChannelMap]",12)) {
 				status = 2;
+				hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL,hdr->NS*sizeof(CHANNEL_TYPE));
+				uint16_t ch; 
+				for (ch=0; ch < hdr->NS; ch++) {
+					CHANNEL_TYPE *hc = hdr->CHANNEL+ch;
+					hc->Label[0] = 0; 
+					hc->Transducer[0] = 0; 
+					hc->Cal = Cal; 
+					hc->GDFTYP = gdftyp; 
+					hc->Off = 0.0; 
+					hc->OnOff = 1; 
+					hc->XYZ[0] = 0.0; 
+					hc->XYZ[1] = 0.0; 
+					hc->XYZ[2] = 0.0; 
+					hc->TOffset = NAN; 
+					hc->Impedance = NAN; 
+					hc->HighPass = NAN; 
+					hc->LowPass = NAN; 
+					hc->Notch = NAN; 
+					hc->SPR = hdr->SPR; 
+					hc->PhysDimCode = 0; 	//TODO
+				}
+			}
 			else if (!strncmp(line,"[Sheets]",8))
 				status = 3;
 			else if (!strncmp(line,"[Comments]",10))
@@ -9671,23 +9739,201 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 				status = 5;
 			else if (!strncmp(line,"[SampleTimes]",13))
 				status = 6;
-/*
-			else if (status==1) {
-//					filename = strchr(line,'=')+1;
-					if (!strncmp(line,"File",4))
-					;
-//						hdr->FILE.FID = fopen(''
-					else if (!strncmp(line,"File",4))
-					;
+			else {
+
+				switch (status) {
+				case 1: {
+					char *tag = line; 
+					char *val = index(line,'=');
+					*val= 0;		// replace "=" with terminating \0
+					val++;			// next character is the start of the value parameters
+
+					if (!strcmp(tag,"File")) {
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [250] %d FILE <%s>\n",status,line); 		
+
+						datfile = rindex(val,'/'); 
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [250] %d FILE <%s>\n",status,line); 		
+
+						if (!datfile) datfile = rindex(val,'\\');	
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [250] %d FILE <%s>\n",status,line); 		
+
+						if (!datfile) datfile = val;	
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [250] %d FILE <%s>\n",status,line); 		
+					}
+					else if (!strcmp(line,"FileType")) {
+						// TODO 
+						if (!strcmp(val,"Interleaved"))	
+							hdr->SPR  = 1;
+						else 
+							;
+					}	
+					else if (!strcmp(line,"SamplingRate"))
+						hdr->SampleRate = atof(val);
+					else if (!strcmp(line,"Calibration"))
+						Cal = atof(val);		// TODO 
+					else if (!strcmp(line,"WaveformCount"))
+						hdr->NS = atol(val);
+					else if (!strcmp(line,"DataType"))
+						switch (atol(val)) {
+						case 0: gdftyp = 3; 	// int 16
+							hdr->FILE.LittleEndian = 1;
+							break; 
+						case 4: gdftyp = 3; 	// int16
+							hdr->FILE.LittleEndian = 0;
+							break; 
+						case 6: gdftyp = 1; 	// int8 
+							break;
+						}		// TODO
+					break;
 				}
-*/
+				case 2: {
+					char *tag = line; 
+					char *val = index(line,'=');
+					*val = 0;		// replace "=" with terminating \0
+					val++;			// next character is the start of the value parameters
 
+					int channo = atol(val)-1; 
+					if (0 <= channo && channo < hdr->NS) {
+						strncpy(hdr->CHANNEL[channo].Label, tag, MAX_LENGTH_LABEL);
+					}
+					break; 
+				}
+				case 3: {
+					break;
+				}
+				case 4: {
+					if (NEvent < hdr->EVENT.N+2) {
+						NEvent  += max(128,NEvent);
+				 		hdr->EVENT.POS = (typeof(hdr->EVENT.POS)) realloc(hdr->EVENT.POS, NEvent*sizeof(*hdr->EVENT.POS) );
+						hdr->EVENT.TYP = (typeof(hdr->EVENT.TYP)) realloc(hdr->EVENT.TYP, NEvent*sizeof(*hdr->EVENT.TYP) );
+				 		hdr->EVENT.DUR = (typeof(hdr->EVENT.DUR)) realloc(hdr->EVENT.DUR, NEvent*sizeof(*hdr->EVENT.DUR) );
+						hdr->EVENT.CHN = (typeof(hdr->EVENT.CHN)) realloc(hdr->EVENT.CHN, NEvent*sizeof(*hdr->EVENT.CHN) );
+					}
 
-			line = strtok(NULL,"\n\r");
+					char *tmp2,*tmp1 = line; 
+					tmp2 = index(tmp1,',');   *tmp2 = 0; 				
+					hdr->EVENT.POS[hdr->EVENT.N] = atof(tmp1)*hdr->SampleRate; 
+					tmp1 = index(tmp2+1,','); *tmp1 = 0; 				
+					hdr->EVENT.DUR[hdr->EVENT.N]  = atof(tmp1)*hdr->SampleRate; 
+					tmp2 = index(tmp1+1,','); *tmp2 = 0; 	// ignore next field				
+					tmp1 = index(tmp2+1,','); *tmp1 = 0;  	// ignore next field				
+					char *Desc = tmp1+1;
+					FreeTextEvent(hdr,hdr->EVENT.N,Desc);
+					hdr->EVENT.N++;
+					break;
+				}
+				case 5: {
+					char *tag = line; 
+					char *val = index(line,'=');
+					*val= 0;		// replace "=" with terminating \0
+					val++;			// next character is the start of the value parameters
+
+					if (!strcmp(line,"First"))
+						FirstName=val;
+					else if (!strcmp(line,"MI"))
+						MiddleName=val;
+					else if (!strcmp(line,"Last"))
+						SurName=val;
+					else if (!strcmp(line,"Hand"))
+						hdr->Patient.Handedness = (toupper(val[0])=='R') + 2*(toupper(val[0])=='L') ;
+					else if (!strcmp(line,"Sex"))
+						hdr->Patient.Sex = (toupper(val[0])=='M') + 2*(toupper(val[0])=='F') ;
+					else if (!strcmp(line,"BirthDate")) {
+						struct tm t; 	
+						t.tm_year = atol(val+6);
+						if (t.tm_year < 80) t.tm_year+=100;
+						val[5]=0;
+						t.tm_mday = atol(val+3);
+						val[2]=0;
+						t.tm_mon = atol(val);
+
+						t.tm_hour = 12;
+						t.tm_min = 0;
+						t.tm_sec = 0;
+						hdr->Patient.Birthday = tm_time2gdf_time(&t);
+					}
+					else if (!strcmp(line,"TestDate")) {
+						RecTime.tm_year = atol(val+6);
+						if (RecTime.tm_year < 80) RecTime.tm_year+=100;
+						val[5]=0;
+						RecTime.tm_mday  =  atol(val+3);
+						val[2]=0;
+						RecTime.tm_mon = atol(val);
+					}
+					else if (!strcmp(line,"TestTime")) {
+						RecTime.tm_sec = atol(val+6);
+						val[5]=0;
+						RecTime.tm_min  =  atol(val+3);
+						val[2]=0;
+						RecTime.tm_hour = atol(val);
+					}
+					else if (!strcmp(line,"ID")) {
+						strncpy(hdr->Patient.Id,val,MAX_LENGTH_PID);
+						hdr->Patient.Id[MAX_LENGTH_PID] = 0;
+					}
+					else if (!strcmp(line,"Physician"))
+						SurName=val;
+					else if (!strcmp(line,"Technician"))
+						SurName=val;
+					else if (!strcmp(line,"Medications"))
+						hdr->Patient.Medication = (val!=NULL) && strlen(val)>0;
+
+					break;
+					}
+				case 6: {
+					break;
+					}
+				case 7: {
+					break;
+					}
+				}
+			}
+	
 		}
 
+		hdr->T0 = tm_time2gdf_time(&RecTime);
+
+		if (!hdr->FLAG.ANONYMOUS) {
+
+			size_t len = 0; 
+			if (FirstName!=NULL) len = strlen(FirstName); 
+			if (len < MAX_LENGTH_NAME) {
+				strcpy(hdr->Patient.Name, FirstName);
+				hdr->Patient.Name[len++]=' ';
+			}
+			if (MiddleName!=NULL) len += strlen(MiddleName); 
+			if (len < MAX_LENGTH_NAME) {
+				strcpy(hdr->Patient.Name, MiddleName);
+				hdr->Patient.Name[len++]=' ';
+			}
+			if (SurName!=NULL) len += strlen(SurName); 
+			if (len < MAX_LENGTH_NAME) {
+				strcpy(hdr->Patient.Name, SurName);
+			}
+			hdr->Patient.Name[len]=0;
+		}
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [288]\n"); 		
+
+		if (VERBOSE_LEVEL>7) hdr2ascii(hdr,stdout,4); 		
+
+/*
+TODO		
+		size_t len = strlen(hdr->FileName);
+		char *FileName = (char)malloc(len+strlen(datfile)+2);
+		strcpy(FileName,hdr->FileName);
+		FileName[len]=FILESEP;
+		strcpy(index(FileName,"/\\"),datfile);
+ 		
+		ifopen(hdr,"r");
+		hdr->HeadLen = 0;
+/*
     		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
     		B4C_ERRMSG = "Format Persyst not supported,yet.";
+*/
 	}
 
 	else if (hdr->TYPE==RDF) {
@@ -10405,7 +10651,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 				t.tm_isdst = -1;
 
 				if (N+1 >= hdr->EVENT.N) {
-					hdr->EVENT.N  += 4096;
+					hdr->EVENT.N   += max(4096,hdr->EVENT.N);
 			 		hdr->EVENT.POS = (typeof(hdr->EVENT.POS)) realloc(hdr->EVENT.POS, hdr->EVENT.N*sizeof(*hdr->EVENT.POS) );
 					hdr->EVENT.TYP = (typeof(hdr->EVENT.TYP)) realloc(hdr->EVENT.TYP, hdr->EVENT.N*sizeof(*hdr->EVENT.TYP) );
 				}

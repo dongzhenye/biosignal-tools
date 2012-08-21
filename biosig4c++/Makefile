@@ -54,7 +54,7 @@ endif
 ifeq "$(wildcard $(CROSS)-gcc)" ""
 CROSS         = /usr/local/src/mxe/usr/bin/i686-pc-mingw32
 endif
-CROSS64       = $(HOME)/src/mce-w64/usr/bin/x86_64-w64-mingw32
+CROSS64       = $(HOME)/src/mce-w64/usr/bin/x86_64-static-mingw32
 ifeq "$(wildcard $(CROSS64)-gcc)" ""
 CROSS64       = $(shell pwd)/../mce-w64/usr/bin/x86_64-static-mingw32
 endif
@@ -137,7 +137,7 @@ endif
 ifneq (,$(findstring WITH_MATIO, $(DEFINES)))
   LDLIBS     += -lmatio
 endif
-LIBS         += -ldl $(LDLIBS)
+LIBS         += -ldl -lidn $(LDLIBS)
 
 DELETE        = rm
 COPY          = cp -f
@@ -770,13 +770,16 @@ install_octave: mexSLOAD.mex
 	install mex/mexSLOAD.mex* 	$(DESTDIR)/usr/share/octave/site-m/
 	install mex/mexSOPEN.mex* 	$(DESTDIR)/usr/share/octave/site-m/
 
-install_libbiosig: libbiosig.a libbiosig.so 
+install_libbiosig: libbiosig.a libbiosig.so  libbiosig2.a libbiosig2.so 
 	install biosig.h    	$(DESTDIR)/usr/include
 	install physicalunits.h    	$(DESTDIR)/usr/include
 	install libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)
 	ln -sf libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}
 	ln -sf libbiosig.so.${MAJOR_VERSION} $(LIB)/libbiosig.so
 	install libbiosig.a	$(LIB)
+	install biosig2.h    	$(DESTDIR)/usr/include
+	install libbiosig2.a	$(LIB)
+	install libbiosig2.so	$(LIB)
 
 install: save2gdf libbiosig.a doc/save2gdf.1
 	install -d 		$(BIN)

@@ -174,6 +174,7 @@ extern int VERBOSE_LEVEL; 	// used for debugging
 typedef int64_t 		gdf_time; /* gdf time is represented in 64 bits */
 
 #define t_time2gdf_time(t)	((gdf_time)floor(ldexp(((double)(t))/86400.0 + 719529.0, 32)))
+#define gdf_time2t_time(t)	((ldexp(((double)(t)),-32) - 719529.0)*86400.0)
 #define	ntp_time2gdf_time(t)	((gdf_time)ldexp(ldexp(((double)(t)),-32)/86400 + 719529.0 - 70,32))
 #define	gdf_time2ntp_time(t)	((int64_t)ldexp((ldexp(((double)(t)),-32) - 719529.0 + 70) * 86400,32))
 
@@ -272,7 +273,7 @@ typedef struct CHANNEL_STRUCT {
 /*
 	This structure defines the general (fixed) header
 */
-typedef struct {
+typedef struct HDR_STRUCT {
 
 	enum FileFormat TYPE 	 ATT_ALI; 	/* type of file format */
 	float 		VERSION  ATT_ALI;	/* GDF version number */
@@ -412,6 +413,7 @@ typedef struct {
 	} AS ATT_ALI;
 
 	void *aECG;				/* used as an pointer to (non-standard) auxilary information - mostly used for hacks */
+	uint64_t viewtime; 			/* used by edfbrowser */
 
 } HDRTYPE;
 
