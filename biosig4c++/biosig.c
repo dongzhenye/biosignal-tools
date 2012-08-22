@@ -52,8 +52,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <wchar.h>
-#include <stringprep.h>
 
 #ifdef WITH_CURL
 #  include <curl/curl.h>
@@ -3771,8 +3769,9 @@ else if (!strncmp(MODE,"r",1)) {
     		tm_time.tm_year+= (tm_time.tm_year < 70 ? 100 : 0);
 
 		hdr->EVENT.N 	= 0;
-	    	hdr->NS		= atoi(strncpy(tmp,Header1+252,4));
-	    	hdr->HeadLen	= atoi(strncpy(tmp,Header1+184,8));
+		memset(tmp,0,9);
+	    	hdr->NS		= atoi(memcpy(tmp,Header1+252,4));
+	    	hdr->HeadLen	= atoi(memcpy(tmp,Header1+184,8));
 	    	if (hdr->HeadLen != ((hdr->NS+1u)<<8)) {
 	    		B4C_ERRNUM = B4C_UNSPECIFIC_ERROR;
 	    		B4C_ERRMSG = "EDF/BDF corrupted: HDR.NS and HDR.HeadLen do not fit";
@@ -4071,21 +4070,8 @@ else if (!strncmp(MODE,"r",1)) {
 					if (k>=len) break;
 					Marker[k++]=0;
 
-#if 1
-					Desc = s3; 
-#elif 0 
-					Desc=stringprep_convert(s3,"UTF8","ISO1646"); 
-fprintf(stdout,"Desc: <%s>\n",Desc);
-#else
+					Desc = s3; 	// \0-terminated event description 
 
-//* TODO	: support of 10646 Unicode encoding				
-					//mbstowcs(Desc, s3, 1000); 
-					wcstombs(Desc, s3, 1000); 
-					stringprep_unichar_to_utf8 (s3, Desc)
-					Desc[1000-1] = 0; 
-				
- //*/
-#endif
 					Onset = atof(s0);
 					if (s2 != NULL) {
 						Duration = atof(s2);
@@ -4103,7 +4089,6 @@ fprintf(stdout,"Desc: <%s>\n",Desc);
 					else {
 						FreeTextEvent(hdr,N_EVENT,Desc);
 					}
-					if (Desc) free(Desc); 
 			
 					// if (VERBOSE_LEVEL>8)
 					//	fprintf(stdout,"%i,EDF+: %i\t%i\t%03i:\t%f\t%f\t%s\t%s\n",sizeof(char**),len,k,N_EVENT,Onset,Duration,p2+1,p0+1);
