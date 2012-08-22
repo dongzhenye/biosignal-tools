@@ -46,14 +46,18 @@ LIBEXT        = a
 
 ### User-specified options: its likely you want to change this
 # settings for cross compiler: tested with MXE and mce-w64 with make suitesparse zlib qt ; 
-CROSS   = $HOME/src/mxe/usr/bin/i686-pc-mingw32
+CROSS   = $(HOME)/src/mce-w64/usr/bin/i686-static-mingw32
 ## local MXE
+ifeq "$(wildcard $(CROSS)-gcc)" ""
+CROSS   = $(HOME)/src/mxe/usr/bin/i686-pc-mingw32
+endif
 ifeq "$(wildcard $(CROSS)-gcc)" ""
 CROSS         = $(shell pwd)/../mxe/usr/bin/i686-pc-mingw32
 endif
 ifeq "$(wildcard $(CROSS)-gcc)" ""
 CROSS         = /usr/local/src/mxe/usr/bin/i686-pc-mingw32
 endif
+
 CROSS64       = $(HOME)/src/mce-w64/usr/bin/x86_64-static-mingw32
 ifeq "$(wildcard $(CROSS64)-gcc)" ""
 CROSS64       = $(shell pwd)/../mce-w64/usr/bin/x86_64-static-mingw32
@@ -617,7 +621,8 @@ biosig_server: biosig_server.c libbiosig.$(LIBEXT) biosig-network.o
 #############################################################
 #	MathLink interface to Mathematica
 #############################################################
-mma: libbiosig.$(LIBEXT)
+.phony mma: mma/sload
+mma/sload: libbiosig.$(LIBEXT)
 	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" sload
 
 win32mma: win32/libbiosig.a
