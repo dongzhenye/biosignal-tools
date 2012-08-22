@@ -9689,8 +9689,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		double DigMin = -ldexp(1,-15)-1;
 		char *line;
 		char flag_interleaved = 1; 
-		while (*remHDR != '\0') {
-			line = strsep(&remHDR,"\n\r");
+		while (1) {
+			if (*remHDR == '\0') break; 
+			// line = strsep(&remHDR,"\n\r");
+			line = remHDR; 
+			remHDR = strpbrk(remHDR,"\n\r\0");	
+			*remHDR++ = 0;
+							
 			remHDR += strspn(remHDR,"\n\r");
 
 			if (!strncmp(line,"[FileInfo]",10))
@@ -9745,13 +9750,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 				switch (status) {
 				case 1: {
 					char *tag = line; 
-					char *val = index(line,'=');
+					char *val = strchr(line,'=');
 					*val= 0;		// replace "=" with terminating \0
 					val++;			// next character is the start of the value parameters
 
 					if (!strcmp(tag,"File")) {
-						datfile = rindex(val,'/'); 
-						if (!datfile) datfile = rindex(val,'\\')+1;	
+						datfile = strrchr(val,'/'); 
+						if (!datfile) datfile = strrchr(val,'\\')+1;	
 						if (!datfile) datfile = val;	
 					}
 					else if (!strcmp(line,"FileType"))
@@ -9789,7 +9794,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 				}
 				case 2: {
 					char *tag = line; 
-					char *val = index(line,'=');
+					char *val = strchr(line,'=');
 					*val = 0;		// replace "=" with terminating \0
 					val++;			// next character is the start of the value parameters
 
@@ -9811,12 +9816,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 						hdr->EVENT.CHN = (typeof(hdr->EVENT.CHN)) realloc(hdr->EVENT.CHN, NEvent*sizeof(*hdr->EVENT.CHN) );
 					}
 					char *tmp2,*tmp1 = line; 
-					tmp2 = index(tmp1,',');   *tmp2 = 0; 				
+					tmp2 = strchr(tmp1,',');   *tmp2 = 0; 				
 					hdr->EVENT.POS[hdr->EVENT.N] = atof(tmp1)*hdr->SampleRate; 
-					tmp1 = index(tmp2+1,','); *tmp1 = 0; 				
+					tmp1 = strchr(tmp2+1,','); *tmp1 = 0; 				
 					hdr->EVENT.DUR[hdr->EVENT.N]  = atof(tmp1)*hdr->SampleRate; 
-					tmp2 = index(tmp1+1,','); *tmp2 = 0; 	// ignore next field				
-					tmp1 = index(tmp2+1,','); *tmp1 = 0;  	// ignore next field				
+					tmp2 = strchr(tmp1+1,','); *tmp2 = 0; 	// ignore next field				
+					tmp1 = strchr(tmp2+1,','); *tmp1 = 0;  	// ignore next field				
 					char *Desc = tmp1+1;
 					FreeTextEvent(hdr,hdr->EVENT.N,Desc);
 					hdr->EVENT.N++;
@@ -9824,7 +9829,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 				}
 				case 5: {
 					char *tag = line; 
-					char *val = index(line,'=');
+					char *val = strchr(line,'=');
 					*val= 0;		// replace "=" with terminating \0
 					val++;			// next character is the start of the value parameters
 
@@ -9928,12 +9933,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			
 		if (strspn(FileName,"/\\")) {
 			strcpy(hdr->FileName, FileName);
-			char *tmpstr = rindex(hdr->FileName,'/')+1;
+			char *tmpstr = strrchr(hdr->FileName,'/')+1;
 
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [285] %d<%s>\n",len,tmpstr); 		
 			
 			if (tmpstr==NULL) 
-				tmpstr = rindex(hdr->FileName,'\\')+1;
+				tmpstr = strrchr(hdr->FileName,'\\')+1;
 
 			if (tmpstr!=NULL) 
 				strcpy(tmpstr,datfile);
