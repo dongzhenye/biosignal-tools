@@ -4072,6 +4072,8 @@ else if (!strncmp(MODE,"r",1)) {
 					Marker[k++]=0;
 
 #if 1
+					Desc = s3; 
+#elif 0 
 					Desc=stringprep_convert(s3,"UTF8","ISO1646"); 
 fprintf(stdout,"Desc: <%s>\n",Desc);
 #else
@@ -9686,7 +9688,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		}
 		hdr->AS.Header[count] = 0;
 		ifclose(hdr);
-		hdr->NRec = 1; 
+		hdr->SPR = 1;
 
 		int32_t gdftyp = 3;
 		double Cal; 
@@ -9697,38 +9699,52 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		char *datfile = NULL;
 		struct tm RecTime; 	
 		size_t NEvent = 0;
+		hdr->FLAG.OVERFLOWDETECTION = 0; // overflow detection is not supported for this format 
+		double DigMax =  ldexp(1,-15);
+		double DigMin = -ldexp(1,-15)-1;
 		char *line;
+		char flag_interleaved = 1; 
 		while (*remHDR != '\0') {
 			line = strsep(&remHDR,"\n\r");
 			remHDR += strspn(remHDR,"\n\r");
-
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [250] %d<%s>\n",status,line); 		
-			
 
 			if (!strncmp(line,"[FileInfo]",10))
 				status = 1;
 			else if (!strncmp(line,"[ChannelMap]",12)) {
 				status = 2;
+				hdr->AS.bpb = hdr->NS*GDFTYP_BITS[gdftyp]>>3; 
 				hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL,hdr->NS*sizeof(CHANNEL_TYPE));
 				uint16_t ch; 
 				for (ch=0; ch < hdr->NS; ch++) {
 					CHANNEL_TYPE *hc = hdr->CHANNEL+ch;
-					hc->Label[0] = 0; 
+
+					hc->PhysMax = DigMax*Cal; 
+					hc->PhysMin = DigMin*Cal; 
+					hc->DigMax  = DigMax; 
+					hc->DigMin  = DigMin; 
+					hc->Cal     = Cal; 
+					hc->Off     = 0.0; 
+					hc->OnOff   = 1; 
+
+					hc->Label[0]      = 0; 
+					hc->LeadIdCode    = 0;
 					hc->Transducer[0] = 0; 
-					hc->Cal = Cal; 
-					hc->GDFTYP = gdftyp; 
-					hc->Off = 0.0; 
-					hc->OnOff = 1; 
-					hc->XYZ[0] = 0.0; 
-					hc->XYZ[1] = 0.0; 
-					hc->XYZ[2] = 0.0; 
-					hc->TOffset = NAN; 
+					hc->PhysDimCode   = 0; 	//TODO
+					hc->GDFTYP        = gdftyp; 
+
+					hc->TOffset   = NAN; 
+					hc->LowPass   = NAN; 
+					hc->HighPass  = NAN; 
+					hc->Notch     = NAN; 
+					hc->XYZ[0]    = 0.0; 
+					hc->XYZ[1]    = 0.0; 
+					hc->XYZ[2]    = 0.0; 
 					hc->Impedance = NAN; 
-					hc->HighPass = NAN; 
-					hc->LowPass = NAN; 
-					hc->Notch = NAN; 
-					hc->SPR = hdr->SPR; 
-					hc->PhysDimCode = 0; 	//TODO
+
+					hc->SPR = hdr->SPR;
+					hc->bi8 = ch*GDFTYP_BITS[gdftyp]; 
+					hc->bi  = hc->bi8>>3; 
+					hc->bufptr = NULL; 
 				}
 			}
 			else if (!strncmp(line,"[Sheets]",8))
@@ -9749,44 +9765,41 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 					val++;			// next character is the start of the value parameters
 
 					if (!strcmp(tag,"File")) {
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [250] %d FILE <%s>\n",status,line); 		
-
 						datfile = rindex(val,'/'); 
-
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [250] %d FILE <%s>\n",status,line); 		
-
-						if (!datfile) datfile = rindex(val,'\\');	
-
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [250] %d FILE <%s>\n",status,line); 		
-
+						if (!datfile) datfile = rindex(val,'\\')+1;	
 						if (!datfile) datfile = val;	
-
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [250] %d FILE <%s>\n",status,line); 		
 					}
-					else if (!strcmp(line,"FileType")) {
-						// TODO 
-						if (!strcmp(val,"Interleaved"))	
-							hdr->SPR  = 1;
-						else 
-							;
-					}	
+					else if (!strcmp(line,"FileType"))
+						flag_interleaved = !strcmp(val,"Interleaved");
 					else if (!strcmp(line,"SamplingRate"))
 						hdr->SampleRate = atof(val);
 					else if (!strcmp(line,"Calibration"))
-						Cal = atof(val);		// TODO 
+						Cal = atof(val);
 					else if (!strcmp(line,"WaveformCount"))
 						hdr->NS = atol(val);
-					else if (!strcmp(line,"DataType"))
+					else if (!strcmp(line,"DataType")) {
 						switch (atol(val)) {
 						case 0: gdftyp = 3; 	// int 16
 							hdr->FILE.LittleEndian = 1;
+							hdr->AS.bpb *= 2; 
+							DigMin = -ldexp(1.0,-15)-1;
+							DigMax =  ldexp(1.0,-15);
 							break; 
 						case 4: gdftyp = 3; 	// int16
 							hdr->FILE.LittleEndian = 0;
+							hdr->AS.bpb *= 2; 
+							DigMin = -ldexp(1.0,-15)-1;
+							DigMax =  ldexp(1.0,-15);
 							break; 
 						case 6: gdftyp = 1; 	// int8 
+							DigMin = -ldexp(1.0,-7)-1;
+							DigMax =  ldexp(1.0,-7);
 							break;
-						}		// TODO
+						default: 
+							B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+							B4C_ERRMSG = "Format Persyst: unsupported data type\n";
+						}
+					}
 					break;
 				}
 				case 2: {
@@ -9812,7 +9825,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 				 		hdr->EVENT.DUR = (typeof(hdr->EVENT.DUR)) realloc(hdr->EVENT.DUR, NEvent*sizeof(*hdr->EVENT.DUR) );
 						hdr->EVENT.CHN = (typeof(hdr->EVENT.CHN)) realloc(hdr->EVENT.CHN, NEvent*sizeof(*hdr->EVENT.CHN) );
 					}
-
 					char *tmp2,*tmp1 = line; 
 					tmp2 = index(tmp1,',');   *tmp2 = 0; 				
 					hdr->EVENT.POS[hdr->EVENT.N] = atof(tmp1)*hdr->SampleRate; 
@@ -9891,13 +9903,17 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 					}
 				}
 			}
-	
 		}
 
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [260] %d<%s>\n",status,line); 		
+			
 		hdr->T0 = tm_time2gdf_time(&RecTime);
 
-		if (!hdr->FLAG.ANONYMOUS) {
 
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [270] %d<%s>\n",status,line); 		
+			
+		if (!hdr->FLAG.ANONYMOUS) {
 			size_t len = 0; 
 			if (FirstName!=NULL) len = strlen(FirstName); 
 			if (len < MAX_LENGTH_NAME) {
@@ -9916,24 +9932,70 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			hdr->Patient.Name[len]=0;
 		}
 
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [288]\n"); 		
 
-		if (VERBOSE_LEVEL>7) hdr2ascii(hdr,stdout,4); 		
-
-/*
-TODO		
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [280] %d<%s>\n",status,datfile); 		
+			
 		size_t len = strlen(hdr->FileName);
-		char *FileName = (char)malloc(len+strlen(datfile)+2);
-		strcpy(FileName,hdr->FileName);
-		FileName[len]=FILESEP;
-		strcpy(index(FileName,"/\\"),datfile);
- 		
+		char *FileName = hdr->FileName;
+		hdr->FileName = (char*) malloc(len+strlen(datfile)+2);
+	
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [283] %d<%s>  %d/%d\n",len,datfile,hdr->SPR,hdr->NRec); 		
+			
+		if (strspn(FileName,"/\\")) {
+			strcpy(hdr->FileName, FileName);
+			char *tmpstr = rindex(hdr->FileName,'/')+1;
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [285] %d<%s>\n",len,tmpstr); 		
+			
+			if (tmpstr==NULL) 
+				tmpstr = rindex(hdr->FileName,'\\')+1;
+
+			if (tmpstr!=NULL) 
+				strcpy(tmpstr,datfile);
+			else {
+		    		B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
+		    		B4C_ERRMSG = "Format Persyst: cannot open dat file.";
+			}
+		}
+		else {
+			strcpy(hdr->FileName, datfile);			
+		}
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [290] %d<%s>\n",status, hdr->FileName); 		
+			
+		struct stat FileBuf;
+		if (stat(hdr->FileName, &FileBuf)==0) {
+			hdr->FILE.size = FileBuf.st_size; 
+			hdr->NRec = FileBuf.st_size*8/(hdr->NS*GDFTYP_BITS[gdftyp]);
+
+			if (!flag_interleaved) {
+				hdr->SPR = hdr->NRec; 
+				hdr->NRec = 1; 
+
+				uint16_t ch; 
+				for (ch=0; ch < hdr->NS; ch++) {
+					CHANNEL_TYPE *hc = hdr->CHANNEL+ch;
+
+					hc->SPR = hdr->SPR;
+					hc->bi8 = ch * hdr->SPR * GDFTYP_BITS[gdftyp]; 
+					hc->bi  = hc->bi8>>3; 
+				}
+				hdr->AS.bpb = FileBuf.st_size;
+			}
+		}
+		else {
+	    		B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
+	    		B4C_ERRMSG = "Format Persyst: cannot open dat file.";
+		}	
+
 		ifopen(hdr,"r");
-		hdr->HeadLen = 0;
-/*
-    		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-    		B4C_ERRMSG = "Format Persyst not supported,yet.";
-*/
+		hdr->HeadLen = 0;	// datfile has no header
+
+		free(hdr->FileName);
+		hdr->FileName = FileName; 
+		
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [298] %d %d %d\n",FileBuf.st_size,hdr->AS.bpb,FileBuf.st_size/hdr->AS.bpb); 		
+
 	}
 
 	else if (hdr->TYPE==RDF) {
