@@ -343,6 +343,8 @@ else
                         HDR.TYPE='NEX';
                 elseif all(s([1:6])==abs('Neuron')); 
                         HDR.TYPE='NEURON';
+                elseif all(strcmp(ss([1:10]),'[FileInfo]')); 
+                        HDR.TYPE='Persyst';
                 elseif all(s([1:4])==abs('SXDF')); 
                         HDR.TYPE='OpenXDF';
                 elseif all(s([1:4,6:132])==[abs('PLEX'),zeros(1,127)]); 	% http://WWW.PLEXONINC.COM

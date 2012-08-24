@@ -4461,6 +4461,124 @@ elseif strcmp(HDR.TYPE,'OGG'),
         end;
 
         
+elseif strcmp(HDR.TYPE,'Persyst'),
+        if any(HDR.FILE.PERMISSION=='r');
+                [HDR.FILE.FID] = fopen(HDR.FileName,[HDR.FILE.PERMISSION,'t']);          
+                if HDR.FILE.FID < 0, 
+                        HDR.ErrNum = [32,HDR.ErrNum];
+                        return;
+                end;
+                [H1,count] = fread(HDR.FILE.FID,[1,inf],'uint8=>char');
+		fclose(HDR.FILE.FID); 
+
+		status = 0; 
+		[line,r] = strtok(H1,'\n\r');
+		while (~isempty(line))
+			if strcmp(line,'[FileInfo]')
+				status = 1; 
+			elseif strcmp(line,'[ChannelMap]')
+				status = 2;
+%%				HDR.AS.bpb = HDR.NS* 	%% todo
+			elseif strcmp(line,'[Sheets]')
+				status = 3; 
+			elseif strcmp(line,'[Comments]')
+				status = 4; 
+			elseif strcmp(line,'[Patient]')
+				status = 5; 
+			elseif strcmp(line,'[SampleTimes]')
+				status = 6; 
+			elseif isempty(line)
+				; %% ignore 
+			elseif isempty(line)
+				status = -1;  
+			else
+				switch (status)
+				case {1}
+					[tag,val]=strtok(line,'=');
+					val = val(2:end);
+					switch (tag)
+					case {'File'}
+						[p,datfile,ext] = fileparts(val); 
+						datfile = [datfile,ext];
+					case {'FileType'}
+						if strcmp(val,'Interleaved')
+							HDR.SPR = 1; 
+						end;
+					case {'SamplingRate'}
+						HDR.SampleRate = feval(val); 
+					case {'Calibration'}
+						HDR.Cal = feval(val); 
+					case {'WaveformCount'}
+						HDR.NS = feval(val); 
+					case {'DateType'}
+						switch feval(val)	
+						case {0}: gdftyp = 3;  
+							HDR.Endianity ='ieee-le';
+						case {4}: gdftyp = 3;  
+							HDR.Endianity = 'ieee-be';
+						case {6}: gdftyp = 1;  
+						end;
+					end; 
+				case {2}
+					[tag,val]=strtok(line,'=');
+					ch = feval(val(2:end));
+					HDR.Label{ch} = tag; 
+				case {3}
+				case {4}
+					HDR.EVENT.N = HDR.EVENT.N + 1;
+					[pos,ll]=strtok(line,',');
+					[dur,ll]=strtok(ll,',');
+					[ign,ll]=strtok(ll,',');
+					[ign,ll]=strtok(ll,',');
+					HDR.EVENT.Desc{HDR.EVENT.N} = ll(2:end); 
+					HDR.EVENT.POS(HDR.EVENT.N) = feval(pos);	
+					HDR.EVENT.DUR(HDR.EVENT.N) = feval(pos);	
+				case {5}
+					[tag,val]=strtok(line,'=');
+					val = val(2:end);
+					switch (tag)
+					case {'First'}
+						FirstName = val;
+					case {'MI'}
+						MiddleName = val; 
+					case {'Last'}
+						SurName = val; 
+					case {'Hand'}
+						HDR.Patient.Handedness = any(val(1)=='rR') + any(val(2)=='lL') * 2;
+					case {'Sex'}
+						HDR.Patient.Sex = any(val(1)=='mM') + any(val(2)=='fF') * 2;
+					case {'BirthDate'}
+						val(val=='/')=0;
+						t = str2double(val);
+						HDR.T0 = [t([3,1,2]),0,0,0]; 
+					case {'TestDate'}
+						val(val=='/')=0;
+						t = str2double(val);
+						HDR.T0([3,1,2]) = [t([3,1,2]),0,0,0]; 
+					case {'TestTime'}
+						val(val==':')=0;
+						t = str2double(val);
+						HDR.T0(4:6) = t; 
+					case {'ID'}
+						HDR.Patient.Id = val;
+					case {'Physician'}
+						HDR.Physician = val;
+					case {'Technician'}
+						HDR.Technician = val;
+					case {'Medications'}
+						HDR.Patient.Medication = val;
+					end;
+				case {6}		
+				end;
+			end;
+			[line,r] = strtok(r,'\n\r');
+		end;
+
+		HDR.FILE.Ext = '.dat'; 
+		HDR.FILE.FID = fopen(fullfile(HDR.FILE.Path,datfile),'r', HDR.Endianity);
+	end 
+        
+        
 elseif strcmp(HDR.TYPE,'RMF'),
         HDR.FILE.FID = fopen(HDR.FileName,[HDR.FILE.PERMISSION,'b'],'ieee-le');
         
