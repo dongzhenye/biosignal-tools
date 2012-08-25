@@ -9876,8 +9876,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 						strncpy(hdr->Patient.Id,val,MAX_LENGTH_PID);
 						hdr->Patient.Id[MAX_LENGTH_PID] = 0;
 					}
+					/* Omitted, because it is not important, identification through ID, and T0; quality is determined by Technician
 					else if (!strcmp(line,"Physician"))
-						//hdr->ID.Technician=val;
+						Physician=val;
+					*/	
 					else if (!strcmp(line,"Technician"))
 						hdr->ID.Technician = strdup(val);
 					else if (!strcmp(line,"Medications"))
