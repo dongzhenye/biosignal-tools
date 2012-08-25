@@ -9877,9 +9877,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 						hdr->Patient.Id[MAX_LENGTH_PID] = 0;
 					}
 					else if (!strcmp(line,"Physician"))
-						SurName=val;
+						//hdr->ID.Technician=val;
 					else if (!strcmp(line,"Technician"))
-						SurName=val;
+						hdr->ID.Technician = strdup(val);
 					else if (!strcmp(line,"Medications"))
 						hdr->Patient.Medication = (val!=NULL) && strlen(val)>0;
 
