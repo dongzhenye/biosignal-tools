@@ -4,10 +4,13 @@ function [argout,s]=sview(s,varargin),
 %    SVIEW(HDR)
 %    SVIEW(S,HDR)
 %
+%    SVIEW(filename, ...)
+%        optional arguments are the same as in SLOAD
+%
 % See also: SLOAD 
 
 %	$Id$ 
-%	Copyright (c) 2004,2006,2008 by Alois Schl?gl <a.schloegl@ieee.org>	
+%	Copyright (c) 2004,2006,2008,2012,2012 by Alois Schloegl <alois.schloegl@gmail.org>	
 %    	This is part of the BIOSIG-toolbox http://biosig.sf.net/
 
 % This program is free software; you can redistribute it and/or
@@ -40,7 +43,7 @@ end;
 		CHAN = 1:size(s,2);
 
 	elseif ischar(s) || iscell(s),
-		[s,H] = sload(s,0,'OVERFLOWDETECTION:OFF',varargin{:});
+		[s,H] = sload(s,varargin{:});
 		CHAN = 1:size(s,2);
 	
 	elseif isstruct(s)
