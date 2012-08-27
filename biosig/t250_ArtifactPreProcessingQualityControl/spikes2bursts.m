@@ -230,7 +230,8 @@ end;
 			HDR = sclose(HDR);
  		end;
 	end;
-
+	WarnState = warning;
+	warning('off'); 
 	if ~isempty(evtFile)
 		%%% write data to output
 		HDR.TYPE  = 'EVENT';
@@ -250,5 +251,6 @@ end;
 			HDR = sclose(HDR);
  		end;
 	end;
+	warning(WarnState); 
 
 
