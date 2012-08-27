@@ -56,6 +56,8 @@ function H=plota(X,arg2,arg3,arg4,arg5,arg6,arg7)
 %   'HISTOGRAM'	'log+'	chansel
 %   'HISTOGRAM'	'log '	chansel
 %   'HISTOGRAM'	'lin'	chansel
+%   'HISTOGRAM'	'PDF'	chansel
+%   'HISTOGRAM'	'logPDF'	chansel
 %
 %   'SIESTA_HISTOGRAM'	chansel
 %
@@ -1501,6 +1503,25 @@ elseif strcmp(X.datatype,'HISTOGRAM') || strcmp(X.datatype,'qc:histo')
                         v=axis; v(3:4)=[0,1]; axis(v);
                 elseif strcmp(yscale,'stacked'),
                         bar(t,h,'stacked');
+                elseif strcmp(yscale,'PDF'),
+                        subplot(ceil(size(X.H,2)/N),N,K);
+                        plot(t, h ./ ( [t(2)-t(1); t(3:end)-t(1:end-2); t(end)-t(end-1)]*sum(h) ) , 'x');
+                elseif strcmp(yscale,'logPDF'),
+                        subplot(ceil(size(X.H,2)/N),N,K);
+                        semilogy(t, h ./ ( [t(2)-t(1); t(3:end)-t(1:end-2); t(end)-t(end-1)]*sum(h) ) , 'x');
+                elseif 0;         
+                        warning('plota(histo(...),''PDF'') is very experimental - you are warned');
+                        for k = 1:size(X.H,2),
+                                x = [-inf;X.X(:,max(1,size(X.X,2)))];
+                                y = [0; cumsum(X.H(:,k))];
+                                dx = (x(end)-x(2))/20000;
+                                xi = x(2):dx:x(end);
+                                yi = interp1(x,y/y(end),xi);
+                                n = 1000; 
+                                yi = filter([1,zeros(1,n-2),-1]', 1, yi);
+                                plot(xi(1:end-n/2), (dx*yi(n/2+1:end)) ); 
+                                ylabel(sprintf('PDF'));
+                        end;
                 end;
         end;
 elseif strcmp(X.datatype,'DBI-EPs'),
