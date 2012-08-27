@@ -4471,6 +4471,8 @@ elseif strcmp(HDR.TYPE,'Persyst'),
                 [H1,count] = fread(HDR.FILE.FID, [1,inf], 'uint8=>char');
 		fclose(HDR.FILE.FID); 
 
+		HDR.EVENT.N = 0;
+		HDR.NS = 0;
 		HDR.Endianity ='ieee-le';
 		HDR.FLAG.OVERFLOWDETECTION = 0; 		
 		flag_interleaved = 1;
@@ -4483,6 +4485,7 @@ elseif strcmp(HDR.TYPE,'Persyst'),
 			elseif strcmp(line,'[ChannelMap]')
 				status = 2;
 %%				HDR.AS.bpb = HDR.NS* 	%% todo
+				HDR.PhysDimCode = zeros(HDR.NS,1);      % unknown
 			elseif strcmp(line,'[Sheets]')
 				status = 3; 
 			elseif strcmp(line,'[Comments]')
@@ -4510,6 +4513,7 @@ elseif strcmp(HDR.TYPE,'Persyst'),
 						flag_interleaved = strcmp(val,'Interleaved');
 					case {'SamplingRate'}
 						HDR.SampleRate = str2double(val); 
+						HDR.EVENT.SampleRate = HDR.SampleRate; 
 					case {'Calibration'}
 						HDR.Cal = str2double(val); 
 					case {'WaveformCount'}
@@ -4542,8 +4546,8 @@ elseif strcmp(HDR.TYPE,'Persyst'),
 					[ign,ll]=strtok(ll,',');
 					[ign,ll]=strtok(ll,',');
 					HDR.EVENT.Desc{HDR.EVENT.N} = ll(2:end); 
-					HDR.EVENT.POS(HDR.EVENT.N) = str2double(pos);	
-					HDR.EVENT.DUR(HDR.EVENT.N) = str2double(pos);	
+					HDR.EVENT.POS(HDR.EVENT.N) = str2double(pos)*HDR.EVENT.SampleRate;	
+					HDR.EVENT.DUR(HDR.EVENT.N) = str2double(pos)*HDR.EVENT.SampleRate;	
 				case {5}
 					[tag,val]=strtok(line,'=');
 					val = val(2:end);
@@ -4616,6 +4620,11 @@ elseif strcmp(HDR.TYPE,'Persyst'),
 		HDR.DigMin  = min(HDR.data); 
 		HDR.PhysMax = HDR.Cal*HDR.DigMax;
 		HDR.PhysMin = HDR.Cal*HDR.DigMin;
+
+		HDR.Calib = sparse(2:HDR.NS+1, 1:HDR.NS, HDR.Cal);        
+
+		[HDR.EVENT.CodeDesc, j, HDR.EVENT.TYP] = unique(HDR.EVENT.Desc); 
+		HDR.EVENT.CHN = zeros(size(HDR.EVENT.POS));
 	end 
         
         
