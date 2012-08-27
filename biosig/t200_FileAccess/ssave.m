@@ -100,7 +100,7 @@ if (nargin > 1),
 	HDR = sclose(HDR);
 end;
 
-if strcmp(TYPE,'EVENT') return; end; 
+if (nargin>2) && strcmp(TYPE,'EVENT') return; end; 
 
 % Convert EVENT into WSCORE event format
 if all([length(HDR.EVENT.POS), length(HDR.EVENT.TYP)]),
