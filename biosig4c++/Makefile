@@ -338,7 +338,7 @@ win32/io.h: $(IO_H_FILE)
 win64/io.h: $(IO_H_FILE64)
 	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE64) > "$@"
 
-win32/%.obj: %.c  biosig-dev.h biosig.h $(IO_H_FILE)
+win32/%.obj: %.c  biosig-dev.h biosig.h win32/io.h
 	$(MinGWCC) -c $(MinGWCFLAGS) -o "$@" "$<"
 win32/%.obj: t210/%.c  biosig-dev.h biosig.h 
 	$(MinGWCC) -c $(MinGWCFLAGS) -o "$@" "$<"
@@ -355,7 +355,7 @@ win32/%.obj: win32/%.c
 win32/%.obj: XMLParser/%.cpp 
 	$(MinGWCXX) -c $(MinGWCFLAGS) -o "$@" "$<"
 
-win64/%.obj: %.c biosig-dev.h biosig.h $(IO_H_FILE64)
+win64/%.obj: %.c biosig-dev.h biosig.h win64/io.h
 	$(MinGW64CC) -c $(MinGW64CFLAGS) -o "$@" "$<"
 win64/%.obj: t210/%.c  biosig-dev.h biosig.h 
 	$(MinGW64CC) -c $(MinGW64CFLAGS) -o "$@" "$<"
@@ -669,7 +669,7 @@ $(PathToSigViewer)/bin/sigviewer: libbiosig.$(LIBEXT) biosig.h
 	$(SED) -i 's|\([[:space:]]*-lbiosig\)\([ #\\]*\)$$|\1 $(LDLIBS) \2|' $(PathToSigViewer)/src/src.pro
 	echo 0.5.2-v${BIOSIG_VERSION} > $(PathToSigViewer)/src/version.txt
 	(cd $(PathToSigViewer)/src; qmake; $(MAKE);)
-	#(cd $(PathToSigViewer); svn revert -R .; svn up -r 557; patch -p0 <../biosig4c++/patches/patch_sigviewer_0.5.2.diff; cd src; qmake; $(MAKE);)
+	#-(cd $(PathToSigViewer); svn revert -R .; svn up -r 557; patch -p0 <../biosig4c++/patches/patch_sigviewer_0.5.2.diff; cd src; qmake; $(MAKE);)
 	-$(COPY) $(PathToSigViewer)/bin/release/sigviewer bin/sigviewer
 
 docs: 	docs/save2gdf.txt  docs/mexSLOAD.txt
