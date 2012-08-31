@@ -4478,6 +4478,11 @@ elseif strcmp(HDR.TYPE,'Persyst'),
 		flag_interleaved = 1;
 		status = 0; 
 		line = H1;
+		Desc = {}; 
+		HDR.EVENT.POS = [];
+		HDR.EVENT.DUR = [];
+		HDR.EVENT.CHN = [];
+		HDR.EVENT.TYP = [];
 		while (~isempty(line))
 			[line,H1] = strtok(H1,char([10,13]));
 			if strcmp(line,'[FileInfo]')
@@ -4545,9 +4550,9 @@ elseif strcmp(HDR.TYPE,'Persyst'),
 					[dur,ll]=strtok(ll,',');
 					[ign,ll]=strtok(ll,',');
 					[ign,ll]=strtok(ll,',');
-					HDR.EVENT.Desc{HDR.EVENT.N} = ll(2:end); 
+					Desc{HDR.EVENT.N} = ll(2:end); 
 					HDR.EVENT.POS(HDR.EVENT.N) = str2double(pos)*HDR.EVENT.SampleRate;	
-					HDR.EVENT.DUR(HDR.EVENT.N) = str2double(pos)*HDR.EVENT.SampleRate;	
+					HDR.EVENT.DUR(HDR.EVENT.N) = str2double(dur)*HDR.EVENT.SampleRate;	
 				case {5}
 					[tag,val]=strtok(line,'=');
 					val = val(2:end);
@@ -4623,7 +4628,7 @@ elseif strcmp(HDR.TYPE,'Persyst'),
 
 		HDR.Calib = sparse(2:HDR.NS+1, 1:HDR.NS, HDR.Cal);        
 
-		[HDR.EVENT.CodeDesc, j, HDR.EVENT.TYP] = unique(HDR.EVENT.Desc); 
+		[HDR.EVENT.CodeDesc, j, HDR.EVENT.TYP] = unique(Desc); 
 		HDR.EVENT.CHN = zeros(size(HDR.EVENT.POS));
 	end 
         
