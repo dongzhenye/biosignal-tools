@@ -170,7 +170,6 @@ OCT           := mkoctfile$(OCTAVE_VERSION)
 SWIG          := swig
 PYTHON        := python
 PYTHONVER     := $(shell $(PYTHON) -c "import sys; print sys.version[:3]")
-PYTHON_INC    := $(shell $(PYTHON) -c 'import numpy.distutils.system_info as si; print " -I".join(si.numpy_info().get_include_dirs())')
 NUMPY_INC     := $(shell $(PYTHON) -c 'import numpy.distutils.misc_util as mu; print " -I".join(mu.get_numpy_include_dirs())')
 
 ##########################################################
@@ -486,10 +485,10 @@ win64/sigviewer.exe: win64/libbiosig.a win64/libbiosig.dll
 biosig4python : python/_biosig.so python/biosig.py
 
 python/biosig.py python/swig_wrap.cxx: python/swig.i
-	$(SWIG) -c++ -python -I/usr/include -I$(NUMPY_INC) -o python/swig_wrap.cxx python/swig.i 	 
+	$(SWIG) -classic -c++ -python  -I/usr/include/python$(PYTHONVER)/ -I$(NUMPY_INC) -o python/swig_wrap.cxx python/swig.i
 	 
 python/_biosig.so : python/swig_wrap.cxx  libbiosig.$(LIBEXT)
-	$(CXX) -c $(CXXFLAGS) -I$(PYTHON_INC) -I$(NUMPY_INC) -I$(INCPATH) python/swig_wrap.cxx -o python/swig_wrap.o
+	$(CXX) -c $(CXXFLAGS) -I/usr/include/python$(PYTHONVER)/ -I$(NUMPY_INC)  python/swig_wrap.cxx -o python/swig_wrap.o
 	$(CXX) -shared python/swig_wrap.o $(LFLAGS) $(LIBS) -lpython$(PYTHONVER) -o python/_biosig.so 	 
 	 
 
