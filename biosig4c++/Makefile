@@ -485,7 +485,7 @@ win64/sigviewer.exe: win64/libbiosig.a win64/libbiosig.dll
 biosig4python : python/_biosig.so python/biosig.py
 
 python/biosig.py python/swig_wrap.cxx: python/swig.i
-	$(SWIG) -classic -c++ -python  -I/usr/include/python$(PYTHONVER)/ -I$(NUMPY_INC) -o python/swig_wrap.cxx python/swig.i
+	$(SWIG) -python  -I/usr/include/python$(PYTHONVER)/ -I$(NUMPY_INC) -o python/swig_wrap.cxx python/swig.i
 	 
 python/_biosig.so : python/swig_wrap.cxx  libbiosig.$(LIBEXT)
 	$(CXX) -c $(CXXFLAGS) -I/usr/include/python$(PYTHONVER)/ -I$(NUMPY_INC)  python/swig_wrap.cxx -o python/swig_wrap.o
