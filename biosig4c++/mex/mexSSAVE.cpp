@@ -91,7 +91,6 @@ void mexFunction(
 	double		*ChanList=NULL;
 	int		NS = -1;
 	char		FlagOverflowDetection = 1, FlagUCAL = 0;
-	char		FLAG_CNT32 = 0;
 	void 		*data = NULL;
 	mxArray *p = NULL, *p1 = NULL, *p2 = NULL;
 
@@ -178,7 +177,6 @@ void mexFunction(
 	/***** SET INPUT ARGUMENTS *****/
 	hdr->FLAG.OVERFLOWDETECTION = FlagOverflowDetection; 
 	hdr->FLAG.UCAL = FlagUCAL;
-	hdr->FLAG.CNT32 = FLAG_CNT32;
 #ifdef CHOLMOD_H
 	hdr->FLAG.ROW_BASED_CHANNELS = (rr!=NULL); 
 #else 	
@@ -411,8 +409,6 @@ void mexFunction(
 			hdr->FLAG.ANONYMOUS = (char)getDouble(p1,0);
 		if ( (p1 = mxGetField(p, 0, "ROW_BASED_CHANNELS") ) != NULL ) 
 			hdr->FLAG.ROW_BASED_CHANNELS = (char)getDouble(p1,0);
-		if ( (p1 = mxGetField(p, 0, "CNT32") ) != NULL ) 
-			hdr->FLAG.CNT32 = (char)getDouble(p1,0);
 	}
 
 	if ( (p = mxGetField(prhs[0], 0, "EVENT") ) != NULL ) {

@@ -1470,7 +1470,6 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->FLAG.OVERFLOWDETECTION = 1; 	// overflow detection ON
 	hdr->FLAG.ANONYMOUS = 1; 	// <>0: no personal names are processed
 	hdr->FLAG.TARGETSEGMENT = 1;	// read 1st segment
-	hdr->FLAG.CNT32 = 0; 		// assume 16-bit CNT format
 	hdr->FLAG.ROW_BASED_CHANNELS=0;
 	
        	// define variable header
@@ -6239,6 +6238,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 	    	hdr->VERSION = atof((char*)hdr->AS.Header + 8);
 	    	count  += ifread(hdr->AS.Header+count, 1, 900-count, hdr);
 
+		int8_t FLAG_CNT32 = 0;
 		uint16_t gdftyp = 0;
 	    	uint8_t minor_revision = hdr->AS.Header[804];
 	    	size_t eventtablepos = leu32p(hdr->AS.Header+886);
@@ -6332,11 +6332,11 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			eventtablepos = leu32p(hdr->AS.Header+886);
 			if (nextfilepos > 0) {
 				ifseek (hdr,nextfilepos+52,SEEK_SET);
-				hdr->FLAG.CNT32 = (ifgetc(hdr)==1);
+				FLAG_CNT32 = (ifgetc(hdr)==1);
 				ifseek (hdr,count,SEEK_SET);
 			}
 
-	    		gdftyp      = hdr->FLAG.CNT32 ? 5 : 3;
+	    		gdftyp      = FLAG_CNT32 ? 5 : 3;
 		    	hdr->AS.bpb = hdr->NS*GDFTYP_BITS[gdftyp]/8;
 			hdr->NRec   = (eventtablepos - hdr->HeadLen) / hdr->AS.bpb;
 
@@ -6368,7 +6368,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		    	hc->Notch	= CNT_SETTINGS_NOTCH[(uint8_t)Header1[682]];
 			hc->OnOff       = 1;
 
-			if (hdr->FLAG.CNT32) {
+			if (FLAG_CNT32) {
 			  	hc->DigMax	=  (double)(0x007fffff);
 			    	hc->DigMin	= -(double)(int32_t)(0xff800000);
 			}

@@ -178,7 +178,6 @@ void mexFunction(
 	double		*ChanList=NULL;
 	int		NS = -1;
 	char		FlagOverflowDetection = 1, FlagUCAL = 0;
-	char		FLAG_CNT32 = 0;
 	int		argSweepSel = -1;
 	
 #ifdef CHOLMOD_H
@@ -202,7 +201,6 @@ void mexFunction(
 		mexPrintf("\t[s,HDR]=mexSLOAD(f,chan)\n\t\tchan must be sorted in ascending order\n");
 		mexPrintf("\t[s,HDR]=mexSLOAD(f,ReRef)\n\t\treref is a (sparse) matrix for rerefencing\n");
 		mexPrintf("\t[s,HDR]=mexSLOAD(f,chan,'...')\n");
-		mexPrintf("\t[s,HDR]=mexSLOAD(f,chan,'CNT32')\n");
 		mexPrintf("\t[s,HDR]=mexSLOAD(f,chan,'OVERFLOWDETECTION:ON')\n");
 		mexPrintf("\t[s,HDR]=mexSLOAD(f,chan,'OVERFLOWDETECTION:OFF')\n");
 		mexPrintf("\t[s,HDR]=mexSLOAD(f,chan,'UCAL:ON')\n");
@@ -212,7 +210,6 @@ void mexFunction(
 		mexPrintf("\t[s,HDR]=mexSLOAD(f,chan,'SWEEP',[NE, NG, NS])\n");
 		mexPrintf("   Input:\n\tf\tfilename\n");
 		mexPrintf("\tchan\tlist of selected channels; 0=all channels [default]\n");
-		mexPrintf("\tCNT32: needed to read 32bit CNT files \n");
 		mexPrintf("\tUCAL\tON: do not calibrate data; default=OFF\n");
 //		mexPrintf("\tOUTPUT\tSINGLE: single precision; default='double'\n");
 		mexPrintf("\tOVERFLOWDETECTION\tdefault = ON\n\t\tON: values outside dynamic range are not-a-number (NaN)\n");
@@ -267,7 +264,7 @@ void mexFunction(
 			if (k==0)			
 				FileName = mxArrayToString(prhs[k]);
 			else if (!strcmp(mxArrayToString(prhs[k]), "CNT32"))
-				FLAG_CNT32 = 1;
+				; // obsolete - supported for backwards compatibility
 			else if (!strcmp(mxArrayToString(prhs[k]), "OVERFLOWDETECTION:ON"))
 				FlagOverflowDetection = 1;
 			else if (!strcmp(mxArrayToString(prhs[k]), "OVERFLOWDETECTION:OFF"))
@@ -300,7 +297,6 @@ void mexFunction(
 	hdr = constructHDR(0,0);
 	hdr->FLAG.OVERFLOWDETECTION = FlagOverflowDetection; 
 	hdr->FLAG.UCAL = FlagUCAL;
-	hdr->FLAG.CNT32 = FLAG_CNT32;
 #ifdef CHOLMOD_H
 	hdr->FLAG.ROW_BASED_CHANNELS = (rr!=NULL); 
 #else 	

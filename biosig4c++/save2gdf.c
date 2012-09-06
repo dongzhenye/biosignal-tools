@@ -57,7 +57,6 @@ int main(int argc, char **argv){
     uint16_t	k;
     int		TARGETSEGMENT=1; 	// select segment in multi-segment file format EEG1100 (Nihon Kohden)
     int 	VERBOSE	= 1; 
-    char	FLAG_CNT32 = 0; 	// assume CNT format is 16bit
     char	FLAG_JSON = 0; 
     char	*argsweep = NULL;
     double	t1=0.0, t2=1.0/0.0;
@@ -69,7 +68,7 @@ int main(int argc, char **argv){
     for (k=1; k<argc; k++) {
     	if (!strcmp(argv[k],"-v") || !strcmp(argv[k],"--version") ) {
 		fprintf(stdout,"save2gdf (BioSig4C++) v%04.2f\n", BIOSIG_VERSION*1e-4);
-		fprintf(stdout,"Copyright (C) 2006,2007,2008,2009,2010,2011 by Alois Schloegl and others\n");
+		fprintf(stdout,"Copyright (C) 2006,2007,2008,2009,2010,2011,2012 by Alois Schloegl and others\n");
 		fprintf(stdout,"This file is part of BioSig http://biosig.sf.net - the free and\n");
 		fprintf(stdout,"open source software library for biomedical signal processing.\n\n");
 		fprintf(stdout,"BioSig is free software; you can redistribute it and/or modify\n");
@@ -94,7 +93,6 @@ int main(int argc, char **argv){
 #ifdef CHOLMOD_H
 		fprintf(stdout,"   -r, --ref=MM  \n\trereference data with matrix file MM. \n\tMM must be a 'MatrixMarket matrix coordinate real general' file.\n");
 #endif
-		fprintf(stdout,"   -cnt32\n\tmust be set for reading 32 bit CNT files\n");
 		fprintf(stdout,"   -f=FMT  \n\tconverts data into format FMT\n");
 		fprintf(stdout,"   -JSON  \n\tshows header, and events in JSON format\n");
 		fprintf(stdout,"\tFMT must represent a valid target file format\n"); 
@@ -177,10 +175,6 @@ int main(int argc, char **argv){
     		TARGETSEGMENT = atoi(argv[k]+3);
 	}
 
-    	else if (!strncmp(argv[k],"-cnt32",3))  {
-    		FLAG_CNT32 = 1;
-	}
-
     	else if (argv[k][0]=='[' && argv[k][strlen(argv[k])-1]==']' && (tmpstr=strchr(argv[k],',')) )  	{
 		t1 = strtod(argv[k]+1,NULL);
 		t2 = strtod(tmpstr+1,NULL);
@@ -221,7 +215,6 @@ int main(int argc, char **argv){
 	// hdr->FLAG.OVERFLOWDETECTION = FlagOverflowDetection; 
 	hdr->FLAG.UCAL = ((TARGET_TYPE==BIN) || (TARGET_TYPE==ASCII));
 	hdr->FLAG.TARGETSEGMENT = TARGETSEGMENT;
-	hdr->FLAG.CNT32 = FLAG_CNT32;
 	// hdr->FLAG.ANONYMOUS = 0; 	// personal names are processed 
 	
 	if (argsweep) {

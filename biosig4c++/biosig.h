@@ -111,12 +111,12 @@ enum FileFormat {
 	BrainVision, BrainVisionVAmp, BrainVisionMarker, BZ2,
 	CDF, CFS, CFWB, CNT, CTF, DICOM, DEMG,
 	EBS, EDF, EEG1100, EEProbe, EEProbe2, EEProbeAvr, EGI,
-	EGIS, ELF, EMBLA, ePrime, ET_MEG, ETG4000, EVENT, EXIF,
+	EGIS, ELF, EMBLA, EMSA, ePrime, ET_MEG, ETG4000, EVENT, EXIF,
 	FAMOS, FEF, FITS, FLAC, GDF, GDF1,
 	GIF, GTF, GZIP, HDF, HL7aECG, HEKA, 
 	ISHNE, ITX, JPEG, JSON, Lexicor,
 	Matlab, MFER, MIDI, MIT, MM, MSI, MSVCLIB, MS_LNK, 
-	native, NeuroLoggerHEX, NetCDF, NEURON, NEX1, NIFTI, 
+	native, NeuroLoggerHEX, NetCDF, NEURON, NEV, NEX1, NIFTI, 
 	OGG, OpenXDF,
 	PBMA, PBMN, PDF, PDP, Persyst, PGMA, PGMB,
 	PLEXON, PNG, PNM, POLY5, PPMA, PPMB, PS,
@@ -125,8 +125,7 @@ enum FileFormat {
 	SPSS, STATA, SVG, SXI, SYNERGY,
 	TIFF, TMS32, TMSiLOG, TRC, UNIPRO, VRML, VTK,
 	WAV, WG1, WinEEG, WMF, XML, XPM,
-	Z, ZIP, ZIP2, 
-	EMSA, NEV
+	Z, ZIP, ZIP2
 };
 
 
@@ -135,7 +134,7 @@ extern const char *B4C_ERRMSG;
 
 #define BIOSIG_VERSION_MAJOR 1
 #define BIOSIG_VERSION_MINOR 3
-#define BIOSIG_PATCHLEVEL 5
+#define BIOSIG_PATCHLEVEL 6
 // for backward compatibility 
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
@@ -367,7 +366,6 @@ typedef struct HDR_STRUCT {
 		char		ANONYMOUS; 	/* 1: anonymous mode, no personal names are processed */
 		char		ROW_BASED_CHANNELS;     /* 0: column-based data [default]; 1: row-based data */
 		char		TARGETSEGMENT; /* in multi-segment files (like Nihon-Khoden, EEG1100), it is used to select a segment */
-		char		CNT32;		/* 0: assume CNT format is 16 bit [default], <>0: CNT format is 32 bit*/
 	} FLAG ATT_ALI;
 
 	CHANNEL_TYPE 	*CHANNEL ATT_ALI;
