@@ -262,8 +262,9 @@ void ReadByte(t1 &number)
 
 	if(dim!=0 && (num=(U_int_S*)mymalloc(dim))==NULL)
 	{
-		fprintf(stderr,"Not enough memory");  // no, exit //
-		exit(2);
+		B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+		B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+		return; 
 	}
 	ifread(num,dim,1,in);
 	// *num = *(U_int_S*)(in->AS.Header+_COUNT_BYTE);
@@ -407,8 +408,9 @@ char *ReadString(char *temp_string, U_int_M num)
 		return NULL;//before alocating memory, which will be loosed in case of num=0
 	if((temp_string=(char*)mymalloc(sizeof(char)*(num+2)))==NULL)    // by E.C. 26.02.2004 one more byte
 	{
-		fprintf(stderr,"Not enough memory");  // no, exit //
-		exit(2);
+		B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+		B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+		return NULL; 
 	}
 	_COUNT_BYTE+=num;
 
@@ -460,8 +462,9 @@ char *FindString(char *temp_string,U_int_M max)
 
 	if((temp_string=(char*)mymalloc(sizeof(char)*(num+2)))==NULL)   // by E.C. one extra byte nedded
 	{                                                               // for later str_cat()
-		fprintf(stderr,"Not enough memory");  // no, exit //
-		exit(2);
+		B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+		B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+		return NULL; 
 	}
 
 	if(!num)
@@ -1191,8 +1194,9 @@ void section_1_10(clinic &cli, U_int_M &dim)
 	{
 		if((cli.drug=(info_drug*)realloc(cli.drug,sizeof(info_drug)*(cli.number_drug+1)))==NULL)
 		{
-			fprintf(stderr,"Not enough memory");  // no, exit //
-			exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return; 
 		}
 		ReadByte(cli.drug[cli.number_drug].table);
 		ReadByte(code_);
@@ -1223,8 +1227,9 @@ void section_1_10(clinic &cli, U_int_M &dim)
 			dim+=strlen(temp_string);
 			if((cli.text_drug=(char*)realloc(cli.text_drug,sizeof(char)*(dim+1)))==NULL)
 			{
-				fprintf(stderr,"Not enough memory");  // no, exit //
-				exit(2);
+				B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+				B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+				return; 
 			}
 			pos_char=cli.text_drug;
 			pos_char+=dim-strlen(temp_string);
@@ -1270,8 +1275,9 @@ void section_1_13(clinic &cli, U_int_M &dim)
 	{
 		if((cli.diagnose=(numeric*)realloc(cli.diagnose,sizeof(numeric)*(cli.number_diagnose+1)))==NULL)
 		{
-			fprintf(stderr,"Not enough memory");  // no, exit //
-			exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return; 
 		}
 		cli.diagnose[cli.number_diagnose].unit=cli.number_diagnose+1;
 		cli.diagnose[cli.number_diagnose].value=val;
@@ -1280,8 +1286,9 @@ void section_1_13(clinic &cli, U_int_M &dim)
 		dim+=strlen(temp_string);
 		if((cli.text_diagnose=(char*)realloc(cli.text_diagnose,dim+1))==NULL)
 		{
-			fprintf(stderr,"Not enough memory");  // no, exit //
-			exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return; 
 		}
 		pos_char=cli.text_diagnose;
 		pos_char+=dim-strlen(temp_string);
@@ -1619,8 +1626,9 @@ void section_1_30(clinic &cli, U_int_M &dim)
 	{
 		if((cli.free_text=(numeric*)realloc(cli.free_text,sizeof(numeric)*(cli.number_text+1)))==NULL)
 		{
-			fprintf(stderr,"Not enough memory");  // no, exit //
-			exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return; 
 		}
 		cli.free_text[cli.number_text].unit=cli.number_text+1;
 		cli.free_text[cli.number_text].value=val;
@@ -1629,8 +1637,9 @@ void section_1_30(clinic &cli, U_int_M &dim)
 		dim+=strlen(temp_string);
 		if((cli.text_free_text=(char*)realloc(cli.text_free_text,dim+1))==NULL)
 		{
-			fprintf(stderr,"Not enough memory");  // no, exit //
-			exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return; 
 		}
 		pos_char=cli.text_free_text;
 		pos_char+=dim-strlen(temp_string);
@@ -1669,8 +1678,9 @@ void section_1_32(clinic &cli, U_int_M &dim, int_S version)
 		// second byte is the code
 		if((cli.medical_hystory=(numeric*)realloc(cli.medical_hystory,sizeof(numeric)*(cli.number_hystory+1)))==NULL)
 		{
-			fprintf(stderr,"Not enough memory");  // no, exit //
-			exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return; 
 		}
 		ReadByte(pos);
 		cli.medical_hystory[cli.number_hystory].value=pos;
@@ -1732,8 +1742,9 @@ void section_1_35(clinic &cli, U_int_M &dim)
 	{
 		if((cli.free_medical_hystory=(numeric*)realloc(cli.free_medical_hystory,sizeof(numeric)*(cli.number_free_hystory+1)))==NULL)
 		{
-			fprintf(stderr,"Not enough memory");  // no, exit //
-			exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return; 
 		}
 		cli.free_medical_hystory[cli.number_free_hystory].unit=cli.number_free_hystory+1;
 		cli.free_medical_hystory[cli.number_free_hystory].value=val;
@@ -1742,8 +1753,9 @@ void section_1_35(clinic &cli, U_int_M &dim)
 		dim+=strlen(temp_string);
 		if((cli.text_free_medical_hystory=(char*)realloc(cli.text_free_medical_hystory,dim+1))==NULL)
 		{
-			fprintf(stderr,"Not enough memory");  // no, exit //
-			exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return; 
 		}
 		pos_char=cli.text_free_medical_hystory;
 		pos_char+=dim-strlen(temp_string);
@@ -1794,8 +1806,9 @@ void section_2(pointer_section info_sections,DATA_DECODE &data)
 	{
 		if((data.flag_Huffman=(U_int_M*)mymalloc(sizeof(U_int_M)*(nt+1)))==NULL)
 		{
-			fprintf(stderr,"Not enough memory");  // no, exit //
-			exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return; 
 		}
 		data.flag_Huffman[0]=nt;
 		filepos = iftell(in); //FGETPOS(in,&filepos);
@@ -1808,13 +1821,15 @@ void section_2(pointer_section info_sections,DATA_DECODE &data)
 		ifseek(in,filepos COMPAT,0);
 		if((ns*9)>dim || !ns)
 		{
-			fprintf(stderr,"Cannot read data!!!");
-			exit(2);
+			B4C_ERRNUM = B4C_UNSPECIFIC_ERROR;
+			B4C_ERRMSG = "SCP-DECODE: Cannot read data";
+			return; 
 		}
 		if(ns!=0 && (data.t_Huffman=(table_H*)mymalloc(sizeof(table_H)*ns))==NULL)         //array of 5 columns and ns rows
 		{
-			fprintf(stderr,"Not enough memory");  // no, exit //
-			exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return; 
 		}
 		pos=0;
 		for(j=0;j<data.flag_Huffman[0];j++)
@@ -1835,15 +1850,17 @@ void section_2(pointer_section info_sections,DATA_DECODE &data)
 	{
 		if((data.flag_Huffman=(U_int_M*)mymalloc(sizeof(U_int_M)*2))==NULL)
 		{
-			fprintf(stderr,"Not enough memory");  // no, exit //
-			exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return; 
 		}
 		data.flag_Huffman[0]=1;
 		data.flag_Huffman[1]=19;      //number of rows of the default Huffman table
 		if((data.t_Huffman=(table_H*)mymalloc(sizeof(table_H)*data.flag_Huffman[1]))==NULL)
 		{
-			fprintf(stderr,"Not enough memory");  // no, exit //
-			exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return; 
 		}
 		InitHuffman(data.t_Huffman);
 	}
@@ -1880,8 +1897,9 @@ void section_3(pointer_section info_sections,DATA_DECODE &data, int_S version)
 
 	if(data.flag_lead.number!=0 && (data.data_lead=(lead*)mymalloc(sizeof(lead)*data.flag_lead.number))==NULL)
 	{
-		fprintf(stderr,"Not enough memory");  // no, exit //
-		exit(2);
+		B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+		B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+		return; 
 	}
 	for(i=0;i<data.flag_lead.number;i++)
 	{
@@ -1913,8 +1931,9 @@ void section_4(pointer_section info_sections,DATA_DECODE &data,int_S version)
 	{
 		if(data.flag_Res.number!=0 && (data.data_subtraction=(Subtraction_Zone*)mymalloc(sizeof(Subtraction_Zone)*data.flag_Res.number))==NULL)
 		{
-			fprintf(stderr,"Not enough memory");  // no, exit //
-			exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return; 
 		}
 		for(i=0;i<data.flag_Res.number;i++)
 		{
@@ -1928,8 +1947,9 @@ void section_4(pointer_section info_sections,DATA_DECODE &data,int_S version)
 	{
 		if(data.flag_Res.number!=0 && (data.data_protected=(Protected_Area*)mymalloc(sizeof(Protected_Area)*data.flag_Res.number))==NULL)
 		{
-			fprintf(stderr,"Not enough memory");  // no, exit //
-			exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return; 
 		}
 		for(i=0;i<data.flag_Res.number;i++)
 			if ((version==10) || (version==11)) {               // by E.C. may 2004 SCP 1.0 no data 
@@ -1965,8 +1985,9 @@ bool section_5(pointer_section info_sections,DATA_DECODE &data, bool sez2)
 	Skip(1);
 	if(data.flag_lead.number!=0 && (data.length_BdR0=(U_int_M*)mymalloc(sizeof(U_int_M)*data.flag_lead.number))==NULL)
 	{
-		fprintf(stderr,"Not enough memory");  // no, exit //
-		exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return false; 
 	}
 	dim=0;
 	for(i=0;i<data.flag_lead.number;i++)
@@ -1981,8 +2002,9 @@ bool section_5(pointer_section info_sections,DATA_DECODE &data, bool sez2)
 		dim*=sizeof(U_int_S);
 		if(dim!=0 && (data.samples_BdR0=(U_int_S*)mymalloc(dim))==NULL)
 		{
-			fprintf(stderr,"Not enough memory");  // no, exit //
-			exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return false; 
 		}
 		ifread(data.samples_BdR0,sizeof(U_int_S),dim,in);
 	}
@@ -1993,8 +2015,9 @@ bool section_5(pointer_section info_sections,DATA_DECODE &data, bool sez2)
 		dim*=sizeof(int_L);
 		if(dim!=0 && (data.Median=(int_L*)mymalloc(dim))==NULL)
 		{
-			fprintf(stderr,"Not enough memory");  // no, exit //
-			exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return false; 
 		}
 		dim/=sizeof(int_L);
 		for(t=0;t<dim;t++)
@@ -2031,8 +2054,9 @@ void section_6(pointer_section info_sections,DATA_DECODE &data, bool sez2)
 	Skip(1);
 	if(data.flag_lead.number!=0 && (data.length_Res=(U_int_M*)mymalloc(sizeof(U_int_M)*data.flag_lead.number))==NULL)
 	{
-		fprintf(stderr,"Not enough memory");  // no, exit //
-		exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return; 
 	}
 	dim=0;
 	for(i=0;i<data.flag_lead.number;i++)
@@ -2046,8 +2070,9 @@ void section_6(pointer_section info_sections,DATA_DECODE &data, bool sez2)
 		dim*=sizeof(U_int_S);
 		if(dim!=0 && (data.samples_Res=(U_int_S*)mymalloc(dim))==NULL)
 		{
-			fprintf(stderr,"Not enough memory");  // no, exit //
-			exit(2);
+			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
+			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
+			return; 
 		}
 		ifread(data.samples_Res,sizeof(U_int_S),dim,in);
 	}

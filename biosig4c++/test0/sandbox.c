@@ -486,7 +486,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 989: \n");
 		+ get number of sweeps
 		+ get number of channels
 		+ check whether all traces of a single sweep have the same SPR, and Fs
-		- check whether channelnumber (TrAdcChannel) and Label fit amoung all sweeps
+		- check whether channelnumber (TrAdcChannel) and Label fit among all sweeps
 		+ extract the total number of samples
 		+ physical units
 		+ level 4 may have no children
@@ -688,7 +688,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i \n",(int)(po
 							if (k4==0) SPR = spr;
 							else if (SPR != spr) {
 								B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-								B4C_ERRMSG = "Heka/Patchmaster: number of samples amoung channels within a single sweep do not match.";
+								B4C_ERRMSG = "Heka/Patchmaster: number of samples among channels within a single sweep do not match.";
 								return;
 							}
 						}

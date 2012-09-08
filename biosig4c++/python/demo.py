@@ -21,7 +21,7 @@ import ctypes
 
 filename = '/scratch/schloegl/R/data/test/CFS/example_6channels.dat'
 filename = '/home/as/data/test/CFS/example_6channels.dat'
-#filename = '/home/as/data/test/BDF/sample_bdf_plus_file.bdf'
+filename = '/home/as/data/test/BDF/sample_bdf_plus_file.bdf'
 
 print 'open file ',filename
 
@@ -42,7 +42,7 @@ else:
     if HDR.EVENT.DUR: DUR = ctypes.cast( HDR.EVENT.DUR.__long__(), ctypes.POINTER( ctypes.c_uint32 ) )
      	
     ### show extracted events
-    for k in range(HDR.EVENT.N): print k,TYP[k],POS[k],HDR.EVENT.CodeDesc[TYP[k]]
+    for k in range(HDR.EVENT.N): print k,TYP[k],POS[k],POS[k]/HDR.EVENT.SampleRate #,HDR.EVENT.CodeDesc[TYP[k]]
 
     for k in range(HDR.NS):	
 	# convert C to Python string: get rid of everything after \x00, then remove leading and trailing whitespace
