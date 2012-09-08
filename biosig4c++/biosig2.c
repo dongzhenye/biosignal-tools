@@ -198,20 +198,42 @@ int biosig_open_file_writeonly(const char *path, enum FileFormat filetype, int n
 	return(0); 
 }
 
+double biosig_get_samplefrequency(int handle, int biosig_signal) {
+
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(NAN);
+	HDRTYPE *hdr = hdrlist[handle].hdr;
+	typeof(hdr->NS) ns = hdr->NS;
+	if (biosig_signal >= ns) return(NAN);
+
+	return (hdr->SampleRate*hdr->CHANNEL[biosig_signal].SPR/hdr->SPR);
+}
+
 int biosig_set_samplefrequency(int handle, int biosig_signal, double samplefrequency) {
 
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
 	HDRTYPE *hdr = hdrlist[handle].hdr;
 	typeof(hdr->NS) ns = hdr->NS;
 	if (biosig_signal >= ns) return(-1);
-	
+
+	// FIXME: resulting sampling rate might depend on calling order; what's the overall sampling rate ? 
 	if (samplefrequency != hdr->SampleRate) {
 		double spr = samplefrequency*hdr->SPR/hdr->SampleRate;
 		hdr->CHANNEL[biosig_signal].SPR = spr;
-		hdr->SampleRate = samplefrequency;
-		if (spr!=ceil(spr)) return (-1);
+		if (spr!=ceil(spr)) return (-2);
+		return 0;
 	}
+	hdr->CHANNEL[biosig_signal].SPR = hdr->SPR;
 	return 0;
+}
+
+double biosig_get_physical_maximum(int handle, int biosig_signal) {
+
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(NAN);
+	HDRTYPE *hdr = hdrlist[handle].hdr;
+	typeof(hdr->NS) ns = hdr->NS;
+	if (biosig_signal >= ns) return(NAN);
+
+	return (hdr->CHANNEL[biosig_signal].PhysMax);
 }
 
 int biosig_set_physical_maximum(int handle, int biosig_signal, double phys_max) {
@@ -225,6 +247,16 @@ int biosig_set_physical_maximum(int handle, int biosig_signal, double phys_max) 
 	return (0);
 }
 
+double biosig_get_physical_minimum(int handle, int biosig_signal) {
+
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(NAN);
+	HDRTYPE *hdr = hdrlist[handle].hdr;
+	typeof(hdr->NS) ns = hdr->NS;
+	if (biosig_signal >= ns) return(NAN);
+
+	return (hdr->CHANNEL[biosig_signal].PhysMin);
+}
+
 int biosig_set_physical_minimum(int handle, int biosig_signal, double phys_min) {
 
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
@@ -236,7 +268,17 @@ int biosig_set_physical_minimum(int handle, int biosig_signal, double phys_min) 
 	return (0);
 }
 
-int biosig_set_digital_maximum(int handle, int biosig_signal, int dig_max) {
+double biosig_get_digital_maximum(int handle, int biosig_signal) {
+
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(NAN);
+	HDRTYPE *hdr = hdrlist[handle].hdr;
+	typeof(hdr->NS) ns = hdr->NS;
+	if (biosig_signal >= ns) return(NAN);
+
+	return (hdr->CHANNEL[biosig_signal].DigMax);
+}
+
+int biosig_set_digital_maximum(int handle, int biosig_signal, double dig_max) {
 
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
 	HDRTYPE *hdr = hdrlist[handle].hdr;
@@ -247,7 +289,17 @@ int biosig_set_digital_maximum(int handle, int biosig_signal, int dig_max) {
 	return (0);
 }
 
-int biosig_set_digital_minimum(int handle, int biosig_signal, int dig_min) {
+double biosig_get_digital_minimum(int handle, int biosig_signal) {
+
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(NAN);
+	HDRTYPE *hdr = hdrlist[handle].hdr;
+	typeof(hdr->NS) ns = hdr->NS;
+	if (biosig_signal >= ns) return(NAN);
+
+	return (hdr->CHANNEL[biosig_signal].DigMin);
+}
+
+int biosig_set_digital_minimum(int handle, int biosig_signal, double dig_min) {
 
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
 	HDRTYPE *hdr = hdrlist[handle].hdr;
@@ -258,20 +310,31 @@ int biosig_set_digital_minimum(int handle, int biosig_signal, int dig_min) {
 	return (0);
 }
 
-int biosig_set_label(int handle, int biosig_signal, const char *label) {
+const char *biosig_get_label(int handle, int biosig_signal) {
 
-	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(NULL);
 	HDRTYPE *hdr = hdrlist[handle].hdr;
 	typeof(hdr->NS) ns = hdr->NS;
-	if (biosig_signal >= ns) return(-1);
+	if (biosig_signal >= ns) return(NULL);
+
+	return (hdr->CHANNEL[biosig_signal].Label);
+}
+
+int biosig_set_label(int handle, int biosig_signal, const char *label) {
+
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(NULL);
+	HDRTYPE *hdr = hdrlist[handle].hdr;
+	typeof(hdr->NS) ns = hdr->NS;
+	if (biosig_signal >= ns) return(NULL);
 
 	strncpy(hdr->CHANNEL[biosig_signal].Label, label, MAX_LENGTH_LABEL);
 	return (0);
 }
 
+
 int biosig_set_prefilter(int handle, int biosig_signal, const char *prefilter) {
         // TODO: parse prefilter and call biosig_set_{highpass,lowpass,notch}filter
-        return fprintf(stderr,"Warning: biosig_set_prefilter(...) is not implemented, yet.\n");
+        return fprintf(stderr,"Warning: biosig_set_prefilter(...) is not implemented, use instead biosig_set_highpassfilter(),biosig_set_lowpassfilter(),biosig_set_notchfilter().\n");
 }
         
 int biosig_set_highpassfilter(int handle, int biosig_signal, double frequency) {
@@ -311,6 +374,16 @@ int biosig_set_notchfilter(int handle, int biosig_signal, double frequency) {
 }
 
 
+const char *biosig_get_transducer(int handle, int biosig_signal) {
+
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(NULL);
+	HDRTYPE *hdr = hdrlist[handle].hdr;
+	typeof(hdr->NS) ns = hdr->NS;
+	if (biosig_signal >= ns) return(NULL);
+
+	return (hdr->CHANNEL[biosig_signal].Transducer);
+}
+
 int biosig_set_transducer(int handle, int biosig_signal, const char *transducer) {
 
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
@@ -324,6 +397,16 @@ int biosig_set_transducer(int handle, int biosig_signal, const char *transducer)
 }
 
 
+const char *biosig_physical_dimension(int handle, int biosig_signal) {
+
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(NULL);
+	HDRTYPE *hdr = hdrlist[handle].hdr;
+	typeof(hdr->NS) ns = hdr->NS;
+	if (biosig_signal >= ns) return(NULL);
+
+	return (PhysDim3(hdr->CHANNEL[biosig_signal].PhysDimCode));
+}
+
 int biosig_set_physical_dimension(int handle, int biosig_signal, const char *phys_dim) {
 
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
@@ -336,8 +419,21 @@ int biosig_set_physical_dimension(int handle, int biosig_signal, const char *phy
 	return (0);
 }
 
+int biosig_get_startdatetime(int handle, struct tm *T) {
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
+	HDRTYPE *hdr = hdrlist[handle].hdr;
+	gdf_time2tm_time_r(hdr->T0, T);
+	return (0);
+}
 
-int biosig_set_startdatetime(int handle, int startdate_year, int startdate_month, int startdate_day, int starttime_hour, int starttime_minute, int starttime_second) {
+int biosig_set_startdatetime(int handle, const struct tm *T) {
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
+	HDRTYPE *hdr = hdrlist[handle].hdr;
+	hdr->T0   = tm_time2gdf_time(T);
+	return (0);
+}
+
+int edf_set_startdatetime(int handle, int startdate_year, int startdate_month, int startdate_day, int starttime_hour, int starttime_minute, int starttime_second) {
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
 	HDRTYPE *hdr = hdrlist[handle].hdr;
 	struct tm T;
@@ -351,30 +447,65 @@ int biosig_set_startdatetime(int handle, int startdate_year, int startdate_month
 	return (0);
 }
 
-
+const char *biosig_get_patientname(int handle)  {
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(NULL);
+	return(hdrlist[handle].hdr->Patient.Name);
+}
 int biosig_set_patientname(int handle, const char *patientname) {
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
 	strncpy(hdrlist[handle].hdr->Patient.Name, patientname, MAX_LENGTH_NAME+1);
 	return (0);
 }
 
-
+const char *biosig_get_patientcode(int handle)  {
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(NULL);
+	return(hdrlist[handle].hdr->Patient.Id);
+}
 int biosig_set_patientcode(int handle, const char *patientcode) {
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
 	strncpy(hdrlist[handle].hdr->Patient.Id, patientcode, MAX_LENGTH_PID+1);
 	return(0);
 }
 
+int biosig_get_gender(int handle) {
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(0);
+	return(hdrlist[handle].hdr->Patient.Sex);
+}
 
 int biosig_set_gender(int handle, int gender) {
 	if (gender<0 || gender>9) return (-1); 
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
-	hdrlist[handle].hdr->Patient.Sex = gender;
-	return(0);
+	switch (gender) {
+	case  1 :
+	case 'm':
+	case 'M':
+		hdrlist[handle].hdr->Patient.Sex = 1;
+		return(0);
+	case  2 :
+	case 'f':
+	case 'F':
+		hdrlist[handle].hdr->Patient.Sex = 2;
+		return(0);
+	default:
+		return(0); 
+	}
 }
 
+int biosig_get_birthdate(int handle, struct tm *T) {
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
+	HDRTYPE *hdr = hdrlist[handle].hdr;
+	gdf_time2tm_time_r(hdr->Patient.Birthday, T);
+	return (0);
+}
 
-int biosig_set_birthdate(int handle, int birthdate_year, int birthdate_month, int birthdate_day) {
+int biosig_set_birthdate(int handle, const struct tm *T) {
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
+	HDRTYPE *hdr = hdrlist[handle].hdr;
+	hdr->Patient.Birthday = tm_time2gdf_time(T);
+	return (0);
+}
+
+int edf_set_birthdate(int handle, int birthdate_year, int birthdate_month, int birthdate_day) {
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
 	HDRTYPE *hdr = hdrlist[handle].hdr;
 	struct tm T;
@@ -388,22 +519,26 @@ int biosig_set_birthdate(int handle, int birthdate_year, int birthdate_month, in
 	return (0);
 }
 
-
 int biosig_set_patient_additional(int handle, const char *patient_additional) {
 	fprintf(stderr,"Warning: biosig_set_patient_additional() not supported.\n");
 	return (-1);
 }
-
 
 int biosig_set_admincode(int handle, const char *admincode) {
 	fprintf(stderr,"Warning: biosig_set_admincode() not supported.\n");
 	return (-1);
 }
 
-
+const char *biosig_get_technician(int handle)  {
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(NULL);
+	HDRTYPE *hdr = hdrlist[handle].hdr;
+	return(hdr->ID.Technician);
+}
 int biosig_set_technician(int handle, const char *technician) {
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
-	strncpy(hdrlist[handle].hdr->Patient.Id, technician, MAX_LENGTH_TECHNICIAN+1);
+	HDRTYPE *hdr = hdrlist[handle].hdr;
+	hdr->ID.Technician = realloc(hdr->ID.Technician, strlen(technician)+1);
+	strcpy(hdr->ID.Technician, technician);
 	return(0);
 }
 

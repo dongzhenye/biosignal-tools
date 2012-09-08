@@ -32,6 +32,8 @@
 extern "C" {
 #endif
 
+
+
 struct biosig_annotation_struct {       /* this structure is used for annotations */
         size_t onset;                   /* onset time of the event, expressed in units of 100 nanoSeconds and relative to the starttime in the header */
         size_t duration;                /* duration time, this is a null-terminated ASCII text-string */
@@ -54,25 +56,60 @@ size_t biosig_tell(int handle);
 void biosig_rewind(int handle, int biosig_signal);
 int biosig_get_annotation(int handle, size_t n, struct biosig_annotation_struct *annot);
 int biosig_open_file_writeonly(const char *path, enum FileFormat filetype, int number_of_signals);
+
+double biosig_get_samplefrequency(int handle, int biosig_signal);
 int biosig_set_samplefrequency(int handle, int biosig_signal,  double samplefrequency);
+
+double biosig_get_physical_maximum(int handle, int biosig_signal);
 int biosig_set_physical_maximum(int handle, int biosig_signal, double phys_max);
+
+double biosig_get_physical_minimum(int handle, int biosig_signal);
 int biosig_set_physical_minimum(int handle, int biosig_signal, double phys_min);
-int biosig_set_digital_maximum(int handle, int biosig_signal, int dig_max);
-int biosig_set_digital_minimum(int handle, int biosig_signal, int dig_min);
+
+double biosig_get_digital_maximum(int handle, int biosig_signal);
+int biosig_set_digital_maximum(int handle, int biosig_signal, double dig_max);
+
+double biosig_get_digital_minimum(int handle, int biosig_signal);
+int biosig_set_digital_minimum(int handle, int biosig_signal, double dig_min);
+
+const char *biosig_get_label(int handle, int biosig_signal);
 int biosig_set_label(int handle, int biosig_signal, const char *label);
+
+//const char *biosig_get_prefilter(int handle, int biosig_signal);
 int biosig_set_prefilter(int handle, int biosig_signal, const char *prefilter);
+double biosig_get_highpassfilter(int handle, int biosig_signal);
+int biosig_set_highpassfilter(int handle, int biosig_signal, double frequency);
+double biosig_get_lowpassfilter(int handle, int biosig_signal);
+int biosig_set_lowpassfilter(int handle, int biosig_signal, double frequency);
+double biosig_get_notchfilter(int handle, int biosig_signal);
+int biosig_set_notchfilter(int handle, int biosig_signal, double frequency);
+
+const char *biosig_get_transducer(int handle, int biosig_signal);
 int biosig_set_transducer(int handle, int biosig_signal, const char *transducer);
+
+const char *biosig_get_physical_dimension(int handle, int biosig_signal);
 int biosig_set_physical_dimension(int handle, int biosig_signal, const char *phys_dim);
-int biosig_set_startdatetime(int handle, int startdate_year, int startdate_month, int startdate_day, int starttime_hour, int starttime_minute, int starttime_second);
+
+int biosig_get_startdatetime(int handle, struct tm *T);
+int biosig_set_startdatetime(int handle, const struct tm *T);
+
+const char *biosig_get_patientname(int handle);
 int biosig_set_patientname(int handle, const char *patientname);
+const char *biosig_get_patientcode(int handle);
 int biosig_set_patientcode(int handle, const char *patientcode);
+int biosig_get_gender(int handle);
 int biosig_set_gender(int handle, int gender);
-int biosig_set_birthdate(int handle, int birthdate_year, int birthdate_month, int birthdate_day);
+
+int biosig_get_birthdate(int handle, struct tm *T);
+int biosig_set_birthdate(int handle, const struct tm *T);
+
 int biosig_set_patient_additional(int handle, const char *patient_additional);
 int biosig_set_admincode(int handle, const char *admincode);
+const char *biosig_get_technician(int handle);
 int biosig_set_technician(int handle, const char *technician);
 int biosig_set_equipment(int handle, const char *equipment);
 int biosig_set_recording_additional(int handle, const char *recording_additional);
+
 int biosig_write_physical_samples(int handle, double *buf);
 int biosig_blockwrite_physical_samples(int handle, double *buf);
 int biosig_write_digital_samples(int handle, int *buf);
@@ -153,12 +190,12 @@ int biosig_open_file_writeonly(const char *path, enum FileFormat filetype, int n
 #define edf_set_prefilter(a,b,c) 		biosig_set_prefilter(a,b,c)
 #define edf_set_transducer(a,b,c) 		biosig_set_transducer(a,b,c)
 #define edf_set_physical_dimension(a,b,c) 	biosig_set_physical_dimension(a,b,c)
-#define edf_set_startdatetime(a,b,c,d,e,f,g)	biosig_set_startdatetime(a,b,c,d,e,f,g)
+int edf_set_startdatetime(int handle, int startdate_year, int startdate_month, int startdate_day, int starttime_hour, int starttime_minute, int starttime_second);
 #define edf_set_patientname(a,b)		biosig_set_patientname(a,b)
 #define edf_set_patientcode(a,b)		biosig_set_patientcode(a,b)
 //#define edf_set_gender(a,b)			biosig_set_gender(a,b)
 int edf_set_gender(int handle, int gender);
-#define edf_set_birthdate(a,b,c,d)		biosig_set_birthdate(a,b,c,d)
+int edf_set_birthdate(int handle, int birthdate_year, int birthdate_month, int birthdate_day);
 #define edf_set_patient_additional(a,b)		biosig_set_patient_additional(a,b)
 #define edf_set_admincode(a,b)			biosig_set_admincode(a,b)
 #define edf_set_technician(a,b)			biosig_set_technician(a,b)
