@@ -9474,7 +9474,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (NEV)\n"); 		
 
 		hdr->VERSION = beu16p(hdr->AS.Header+8)>>8;
-		switch beu16p(hdr->AS.Header+8) {
+		switch (beu16p(hdr->AS.Header+8)) {
 		case 0x0100:	// readnev1
 		case 0x0101:	// readnev1_1
 		case 0x0200:	// readnev2

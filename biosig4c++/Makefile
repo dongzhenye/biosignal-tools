@@ -141,7 +141,7 @@ endif
 ifneq (,$(findstring WITH_MATIO, $(DEFINES)))
   LDLIBS     += -lmatio
 endif
-LIBS         += -ldl -lidn $(LDLIBS)
+LIBS         += -ldl $(LDLIBS)
 
 DELETE        = rm
 COPY          = cp -f
