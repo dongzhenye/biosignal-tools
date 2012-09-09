@@ -47,12 +47,12 @@ enum FileFormat {
 	BrainVision, BrainVisionVAmp, BrainVisionMarker, BZ2,
 	CDF, CFS, CFWB, CNT, CTF, DICOM, DEMG,
 	EBS, EDF, EEG1100, EEProbe, EEProbe2, EEProbeAvr, EGI,
-	EGIS, ELF, EMBLA, ePrime, ET_MEG, ETG4000, EVENT, EXIF,
+	EGIS, ELF, EMBLA, EMSA, ePrime, ET_MEG, ETG4000, EVENT, EXIF,
 	FAMOS, FEF, FITS, FLAC, GDF, GDF1,
 	GIF, GTF, GZIP, HDF, HL7aECG, HEKA, 
 	ISHNE, ITX, JPEG, JSON, Lexicor,
 	Matlab, MFER, MIDI, MIT, MM, MSI, MSVCLIB, MS_LNK, 
-	native, NeuroLoggerHEX, NetCDF, NEURON, NEX1, NIFTI, 
+	native, NeuroLoggerHEX, NetCDF, NEURON, NEV, NEX1, NIFTI, 
 	OGG, OpenXDF,
 	PBMA, PBMN, PDF, PDP, Persyst, PGMA, PGMB,
 	PLEXON, PNG, PNM, POLY5, PPMA, PPMB, PS,
@@ -61,7 +61,7 @@ enum FileFormat {
 	SPSS, STATA, SVG, SXI, SYNERGY,
 	TIFF, TMS32, TMSiLOG, TRC, UNIPRO, VRML, VTK,
 	WAV, WG1, WinEEG, WMF, XML, XPM,
-	Z, ZIP, ZIP2, 
+	Z, ZIP, ZIP2
 };
 
 
