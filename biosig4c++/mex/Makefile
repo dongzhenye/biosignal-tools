@@ -38,6 +38,13 @@ else
   LIBS        += ../libbiosig.$(LIBEXT)
 endif
 
+ifeq ($(LIBEXT),so)
+  LIBS        += -L.. -lbiosig
+else
+  LIBS        += ../libbiosig.$(LIBEXT)
+endif
+
+
 mex: mex4m mex4o 
 win32 win mexw32: mexSLOAD.mexw32 mexSOPEN.mexw32 mexSSAVE.mexw32
 win64 mexw64: mexSLOAD.mexw64 mexSOPEN.mexw64 mexSSAVE.mexw64
@@ -101,7 +108,7 @@ mexSOPEN.mex:  mexSLOAD.cpp ../libbiosig.$(LIBEXT) Makefile
 
 oct:  mexSLOAD.oct
 mexSLOAD.oct:  mexSLOAD.cpp ../libbiosig.$(LIBEXT) Makefile
-	$(OCT)  $(DEFINES) mexSLOAD.cpp ../libbiosig.$(LIBEXT) $(LIBS)
+	$(OCT)  $(DEFINES) mexSLOAD.cpp $(LIBS)
 	$(OCT) -D=mexSOPEN $(DEFINES) mexSLOAD.cpp $(LFLAGS) $(LIBS) -o mexSOPEN.oct
 	-$(COPY) mexSOPEN.oct ../../biosig/t200_FileAccess/
 	-$(COPY) mexSOPEN.oct ../../biosig/t200_FileAccess/

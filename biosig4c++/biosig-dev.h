@@ -328,10 +328,10 @@ void bef64a(  double i, uint8_t* r);
 # define INFINITY (1.0/0.0)   /* positive infinity */
 #endif
 #ifndef isfinite
-# define isfinite(a) (-INFINITY < a && a < INFINITY)
+# define isfinite(a) (-INFINITY < (a) && (a) < INFINITY)
 #endif
 #ifndef isnan
-# define isnan(a) (a!=a)
+# define isnan(a) ((a)!=(a))
 #endif
 
 

@@ -70,6 +70,10 @@ const char* PhysDimFactor[] = {
 	"\xB5"	//hack for "µ" = "u"		// 32
 	};
 
+
+#ifndef NAN
+# define NAN (0.0/0.0)        /* used for encoding of missing values */
+#endif
 double PhysDimScale(uint16_t PhysDimCode)
 {
 // converting PhysDimCode -> scaling factor
