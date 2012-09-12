@@ -6,7 +6,7 @@
     or the functions are discarded. Do not rely on the interface in this function
 
     $Id: sandbox.c,v 1.5 2009-04-16 20:19:17 schloegl Exp $
-    Copyright (C) 2008,2009,2010,2011 Alois Schloegl <a.schloegl@ieee.org>
+    Copyright (C) 2008,2009,2010,2011,2012 Alois Schloegl <alois.schloegl@ist.ac.at>
     This file is part of the "BioSig for C/C++" repository
     (biosig4c++) at http://biosig.sf.net/
 
@@ -358,6 +358,7 @@ int sopen_matlab(HDRTYPE* hdr) {
 }
 #endif 
 
+
 void sopen_heka(HDRTYPE* hdr, FILE *itx) {
 	size_t count = hdr->HeadLen;
 
@@ -708,8 +709,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 							hc->Label[max(32,MAX_LENGTH_LABEL)] = 0;
 							hc->Transducer[0] = 0;
                                                         hc->SPR     = 1;
-                                                        hc->Cal     = 1.0;
-                                                        hc->Off     = 0.0;
 							hc->PhysDimCode = pdc;
                                                         hc->OnOff   = 1;
 							hc->GDFTYP  = gdftyp;
@@ -720,9 +719,22 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 							// hc->PhysMin = PhysMin;
 							hc->PhysMax =  YRange+YOffset;
 							hc->PhysMin = -YRange-YOffset;
+
+							Cal = (hc->PhysMax-hc->PhysMin)/(hc->DigMax-hc->DigMin);
+							Off = hc->PhysMin - Cal*hc->DigMin;
+
 							hc->Cal = Cal;
 							hc->Off = Off;
 							hc->TOffset = Toffset;
+
+{ //DEBUG 
+							double Cal2 = (hc->PhysMax-hc->PhysMin)/(hc->DigMax-hc->DigMin);
+							double Off2 = hc->PhysMin - Cal2*hc->DigMin;
+							hc->Off = Off2;
+if (VERBOSE_LEVEL>6) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %g/%g %g/%g \n",(int)(pos+StartOfData),ns,AdcChan,Label,Cal,Cal2,Off,Off2);
+
+}
+
 
 							/* TODO: fix remaining channel header  */
 							/* LowPass, HighPass, Notch, Impedance, */
