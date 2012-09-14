@@ -5,8 +5,7 @@
 %%      Ulrich Fröbe, Alois Schlögl, and Peter Jonas (submitted) 
 %%  A deconvolution-based method with high sensitivity and temporal
 %%  resolution for detection of spontaneous synaptic currents in vitro and
-%%  in vivo.
-
+%%  in vivo. Biophysical Journal Volume 103 October 2012 1–11.
 
 %  $Id$
 %  Copyright (C) 2012 by Alois Schloegl  <alois.schloegl@ist.ac.at>  

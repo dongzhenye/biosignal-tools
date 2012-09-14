@@ -19,10 +19,11 @@ function d = signal_deconvolution(r,t,fs,highpass,lowpass)
 %
 % see also: get_local_maxima_above_threshold
 %
-% References: 
-%  A. Pernía-Andrade, S.P. Goswami, Y. Stickler, U. Fröbe, A. Schlögl, and P. Jonas (2012)
-%  A deconvolution-based method with high sensitivity and temporal resolution for 
-%    detection of spontaneous synaptic currents in vitro and in vivo, IST Austria. 
+% Reference(s): 
+%  [1] A. Pernía-Andrade, S.P. Goswami, Y. Stickler, U. Fröbe, A. Schlögl, and P. Jonas (2012)
+%     A deconvolution-based method with high sensitivity and temporal resolution for 
+%     detection of spontaneous synaptic currents in vitro and in vivo.
+%     Biophysical Journal Volume 103 October 2012 1–11.
 
 %  $Id$
 %  Copyright (C) 2012 by Alois Schloegl, IST Austria <alois.schloegl@ist.ac.at>	
