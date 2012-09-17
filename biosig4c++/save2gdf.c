@@ -284,8 +284,16 @@ int main(int argc, char **argv){
 	
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[113] SOPEN-R finished\n");
 
-	
-	hdr2ascii(hdr,stdout, FLAG_JSON ? -1 : VERBOSE);
+
+	if (FLAG_JSON) {
+		char *str=NULL; 
+		asprintf_hdr2json( &str, hdr);
+		fprintf(stdout,"%s\n", str);
+		free(str);
+	}
+        else 
+		hdr2ascii(hdr,stdout, FLAG_JSON ? -1 : VERBOSE);
+
 
 	// all channels are converted - channel selection currently not supported
     	for (k=0; k<hdr->NS; k++) {

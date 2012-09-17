@@ -61,7 +61,7 @@ if (VERBOSE_LEVEL > 5)
 #endif
 	sz[0] = hdr->data.size[1];
 	sz[1] = hdr->data.size[0];
-	MLPutFunction(stdlink, "List", 2);
+	MLPutFunction(stdlink, "List", 3);
 		// write data matrix 
 		MLPutRealArray(stdlink, hdr->data.block, sz, NULL, 2);
 
@@ -75,7 +75,7 @@ if (VERBOSE_LEVEL > 5)
 
 		// generate and write header information in JSON format
 		char *str = NULL;
-		asprint_hdr2json(&str, hdr);
+		asprintf_hdr2json(&str, hdr);
 		MLPutString(stdlink, str);
 		free(str);
 

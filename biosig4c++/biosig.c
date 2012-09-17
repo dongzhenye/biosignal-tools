@@ -12875,7 +12875,7 @@ int asprintf_hdr2json(char **str, HDRTYPE *hdr)
 
 	size_t sz = 25*50 + hdr->NS * 16 * 50 + hdr->EVENT.N * 5 * 50;	// rough estimate of memory needed
 	size_t c  = 0; 
-	*str = (char*) realloc(str, sz); 
+	*str = (char*) realloc(*str, sz); 
 #define STR ((*str)+c)	
 
 	size_t NumberOfSweeps = (hdr->SPR*hdr->NRec > 0); 
@@ -12924,7 +12924,7 @@ int asprintf_hdr2json(char **str, HDRTYPE *hdr)
 		if (sz < c + 1000) {
 			// double allocated memory 	
 			sz *= 2; 	
-			*str = (char*) realloc(str, sz); 
+			*str = (char*) realloc(*str, sz); 
 		}
 
 		CHANNEL_TYPE *hc = hdr->CHANNEL+k;
@@ -12970,7 +12970,7 @@ int asprintf_hdr2json(char **str, HDRTYPE *hdr)
 		if (sz < c + 1000) {
 			// double allocated memory 	
 			sz *= 2; 	
-			*str = (char*) realloc(str, sz); 
+			*str = (char*) realloc(*str, sz); 
 		}
 
                 if (k>0) c += sprintf(STR, ",");
