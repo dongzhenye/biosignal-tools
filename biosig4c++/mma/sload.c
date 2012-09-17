@@ -73,6 +73,11 @@ if (VERBOSE_LEVEL > 5)
 		MLPutRealList(stdlink, t, hdr->NRec*hdr->SPR);
 		free(t); 
 
+		// generate and write header information in JSON format
+		char *str = NULL;
+		asprint_hdr2json(&str, hdr);
+		MLPutString(stdlink, str);
+		free(str);
 
 if (VERBOSE_LEVEL > 5) {
 	for (k=0;k<hdr->NS;k++)

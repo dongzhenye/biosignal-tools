@@ -591,17 +591,6 @@ int 	cachingWholeFile(HDRTYPE* hdr);
  --------------------------------------------------------------- */
 
 
-int	hdr2ascii(HDRTYPE* hdr,FILE *fid, int VERBOSITY);
-/*	writes the header information is ascii format the stream defined by fid
- *	Typically fid is stdout. VERBOSITY defines how detailed the information is.
- *	VERBOSITY=0 or 1 report just some basic information,
- *	VERBOSITY=2 reports als the channel information
- *	VERBOSITY=3 provides in addition the event table.
- *	VERBOSITY=8 for debugging 
- *	VERBOSITY=9 for debugging
- *	VERBOSITY=-1 header and event table is shown in JSON format
- --------------------------------------------------------------- */
-
 int RerefCHANNEL(HDRTYPE *hdr, void *ReRef, char rrtype);
 /* rerefCHAN
         defines rereferencing of channels,
@@ -631,6 +620,11 @@ enum FileFormat GetFileTypeFromString(const char *);
 /*	returns file format from string
  --------------------------------------------------------------- */
 
+
+/* =============================================================
+	utility functions for handling of event table 
+   ============================================================= */
+
 void sort_eventtable(HDRTYPE *hdr);
 /* sort event table with respect to hdr->EVENT.POS
   --------------------------------------------------------------*/
@@ -659,6 +653,11 @@ void FreeTextEvent(HDRTYPE* hdr, size_t N, const char* annotation);
 	table contains more than 255 entries, an error is set. 
   ------------------------------------------------------------------------*/
 
+
+/* =============================================================
+	utility functions for handling of physical dimensons
+   ============================================================= */
+
 uint16_t PhysDimCode(const char* PhysDim);
 /* Encodes  Physical Dimension as 16bit integer according to
    ISO/IEEE 11073-10101:2004 Vital Signs Units of Measurement
@@ -680,6 +679,41 @@ double PhysDimScale(uint16_t PhysDimCode);
 /* returns scaling factor of physical dimension
 	e.g. 0.001 for milli, 1000 for kilo etc.
  --------------------------------------------------------------- */
+
+
+/* =============================================================
+	printing of header information 	
+   ============================================================= */
+
+int	hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSITY);
+/*	writes the header information is ascii format the stream defined by fid
+ *	Typically fid is stdout. VERBOSITY defines how detailed the information is.
+ *	VERBOSITY=0 or 1 report just some basic information,
+ *	VERBOSITY=2 reports als the channel information
+ *	VERBOSITY=3 provides in addition the event table.
+ *	VERBOSITY=8 for debugging 
+ *	VERBOSITY=9 for debugging
+ *	VERBOSITY=-1 header and event table is shown in JSON format
+ --------------------------------------------------------------- */
+
+int fprintf_hdr2json(FILE *stream, HDRTYPE* hdr);
+/* prints header in json format into stream; 
+ --------------------------------------------------------------- */
+
+#define hdr2json(hdr,fid)  fprintf_hdr2json(fid, hdr)
+/* defined for historical reasons
+ --------------------------------------------------------------- */
+#define printf_hdr2json(hdr)  fprintf_hdr2json(stdout, hdr)
+/* prints header in json format into stdout; 
+ --------------------------------------------------------------- */
+
+int asprintf_hdr2json(char **str, HDRTYPE* hdr);
+/* prints header in json format into *str; 
+   memory for str is automatically allocated and must be freed 
+   after usage. 
+ --------------------------------------------------------------- */
+
+
 
 #ifdef __cplusplus
 }

@@ -12868,7 +12868,148 @@ void fprintf_json_double(FILE *fid, const char* Name, double val) {
 /**                     HDR2ASCII                                          **/
 /**	displaying header information                                      **/
 /****************************************************************************/
-int hdr2json(HDRTYPE* hdr, FILE *fid)
+int asprintf_hdr2json(char **str, HDRTYPE *hdr)
+{
+        size_t k;
+	char tmp[41];
+
+	size_t sz = 25*50 + hdr->NS * 16 * 50 + hdr->EVENT.N * 5 * 50;	// rough estimate of memory needed
+	size_t c  = 0; 
+	*str = (char*) realloc(str, sz); 
+#define STR ((*str)+c)	
+
+	size_t NumberOfSweeps = (hdr->SPR*hdr->NRec > 0); 
+        size_t NumberOfUserSpecifiedEvents = 0; 
+        for (k = 0; k < hdr->EVENT.N; k++) {
+                if (hdr->EVENT.TYP[k] < 255) 
+                        NumberOfUserSpecifiedEvents++;
+                else if (hdr->EVENT.TYP[k]==0x7ffe) 
+                        NumberOfSweeps++;
+        }
+
+        c += sprintf(STR, "\n{\n");
+        c += sprintf(STR, "\t\"TYPE\"\t: \"%s\",\n",GetFileTypeString(hdr->TYPE));
+        c += sprintf(STR, "\t\"VERSION\"\t: %4.2f,\n",hdr->VERSION);
+
+	c += sprintf(STR, "\t\"Filename\"\t: \"%s\",\n",hdr->FileName);
+	c += sprintf(STR, "\t\"NumberOfChannels\"\t: %i,\n",(int)hdr->NS);
+	c += sprintf(STR, "\t\"NumberOfRecords\"\t: %i,\n",(int)hdr->NRec);
+	c += sprintf(STR, "\t\"SamplesPerRecords\"\t: %i,\n",(int)hdr->SPR);
+	c += sprintf(STR, "\t\"NumberOfSamples\"\t: %i,\n",(int)(hdr->NRec*hdr->SPR));
+	if (!isnan(hdr->SampleRate)) c += sprintf(STR, "\t\"Samplingrate\"\t: %f,\n",hdr->SampleRate);
+	strftime(tmp,40,"%Y-%m-%d %H:%M:%S",gdf_time2tm_time(hdr->T0));
+	c += sprintf(STR, "\t\"StartOfRecording\"\t: \"%s\",\n",tmp);
+	c += sprintf(STR, "\t\"NumberOfSweeps\"\t: %d,\n",(unsigned)NumberOfSweeps);
+	c += sprintf(STR, "\t\"NumberOfGroupsOrUserSpecifiedEvents\"\t: %d,\n", (unsigned)NumberOfUserSpecifiedEvents);
+
+	c += sprintf(STR, "\t\"Patient\"\t: {\n");
+	c += sprintf(STR, "\t\t\"Name\"\t: \"%s\",\n", hdr->Patient.Name);
+	c += sprintf(STR, "\t\t\"Id\"\t: \"%s\",\n", hdr->Patient.Id);
+	if (hdr->Patient.Weight) c += sprintf(STR, "\t\t\"Weight\"\t: \"%i kg\",\n", hdr->Patient.Weight);
+	if (hdr->Patient.Height) c += sprintf(STR, "\t\t\"Height\"\t: \"%i cm\",\n", hdr->Patient.Height);
+	if (hdr->Patient.Birthday>0) c += sprintf(STR, "\t\t\"Age\"\t: %i,\n", (int)((hdr->T0 - hdr->Patient.Birthday)/ldexp(365.25,32)) );
+	c += sprintf(STR, "\t\t\"Gender\"\t: \"%s\"\n", hdr->Patient.Sex==1 ? "Male" : "Female");        // no comma at the end because its the last element
+	c += sprintf(STR, "\t},\n");   // end-of-Patient
+
+	c += sprintf(STR,"\t\"Manufacturer\"\t: {\n");
+	c += sprintf(STR,"\t\t\"Name\"\t: \"%s\",\n", hdr->ID.Manufacturer.Name);
+	c += sprintf(STR,"\t\t\"Model\"\t: \"%s\",\n", hdr->ID.Manufacturer.Model);
+	c += sprintf(STR,"\t\t\"Version\"\t: \"%s\",\n", hdr->ID.Manufacturer.Version);
+	c += sprintf(STR,"\t\t\"SerialNumber\"\t: \"%s\"\n", hdr->ID.Manufacturer.SerialNumber);        // no comma at the end because its the last element
+	c += sprintf(STR,"\t},\n");   // end-of-Manufacturer
+
+        c += sprintf(STR,"\t\"CHANNEL\"\t: [");
+	for (k = 0; k < hdr->NS; k++) {
+
+		if (sz < c + 1000) {
+			// double allocated memory 	
+			sz *= 2; 	
+			*str = (char*) realloc(str, sz); 
+		}
+
+		CHANNEL_TYPE *hc = hdr->CHANNEL+k;
+                if (k>0) c += sprintf(STR,",");
+                c += sprintf(STR,"\n\t\t{\n");
+		c += sprintf(STR,"\t\t\"ChannelNumber\"\t: %i,\n", (int)k+1);
+		c += sprintf(STR,"\t\t\"Label\"\t: \"%s\",\n", hc->Label);
+		if (hc->Transducer!=NULL && strlen(hc->Transducer)>0) c += sprintf(STR,"\t\t\"Transducer\"\t: \"%s\",\n", hc->Transducer);
+		c += sprintf(STR,"\t\t\"PhysicalUnit\"\t: \"%s\",\n", PhysDim3(hc->PhysDimCode));
+		if (!isnan(hc->PhysMax)) c += sprintf(STR,"\t\t\"PhysicalMaximum\"\t: %g,\n", hc->PhysMax);
+		if (!isnan(hc->PhysMin)) c += sprintf(STR,"\t\t\"PhysicalMinimum\"\t: %g,\n", hc->PhysMin);
+		if (!isnan(hc->DigMax))  c += sprintf(STR,"\t\t\"DigitalMaximum\"\t: %f,\n", hc->DigMax);
+		if (!isnan(hc->DigMin))  c += sprintf(STR,"\t\t\"DigitalMinimum\"\t: %f,\n", hc->DigMin);
+		if (!isnan(hc->Cal))     c += sprintf(STR,"\t\t\"scaling\"\t: %g,\n", hc->Cal);
+		if (!isnan(hc->Off))     c += sprintf(STR,"\t\t\"offset\"\t: %g,\n", hc->Off);
+		if (!isnan(hc->TOffset)) c += sprintf(STR,"\t\t\"TimeDelay\"\t: %g,\n", hc->TOffset);
+		uint8_t flag = (0 < hc->LowPass && hc->LowPass<INFINITY) | ((0 < hc->HighPass && hc->HighPass<INFINITY)<<1) | ((0 < hc->Notch && hc->Notch<INFINITY)<<2); 
+		if (flag) {
+			c += sprintf(STR, "\t\t\"Filter\" : {\n");
+			if (flag & 0x01) c += sprintf(STR, "\t\t\t\"Lowpass\"\t: %g%c\n", hc->LowPass, flag & 0x06 ? ',' : ' '); 
+			if (flag & 0x02) c += sprintf(STR, "\t\t\t\"Highpass\"\t: %g%c\n", hc->HighPass, flag & 0x04 ? ',' : ' ' ); 
+			if (flag & 0x03) c += sprintf(STR, "\t\t\t\"Notch\"\t: %g\n", hc->Notch); 
+			c += sprintf(STR, "\n\t\t},\n");
+		}
+		switch (hc->PhysDimCode & 0xffe0) {
+		case 4256: // Volt       
+			if (!isnan(hc->Impedance)) c += sprintf(STR, "\t\t\"Impedance\"\t: %g,\n", hc->Impedance);
+			break;
+		case 4288: // Ohm
+			if (!isnan(hc->fZ)) c += sprintf(STR, "\t\t\"fZ\"\t: %g,\n", hc->fZ);
+			break;
+		}
+                double fs = hdr->SampleRate * hc->SPR/hdr->SPR;
+		if (!isnan(fs)) c += sprintf(STR, "\t\t\"Samplingrate\"\t: %f", fs);        // no comma at the end because its the last element
+		c += sprintf(STR, "\n\t\t}");   // end-of-CHANNEL
+	}
+        c += sprintf(STR, "\n\t]");   // end-of-CHANNELS
+
+        if (hdr->EVENT.N>0) {
+            c += sprintf(STR, ",\n\t\"EVENT\"\t: [");
+            for (k = 0; k < hdr->EVENT.N; k++) {
+
+		if (sz < c + 1000) {
+			// double allocated memory 	
+			sz *= 2; 	
+			*str = (char*) realloc(str, sz); 
+		}
+
+                if (k>0) c += sprintf(STR, ",");
+                c += sprintf(STR, "\n\t\t{\n");
+                c += sprintf(STR, "\t\t\"TYP\"\t: \"0x%04x\",\n", hdr->EVENT.TYP[k]);
+                c += sprintf(STR, "\t\t\"POS\"\t: \"%f\",\n", hdr->EVENT.POS[k]/hdr->EVENT.SampleRate);
+                if (hdr->EVENT.CHN && hdr->EVENT.DUR) {
+                        c += sprintf(STR, "\t\t\"CHN\"\t: \"0x%04x\",\n", hdr->EVENT.CHN[k]);
+                        c += sprintf(STR, "\t\t\"DUR\"\t: \"%f\",\n", hdr->EVENT.DUR[k]/hdr->EVENT.SampleRate);
+                }
+		if ((hdr->EVENT.TYP[k] == 0x7fff) && (hdr->TYPE==GDF))
+			c += sprintf(STR, "\t\t\"Description\"\t: [neds]\n");        // no comma at the end because its the last element
+
+		else if (hdr->EVENT.TYP[k] < hdr->EVENT.LenCodeDesc)
+			c += sprintf(STR, "\t\t\"Description\"\t: \"%s\"\n",hdr->EVENT.CodeDesc[hdr->EVENT.TYP[k]]);        // no comma at the end because its the last element
+
+		else if (GLOBAL_EVENTCODES_ISLOADED) {
+			uint16_t k1;
+			for (k1=0; (k1 < Global.LenCodeDesc) && (hdr->EVENT.TYP[k] != Global.CodeIndex[k1]); k1++) {};
+			if (k1 < Global.LenCodeDesc)
+        			c += sprintf(STR, "\t\t\"Description\"\t: \"%s\"\n", Global.CodeDesc[k1]);        // no comma at the end because its the last element
+		}
+                c += sprintf(STR, "\t\t}");
+            }
+            c += sprintf(STR, "\n\t]");   // end-of-EVENT
+        }
+        c += sprintf(STR, "\n}\n");
+        return (0); 
+#undef STR
+}
+
+
+/****************************************************************************/
+/**                     HDR2ASCII                                          **/
+/**	displaying header information                                      **/
+/****************************************************************************/
+#define hdr2json(hdr,fid)  fprintf_hdr2json(fid, hdr)
+
+int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
 {
         size_t k;
 	char tmp[41];
