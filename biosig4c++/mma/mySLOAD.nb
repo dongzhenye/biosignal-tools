@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       157,          7]
-NotebookDataLength[      9836,        211]
-NotebookOptionsPosition[      9537,        196]
-NotebookOutlinePosition[      9895,        212]
-CellTagsIndexPosition[      9852,        209]
+NotebookDataLength[     10817,        230]
+NotebookOptionsPosition[     10518,        215]
+NotebookOutlinePosition[     10876,        231]
+CellTagsIndexPosition[     10833,        228]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -25,7 +25,8 @@ Cell[BoxData[
     RowBox[{
     "Platform", " ", "independent", " ", "loading", " ", "of", " ", 
      "biosignal", " ", "data", "\[IndentingNewLine]", "  ", "Copyright", " ", 
-     "2011", " ", "Alois", " ", "Schloegl"}], ",", " ", 
+     "2011"}], ",", 
+    RowBox[{"2012", " ", "Alois", " ", "Schloegl"}], ",", " ", 
     RowBox[{
      RowBox[{
      "IST", " ", "Austria", "\[IndentingNewLine]", "  ", "This", " ", "file", 
@@ -77,40 +78,44 @@ Cell[BoxData[
   "\[IndentingNewLine]", 
   RowBox[{
    RowBox[{
-    RowBox[{
-     RowBox[{"mySLOAD", "[", 
-      RowBox[{"filename_", ",", " ", "sweeps_"}], "]"}], ":=", " ", 
-     RowBox[{"Module", " ", "[", 
-      RowBox[{
-       RowBox[{"{", 
-        RowBox[{"link", ",", " ", "data"}], "}"}], ",", " ", 
-       "\[IndentingNewLine]", 
-       RowBox[{"(*", " ", 
-        RowBox[{"mySLOAD", ":", " ", 
-         RowBox[{"makes", " ", "it", " ", "platform", " ", "independent"}]}], 
-        " ", "*)"}], "\[IndentingNewLine]", 
-       RowBox[{
-        RowBox[{"link", "=", 
-         RowBox[{"Install", "[", 
-          RowBox[{"Switch", "[", 
-           RowBox[{
-           "$SystemID", ",", "\[IndentingNewLine]", "\"\<Windows\>\"", ",", 
-            " ", "\"\<sload.exe\>\"", ",", "\[IndentingNewLine]", 
-            "\"\<Windows-x86-64\>\"", ",", " ", "\"\<sload.exe\>\"", ",", 
-            "\[IndentingNewLine]", "\"\<Linux-x86-64\>\"", ",", " ", 
-            "\"\</scratch/schloegl/src/biosig4c++/mma/sload\>\""}], 
-           "\[IndentingNewLine]", "]"}], "\[IndentingNewLine]", "]"}]}], ";", 
-        "\[IndentingNewLine]", 
-        RowBox[{"data", " ", "=", " ", 
-         RowBox[{"sload", "[", 
-          RowBox[{"filename", ",", "sweeps"}], "]"}]}], ";", 
-        "\[IndentingNewLine]", 
-        RowBox[{"Uninstall", "[", "link", "]"}], ";", "\[IndentingNewLine]", 
-        "data"}]}], " ", 
+    RowBox[{"mySLOAD", "[", 
+     RowBox[{"filename_", ",", " ", "sweeps_"}], "]"}], ":=", " ", 
+    RowBox[{"Module", " ", "[", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"link", ",", " ", "data"}], "}"}], ",", " ", 
+      "\[IndentingNewLine]", 
       RowBox[{"(*", " ", 
-       RowBox[{"return", " ", "data"}], " ", "*)"}], "\[IndentingNewLine]", 
-      "]"}]}], ";"}], "\[IndentingNewLine]", 
-   "\[IndentingNewLine]"}]}]], "Input",
+       RowBox[{"mySLOAD", ":", " ", 
+        RowBox[{"makes", " ", "it", " ", "platform", " ", "independent"}]}], 
+       " ", "*)"}], "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{"link", "=", 
+        RowBox[{"Install", "[", 
+         RowBox[{"Switch", "[", 
+          RowBox[{
+          "$SystemID", ",", "\[IndentingNewLine]", "\"\<Windows\>\"", ",", 
+           " ", "\"\<sload.exe\>\"", ",", "\[IndentingNewLine]", 
+           "\"\<Windows-x86-64\>\"", ",", " ", "\"\<sload.exe\>\"", ",", 
+           "\[IndentingNewLine]", "\"\<Linux-x86-64\>\"", ",", " ", 
+           "\"\<sload\>\""}], "\[IndentingNewLine]", "]"}], 
+         "\[IndentingNewLine]", "]"}]}], ";", "\[IndentingNewLine]", 
+       RowBox[{"data", " ", "=", " ", 
+        RowBox[{"sload", "[", 
+         RowBox[{"filename", ",", "sweeps"}], "]"}]}], ";", 
+       "\[IndentingNewLine]", 
+       RowBox[{"Uninstall", "[", "link", "]"}], ";", "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{"data", "[", 
+         RowBox[{"[", "3", "]"}], "]"}], "=", " ", 
+        RowBox[{"ImportString", "[", 
+         RowBox[{
+          RowBox[{"data", "[", 
+           RowBox[{"[", "3", "]"}], "]"}], ",", "\"\<JSON\>\""}], "]"}]}], 
+       " ", ";", "\[IndentingNewLine]", "data"}]}], " ", 
+     RowBox[{"(*", " ", 
+      RowBox[{"return", " ", "data"}], " ", "*)"}], "\[IndentingNewLine]", 
+     "]"}]}], ";"}]}]], "Input",
  CellChangeTimes->{{3.519966450456757*^9, 3.519966502320704*^9}, {
    3.519966532912158*^9, 3.519966567258428*^9}, {3.519966618877387*^9, 
    3.51996673299822*^9}, {3.519967510684229*^9, 3.519967518075049*^9}, {
@@ -141,7 +146,10 @@ Cell[BoxData[
    3.520006858540068*^9}, {3.5200069516304865`*^9, 3.5200069738178444`*^9}, {
    3.5200072973938985`*^9, 3.520007442783593*^9}, {3.5200452788136187`*^9, 
    3.520045350254847*^9}, {3.5287739788324213`*^9, 3.528773986388357*^9}, {
-   3.5496155605201683`*^9, 3.549615589801598*^9}}],
+   3.5496155605201683`*^9, 3.549615589801598*^9}, 3.5569436797058687`*^9, {
+   3.556944509143981*^9, 3.5569445101951313`*^9}, {3.55694458824214*^9, 
+   3.55694460125224*^9}, {3.556945020734132*^9, 3.55694502131108*^9}, {
+   3.55694520498739*^9, 3.556945212286521*^9}}],
 
 Cell[BoxData[
  RowBox[{
@@ -172,7 +180,7 @@ Cell[BoxData[
       RowBox[{"filename", ",", 
        RowBox[{"{", 
         RowBox[{"1", ",", "0", ",", "0"}], "}"}]}], "]"}]}], ";"}], 
-   "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", " ", 
    RowBox[{"signal", " ", "=", " ", 
     RowBox[{"data", "[", 
      RowBox[{"[", "1", "]"}], "]"}]}], " ", 
@@ -183,19 +191,30 @@ Cell[BoxData[
      RowBox[{"[", "2", "]"}], "]"}]}], "  ", 
    RowBox[{"(*", " ", 
     RowBox[{"sampling", " ", "time", " ", "points"}], " ", "*)"}], 
-   "\[IndentingNewLine]"}]}]], "Input",
+   "\[IndentingNewLine]", 
+   RowBox[{"hdrinfo", " ", "=", " ", 
+    RowBox[{"data", "[", 
+     RowBox[{"[", "3", "]"}], "]"}], "  ", 
+    RowBox[{"(*", " ", 
+     RowBox[{"header", " ", "information"}], " ", "*)"}]}]}]}]], "Input",
  CellChangeTimes->{{3.519979391272304*^9, 3.519979391298527*^9}, {
-  3.5199794391621532`*^9, 3.519979443619672*^9}, {3.5199796130222473`*^9, 
-  3.519979624542252*^9}, {3.519979795590229*^9, 3.5199798223556824`*^9}, {
-  3.520006868285538*^9, 3.520006886419143*^9}, {3.5200071094263515`*^9, 
-  3.5200072102225814`*^9}, {3.5200072451598577`*^9, 3.5200072750190415`*^9}, {
-  3.528787036180324*^9, 3.528787110864997*^9}, {3.5382845652299757`*^9, 
-  3.5382846614577017`*^9}, {3.549615465329794*^9, 3.5496154794021807`*^9}, {
-  3.549615523967299*^9, 3.5496155245441732`*^9}, {3.549615636162397*^9, 
-  3.549615649314818*^9}, {3.5496157473455763`*^9, 3.549615753000841*^9}}]
+   3.5199794391621532`*^9, 3.519979443619672*^9}, {3.5199796130222473`*^9, 
+   3.519979624542252*^9}, {3.519979795590229*^9, 3.5199798223556824`*^9}, {
+   3.520006868285538*^9, 3.520006886419143*^9}, {3.5200071094263515`*^9, 
+   3.5200072102225814`*^9}, {3.5200072451598577`*^9, 
+   3.5200072750190415`*^9}, {3.528787036180324*^9, 3.528787110864997*^9}, {
+   3.5382845652299757`*^9, 3.5382846614577017`*^9}, {3.549615465329794*^9, 
+   3.5496154794021807`*^9}, {3.549615523967299*^9, 3.5496155245441732`*^9}, {
+   3.549615636162397*^9, 3.549615649314818*^9}, {3.5496157473455763`*^9, 
+   3.549615753000841*^9}, {3.5569436371616697`*^9, 3.5569436568764563`*^9}, {
+   3.556943688684099*^9, 3.5569436894182796`*^9}, {3.556944494196495*^9, 
+   3.556944497034631*^9}, {3.556944609666651*^9, 3.5569446134500923`*^9}, {
+   3.556945025002976*^9, 3.5569450257378893`*^9}, {3.556945080988645*^9, 
+   3.55694517551702*^9}, 3.556945219655058*^9, {3.556945262915558*^9, 
+   3.556945263348009*^9}}]
 },
 WindowSize->{740, 867},
-WindowMargins->{{120, Automatic}, {Automatic, 0}},
+WindowMargins->{{116, Automatic}, {Automatic, 0}},
 ShowSelection->True,
 FrontEndVersion->"8.0 for Linux x86 (64-bit) (February 23, 2011)",
 StyleDefinitions->"Default.nb"
@@ -211,8 +230,8 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[557, 20, 6488, 123, 624, "Input"],
-Cell[7048, 145, 2485, 49, 264, "Input"]
+Cell[557, 20, 6886, 131, 650, "Input"],
+Cell[7446, 153, 3068, 60, 295, "Input"]
 }
 ]
 *)

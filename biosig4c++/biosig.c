@@ -12903,8 +12903,8 @@ int asprintf_hdr2json(char **str, HDRTYPE *hdr)
 	c += sprintf(STR, "\t\"NumberOfGroupsOrUserSpecifiedEvents\"\t: %d,\n", (unsigned)NumberOfUserSpecifiedEvents);
 
 	c += sprintf(STR, "\t\"Patient\"\t: {\n");
-	c += sprintf(STR, "\t\t\"Name\"\t: \"%s\",\n", hdr->Patient.Name);
-	c += sprintf(STR, "\t\t\"Id\"\t: \"%s\",\n", hdr->Patient.Id);
+	if (hdr->Patient.Name) c += sprintf(STR, "\t\t\"Name\"\t: \"%s\",\n", hdr->Patient.Name);
+	if (hdr->Patient.Id)   c += sprintf(STR, "\t\t\"Id\"\t: \"%s\",\n", hdr->Patient.Id);
 	if (hdr->Patient.Weight) c += sprintf(STR, "\t\t\"Weight\"\t: \"%i kg\",\n", hdr->Patient.Weight);
 	if (hdr->Patient.Height) c += sprintf(STR, "\t\t\"Height\"\t: \"%i cm\",\n", hdr->Patient.Height);
 	if (hdr->Patient.Birthday>0) c += sprintf(STR, "\t\t\"Age\"\t: %i,\n", (int)((hdr->T0 - hdr->Patient.Birthday)/ldexp(365.25,32)) );
@@ -12912,10 +12912,10 @@ int asprintf_hdr2json(char **str, HDRTYPE *hdr)
 	c += sprintf(STR, "\t},\n");   // end-of-Patient
 
 	c += sprintf(STR,"\t\"Manufacturer\"\t: {\n");
-	c += sprintf(STR,"\t\t\"Name\"\t: \"%s\",\n", hdr->ID.Manufacturer.Name);
-	c += sprintf(STR,"\t\t\"Model\"\t: \"%s\",\n", hdr->ID.Manufacturer.Model);
-	c += sprintf(STR,"\t\t\"Version\"\t: \"%s\",\n", hdr->ID.Manufacturer.Version);
-	c += sprintf(STR,"\t\t\"SerialNumber\"\t: \"%s\"\n", hdr->ID.Manufacturer.SerialNumber);        // no comma at the end because its the last element
+	if (hdr->ID.Manufacturer.Name) c += sprintf(STR,"\t\t\"Name\"\t: \"%s\",\n", hdr->ID.Manufacturer.Name);
+	if (hdr->ID.Manufacturer.Model) c += sprintf(STR,"\t\t\"Model\"\t: \"%s\",\n", hdr->ID.Manufacturer.Model);
+	if (hdr->ID.Manufacturer.Version) c += sprintf(STR,"\t\t\"Version\"\t: \"%s\",\n", hdr->ID.Manufacturer.Version);
+	if (hdr->ID.Manufacturer.SerialNumber) c += sprintf(STR,"\t\t\"SerialNumber\"\t: \"%s\"\n", hdr->ID.Manufacturer.SerialNumber);  // no comma at the end because its the last element
 	c += sprintf(STR,"\t},\n");   // end-of-Manufacturer
 
         c += sprintf(STR,"\t\"CHANNEL\"\t: [");
@@ -12932,7 +12932,7 @@ int asprintf_hdr2json(char **str, HDRTYPE *hdr)
                 c += sprintf(STR,"\n\t\t{\n");
 		c += sprintf(STR,"\t\t\"ChannelNumber\"\t: %i,\n", (int)k+1);
 		c += sprintf(STR,"\t\t\"Label\"\t: \"%s\",\n", hc->Label);
-		if (hc->Transducer!=NULL && strlen(hc->Transducer)>0) c += sprintf(STR,"\t\t\"Transducer\"\t: \"%s\",\n", hc->Transducer);
+		if ( hc->Transducer && strlen(hc->Transducer) ) c += sprintf(STR,"\t\t\"Transducer\"\t: \"%s\",\n", hc->Transducer);
 		c += sprintf(STR,"\t\t\"PhysicalUnit\"\t: \"%s\",\n", PhysDim3(hc->PhysDimCode));
 		if (!isnan(hc->PhysMax)) c += sprintf(STR,"\t\t\"PhysicalMaximum\"\t: %g,\n", hc->PhysMax);
 		if (!isnan(hc->PhysMin)) c += sprintf(STR,"\t\t\"PhysicalMinimum\"\t: %g,\n", hc->PhysMin);
@@ -13039,8 +13039,8 @@ int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
 	fprintf(fid,"\t\"NumberOfGroupsOrUserSpecifiedEvents\"\t: %d,\n",(unsigned)NumberOfUserSpecifiedEvents);
 
 	fprintf(fid,"\t\"Patient\"\t: {\n");
-	fprintf(fid,"\t\t\"Name\"\t: \"%s\",\n", hdr->Patient.Name);
-	fprintf(fid,"\t\t\"Id\"\t: \"%s\",\n", hdr->Patient.Id);
+	if (hdr->Patient.Name)   fprintf(fid,"\t\t\"Name\"\t: \"%s\",\n", hdr->Patient.Name);
+	if (hdr->Patient.Id)     fprintf(fid,"\t\t\"Id\"\t: \"%s\",\n", hdr->Patient.Id);
 	if (hdr->Patient.Weight) fprintf(fid,"\t\t\"Weight\"\t: \"%i kg\",\n", hdr->Patient.Weight);
 	if (hdr->Patient.Height) fprintf(fid,"\t\t\"Height\"\t: \"%i cm\",\n", hdr->Patient.Height);
 	if (hdr->Patient.Birthday>0) fprintf(fid,"\t\t\"Age\"\t: %i,\n", (int)((hdr->T0 - hdr->Patient.Birthday)/ldexp(365.25,32)) );
@@ -13048,10 +13048,10 @@ int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
 	fprintf(fid,"\t},\n");   // end-of-Patient
 
 	fprintf(fid,"\t\"Manufacturer\"\t: {\n");
-	fprintf(fid,"\t\t\"Name\"\t: \"%s\",\n", hdr->ID.Manufacturer.Name);
-	fprintf(fid,"\t\t\"Model\"\t: \"%s\",\n", hdr->ID.Manufacturer.Model);
-	fprintf(fid,"\t\t\"Version\"\t: \"%s\",\n", hdr->ID.Manufacturer.Version);
-	fprintf(fid,"\t\t\"SerialNumber\"\t: \"%s\"\n", hdr->ID.Manufacturer.SerialNumber);        // no comma at the end because its the last element
+	if (hdr->ID.Manufacturer.Name) fprintf(fid,"\t\t\"Name\"\t: \"%s\",\n", hdr->ID.Manufacturer.Name);
+	if (hdr->ID.Manufacturer.Model) fprintf(fid,"\t\t\"Model\"\t: \"%s\",\n", hdr->ID.Manufacturer.Model);
+	if (hdr->ID.Manufacturer.Version) fprintf(fid,"\t\t\"Version\"\t: \"%s\",\n", hdr->ID.Manufacturer.Version);
+	if (hdr->ID.Manufacturer.SerialNumber) fprintf(fid,"\t\t\"SerialNumber\"\t: \"%s\"\n", hdr->ID.Manufacturer.SerialNumber);        // no comma at the end because its the last element
 	fprintf(fid,"\t},\n");   // end-of-Manufacturer
 
         fprintf(fid,"\t\"CHANNEL\"\t: [");
@@ -13061,7 +13061,7 @@ int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
                 fprintf(fid,"\n\t\t{\n");
 		fprintf(fid,"\t\t\"ChannelNumber\"\t: %i,\n", (int)k+1);
 		fprintf(fid,"\t\t\"Label\"\t: \"%s\",\n", hc->Label);
-		if (hc->Transducer!=NULL && strlen(hc->Transducer)>0) fprintf(fid,"\t\t\"Transducer\"\t: \"%s\",\n", hc->Transducer);
+		if ( hc->Transducer && strlen(hc->Transducer) ) fprintf(fid,"\t\t\"Transducer\"\t: \"%s\",\n", hc->Transducer);
 		fprintf(fid,"\t\t\"PhysicalUnit\"\t: \"%s\",\n", PhysDim3(hc->PhysDimCode));
 		if (!isnan(hc->PhysMax)) fprintf(fid,"\t\t\"PhysicalMaximum\"\t: %g,\n", hc->PhysMax);
 		if (!isnan(hc->PhysMin)) fprintf(fid,"\t\t\"PhysicalMinimum\"\t: %g,\n", hc->PhysMin);
