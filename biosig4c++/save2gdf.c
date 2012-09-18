@@ -286,14 +286,11 @@ int main(int argc, char **argv){
 
 
 	if (FLAG_JSON) {
-		char *str=NULL; 
-		asprintf_hdr2json( &str, hdr);
-		fprintf(stdout,"%s\n", str);
-		free(str);
+		printf_hdr2json(hdr);
 	}
-        else 
-		hdr2ascii(hdr,stdout, FLAG_JSON ? -1 : VERBOSE);
-
+	else {
+		hdr2ascii(hdr, stdout, VERBOSE);
+	}
 
 	// all channels are converted - channel selection currently not supported
     	for (k=0; k<hdr->NS; k++) {
