@@ -508,7 +508,7 @@ ruby/biosig_wrap.c: ruby/biosig.i
 	(cd ruby && swig -ruby biosig.i)
 ruby/Makefile: ruby/extconf.rb
 	(cd ruby && ruby extconf.rb )
-ruby: libbiosig.$(LIBEXT) ruby/Makefile ruby/biosig_wrap.c
+biosig4ruby ruby: libbiosig.$(LIBEXT) ruby/Makefile ruby/biosig_wrap.c
 	$(MAKE) -C ruby 
 
 

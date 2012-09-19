@@ -29,13 +29,19 @@ including but not limited to SCP-ECG(EN1064), HL7aECG (FDA-XML), GDF, EDF, BDF, 
 (3) "mexSLOAD" is a MEX-interface for Octave and Matlab
 for details see mex/README
 
-(4) "biosig4python" is an interface to python. 
+(4a) "biosig4python" is an interface to python. 
 Requirement: python, python-dev, python-numpy, swig (http://www.swig.org/)
 for Debian/Ubuntu: 
- 	sudo aptitude install python python-dev python-numpy swig
+ 	sudo apt-get install python python-dev python-numpy swig
 see ./python/example.py and ./python/demo.py for more information 
 
-Interfaces to other languages (including Java, PHP, Perl, Ruby and TCL) are also provided through 
+(4b) "biosig4ruby" is an interface to ruby. 
+Requirement: ruby, ruby-dev, swig (http://www.swig.org/)
+for Debian/Ubuntu: 
+ 	sudo apt-get install ruby ruby-dev swig
+see ./ruby/test.rb for more information 
+
+Interfaces to other languages (including Java, PHP, Perl and TCL) are also provided through 
 SWIG. However, these are very experimental
 
 (5) SigViewer 

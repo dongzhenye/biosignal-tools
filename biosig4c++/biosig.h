@@ -703,9 +703,6 @@ int fprintf_hdr2json(FILE *stream, HDRTYPE* hdr);
 #define hdr2json(hdr,fid)  fprintf_hdr2json(fid, hdr)
 /* defined for historical reasons
  --------------------------------------------------------------- */
-#define printf_hdr2json(hdr)  fprintf_hdr2json(stdout, hdr)
-/* prints header in json format into stdout; 
- --------------------------------------------------------------- */
 
 int asprintf_hdr2json(char **str, HDRTYPE* hdr);
 /* prints header in json format into *str; 

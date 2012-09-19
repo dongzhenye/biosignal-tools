@@ -286,7 +286,7 @@ int main(int argc, char **argv){
 
 
 	if (FLAG_JSON) {
-		printf_hdr2json(hdr);
+		fprintf_hdr2json(stdout, hdr);
 	}
 	else {
 		hdr2ascii(hdr, stdout, VERBOSE);
