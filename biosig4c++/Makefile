@@ -489,10 +489,11 @@ biosig4python : python/_biosig.so python/biosig.py
 
 python/biosig.py python/swig_wrap.cxx: python/swig.i
 	$(SWIG) -python  -I/usr/include/python$(PYTHONVER)/ -I$(NUMPY_INC) -o python/swig_wrap.cxx python/swig.i
-	 
 python/_biosig.so : python/swig_wrap.cxx  libbiosig.$(LIBEXT)
 	$(CXX) -c $(CXXFLAGS) -I/usr/include/python$(PYTHONVER)/ -I$(NUMPY_INC)  python/swig_wrap.cxx -o python/swig_wrap.o
 	$(CXX) -shared python/swig_wrap.o $(LFLAGS) $(LIBS) -lpython$(PYTHONVER) -o python/_biosig.so 	 
+python: libbiosig.$(LIBEXT) python/swig.i
+	$(MAKE) -C python 
 	 
 
 java: libbiosig.$(LIBEXT) java/biosig.i
@@ -501,10 +502,16 @@ perl: libbiosig.$(LIBEXT) perl/biosig.i
 	$(MAKE) -C perl 
 php: libbiosig.$(LIBEXT) php/biosig.i
 	$(MAKE) -C php 
-python: libbiosig.$(LIBEXT) python/swig.i
-	$(MAKE) -C python 
-ruby: libbiosig.$(LIBEXT) ruby/biosig.i
+
+
+ruby/biosig_wrap.c: ruby/biosig.i
+	(cd ruby && swig -ruby biosig.i)
+ruby/Makefile: ruby/extconf.rb
+	(cd ruby && ruby extconf.rb )
+ruby: libbiosig.$(LIBEXT) ruby/Makefile ruby/biosig_wrap.c
 	$(MAKE) -C ruby 
+
+
 tcl: libbiosig.$(LIBEXT) tcl/biosig.i
 	$(MAKE) -C tcl 
 

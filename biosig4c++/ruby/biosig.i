@@ -1,7 +1,7 @@
 /*
 %
-% $Id: swig.i,v 1.25 2009-01-19 15:36:14 schloegl Exp $
-% Copyright (C) 2008,2009 Alois Schloegl <a.schloegl@ieee.org>
+% $Id$
+% Copyright (C) 2008,2009,2012 Alois Schloegl <alois.schloegl@ist.ac.at>
 % This file is part of the "BioSig for C/C++" repository 
 % (biosig4c++) at http://biosig.sf.net/ 
 
@@ -261,6 +261,30 @@ void 	sort_eventtable(HDRTYPE *hdr);
 void 	convert2to4_eventtable(HDRTYPE *hdr);
 void 	convert4to2_eventtable(HDRTYPE *hdr);
 
+int fprintf_hdr2json(FILE *stream, HDRTYPE* hdr);
+int asprintf_hdr2json(char **str, HDRTYPE* hdr);
+
+
+int printf_hdr2json(HDRTYPE* hdr);
+%{
+	int printf_hdr2json(HDRTYPE* hdr) {
+		return ( fprintf_hdr2json(stdout, hdr) );
+	};
+%}
+
+char *display_header(const char *filename);
+%{
+	int display_header(const char *filename) {
+		HDRTYPE *hdr = sopen(filename,"r",NULL);
+		if (serror()) return NULL; 
+
+		char *str = NULL;
+		asprintf_hdr2json(&str, hdr);
+		destructHDR(hdr); 
+		return str; 
+	};
+%}
+
 
 /*
 HDRTYPE* sopen(char *filename);
@@ -273,9 +297,6 @@ HDRTYPE* sopen(char *filename);
         }
 %}
 
-
-
-
 int sclose(HDRTYPE *hdr);
 %{
 	int sclose(HDRTYPE *hdr)
@@ -285,8 +306,6 @@ int sclose(HDRTYPE *hdr);
 		return 0;
         }
 %}
-*/
-
 
 void hdr2ascii(HDRTYPE* hdr, int verbosity);
 %{
@@ -295,3 +314,6 @@ void hdr2ascii(HDRTYPE* hdr, int verbosity);
 		hdr2ascii(hdr, stdout, verbosity);
         }
 %}
+
+*/
+

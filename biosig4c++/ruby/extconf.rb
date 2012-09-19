@@ -1,3 +1,13 @@
+# Loads mkmf which is used to make makefiles for Ruby extensions
 require 'mkmf'
-create_makefile('biosig')
 
+# Give it a name
+extension_name = 'biosig'
+
+# The destination
+dir_config(extension_name, "/usr/include", "/usr/lib" )
+
+$LDFLAGS = '-lbiosig'
+
+# Do the work
+create_makefile(extension_name)
