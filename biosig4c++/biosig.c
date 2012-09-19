@@ -4608,7 +4608,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 				hdr->CHANNEL[ch].DigMax  = +PhysMax/Cal; 
 				hdr->CHANNEL[ch].DigMin  = -PhysMax/Cal;
 			}
-			else if (!strcmp(tag,"rawrate")) {
+			else if (!strcmp(tag,"rawRate")) {
 				char *e; 
 				double fs = strtod(val, &e);
 				if (e==NULL) continue; // ignore value because its invalid 
