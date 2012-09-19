@@ -4475,7 +4475,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 	}
 
     	else if (hdr->TYPE==Axona) {
-    		fprintf(stdout, "Axona: is currently very experimental. \n");
+    		fprintf(stdout, "Axona: alpha version. \n");
 
     		hdr->AS.bpb 	= 12 + 20 + 2 * 192 + 16;
     		hdr->NS 	=  4 + 64;
@@ -4564,19 +4564,20 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 		strcpy(H1.FileName,hdr->FileName); 
 		char *e = strrchr(H1.FileName,'.');
 		if (e==NULL) e = H1.FileName+strlen(H1.FileName); 
-		strcpy(e,".bin"); 
+		strcpy(e,".set"); 
 		ifopen(&H1, "r"); 
 		unsigned MaxLineLen = 1000; 
 		char *line = malloc(MaxLineLen);
 		double PhysMax = NAN; 
 		//char* ifgets(char *str, int n, HDRTYPE* hdr) {
 		while (!ifeof(&H1)) {
-			ifgets(line, MaxLineLen, hdr); 
+			ifgets(line, MaxLineLen, &H1); 
 			if (MaxLineLen <= strlen(line)) {
 				fprintf(stderr,"Warning (Axona): line ## in file <%s> exceeds maximum length\n",H1.FileName); 
 			}
 			char *tag = strtok(line," \t\n\r"); 
 			char *val = strtok(NULL,"\n\r"); 
+
 			if (tag==NULL || val==NULL)
 				;
 			else if (!strcmp(tag,"trial date"))
