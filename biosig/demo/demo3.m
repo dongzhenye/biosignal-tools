@@ -77,7 +77,7 @@ HDR.SPR = 3000;
 HDR.Dur = 3; HDR.SPR/HDR.SampleRate;
 
 % Samples within 1 block
-HDR.AS.SPR = 3*[1000;100;200;100;20;1];	% samples per block;
+HDR.AS.SPR = 3*[1000;100;200;100;20;0];	% samples per block; 0 indicates a channel with sparse sampling 
 %HDR.AS.SampleRate = [1000;100;200;100;20;0];	% samplerate of each channel
 
 % channel identification, max 80 char. per channel
@@ -114,24 +114,28 @@ t = [100:100:size(x,1)]';
 HDR.VERSION = 2.22;        % experimental  
 HDR.EVENT.POS = t;
 HDR.EVENT.TYP = t/100;
-if 0, 
+
+
+if 1, 
 HDR.EVENT.CHN = repmat(0,size(t));
 HDR.EVENT.DUR = repmat(1,size(t));
 HDR.EVENT.VAL = repmat(NaN,size(t));
+%% This defines the sparse samples in channel 6
 ix = 6:5:60; 
 HDR.EVENT.CHN(ix) = 6; 
 HDR.EVENT.VAL(ix) = 373+round(100*rand(size(ix))); % HDR.EVENT.TYP(ix) becomes 0x7fff
 ix = 8; 
+%% The following sparse samples are not valid because channel 5 is not defined as sparse (see HDR.AS.SPR)
 HDR.EVENT.CHN(ix) = 5; % not valid because #5 is not sparse sampleing
 HDR.EVENT.VAL(ix) = 374; 
 end; 
 
-try,
+if 0, %try,
 	mexSSAVE(HDR,x);
-catch
-	HDR = sopen(HDR,'w');
-	HDR = swrite(HDR,x);
-	HDR = sclose(HDR);
+else %catch
+	HDR1 = sopen(HDR,'w');
+	HDR1 = swrite(HDR1,x);
+	HDR1 = sclose(HDR1);
 end;
 
 %
