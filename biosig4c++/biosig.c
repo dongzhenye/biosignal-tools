@@ -12137,7 +12137,8 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 			// overflow and saturation detection
 			if ((hdr->FLAG.OVERFLOWDETECTION) && ((sample_value<=CHptr->DigMin) || (sample_value>=CHptr->DigMax)))
 				sample_value = NAN; 	// missing value
-			else if (!hdr->FLAG.UCAL)	// scaling
+			
+			if (!hdr->FLAG.UCAL)	// scaling
 				sample_value = sample_value * CHptr->Cal + CHptr->Off;
 
 			// resampling 1->DIV samples
@@ -12152,8 +12153,8 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 					data1[k2 * count * hdr->SPR + k5 + k3] = sample_value;
 			}
 
-		if (VERBOSE_LEVEL>8)
-			fprintf(stdout,"E%02i: s(1)= %d %e %e %e\n",(int)k1,leu32p(ptr),sample_value,(*(double*)(ptr)),(*(float*)(ptr)));
+		if (VERBOSE_LEVEL>7)
+			fprintf(stdout,"E%02i: s(%d,%d)= %d %e %e %e\n",(int)k1,k2,hdr->EVENT.CHN[k1],leu32p(ptr),sample_value,(*(double*)(ptr)),(*(float*)(ptr)));
 
 		}
 		free(ChanList);
