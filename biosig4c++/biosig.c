@@ -12968,7 +12968,9 @@ int asprintf_hdr2json(char **str, HDRTYPE *hdr)
 
         if (hdr->EVENT.N>0) {
             c += sprintf(STR, ",\n\t\"EVENT\"\t: [");
+	    char flag_comma = 0; 
             for (k = 0; k < hdr->EVENT.N; k++) {
+	    	if ( hdr->EVENT.TYP[k] == 0 ) continue;
 
 		if (sz < c + 1000) {
 			// double allocated memory 	
@@ -12976,7 +12978,7 @@ int asprintf_hdr2json(char **str, HDRTYPE *hdr)
 			*str = (char*) realloc(*str, sz); 
 		}
 
-                if (k>0) c += sprintf(STR, ",");
+                if ( flag_comma ) c += sprintf(STR,",");
                 c += sprintf(STR, "\n\t\t{\n");
                 c += sprintf(STR, "\t\t\"TYP\"\t: \"0x%04x\",\n", hdr->EVENT.TYP[k]);
                 c += sprintf(STR, "\t\t\"POS\"\t: \"%f\",\n", hdr->EVENT.POS[k]/hdr->EVENT.SampleRate);
@@ -12997,6 +12999,7 @@ int asprintf_hdr2json(char **str, HDRTYPE *hdr)
         			c += sprintf(STR, "\t\t\"Description\"\t: \"%s\"\n", Global.CodeDesc[k1]);        // no comma at the end because its the last element
 		}
                 c += sprintf(STR, "\t\t}");
+		flag_comma = 1; 
             }
             c += sprintf(STR, "\n\t]");   // end-of-EVENT
         }
@@ -13096,9 +13099,11 @@ int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
         fprintf(fid,"\n\t]");   // end-of-CHANNELS
 
         if (hdr->EVENT.N>0) {
+            char flag_comma = 0; 
             fprintf(fid,",\n\t\"EVENT\"\t: [");
             for (k = 0; k < hdr->EVENT.N; k++) {
-                if (k>0) fprintf(fid,",");
+                if ( hdr->EVENT.TYP[k] == 0 ) continue;
+                if ( flag_comma ) fprintf(fid,",");
                 fprintf(fid,"\n\t\t{\n");
                 fprintf(fid,"\t\t\"TYP\"\t: \"0x%04x\",\n", hdr->EVENT.TYP[k]);
                 fprintf(fid,"\t\t\"POS\"\t: \"%f\",\n", hdr->EVENT.POS[k]/hdr->EVENT.SampleRate);
@@ -13118,8 +13123,9 @@ int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
 			if (k1 < Global.LenCodeDesc)
         			fprintf(fid,"\t\t\"Description\"\t: \"%s\"\n", Global.CodeDesc[k1]);        // no comma at the end because its the last element
 		}
-                fprintf(fid,"\t\t}");
-            }
+		fprintf(fid,"\t\t}");
+		flag_comma = 1; 
+            }	
             fprintf(fid,"\n\t]");   // end-of-EVENT
         }
         fprintf(fid,"\n}\n");
