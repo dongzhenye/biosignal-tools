@@ -522,6 +522,13 @@ size_t	sread(biosig_data_type* DATA, size_t START, size_t LEN, HDRTYPE* hdr);
 	the number of columns and rows is available from
 	hdr->data.size[0] and hdr->data.size[1] respectively.
 
+	Channels k with (hdr->CHANNEL[k].SPR==0) are interpreted as sparsely
+	sampled channels [for details see specification ofGDF v2 or larger]. 
+	The sample values are also returned in DATA the corresponding
+  	sampling time, the values in between the sparse sampling times are
+	set to DigMin. (Applying the flags UCAL and OVERFLOWDETECTION will 
+	convert this into PhysMin and NaN, resp. see below). 
+
 	The following flags will influence the result.
  	hdr->FLAG.UCAL = 0 	scales the data to its physical values
  	hdr->FLAG.UCAL = 1 	does not apply the scaling factors

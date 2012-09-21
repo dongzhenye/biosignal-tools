@@ -588,6 +588,8 @@ win64: win64/save2gdf.exe win64/libbiosig.dll win64/libbiosig.a #mexw64 win64mma
 #	GNU/Linux - BUILD
 #############################################################
 
+.phony libbiosig: libbiosig.a libbiosig.so libbiosig2.a libbiosig2.so 
+
 t240/libcnsfef.a:
 #	$(MAKE) -C t240 regen		#
 	$(MAKE) -C t240 libcnsfef.a	# generate t240/*.o files

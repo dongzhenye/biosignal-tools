@@ -12021,7 +12021,8 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 		// overflow and saturation detection
 		if ((hdr->FLAG.OVERFLOWDETECTION) && ((sample_value <= CHptr->DigMin) || (sample_value >= CHptr->DigMax)))
 			sample_value = NAN; 	// missing value
-		else if (!hdr->FLAG.UCAL)	// scaling
+		
+		if (!hdr->FLAG.UCAL)	// scaling
 			sample_value = sample_value * CHptr->Cal + CHptr->Off;
 
 		if (VERBOSE_LEVEL>8)
@@ -12064,10 +12065,10 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 					// sparsely sampled channels are stored in event table
 					if (hdr->FLAG.ROW_BASED_CHANNELS) {
 						for (k5 = 0; k5 < hdr->SPR*count; k5++)
-							data1[k2 + k5*NS] = NAN;		// row-based channels
+							data1[k2 + k5*NS] = CHptr->DigMin;		// row-based channels
 					} else {
 						for (k5 = 0; k5 < hdr->SPR*count; k5++)
-							data1[k2*count*hdr->SPR + k5] = NAN; 	// column-based channels
+							data1[k2*count*hdr->SPR + k5] = CHptr->DigMin; 	// column-based channels
 					}
 				}
 				k2++;
