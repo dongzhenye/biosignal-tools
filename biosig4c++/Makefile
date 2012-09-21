@@ -507,7 +507,7 @@ php: libbiosig.$(LIBEXT) php/biosig.i
 ruby/biosig_wrap.c: ruby/biosig.i
 	(cd ruby && swig -ruby biosig.i)
 ruby/Makefile: ruby/extconf.rb
-	(cd ruby && ruby extconf.rb )
+	ruby -C ruby extconf.rb
 biosig4ruby ruby: libbiosig.$(LIBEXT) ruby/Makefile ruby/biosig_wrap.c
 	$(MAKE) -C ruby 
 
@@ -633,13 +633,13 @@ biosig_server: biosig_server.c libbiosig.$(LIBEXT) biosig-network.o
 #	MathLink interface to Mathematica
 #############################################################
 .phony mma: mma/sload
-mma/sload: libbiosig.$(LIBEXT)
+mma/sload: libbiosig.$(LIBEXT) mma/sload.tm mma/sload.c
 	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" sload
 
-win32mma: win32/libbiosig.a
+win32mma: win32/libbiosig.a mma/sload.tm mma/sload.c
 	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" sload.exe
 
-win64mma: win64/libbiosig.a 
+win64mma: win64/libbiosig.a  mma/sload.tm mma/sload.c
 	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" sload.w64.exe
 
 

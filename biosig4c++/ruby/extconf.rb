@@ -5,9 +5,9 @@ require 'mkmf'
 extension_name = 'biosig'
 
 # The destination
-dir_config(extension_name, "/usr/include", "/usr/lib" )
+dir_config(extension_name, "..", ".." )
 
-$LDFLAGS = '-lbiosig'
+$LDFLAGS='-lbiosig -lz -lcholmod'
 
 # Do the work
 create_makefile(extension_name)
