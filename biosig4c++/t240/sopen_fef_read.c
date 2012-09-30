@@ -40,8 +40,6 @@
 #endif
 
 
-EXTERN_C int VERBOSE_LEVEL;
-
 EXTERN_C void sopen_fef_read(HDRTYPE* hdr) {
 
 

@@ -139,10 +139,11 @@ extern const char *B4C_ERRMSG;
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
 
+#ifdef NDEBUG
+#define VERBOSE_LEVEL 0		// turn off debugging information
+#else
 extern int VERBOSE_LEVEL; 	// used for debugging
-//#define VERBOSE_LEVEL 7		// turn on debugging information
-//#define VERBOSE_LEVEL 0		// turn off debugging information
-
+#endif
 
 /****************************************************************************/
 /**                                                                        **/
