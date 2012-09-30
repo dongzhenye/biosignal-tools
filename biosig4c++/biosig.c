@@ -11702,13 +11702,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
  *
  */
 
-	size_t			count,k1,k2,k4,k5=0,SZ,NS;//bi,bi8;
-	uint16_t		GDFTYP;
-	size_t	 		DIV;
-	uint8_t			*ptr=NULL; // *buffer;
-	CHANNEL_TYPE		*CHptr;
-	int32_t			int32_value;
-	biosig_data_type 	sample_value=NAN;
+	size_t			count,k1,k2,k4,k5=0,NS;//bi,bi8;
 	size_t			toffset;	// time offset for rawdata
 	biosig_data_type	*data1=NULL;
 
@@ -11778,22 +11772,24 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 	} 
 	else if (hdr->TYPE==Axona) 
 		stride = 64; 
+	else if (hdr->TYPE==TMS32) 
+		stride = hdr->NS; 
 
 	if (VERBOSE_LEVEL>7)
 		fprintf(stdout,"sread 223 alpha12bit=%i SWAP=%i spr=%i   %p\n", ALPHA12BIT, SWAP, hdr->SPR, hdr->AS.rawdata);
 
 	for (k1=0,k2=0; k1<hdr->NS; k1++) {
-		CHptr 	= hdr->CHANNEL+k1;
+		CHANNEL_TYPE *CHptr = hdr->CHANNEL+k1;
 
 	if (VERBOSE_LEVEL>7)
 		fprintf(stdout,"sread 223a #%i#%i: alpha12bit=%i SWAP=%i spr=%i   %p | bi=%i bpb=%i \n", (int)k1, (int)k2, ALPHA12BIT, SWAP, hdr->SPR, hdr->AS.rawdata,(int)CHptr->bi,(int)hdr->AS.bpb );
 
 	if (CHptr->OnOff) {	/* read selected channels only */
 	if (CHptr->SPR > 0) {
-		DIV 	= hdr->SPR/CHptr->SPR;
-		GDFTYP 	= CHptr->GDFTYP;
-		SZ  	= GDFTYP_BITS[GDFTYP];
-		int32_value = 0;
+		size_t DIV 	= hdr->SPR/CHptr->SPR;
+		uint16_t GDFTYP = CHptr->GDFTYP;
+		size_t SZ  	= GDFTYP_BITS[GDFTYP];
+		int32_t int32_value = 0;
 		uint8_t bitoff = 0;
 
 		union {int16_t i16; uint16_t u16; uint32_t i32; float f32; uint64_t i64; double f64;} u;
@@ -11808,12 +11804,12 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 			else
 				ptr1 = hdr->AS.rawdata + (k4+toffset)*hdr->AS.bpb + CHptr->bi;
 
+
 		for (k5 = 0; k5 < CHptr->SPR; k5++)
 		{
 
-		// size_t off = (k4+toffset)*hdr->AS.bpb + CHptr->bi + (k5*SZ>>3);
-		// ptr = hdr->AS.rawdata + off;
-		ptr = ptr1 + (stride * k5 * SZ >> 3);
+		biosig_data_type sample_value;
+		uint8_t *ptr = ptr1 + (stride * k5 * SZ >> 3);
 
 		if (VERBOSE_LEVEL>8)
 			fprintf(stdout,"SREAD 555: k_i = [%d %d %d %d ] 0x%08x[%g] @%p => ",(int)k1,(int)k2,(int)k4,(int)k5,(int)leu32p(ptr),lef64p(ptr),ptr);
@@ -11826,15 +11822,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 			sample_value = (biosig_data_type)(*(uint8_t*)ptr);
 			break;
 		case 3:
-			if (hdr->TYPE==TMS32) {
-				ptr = hdr->AS.rawdata + (k4+toffset)*hdr->AS.bpb + (k1+k5*hdr->NS)*(SZ>>3)+86;
-#if __BYTE_ORDER == __BIG_ENDIAN
-				sample_value = (biosig_data_type)(int16_t)bswap_16(*(int16_t*)ptr);
-#elif __BYTE_ORDER == __LITTLE_ENDIAN
-				sample_value = (biosig_data_type)(*(int16_t*)ptr);
-#endif
-			}
-			else if (SWAP) {
+			if (SWAP) {
 				sample_value = (biosig_data_type)(int16_t)bswap_16(*(int16_t*)ptr);
 			}
 			else {
@@ -11882,16 +11870,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 			}
 			break;
 		case 16:
-			if (hdr->TYPE==TMS32) {
-				ptr = hdr->AS.rawdata + (k4+toffset)*hdr->AS.bpb + (k1+k5*hdr->NS)*(SZ>>3)+86;
-#if __BYTE_ORDER == __BIG_ENDIAN
-				u.i32 = bswap_32(*(uint32_t*)(ptr));
-				sample_value = (biosig_data_type)(u.f32);
-#elif __BYTE_ORDER == __LITTLE_ENDIAN
-				sample_value = (biosig_data_type)(*(float*)(ptr));
-#endif
-			}
-			else if (SWAP) {
+			if (SWAP) {
 				u.i32 = bswap_32(*(uint32_t*)(ptr));
 				sample_value = (biosig_data_type)(u.f32);
 			}
@@ -11957,7 +11936,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 #if __BYTE_ORDER == __BIG_ENDIAN
 				u.i16 = (beu16p(ptr) >> (4-bitoff)) & 0x0FFF;
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
-				u.i16 = (beu16p(ptr) >> (4-bitoff)) & 0x0FFF;
+				u.i16 = (beu16p(ptr) >> bitoff) & 0x0FFF;
 #endif
 				if (u.i16 & 0x0800) u.i16 -= 0x1000;
 				sample_value = (biosig_data_type)u.i16;
@@ -12058,7 +12037,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 	if (((hdr->TYPE==GDF) && (hdr->VERSION > 1.9)) || (hdr->TYPE==PDP)) {
 
 		for (k1=0,k2=0; k1<hdr->NS; k1++) {
-			CHptr 	= hdr->CHANNEL+k1;
+			CHANNEL_TYPE *CHptr = hdr->CHANNEL+k1;
 			// Initialize sparse channels with NANs
 			if (CHptr->OnOff) {	/* read selected channels only */
 				if (CHptr->SPR==0) {
@@ -12087,14 +12066,15 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 		if (hdr->EVENT.TYP[k1] == 0x7fff) 	// select non-equidistant sampled value
 		if (ChanList[hdr->EVENT.CHN[k1]] > 0)	// if channel is selected
 		if ((hdr->EVENT.POS[k1] >= POS*c) && (hdr->EVENT.POS[k1] < hdr->FILE.POS*c)) {
-			ptr = (uint8_t*)(hdr->EVENT.DUR + k1);
+			biosig_data_type sample_value;
+			uint8_t *ptr = (uint8_t*)(hdr->EVENT.DUR + k1);
 
 			k2 = ChanList[hdr->EVENT.CHN[k1]]-1;
-			CHptr = hdr->CHANNEL+k2;
-			DIV 	= (uint32_t)ceil(hdr->SampleRate/hdr->EVENT.SampleRate);
-			GDFTYP 	= CHptr->GDFTYP;
-			SZ  	= GDFTYP_BITS[GDFTYP]>>3;
-			int32_value = 0;
+			CHANNEL_TYPE *CHptr = hdr->CHANNEL+k2;
+			size_t DIV 	= (uint32_t)ceil(hdr->SampleRate/hdr->EVENT.SampleRate);
+			uint16_t GDFTYP = CHptr->GDFTYP;
+			size_t SZ  	= GDFTYP_BITS[GDFTYP]>>3;
+			int32_t int32_value = 0;
 
 			if (0);
 			else if (GDFTYP==3)
