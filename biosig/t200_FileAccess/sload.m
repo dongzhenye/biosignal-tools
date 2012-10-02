@@ -352,7 +352,7 @@ if exist('mexSLOAD','file')==3,
 			if isfield(HDR.FLAG,'ROW_BASED_CHANNELS') && HDR.FLAG.ROW_BASED_CHANNELS, signal = signal.'; end;
 			FlagLoaded   = isfield(HDR,'NS');
 			HDR.InChanSelect = InChanSelect(InChanSelect <= HDR.NS);
-			signal = signal*ReRefMx(HDR.InChanSelect,:); %% can be sparse if just a single channel is loaded
+			signal = signal*ReRefMx(InChanSelect,:); %% can be sparse if just a single channel is loaded
 			signal = full(signal);  %% make sure signal is not sparse 
 		end;
 		HDR = bdf2biosig_events(HDR, STATE.BDF);
