@@ -134,7 +134,7 @@ extern const char *B4C_ERRMSG;
 
 #define BIOSIG_VERSION_MAJOR 1
 #define BIOSIG_VERSION_MINOR 3
-#define BIOSIG_PATCHLEVEL 6
+#define BIOSIG_PATCHLEVEL 7
 // for backward compatibility 
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
@@ -243,8 +243,8 @@ typedef struct CHANNEL_STRUCT {
 	double		Cal 	ATT_ALI;	/* gain factor */
 	double		Off 	ATT_ALI;	/* bias */
 
-	char		OnOff	ATT_ALI;
 	char		Label[MAX_LENGTH_LABEL+1] ATT_ALI; 	/* Label of channel */
+	char		OnOff	ATT_ALI;
 	uint16_t	LeadIdCode ATT_ALI;	/* Lead identification code */
 	char 		Transducer[MAX_LENGTH_TRANSDUCER+1] ATT_ALI;	/* transducer e.g. EEG: Ag-AgCl electrodes */
         char            PhysDim[MAX_LENGTH_PHYSDIM+1] ATT_ALI ATT_DEPREC;       /* DONOT USE - use PhysDim3(PhysDimCode) instead */
@@ -262,11 +262,12 @@ typedef struct CHANNEL_STRUCT {
 	float 		fZ        	ATT_ALI;   	/* ICG probe frequency, defined only if PhysDim = _Ohm */
 	} ATT_ALI;
 
-	uint16_t 	GDFTYP 		ATT_ALI;	/* data type */
+	/* this part should not be used by application programs */
+	uint8_t*	bufptr		ATT_ALI;	/* pointer to buffer: NRec<=1 and bi,bi8 not used */
 	uint32_t 	SPR 		ATT_ALI;	/* samples per record (block) */
 	uint32_t	bi 		ATT_ALI;	/* start byte (byte index) of channel within data block */
 	uint32_t	bi8 		ATT_ALI;	/* start bit  (bit index) of channel within data block */
-	uint8_t*	bufptr		ATT_ALI;	/* pointer to buffer: NRec<=1 and bi,bi8 not used */
+	uint16_t 	GDFTYP 		ATT_ALI;	/* data type */
 } CHANNEL_TYPE	ATT_ALI;
 
 
@@ -275,23 +276,23 @@ typedef struct CHANNEL_STRUCT {
 */
 typedef struct HDR_STRUCT {
 
-	enum FileFormat TYPE 	 ATT_ALI; 	/* type of file format */
-	float 		VERSION  ATT_ALI;	/* GDF version number */
 	char* 	        FileName ATT_ALI;       /* FileName - dynamically allocated, local copy of file name */
+	float 		VERSION  ATT_ALI;	/* GDF version number */
+	enum FileFormat TYPE 	 ATT_ALI; 	/* type of file format */
 
 	struct {
 		size_t 			size[2] ATT_ALI; /* size {rows, columns} of data block	 */
 		biosig_data_type* 	block ATT_ALI; 	 /* data block */
 	} data ATT_ALI;
 
-	uint32_t 	HeadLen ATT_ALI;	/* length of header in bytes */
-	uint16_t 	NS 	ATT_ALI;	/* number of channels */
-	uint32_t 	SPR 	ATT_ALI;	/* samples per block (when different sampling rates are used, this is the LCM(CHANNEL[..].SPR) */
-	nrec_t  	NRec 	ATT_ALI;	/* number of records/blocks -1 indicates length is unknown. */
-	double 		SampleRate ATT_ALI;	/* Sampling rate */
 	uint8_t 	IPaddr[16] ATT_ALI; 	/* IP address of recording device (if applicable) */
-	uint32_t  	LOC[4] 	ATT_ALI;	/* location of recording according to RFC1876 */
+	double 		SampleRate ATT_ALI;	/* Sampling rate */
+	nrec_t  	NRec 	ATT_ALI;	/* number of records/blocks -1 indicates length is unknown. */
 	gdf_time 	T0 	ATT_ALI; 	/* starttime of recording */
+	uint32_t 	HeadLen ATT_ALI;	/* length of header in bytes */
+	uint32_t 	SPR 	ATT_ALI;	/* samples per block (when different sampling rates are used, this is the LCM(CHANNEL[..].SPR) */
+	uint32_t  	LOC[4] 	ATT_ALI;	/* location of recording according to RFC1876 */
+	uint16_t 	NS 	ATT_ALI;	/* number of channels */
 	int16_t 	tzmin 	ATT_ALI;	/* time zone (minutes of difference to UTC */
 
 #ifdef CHOLMOD_H
@@ -303,15 +304,15 @@ typedef struct HDR_STRUCT {
 
 	/* Patient specific information */
 	struct {
+		gdf_time 	Birthday; 	/* Birthday of Patient */
+		// 		Age;		// the age is HDR.T0 - HDR.Patient.Birthday, even if T0 and Birthday are not known
+		uint16_t	Headsize[3]; 	/* circumference, nasion-inion, left-right mastoid in millimeter;  */
 		char		Name[MAX_LENGTH_NAME+1]; /* because for privacy protection it is by default not supported, support is turned on with FLAG.ANONYMOUS */
 //		char*		Name;	// because for privacy protection it is by default not supported, support is turned on with FLAG.ANONYMOUS
 		char		Id[MAX_LENGTH_PID+1];	/* patient identification, identification code as used in hospital  */
 		uint8_t		Weight;		/* weight in kilograms [kg] 0:unkown, 255: overflow  */
 		uint8_t		Height;		/* height in centimeter [cm] 0:unkown, 255: overflow  */
 		//		BMI;		// the body-mass index = weight[kg]/height[m]^2
-		gdf_time 	Birthday; 	/* Birthday of Patient */
-		// 		Age;		// the age is HDR.T0 - HDR.Patient.Birthday, even if T0 and Birthday are not known
-		uint16_t	Headsize[3]; 	/* circumference, nasion-inion, left-right mastoid in millimeter;  */
 		/* Patient classification */
 		int8_t	 	Sex;		/* 0:Unknown, 1: Male, 2: Female */
 		int8_t		Handedness;	/* 0:Unknown, 1: Right, 2: Left, 3: Equal */
@@ -335,11 +336,11 @@ typedef struct HDR_STRUCT {
 				SCP: section1, tag14,
 				MFER: tag23:  "Manufacturer^model^version number^serial number"
 			*/
-			char	_field[MAX_LENGTH_MANUF+1];	/* buffer */
 			const char*	Name;
 			const char*	Model;
 			const char*	Version;
 			const char*	SerialNumber;
+			char	_field[MAX_LENGTH_MANUF+1];	/* buffer */
 		} Manufacturer;
 	} ID ATT_ALI;
 
@@ -352,12 +353,12 @@ typedef struct HDR_STRUCT {
 	/* EVENTTABLE */
 	struct {
 		double  	SampleRate ATT_ALI;	/* for converting POS and DUR into seconds  */
-		uint32_t  	N ATT_ALI;	/* number of events */
 		uint16_t 	*TYP ATT_ALI;	/* defined at http://cvs.sourceforge.net/viewcvs.py/biosig/biosig/t200/eventcodes.txt?view=markup */
 		uint32_t 	*POS ATT_ALI;	/* starting position [in samples] using a 0-based indexing */
 		uint32_t 	*DUR ATT_ALI;	/* duration [in samples] */
 		uint16_t 	*CHN ATT_ALI;	/* channel number; 0: all channels  */
 		const char*	*CodeDesc ATT_ALI;	/* describtion of "free text"/"user specific" events (encoded with TYP=0..255 */
+		uint32_t  	N ATT_ALI;	/* number of events */
 		uint16_t	LenCodeDesc ATT_ALI;	/* length of CodeDesc Table */
 	} EVENT ATT_ALI;
 
@@ -403,12 +404,12 @@ typedef struct HDR_STRUCT {
 		uint8_t*	Header;
 		uint8_t*	rawEventData;
 		uint8_t*	rawdata; 	/* raw data block */
-		char		flag_collapsed_rawdata; /* 0 if rawdata contain obsolete channels, too. 	*/
 		size_t		first;		/* first block loaded in buffer - this is equivalent to hdr->FILE.POS */
 		size_t		length;		/* number of block(s) loaded in buffer */
 		uint8_t*	auxBUF;  	/* auxillary buffer - used for storing EVENT.CodeDesc, MIT FMT infor, alpha:rawdata header */
-		uint32_t	SegSel[5];	/* segment selection in a hirachical data formats, e.g. sweeps in HEKA/PatchMaster format */
 		char*		bci2000;
+		uint32_t	SegSel[5];	/* segment selection in a hirachical data formats, e.g. sweeps in HEKA/PatchMaster format */
+		char		flag_collapsed_rawdata; /* 0 if rawdata contain obsolete channels, too. 	*/
 	} AS ATT_ALI;
 
 	void *aECG;				/* used as an pointer to (non-standard) auxilary information - mostly used for hacks */
