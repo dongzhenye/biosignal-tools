@@ -1230,14 +1230,17 @@ const char* GetEventDescription(HDRTYPE *hdr, size_t N) {
 	if (TYP < 256) // not defined by user
 		return NULL; 
 
+	if ((hdr->EVENT.TYP[N] == 0x7fff) && (hdr->TYPE==GDF))
+			return "[neds]";
+
         // event definition according to GDF's eventcodes.txt table
         uint16_t k;
         for (k=0; ETD[k].typ != 0; k++) 
                 if (ETD[k].typ==TYP) 
                         return ETD[k].desc;
         
-        fprintf(stderr,"Warning: event code 0x%04x not defined\n",TYP);
-        return NULL;
+        fprintf(stderr,"Warning: invalid event type 0x%04x\n",TYP);
+        return "Invalid event type";
 }
 
 /****************************************************************************/
@@ -1258,7 +1261,7 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	HDR is initialized, memory is allocated for
 	NS channels and N_EVENT number of events.
 
-	The purpose is to set the define all parameters at an initial step.
+	The purpose is to define all parameters at an initial step.
 	No parameters must remain undefined.
  */
 	HDRTYPE* hdr = (HDRTYPE*)malloc(sizeof(HDRTYPE));
@@ -10642,20 +10645,17 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 			else
 				fprintf(fid,"\t\t");
 
-			if (hdr->EVENT.TYP[k] == 0x7fff)
-				fprintf(fid,"%i\t# sparse sample ",hdr->EVENT.DUR[k]);	// value of sparse samples
-			else if (hdr->EVENT.TYP[k] == 0)
-				{}
-			else if (hdr->EVENT.TYP[k] < hdr->EVENT.LenCodeDesc)
-				fprintf(fid,"%s",hdr->EVENT.CodeDesc[hdr->EVENT.TYP[k]]);
+			if ((hdr->EVENT.TYP[k] == 0x7fff) && (hdr->TYPE==GDF)) {
+				typeof(hdr->NS) chan = hdr->EVENT.CHN[k] - 1; 	
+				uint16_t gdftyp = hdr->CHANNEL[chan].GDFTYP;
+				if (gdftyp==16)
+					fprintf(fid,"%g\t# sparse sample ",*(float*)(hdr->EVENT.DUR+k));	// value of sparse samples
+				else
+					fprintf(fid,"%i\t# sparse sample ",hdr->EVENT.DUR[k]);	// value of sparse samples
+			}
 			else {
-				uint16_t k1;
-				for (k1 = 0; ETD[k1].typ != 0; k1++) {
-					if (hdr->EVENT.TYP[k] == ETD[k1].typ) {
-						fprintf(fid,"%s",ETD[k1].desc);
-						break;
-					}
-				}
+				const char *str = GetEventDescription(hdr,k); 
+ 				if (str) fprintf(fid,"%s",str);
 			}
 		}
 		fclose(fid);
@@ -12014,7 +12014,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 			CHANNEL_TYPE *CHptr = hdr->CHANNEL+k2;
 			size_t DIV 	= (uint32_t)ceil(hdr->SampleRate/hdr->EVENT.SampleRate);
 			uint16_t GDFTYP = CHptr->GDFTYP;
-			size_t SZ  	= GDFTYP_BITS[GDFTYP]>>3;
+//			size_t SZ  	= GDFTYP_BITS[GDFTYP]>>3;	// obsolete 
 			int32_t int32_value = 0;
 
 			if (0);
@@ -12909,32 +12909,37 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%i\n", (int)c);
 
                 if ( flag_comma ) c += sprintf(STR,",");
                 c += sprintf(STR, "\n\t\t{\n");
-                c += sprintf(STR, "\t\t\"TYP\"\t: \"0x%04x\",\n", hdr->EVENT.TYP[k]);
-                c += sprintf(STR, "\t\t\"POS\"\t: \"%f\",\n", hdr->EVENT.POS[k]/hdr->EVENT.SampleRate);
+                c += sprintf(STR, "\t\t\"TYP\"\t: \"0x%04x\"", hdr->EVENT.TYP[k]);
+                c += sprintf(STR, "\t\t\"POS\"\t: %f,\n", hdr->EVENT.POS[k]/hdr->EVENT.SampleRate);
                 if (hdr->EVENT.CHN && hdr->EVENT.DUR) {
-                        c += sprintf(STR, "\t\t\"CHN\"\t: \"0x%04x\",\n", hdr->EVENT.CHN[k]);
-                        c += sprintf(STR, "\t\t\"DUR\"\t: \"%f\",\n", hdr->EVENT.DUR[k]/hdr->EVENT.SampleRate);
+			if (hdr->EVENT.CHN[k])
+	                        c += sprintf(STR, ",\n\t\t\"CHN\"\t: %d", hdr->EVENT.CHN[k]);
+			if (hdr->EVENT.TYP[k] != 0x7fff)
+	                        c += sprintf(STR, ",\n\t\t\"DUR\"\t: %f", hdr->EVENT.DUR[k]/hdr->EVENT.SampleRate);
                 }
-		if ((hdr->EVENT.TYP[k] == 0x7fff) && (hdr->TYPE==GDF))
-			c += sprintf(STR, "\t\t\"Description\"\t: [neds]\n");        // no comma at the end because its the last element
+		if (hdr->EVENT.TYP[k] == 0x7fff) {
+			// c += sprintf(STR, ",\n\t\t\"Description\"\t: \"[sparse sample]\"");
+			typeof(hdr->NS) chan = hdr->EVENT.CHN[k] - 1;
+			uint16_t gdftyp = hdr->CHANNEL[chan].GDFTYP;
+			double val; 
+			if (gdftyp==16)
+				val = (double)*(float*)(hdr->EVENT.DUR+k); 
+			else 
+				val = (double)(hdr->EVENT.DUR[k]); 
+				
+			val *= hdr->CHANNEL[chan].Cal; 
+			val += hdr->CHANNEL[chan].Off; 
 
-		else if (hdr->EVENT.TYP[k] < hdr->EVENT.LenCodeDesc)
-			c += sprintf(STR, "\t\t\"Description\"\t: \"%s\"\n",hdr->EVENT.CodeDesc[hdr->EVENT.TYP[k]]);        // no comma at the end because its the last element
-
-		// else if (hdr->EVENT.TYP[k] < 256)	
-			// no description - because user did not define any 
-
+			if (isfinite(val))
+				c += sprintf(STR, ",\n\t\t\"Value\"\t: %g", val);        // no comma at the end because its the last element
+		}
 		else {
-			uint16_t k1;
-			for (k1 = 0; ETD[k1].typ != 0; k1++) {
-				if (hdr->EVENT.TYP[k] == ETD[k1].typ) {
-        				c += sprintf(STR, "\t\t\"Description\"\t: \"%s\"\n", ETD[k1].desc);        // no comma at the end because its the last element
-					break;
-				}
-			}
+			const char *tmpstr = GetEventDescription(hdr,k); 
+			if (tmpstr != NULL) 
+				c += sprintf(STR, ",\n\t\t\"Description\"\t: \"%s\"", tmpstr);        // no comma at the end because its the last element
 		}
 
-                c += sprintf(STR, "\t\t}");
+                c += sprintf(STR, "\n\t\t}");
 		flag_comma = 1; 
             }
             c += sprintf(STR, "\n\t]");   // end-of-EVENT
@@ -13045,30 +13050,38 @@ int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
                 if ( flag_comma ) fprintf(fid,",");
                 fprintf(fid,"\n\t\t{\n");
                 fprintf(fid,"\t\t\"TYP\"\t: \"0x%04x\",\n", hdr->EVENT.TYP[k]);
-                fprintf(fid,"\t\t\"POS\"\t: \"%f\",\n", hdr->EVENT.POS[k]/hdr->EVENT.SampleRate);
+                fprintf(fid,"\t\t\"POS\"\t: %f", hdr->EVENT.POS[k]/hdr->EVENT.SampleRate);
                 if (hdr->EVENT.CHN && hdr->EVENT.DUR) {
-                        fprintf(fid,"\t\t\"CHN\"\t: \"0x%04x\",\n", hdr->EVENT.CHN[k]);
-                        fprintf(fid,"\t\t\"DUR\"\t: \"%f\",\n", hdr->EVENT.DUR[k]/hdr->EVENT.SampleRate);
+			if (hdr->EVENT.CHN[k])
+	                        fprintf(fid,",\n\t\t\"CHN\"\t: %d", hdr->EVENT.CHN[k]);
+			if (hdr->EVENT.TYP[k] != 0x7fff)
+	                        fprintf(fid,",\n\t\t\"DUR\"\t: %f", hdr->EVENT.DUR[k]/hdr->EVENT.SampleRate);
                 }
-		if ((hdr->EVENT.TYP[k] == 0x7fff) && (hdr->TYPE==GDF))
-			fprintf(fid,"\t\t\"Description\"\t: [neds]\n");        // no comma at the end because its the last element
+		if ((hdr->EVENT.TYP[k] == 0x7fff) && (hdr->TYPE==GDF)) {
+			//fprintf(fid,"\t\t\"Description\"\t: [neds]\n");        // no comma at the end because its the last element
 
-		else if (hdr->EVENT.TYP[k] < hdr->EVENT.LenCodeDesc)
-			fprintf(fid,"\t\t\"Description\"\t: \"%s\"\n",hdr->EVENT.CodeDesc[hdr->EVENT.TYP[k]]);        // no comma at the end because its the last element
+			//fprintf(fid,",\n\t\t\"Description\"\t: \"[sparse sample]\"");
+			typeof(hdr->NS) chan = hdr->EVENT.CHN[k] - 1;
+			uint16_t gdftyp = hdr->CHANNEL[chan].GDFTYP;
+			double val; 
+			if (gdftyp==16)
+				val = (double)*(float*)(hdr->EVENT.DUR+k); 
+			else 
+				val = (double)(hdr->EVENT.DUR[k]); 
+				
+			val *= hdr->CHANNEL[chan].Cal; 
+			val += hdr->CHANNEL[chan].Off; 
 
-		// else if (hdr->EVENT.TYP[k] < 256)	
-			// no description - because user did not define any 
-
-		else {
-			uint16_t k1;
-			for (k1 = 0; ETD[k1].typ != 0; k1++) {
-				if (hdr->EVENT.TYP[k] == ETD[k1].typ) {
-        				fprintf(fid, "\t\t\"Description\"\t: \"%s\"\n", ETD[k1].desc);        // no comma at the end because its the last element
-					break;
-				}
-			}
+			if (isfinite(val))
+				fprintf(fid,",\n\t\t\"Value\"\t: %g", val);        // no comma at the end because its the last element
 		}
-		fprintf(fid,"\t\t}");
+		else {	
+			const char *str = GetEventDescription(hdr,k); 
+			if (str != NULL)
+				fprintf(fid,",\n\t\t\"Description\"\t: \"%s\"",str);        // no comma at the end because its the last element
+		}
+
+		fprintf(fid,"\n\t\t}");
 		flag_comma = 1; 
             }	
             fprintf(fid,"\n\t]");   // end-of-EVENT
@@ -13215,23 +13228,28 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 		size_t k;
 		for (k=0; k<hdr->EVENT.N; k++) {
 			fprintf(fid,"\n%5i\t0x%04x\t%d",(int)(k+1),hdr->EVENT.TYP[k],hdr->EVENT.POS[k]);
-			if (hdr->EVENT.DUR != NULL)
+			if (hdr->EVENT.TYP[k] == 0x7fff)
+				fprintf(fid,"\t%5d\t%d",0,hdr->EVENT.CHN[k]);
+			else if (hdr->EVENT.DUR != NULL)
 				fprintf(fid,"\t%5d\t%d",hdr->EVENT.DUR[k],hdr->EVENT.CHN[k]);
 
-			if ((hdr->EVENT.TYP[k] == 0x7fff) && (hdr->TYPE==GDF))
-				fprintf(fid,"\t[neds]");
-			else if (hdr->EVENT.TYP[k] < hdr->EVENT.LenCodeDesc)
-				fprintf(fid,"\t\t%s",hdr->EVENT.CodeDesc[hdr->EVENT.TYP[k]]);
-			// else if (hdr->EVENT.TYP[k] < 256)	
-				// no description - because user did not define any 
+			if ((hdr->EVENT.TYP[k] == 0x7fff) && (hdr->TYPE==GDF)) {
+				typeof(hdr->NS) chan = hdr->EVENT.CHN[k]-1;
+				uint16_t gdftyp = hdr->CHANNEL[chan].GDFTYP;
+				double val; 
+				if (gdftyp==16)
+					val = (double)*(float*)(hdr->EVENT.DUR+k); 
+				else 
+					val = hdr->EVENT.DUR[k]; 
+					
+				val *= hdr->CHANNEL[chan].Cal; 
+				val += hdr->CHANNEL[chan].Off; 
+
+				fprintf(fid, "\t%g %s\t## sparse sample", val, PhysDim3(hdr->CHANNEL[chan].PhysDimCode));        // no comma at the end because its the last element
+			}
 			else {
-				uint16_t k1;
-				for (k1 = 0; ETD[k1].typ != 0; k1++) {
-					if (hdr->EVENT.TYP[k] == ETD[k1].typ) {
-						fprintf(fid,"\t\t%s",ETD[k1].desc);
-						break;
-					}
-				}
+				const char *str = GetEventDescription(hdr,k); 
+				if (str) fprintf(fid,"\t\t%s",str);
 			}
 		}
 	}
