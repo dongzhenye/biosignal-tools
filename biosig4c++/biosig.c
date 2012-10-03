@@ -275,17 +275,8 @@ const char *MIT_EVENT_DESC[] = {
         ""};
 
 /* --------------------------------------------------- *
- *	Global Event Code Table                        *
+ *	Predefined Event Code Table                    *
  * --------------------------------------------------- */
-static uint8_t GLOBAL_EVENTCODES_ISLOADED = 0;
-struct global_t {
-	uint16_t LenCodeDesc;
-	uint16_t *CodeIndex;
-	const char **CodeDesc;
-	char  	 *EventCodesTextBuffer;
-
-} Global;
-
 
 // event table desription
 const struct etd_t ETD [] = { 
@@ -1176,56 +1167,6 @@ fprintf(stdout,"write_gdf_eventtable is obsolete - use hdrEVT2rawEVT instead;\n"
 	}
 }
 
-/*------------------------------------------------------------------------
-	Load Table of Event Codes
-  ------------------------------------------------------------------------*/
-void FreeGlobalEventCodeTable() {
-//	if (VERBOSE_LEVEL>8) fprintf(stdout,"FreeGlobalEventTable(start)%i\n",GLOBAL_EVENTCODES_ISLOADED);
-
-	Global.LenCodeDesc = 0;
-	if (Global.EventCodesTextBuffer) free(Global.EventCodesTextBuffer);
-	Global.EventCodesTextBuffer = NULL;
-	if (Global.CodeDesc) free(Global.CodeDesc);
-	Global.CodeDesc = NULL;
-	if (Global.CodeIndex) free(Global.CodeIndex);
-	Global.CodeIndex = NULL;
-
-	GLOBAL_EVENTCODES_ISLOADED = 0;
-//	if (VERBOSE_LEVEL>8) fprintf(stdout,"FreeGlobalEventTable(end)%i\n",GLOBAL_EVENTCODES_ISLOADED);
-}
-
-void LoadGlobalEventCodeTable()
-{
-	size_t N = 0;
-
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"LoadGlobalEventTable(start)%i\n",GLOBAL_EVENTCODES_ISLOADED);
-
-	if (GLOBAL_EVENTCODES_ISLOADED) return; 	// table is already loaded
-
-	atexit(&FreeGlobalEventCodeTable);
-	// TODO: move user-specified events into hdr
-	Global.CodeDesc = NULL;
-	Global.CodeIndex = NULL;
-	Global.EventCodesTextBuffer = NULL;
-	Global.LenCodeDesc = 0;
-
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"LoadGlobalEventTable(101)%i %i\n",GLOBAL_EVENTCODES_ISLOADED,Global.LenCodeDesc);
-
-	while (ETD[N].desc != NULL) N++;
-	N += 256; 	// make sure there is enough space for free text events 
-	Global.CodeIndex = (uint16_t*)realloc(Global.CodeIndex, N*sizeof(uint16_t));
-	Global.CodeDesc  = (const char**)realloc(Global.CodeDesc, N*sizeof(char*));
-
-	while (ETD[Global.LenCodeDesc].desc != NULL) {
-		Global.CodeDesc[Global.LenCodeDesc]  =(char*) ETD[Global.LenCodeDesc].desc;
-		Global.CodeIndex[Global.LenCodeDesc] = ETD[Global.LenCodeDesc].typ;
-		Global.LenCodeDesc++;
-	}
-
-	GLOBAL_EVENTCODES_ISLOADED = 1;
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"LoadGlobalEventTable(end)%i\n",Global.LenCodeDesc);
-}
-
 
 /*------------------------------------------------------------------------
 	adds free text annotation to event table
@@ -1246,15 +1187,12 @@ void FreeTextEvent(HDRTYPE* hdr,size_t N_EVENT, const char* annotation) {
 		hdr->EVENT.LenCodeDesc = 1;
 	}
 
-	// First, compare text with any global event description
-	if (!GLOBAL_EVENTCODES_ISLOADED) LoadGlobalEventCodeTable();
-	for (k=0; k<Global.LenCodeDesc; k++) {
-		if (Global.CodeIndex[k]>255) {
-			if (!strcmp(Global.CodeDesc[k], annotation)) {
-				// annotation is already a globally defined event
-				hdr->EVENT.TYP[N_EVENT] = Global.CodeIndex[k];
-				return;
-			}
+	// First, compare text with any predefined event description
+	for (k=0; ETD[k].typ != 0; k++) {
+		if (!strcmp(ETD[k].desc, annotation)) {
+			// annotation is already a predefined event
+			hdr->EVENT.TYP[N_EVENT] = ETD[k].typ;
+			return;
 		}
 	}
 
@@ -1289,15 +1227,16 @@ const char* GetEventDescription(HDRTYPE *hdr, size_t N) {
         if (TYP < hdr->EVENT.LenCodeDesc) // user-specified events, TYP < 256
                 return hdr->EVENT.CodeDesc[TYP]; 
 
+	if (TYP < 256) // not defined by user
+		return NULL; 
+
         // event definition according to GDF's eventcodes.txt table
-        uint16_t k = 0;
-        while (ETD[k].typ < hdr->EVENT.LenCodeDesc) k++;  
-        for (; ETD[k].typ!=0; k++) 
+        uint16_t k;
+        for (k=0; ETD[k].typ != 0; k++) 
                 if (ETD[k].typ==TYP) 
                         return ETD[k].desc;
         
         fprintf(stderr,"Warning: event code 0x%04x not defined\n",TYP);
-
         return NULL;
 }
 
@@ -10694,7 +10633,6 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 
 		fprintf(fid,"[EVENT TABLE]\n");
 		fprintf(fid,"TYP\tPOS [s]\tDUR [s]\tCHN\tVAL/Desc");
-		if (!GLOBAL_EVENTCODES_ISLOADED) LoadGlobalEventCodeTable();
 
 		for (k=0; k<hdr->EVENT.N; k++) {
 
@@ -10710,11 +10648,14 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 				{}
 			else if (hdr->EVENT.TYP[k] < hdr->EVENT.LenCodeDesc)
 				fprintf(fid,"%s",hdr->EVENT.CodeDesc[hdr->EVENT.TYP[k]]);
-			else if (GLOBAL_EVENTCODES_ISLOADED) {
+			else {
 				uint16_t k1;
-				for (k1=0; (k1 < Global.LenCodeDesc) && (hdr->EVENT.TYP[k] != Global.CodeIndex[k1]); k1++) {};
-				if (hdr->EVENT.TYP[k] == Global.CodeIndex[k1])
-					fprintf(fid,"%s",Global.CodeDesc[k1]);
+				for (k1 = 0; ETD[k1].typ != 0; k1++) {
+					if (hdr->EVENT.TYP[k] == ETD[k1].typ) {
+						fprintf(fid,"%s",ETD[k1].desc);
+						break;
+					}
+				}
 			}
 		}
 		fclose(fid);
@@ -12861,7 +12802,7 @@ int asprintf_hdr2json(char **str, HDRTYPE *hdr)
 	*str = (char*) realloc(*str, sz); 
 #define STR ((*str)+c)	
 
-if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: sz=%\n", sz);
+if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: sz=%i\n", (int)sz);
 
 	size_t NumberOfSweeps = (hdr->SPR*hdr->NRec > 0); 
         size_t NumberOfUserSpecifiedEvents = 0; 
@@ -12905,7 +12846,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: sz=%\n", sz);
 
         c += sprintf(STR,"\t\"CHANNEL\"\t: [");
 
-if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%\n", c);
+if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%i\n", (int)c);
 
 
 	for (k = 0; k < hdr->NS; k++) {
@@ -12952,7 +12893,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%\n", c);
 	}
         c += sprintf(STR, "\n\t]");   // end-of-CHANNELS
 
-if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%\n", c);
+if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%i\n", (int)c);
 
         if (hdr->EVENT.N>0) {
             c += sprintf(STR, ",\n\t\"EVENT\"\t: [");
@@ -12980,12 +12921,19 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%\n", c);
 		else if (hdr->EVENT.TYP[k] < hdr->EVENT.LenCodeDesc)
 			c += sprintf(STR, "\t\t\"Description\"\t: \"%s\"\n",hdr->EVENT.CodeDesc[hdr->EVENT.TYP[k]]);        // no comma at the end because its the last element
 
-		else if (GLOBAL_EVENTCODES_ISLOADED) {
+		// else if (hdr->EVENT.TYP[k] < 256)	
+			// no description - because user did not define any 
+
+		else {
 			uint16_t k1;
-			for (k1=0; (k1 < Global.LenCodeDesc) && (hdr->EVENT.TYP[k] != Global.CodeIndex[k1]); k1++) {};
-			if (k1 < Global.LenCodeDesc)
-        			c += sprintf(STR, "\t\t\"Description\"\t: \"%s\"\n", Global.CodeDesc[k1]);        // no comma at the end because its the last element
+			for (k1 = 0; ETD[k1].typ != 0; k1++) {
+				if (hdr->EVENT.TYP[k] == ETD[k1].typ) {
+        				c += sprintf(STR, "\t\t\"Description\"\t: \"%s\"\n", ETD[k1].desc);        // no comma at the end because its the last element
+					break;
+				}
+			}
 		}
+
                 c += sprintf(STR, "\t\t}");
 		flag_comma = 1; 
             }
@@ -12993,7 +12941,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%\n", c);
         }
         c += sprintf(STR, "\n}\n");
 
-if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%\n", c);
+if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%i\n", (int)c);
 
         return (0); 
 #undef STR
@@ -13108,11 +13056,17 @@ int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
 		else if (hdr->EVENT.TYP[k] < hdr->EVENT.LenCodeDesc)
 			fprintf(fid,"\t\t\"Description\"\t: \"%s\"\n",hdr->EVENT.CodeDesc[hdr->EVENT.TYP[k]]);        // no comma at the end because its the last element
 
-		else if (GLOBAL_EVENTCODES_ISLOADED) {
+		// else if (hdr->EVENT.TYP[k] < 256)	
+			// no description - because user did not define any 
+
+		else {
 			uint16_t k1;
-			for (k1=0; (k1 < Global.LenCodeDesc) && (hdr->EVENT.TYP[k] != Global.CodeIndex[k1]); k1++) {};
-			if (k1 < Global.LenCodeDesc)
-        			fprintf(fid,"\t\t\"Description\"\t: \"%s\"\n", Global.CodeDesc[k1]);        // no comma at the end because its the last element
+			for (k1 = 0; ETD[k1].typ != 0; k1++) {
+				if (hdr->EVENT.TYP[k] == ETD[k1].typ) {
+        				fprintf(fid, "\t\t\"Description\"\t: \"%s\"\n", ETD[k1].desc);        // no comma at the end because its the last element
+					break;
+				}
+			}
 		}
 		fprintf(fid,"\t\t}");
 		flag_comma = 1; 
@@ -13133,8 +13087,6 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 	CHANNEL_TYPE* 	cp;
 	struct tm  	*T0;
 	float		age;
-
-	if (!GLOBAL_EVENTCODES_ISLOADED) LoadGlobalEventCodeTable();
 
 	if (VERBOSE==7) {
 		T0 = gdf_time2tm_time(hdr->T0);
@@ -13270,11 +13222,16 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 				fprintf(fid,"\t[neds]");
 			else if (hdr->EVENT.TYP[k] < hdr->EVENT.LenCodeDesc)
 				fprintf(fid,"\t\t%s",hdr->EVENT.CodeDesc[hdr->EVENT.TYP[k]]);
-			else if (GLOBAL_EVENTCODES_ISLOADED) {
+			// else if (hdr->EVENT.TYP[k] < 256)	
+				// no description - because user did not define any 
+			else {
 				uint16_t k1;
-				for (k1=0; (k1 < Global.LenCodeDesc) && (hdr->EVENT.TYP[k] != Global.CodeIndex[k1]); k1++) {};
-				if (k1 < Global.LenCodeDesc)
-					fprintf(fid,"\t\t%s",Global.CodeDesc[k1]);
+				for (k1 = 0; ETD[k1].typ != 0; k1++) {
+					if (hdr->EVENT.TYP[k] == ETD[k1].typ) {
+						fprintf(fid,"\t\t%s",ETD[k1].desc);
+						break;
+					}
+				}
 			}
 		}
 	}
