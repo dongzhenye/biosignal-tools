@@ -12861,6 +12861,8 @@ int asprintf_hdr2json(char **str, HDRTYPE *hdr)
 	*str = (char*) realloc(*str, sz); 
 #define STR ((*str)+c)	
 
+if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: sz=%\n", sz);
+
 	size_t NumberOfSweeps = (hdr->SPR*hdr->NRec > 0); 
         size_t NumberOfUserSpecifiedEvents = 0; 
         for (k = 0; k < hdr->EVENT.N; k++) {
@@ -12902,6 +12904,10 @@ int asprintf_hdr2json(char **str, HDRTYPE *hdr)
 	c += sprintf(STR,"\t},\n");   // end-of-Manufacturer
 
         c += sprintf(STR,"\t\"CHANNEL\"\t: [");
+
+if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%\n", c);
+
+
 	for (k = 0; k < hdr->NS; k++) {
 
 		if (sz < c + 1000) {
@@ -12946,6 +12952,8 @@ int asprintf_hdr2json(char **str, HDRTYPE *hdr)
 	}
         c += sprintf(STR, "\n\t]");   // end-of-CHANNELS
 
+if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%\n", c);
+
         if (hdr->EVENT.N>0) {
             c += sprintf(STR, ",\n\t\"EVENT\"\t: [");
 	    char flag_comma = 0; 
@@ -12984,6 +12992,9 @@ int asprintf_hdr2json(char **str, HDRTYPE *hdr)
             c += sprintf(STR, "\n\t]");   // end-of-EVENT
         }
         c += sprintf(STR, "\n}\n");
+
+if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%\n", c);
+
         return (0); 
 #undef STR
 }

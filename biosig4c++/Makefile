@@ -82,6 +82,7 @@ PathToSigViewerWIN64 = ../sigviewer4win64
 ## default options
 CC            = gcc
 CXX           = g++
+DEFINES      += -D=NDEBUG 
 #DEFINES      = -D=WITHOUT_SCP_DECODE
 DEFINES      += -D=WITH_ZLIB 
 #DEFINES      += -D=WITH_CURL
@@ -158,7 +159,7 @@ ifneq ($(shell which matlab), )
 endif
 
 # Octave - global install  (e.g. from debian package)
-OCTAVE_VERSION = 
+#OCTAVE_VERSION = 
 # Octave - local install (e.g. compiled from sources) 
 #OCTAVE_VERSION = -3.6.1
 
@@ -647,15 +648,15 @@ win64mma: win64/libbiosig.a  mma/sload.tm mma/sload.c
 #	MEX-files for Octave and Matlab
 #############################################################
 mex mex4m mex4o oct: libbiosig.a
-	$(MAKE) -C mex DEFINES="$(DEFINES)" CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" OCTAVE_VERSION=$(OCTAVE_VERSION) $@
+	$(MAKE) -C mex DEFINES='$(DEFINES)' CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" OCTAVE_VERSION=$(OCTAVE_VERSION) $@
 	-cp mex/*.mex* ../biosig/t200_FileAccess/
 
 mexw32: win32/libbiosig.a
-	$(MAKE) -C mex DEFINES="$(DEFINES)" CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
+	$(MAKE) -C mex DEFINES='$(DEFINES)' CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
 	-cp mex/*.mexw32 ../biosig/t200_FileAccess/
 	
 mexw64: win64/libbiosig.a
-	$(MAKE) -C mex DEFINES="$(DEFINES)" CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
+	$(MAKE) -C mex DEFINES='$(DEFINES)' CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
 	-cp mex/*.mexw64 ../biosig/t200_FileAccess/
 
 #############################################################
