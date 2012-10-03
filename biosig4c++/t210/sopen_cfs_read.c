@@ -22,12 +22,8 @@
 
  */
 
-/*
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
-*/
 
+#include <assert.h>
 #include "../biosig-dev.h"
 
 
@@ -47,6 +43,8 @@ EXTERN_C void sopen_cfs_read(HDRTYPE* hdr) {
 
 		size_t count = hdr->HeadLen; 
 
+#define CFS_NEW		// this flag allows to switch back to old version 
+
 		while (!ifeof(hdr)) {
 			hdr->AS.Header = (uint8_t*) realloc(hdr->AS.Header,count*2+1);
 			count += ifread(hdr->AS.Header+count,1,count,hdr);
@@ -54,17 +52,23 @@ EXTERN_C void sopen_cfs_read(HDRTYPE* hdr) {
 		hdr->AS.Header[count] = 0;
 		hdr->FLAG.OVERFLOWDETECTION = 0;
 
+		/*
+			Implementation is based on the following reference: 
+		        CFS - The CED Filing System October 2006
+		*/
+
 		uint8_t k;
-		hdr->NS = leu16p(hdr->AS.Header+42);
+		typeof (hdr->NS) NS = 0; 
+
 		/* General Header */
 		// uint32_t filesize = leu32p(hdr->AS.Header+22);	// unused
-		hdr->NS    = leu16p(hdr->AS.Header+42);	// 6  number of channels
-		uint8_t  n = leu16p(hdr->AS.Header+44);	// 7  number of file variables
-		uint16_t d = leu16p(hdr->AS.Header+46);	// 8  number of data section variables
-		uint16_t FileHeaderSize = leu16p(hdr->AS.Header+48);	// 9  byte size of file header
-		uint16_t DataHeaderSize = leu16p(hdr->AS.Header+50);	// 10 byte size of data section header
-		uint32_t LastDataSectionHeaderOffset = leu32p(hdr->AS.Header+52);	// 11 last data section header offset
-		uint16_t NumberOfDataSections = leu16p(hdr->AS.Header+56);	// 12 last data section header offset
+		hdr->NS    = leu16p(hdr->AS.Header+0x2a);	// 6  number of channels
+		uint16_t n = leu16p(hdr->AS.Header+0x2c);	// 7  number of file variables
+		uint16_t d = leu16p(hdr->AS.Header+0x2e);	// 8  number of data section variables
+		uint16_t FileHeaderSize = leu16p(hdr->AS.Header+0x30);	// 9  byte size of file header
+		uint16_t DataHeaderSize = leu16p(hdr->AS.Header+0x32);	// 10 byte size of data section header
+		uint32_t LastDataSectionHeaderOffset = leu32p(hdr->AS.Header+0x34);	// 11 last data section header offset
+		uint16_t NumberOfDataSections = leu16p(hdr->AS.Header+0x38);	// 12 last data section header offset
 
 		if (NumberOfDataSections) {
 			hdr->EVENT.TYP = (typeof(hdr->EVENT.TYP)) realloc(hdr->EVENT.TYP, (hdr->EVENT.N + NumberOfDataSections - 1) * sizeof(*hdr->EVENT.TYP));
@@ -81,34 +85,99 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n
 #define H2LEN (22+10+10+1+1+2+2)
  		char* H2 = (char*)(hdr->AS.Header + H1LEN);
 		double xPhysDimScale[100];		// CFS is limited to 99 channels
+		assert(hdr->NS < 100);
+		uint16_t stride = 0; 	
+		uint32_t SZ = 0;
+		char flag_sequential = 1; 
 		for (k = 0; k < hdr->NS; k++) {
 			CHANNEL_TYPE *hc = hdr->CHANNEL + k;
 			/*
 				1 offset because CFS uses pascal type strings (first byte contains string length)
 				in addition, the strings are \0 terminated.
 			*/
-			hc->OnOff = 1;
 			hc->LeadIdCode = 0; 
 
 			uint8_t len = min(21, MAX_LENGTH_LABEL);
-			strncpy(hc->Label, H2 + 1 + k*H2LEN, len);
+			strncpy(hc->Label, H2 + 1 + k*H2LEN, len);	// Channel name 
 			len = strlen(hc->Label);
 			while (isspace(hc->Label[len])) len--;		// remove trailing blanks
 			hc->Label[len+1] = 0;
 
-			hc->PhysDimCode  = PhysDimCode (H2 + 22 + 1 + k*H2LEN);
-			xPhysDimScale[k] = PhysDimScale(PhysDimCode(H2 + 32 + 1 + k*H2LEN));
+			hc->PhysDimCode  = PhysDimCode (H2 + 22 + 1 + k*H2LEN);			// Y axis units
+			xPhysDimScale[k] = PhysDimScale(PhysDimCode(H2 + 32 + 1 + k*H2LEN));	// X axis units
 
-			uint8_t gdftyp   = H2[42 + k*H2LEN];
-			hc->GDFTYP = gdftyp < 5 ? gdftyp+1 : gdftyp+11;
-			if (H2[43 + k * H2LEN]) {
-				B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-				B4C_ERRMSG = "(CFS)Subsidiary or Matrix data not supported";
+			uint8_t  dataType  = H2[42 + k*H2LEN];
+			uint8_t  dataKind  = H2[43 + k*H2LEN];
+			uint16_t byteSpace = leu16p(H2+44 + k*H2LEN);
+			uint16_t next      = leu16p(H2+46 + k*H2LEN);
+			hc->GDFTYP = dataType < 5 ? dataType+1 : dataType+11;
+
+			uint16_t sz = GDFTYP_BITS[hc->GDFTYP]>>3;	
+			
+			flag_sequential &= (sz == byteSpace); 
+
+if (VERBOSE_LEVEL > 7) fprintf(stdout, "#%i:\t%i %i %i %i %i %i\n", k, hc->GDFTYP, dataType, dataKind, byteSpace, next, sz);
+
+#ifdef CFS_NEW
+/*
+			#define TCFSKind (H2[43 + k * H2LEN])
+			#define SUBSIDIARY 2
+			#define MATRIX 1
+			#define EQUALSPACED 0 
+*/
+			// Matrix and Subsidiary data not considered yet, ignore.
+			// selected channels must have same stride
+			if (dataKind > 0) {
+				hc->OnOff = 0; 
 			}
+			else {
+				hc->OnOff = 1;
+				NS++;
+				if ( stride == 0 ) {
+					stride = byteSpace; 
+					hc->bi = 0;
+					hdr->AS.bpb = stride;
+				}
+				else if ( 0 < stride ) {	
+					if (stride == byteSpace) {
+						if (stride == sz) {
+							/*
+							   In this case, the header information can not be fully defined 
+ 							   because SPR is needed to compute bpb, bi, etc. 	
+							   This need to be defined further below. 
+
+							   hc->bi = k*sz*; 
+							   hdr->AS.bpb
+							*/
+						}
+						else {
+							hc->bi = SZ;
+							hdr->AS.bpb = stride;
+						}
+					}
+					else {
+						B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+						B4C_ERRMSG = 'CFS: either the file is corrupt or the format is not supported';	
+					}
+				}
+				SZ += sz;
+			}	
+			
+#endif
+			hc->PhysMax  = NAN;
+			hc->PhysMin  = NAN;
+			hc->DigMax   = NAN;
+			hc->DigMin   = NAN;
 			hc->LowPass  = NAN;
 			hc->HighPass = NAN;
 			hc->Notch    = NAN;
-if (VERBOSE_LEVEL>7) fprintf(stdout,"Channel #%i: [%s](%i/%i) <%s>/<%s> ByteSpace%i,Next#%i\n",k+1, H2 + 1 + k*H2LEN, gdftyp, H2[43], H2 + 23 + k*H2LEN, H2 + 33 + k*H2LEN, leu16p(H2+44+k*H2LEN), leu16p(H2+46+k*H2LEN));
+			hc->TOffset  = 0;
+			hc->XYZ[0]   = 0;
+			hc->XYZ[1]   = 0;
+			hc->XYZ[2]   = 0;
+			hc->bi8      = 0;
+
+if (VERBOSE_LEVEL>7) fprintf(stdout,"Channel #%i: [%s](dataType %i, dataKind=%i) <%s>/<%s> spacing %i,Next#%i\n",k+1, H2 + 1 + k*H2LEN, dataType, dataKind, H2 + 23 + k*H2LEN, H2 + 33 + k*H2LEN, byteSpace, next);
 		}
 
 		size_t datapos = H1LEN + H2LEN*hdr->NS;
@@ -165,7 +234,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* DS variable information *********
 //		void *VarChanInfoPos = hdr->AS.Header + datapos + 30;  // unused
 		char flag_ChanInfoChanged = 0;
 		hdr->NRec = NumberOfDataSections;
-		size_t SPR = 0, SZ = 0;
+		size_t SPR = 0; 	// cumulative number of samples
+//		size_t SZ = 0;
 		for (m = 0; m < NumberOfDataSections; m++) {
 			datapos = DATAPOS[m];
 			if (!leu32p(hdr->AS.Header+datapos+8)) continue; 	// empty segment
@@ -180,18 +250,50 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n[DS#%3i] 0x%x 0x%x [0x%x 0x%x szChanData=
 			for (k = 0; k < hdr->NS; k++) {
 				uint8_t *pos = hdr->AS.Header + datapos + 30 + 24 * k;
 
+				char flag_interleaved = 0; 
 				CHANNEL_TYPE *hc = hdr->CHANNEL + k;
 
-				uint32_t p  = leu32p(pos);
-				hc->SPR     = leu32p(pos+4);
-				hc->Cal     = lef32p(pos+8);
-				hc->Off     = lef32p(pos+12);
-				double Xcal = lef32p(pos+16);
-				//double Xoff = lef32p(pos+20);// unused
+				uint32_t p  = leu32p(pos);	// Offset in data section to first byte 
+				hc->SPR     = leu32p(pos+4);	// data points (not bytes)
+				hc->Cal     = lef32p(pos+8);	// Y Scale
+				hc->Off     = lef32p(pos+12);	// Y Offset
+				double Xcal = lef32p(pos+16);	// X increment (equalSpaced and subsidiary data)
+				//double Xoff = lef32p(pos+20); // X offset (equalSpaced and subsidiary data) - not supported yet
+				uint16_t SZ = GDFTYP_BITS[hc->GDFTYP]>>3;	// per single sample
+				
+					
+#ifdef CFS_NEW
+				/* TODO 
+					this part must be correctly defined for equalSpaced and subsidiary data
+					hc->bi, hdr->AS.bpb, hc->SPR, 
+					eventually hc->bufptr
+					such that sread can access the data in the proper way. 
+				*/ 
+				uint16_t byteSpace = leu16p(H2+44 + k*H2LEN);
+				uint16_t next      = leu16p(H2+46 + k*H2LEN);
+				if (hc->OnOff) {
+					if (byteSpace = SZ) {
+						hc->bi = sz;
+					}
+					else {
+					}
+				}
+					
+				if ((hc->OnOff) ^ (hc->SPR > 0)) {
+					B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED; 
+					B4C_ERRMSG = 'CFS: Matrix/Subsidiary data section with None-zero SPR found - this case has not yet been considered.'; 
+				}
+				hc->bi      = bpb;
+#else
 				hc->OnOff   = 1;
 				hc->bi      = sz;
+#endif
 
-if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i\n",m,k,spr,(int)SPR,hc->SPR,hc->Cal,hc->Off,p);
+if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i %i\n",m,k,spr,(int)SPR,hc->SPR,hc->Cal,hc->Off,p,hc->bi);
+
+#ifdef CFS_NEW
+				if (!hc->OnOff) continue; 
+#endif
 
 				double Fs = 1.0 / (xPhysDimScale[k] * Xcal);
 				if (!m && !k) {
@@ -202,24 +304,36 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i\n
 					B4C_ERRMSG = "CED/CFS: different sampling rates are not supported";
 				}
 
-				spr  = hc->SPR;
-				spb += hc->SPR;
+				if (spr < hc->SPR) spr  = hc->SPR;
+				spb += hc->SPR;		// cumulative samples per block 
 				sz  += hc->SPR * GDFTYP_BITS[hc->GDFTYP] >> 3;
 				bpb += GDFTYP_BITS[hc->GDFTYP]>>3;	// per single sample
-				hdr->AS.length += hc->SPR;
+//				hdr->AS.length += hc->SPR;	// ???
 			}
 
-			if (NumberOfDataSections > 1) {
-				// hack: copy data into a single block, only if more than one section
+			if (NumberOfDataSections > 1) { 
+				/*
+					hack: copy data into a single block, only if more than one section
+					the data will be converted into a multiplexed format ch1s1,ch2s1, ... chNs1, ch1s2, ch2s2, ..., chNs2, 
+				 */
+
+#ifdef CFS_NEW
+				hdr->AS.rawdata = (uint8_t*)realloc(hdr->AS.rawdata, hdr->NS * (SPR + spr) * sizeof(double));
+#else
 				hdr->AS.rawdata = (uint8_t*)realloc(hdr->AS.rawdata, (hdr->NS * SPR + spb) * sizeof(double));
+#endif
+				if (VERBOSE_LEVEL>7)
+				 	fprintf(stdout,"CFS 411: @%p: %i * (%i + %i) = %i \n",hdr->AS.rawdata, hdr->NS, SPR, spr, NS * (SPR + spr));
 
 /*
 				if (VERBOSE_LEVEL>7)
 				 	fprintf(stdout,"CFS 411: @%p %i @%p\n",hdr->AS.rawdata, (hdr->NS * SPR + spb), srcaddr);
 */
+
 				hdr->AS.first = 0;
 				for (k = 0; k < hdr->NS; k++) {
 					CHANNEL_TYPE *hc = hdr->CHANNEL + k;
+					if (!hc->OnOff) continue; 
 
 					uint32_t memoffset = leu32p(hdr->AS.Header + datapos + 30 + 24 * k);
 					uint8_t *srcaddr = hdr->AS.Header+leu32p(hdr->AS.Header+datapos + 4) + memoffset;
@@ -255,15 +369,36 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i\n
 if (VERBOSE_LEVEL>8)
  	fprintf(stdout,"CFS read: %2i #%2i:%5i [%i,%i]: %f -> %f  @%p\n",m,k,(int)k2,bpb,(int)SPR,val,val*hc->Cal + hc->Off, hdr->AS.rawdata + ((SPR + k2) * hdr->NS + k) * sizeof(double));
 
-						*(double*) (hdr->AS.rawdata + k * sizeof(double) + (SPR + k2) * hdr->NS * sizeof(double)) = val * hc->Cal + hc->Off;
+#if 1 //def CFS_NEW
+						*(double*) (hdr->AS.rawdata + SPR * hdr->NS * sizeof(double) + k * spr * sizeof(double) + k2) = val * hc->Cal + hc->Off;
+#else 
+						*(double*) (hdr->AS.rawdata + k * sizeof(double) + (SPR + k2) * NS * sizeof(double)) = val * hc->Cal + hc->Off;
+#endif
 					}
 //					srcaddr += hdr->CHANNEL[k].SPR * GDFTYP_BITS[hdr->CHANNEL[k].GDFTYP] >> 3;
 				}
 			}
 			else {
+				/* TODO: 
+					copy single data block into a dynamically allocated space, 
+					otherwise, the 
+				 */
 				hdr->AS.rawdata = (uint8_t*)realloc(hdr->AS.rawdata,sz);
-				memcpy(hdr->AS.rawdata, hdr->AS.Header + leu32p(hdr->AS.Header+datapos + 4), leu32p(hdr->AS.Header+datapos + 8));
+
+if (VERBOSE_LEVEL>7)
+ 	fprintf(stdout,"CFS read: %i,#%i: %i,%i,%i\n",m,k,leu32p(hdr->AS.Header+datapos + 8),sz, stride);
+
+				
+				assert(leu32p(hdr->AS.Header+datapos + 8)==sz);	
+//				memcpy(hdr->AS.rawdata, hdr->AS.Header + leu32p(hdr->AS.Header+datapos + 4), leu32p(hdr->AS.Header+datapos + 8));
+				memcpy(hdr->AS.rawdata, hdr->AS.Header + leu32p(hdr->AS.Header+datapos + 4), sz);
 				hdr->AS.bpb = sz;
+
+if (VERBOSE_LEVEL>8)
+ 	fprintf(stdout,"CFS read: %04x,%04x,%04x,%04x,%04x,%04x\n",leu16p(hdr->AS.rawdata),leu16p(hdr->AS.rawdata+2),leu16p(hdr->AS.rawdata+4),leu16p(hdr->AS.rawdata+6),leu16p(hdr->AS.rawdata+8),leu16p(hdr->AS.rawdata+10));
+ 	fprintf(stdout,"CFS read: %04x,%04x,%04x,%04x,%04x,%04x\n",leu16p(hdr->AS.rawdata+12),leu16p(hdr->AS.rawdata+14),leu16p(hdr->AS.rawdata+16),leu16p(hdr->AS.rawdata+18),leu16p(hdr->AS.rawdata+20),leu16p(hdr->AS.rawdata+22));
+
+
 			}
 
 			if (m>0) {
@@ -281,7 +416,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 414: SPR=%i,%i,%i NRec=%i, @%p\n",spr,(
 #if 0
 			// for (k = 0; k < d; k++) {
 			for (k = 0; k < 0; k++) {
-			// read data variables of each block - this currently broken.
+			// read data variables of each block - this is broken.
 				//size_t pos = leu16p(hdr->AS.Header + datapos + 30 + hdr->NS * 24 + k * 36 + 34);
 				size_t pos = datapos + 30 + hdr->NS * 24;
 				int i; double f;
@@ -311,7 +446,7 @@ if (VERBOSE_LEVEL>7) {
 		}
 		free(DATAPOS);
 
-if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 419: SPR=%i=%i NRec=%i  @%p\n",(int)SPR,hdr->SPR,(int)hdr->NRec, hdr->AS.rawdata);
+if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 419: SPR=%i=%i NRec=%i  @%p #dataSections: %d\n",(int)SPR,hdr->SPR,(int)hdr->NRec, hdr->AS.rawdata,NumberOfDataSections);
 
 		hdr->AS.first = 0;
 		hdr->EVENT.SampleRate = hdr->SampleRate;
@@ -321,9 +456,18 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 419: SPR=%i=%i NRec=%i  @%p\n",(int)SPR
 		else if (NumberOfDataSections == 1) {
 			// hack: copy data into a single block, only if more than one section
 			hdr->FLAG.UCAL = 0;
+			hdr->AS.bpb = stride;
+#if 0//def CFS_NEW
+			hdr->SPR  = 1;
+			hdr->NRec = SPR;
+			for (k = 0; k < hdr->NS; k++) {
+				CHANNEL_TYPE *hc = hdr->CHANNEL + k;
+				hc->SPR    = hc->OnOff ? 1 : 0;
+			}
+#else
 			hdr->SPR  = SPR;
 			hdr->NRec = 1;
-			hdr->AS.length = 1;
+#endif
 		}
 		else  {
 			hdr->FLAG.UCAL = 1;
@@ -333,11 +477,11 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 419: SPR=%i=%i NRec=%i  @%p\n",(int)SPR
 			hdr->AS.length = SPR;
 			for (k = 0; k < hdr->NS; k++) {
 				CHANNEL_TYPE *hc = hdr->CHANNEL + k;
-				hc->GDFTYP  = 17;	// double
-				hc->bi      = sizeof(double)*k;
-				hc->SPR     = hdr->SPR;
-				hc->Cal     = 1.0;
-				hc->Off     = 0.0;
+				hc->GDFTYP = 17;	// double
+				hc->bi     = sizeof(double)*k;
+				hc->SPR    = hc->OnOff ? 1 : 0;
+				hc->Cal    = 1.0;
+				hc->Off    = 0.0;
 			}
 		}
 
@@ -379,8 +523,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		}
 		hdr->FLAG.UCAL = 0;
 
-#undef H1LEN
+if (VERBOSE_LEVEL>7) hdr2ascii(hdr,stdout,4);
 
+#undef H1LEN
 
 }
 
