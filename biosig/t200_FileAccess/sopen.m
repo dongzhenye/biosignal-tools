@@ -3380,12 +3380,33 @@ elseif strcmp(HDR.TYPE,'Sigma'),	% SigmaPLpro
 		HDR.NRec = (HDR.FILE.size-HDR.HeadLen)/(2*HDR.NS); 
         end;
         
+
 elseif strncmp(HDR.TYPE,'EEG-1100',8),
+    try
+	[s,H]  = mexSLOAD(HDR.FileName,ReRefMx);
+	H.data = s; 
+	H.TYPE = 'native'; 
+	H.FILE.stderr = HDR.FILE.stderr;
+	H.FILE.PERMISSION = HDR.FILE.PERMISSION;
+	H.FLAG.FORCEALLCHANNEL = HDR.FLAG.FORCEALLCHANNEL;
+	H.FLAG.TRIGGERED = 0;
+        HDR = H;
+
+    catch
+	fprintf(HDR.FILE.stderr,'Warning SOPEN: family of Nihon-Kohden 1100 format is implemented only fully in libbiosig.\n');
+	fprintf(HDR.FILE.stderr,'You need to have mexSLOAD installed in order to load file %s,\n',HDR.FileName);
+	fprintf(HDR.FILE.stderr,' or you get only some limited header information');
+
+	%% TODO: use mexSOPEN and SREAD.M together in order to avoid the need to load the whole data section 
+
+	H = mexSSOPEN(HDR.FileName); 
+	%% This will do some parts, but the internal fields needed by SREAD() and channel selection need still be defined. 
+	
         HDR.FILE.FID = fopen(HDR.FileName,[HDR.FILE.PERMISSION,'b'],'ieee-le');
         if any(HDR.FILE.PERMISSION=='r'),		%%%%% READ 
                 [H1,count] = fread(HDR.FILE.FID,[1,6160],'uint8');
-                %HDR.Patient.Name = char(H1(79+(1:32)));
-                if count<6160, 
+                % HDR.Patient.Name = char(H1(79+(1:32)));
+                if count < 6160, 
                         fclose(HDR.FILE.FID);
                         return;
                 end;
@@ -3402,7 +3423,8 @@ elseif strncmp(HDR.TYPE,'EEG-1100',8),
                 end;
                 fclose(HDR.FILE.FID);
         end;
-        
+    end        
+
         
 elseif strcmp(HDR.TYPE,'GTF'),          % Galileo EBNeuro EEG Trace File
         HDR.FILE.FID = fopen(HDR.FileName,[HDR.FILE.PERMISSION,'b'],'ieee-le');
