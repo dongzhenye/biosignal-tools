@@ -46,7 +46,7 @@
 1280,"m [km, mm,etc.]",,"<magnitude> metre(s)"
 1312,"yd",,"<magnitude> yard"
 1344,"ft",,"<magnitude> foot"
-1376,"in",,"<magnitude> inch"
+1376,"In",,"<magnitude> inch"
 ,,"L (areic volume)",
 1408,"lm-2",,"<magnitude> litre(s) per square metre"
 ,,"L-1 ",
@@ -129,7 +129,7 @@
 3136,"l d-1",,"<magnitude> litre(s) per day"
 ,,"L3M-1 (volume content)",
 3168,"l kg-1",,"<magnitude> litre(s) per kilogram"
-3200,"m3 d-1",,"cubic <magnitude> metre(s) per kilogram"
+3200,"m3 kg-1",,"cubic <magnitude> metre(s) per kilogram"
 ,,"L2M-1T (permeability)",
 3232,"m Pa-1s-1",,"<magnitude> meter per pascal second"
 3264,"l min-1 mmHG-1",,"<magnitude> litre per min. per millimetre of mercury"
@@ -264,7 +264,7 @@
 6656,"rad s2-2", "radians per second squared", "(angular) acceleration" 
 6688,"ft min-1",,"Foot per minute"
 6720,"In min-1",,"Inch per minute"
-6752,"ft min-1",,"Step per minute"
+6752,"step min-1",,"Step per minute"
 6784,"kcal","Energy","Calorie (equal to 4.184 Joule)"
 6816,"rpm","Cadence","Revolution per minute"
 ### private: units with no standardized code
@@ -278,7 +278,7 @@
 65312,"mHg s-1",,
 65344,"mol l-1 mm","change in blood chromophore concentration per effective optical path length","milli(Mol/Liter)*millimeter"
 65376,"r.p.m",,"rotations per minute"
-65408,"B", "Bel", "relative power decibel"
+#65408,"B", "Bel", "relative power decibel"
 65440,"dyne s m2 cm-5","Vascular Resistance Index","dyne seconds square meter per centimetre to the power of 5"
 65440,"dyne*s*m²/cm^5","Vascular Resistance Index","dyne seconds square meter per centimetre to the power of 5"
 65472,"l m-2","stroke index","litres per square meter"
