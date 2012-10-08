@@ -22,6 +22,7 @@
 */
 
 #include <math.h>
+#include <pthread.h>
 #include <stdio.h>	// only needed for deprecated function PhysDim() 
 #include <stdlib.h>
 #include <string.h>
@@ -158,36 +159,56 @@ uint16_t PhysDimCode(const char* PhysDim0)
  *	Table of Physical Units
  * 
  * This part can be better optimized with a more sophisticated hash table 
- *
+ 
+ * PhysDimTable depends only on constants, defined in units.csv/units.i;
+   however, the table is only initialized upon usage. 
+
  * These functions are thread safe except for the call to PhysDim2 which updates
    the table (it does a malloc). Everything else is just read operation, and 
    the content is defined only by PhysDimFactor and PhysDimIdx, which are constant. 
-   Thus the 	
+
+ * The implementation does not seem straightforward, but it should be faster
+   to store already computed strings in a table, rather then recomputing them, 
+   again and again. 
+
  *------------------------------------------------------------------------*/
 
-static char *PhysDimTable[0x10000];
+#define PHYS_DIM_TABLE_SIZE 0x10000
+static char *PhysDimTable[PHYS_DIM_TABLE_SIZE];
 static char FlagInit_PhysDimTable = 0; 
+pthread_mutex_t mutexPhysDimTable = PTHREAD_MUTEX_INITIALIZER;
 
 void ClearPhysDimTable() {
+
+	pthread_mutex_lock(&mutexPhysDimTable);
+
 	unsigned k = 0;
-	while (k < 0x10000) {
+	while (k < PHYS_DIM_TABLE_SIZE) {
 		char *o = PhysDimTable[k++];
 		if (o != NULL) free(o); 
 	}
 	FlagInit_PhysDimTable = 0; 
+
+	pthread_mutex_unlock(&mutexPhysDimTable);
 }
 
+
 const char* PhysDim3(uint16_t PhysDimCode) {
+
+	pthread_mutex_lock(&mutexPhysDimTable); 
+
 	if (!FlagInit_PhysDimTable) {
-		memset(PhysDimTable, 0, 0x10000 * sizeof(char*));
+		memset(PhysDimTable, 0, PHYS_DIM_TABLE_SIZE * sizeof(char*));
 		atexit(&ClearPhysDimTable);
 		FlagInit_PhysDimTable = 1; 
 	}
 
-	// mutex_lock();
 	char **o = PhysDimTable+PhysDimCode; 
+
 	if (*o==NULL) *o = PhysDim2(PhysDimCode);
-	// mutex_unlock();
+
+	pthread_mutex_unlock(&mutexPhysDimTable);
+
 	return( (const char*) *o);
 }
 
