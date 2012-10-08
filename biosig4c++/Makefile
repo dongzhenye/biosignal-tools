@@ -82,7 +82,7 @@ PathToSigViewerWIN64 = ../sigviewer4win64
 ## default options
 CC            = gcc
 CXX           = g++
-DEFINES      += -D=NDEBUG 
+#DEFINES      += -D=NDEBUG 
 #DEFINES      = -D=WITHOUT_SCP_DECODE
 DEFINES      += -D=WITH_ZLIB 
 #DEFINES      += -D=WITH_CURL
@@ -1046,4 +1046,9 @@ testpybdf : $(TEMP_DIR)BDFtestfiles.zip
 
 $(TEMP_DIR)BDFtestfiles.zip :
 	wget -P$(TEMP_DIR) http://www.biosemi.com/download/BDFtestfiles.zip
+
+test_physicalunits : 
+	gcc -D=TEST_PHYSDIMTABLE_PERFORMANCE physicalunits.c
+	./a.out
+
 

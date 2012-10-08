@@ -220,3 +220,93 @@ const char* PhysDim3(uint16_t PhysDimCode) {
 /**                                                                        **/
 /****************************************************************************/
 
+
+#ifdef TEST_PHYSDIMTABLE_PERFORMANCE
+
+#include <sys/time.h>
+#include <sys/resource.h>
+
+void main() {
+
+	int k; 
+	char *s = NULL;
+	struct rusage t[6];
+	struct timeval r[3];
+/*
+#define PhysDim3(k) (PhysDim3(4275))
+#define PhysDim2(k) (PhysDim2(4275))
+*/	
+	int c[6];
+	memset(c,0,sizeof(c));
+
+        getrusage(RUSAGE_SELF, &t[0]);
+
+	// initialize PhysDimTable 
+	for (k=0; k<0x10000; k++) 
+		c[0] += (PhysDim3(k)!=NULL); 
+
+        getrusage(RUSAGE_SELF, &t[1]);
+
+	// recall PhysDimTable 
+	for (k=0; k<0x10000; k++)
+		c[1] += (PhysDim3(k)!=NULL); 
+
+        getrusage(RUSAGE_SELF, &t[2]);
+
+	// trivial implementation PhysDimTable 
+	for (k=0; k<0x10000; k++) {
+		s = (char*)PhysDim3(k);
+		int m = PhysDimCode(s);
+		c[2] += (m==k); 
+		if ((m!=k) && (s!=NULL) && (s[0]!='#')) {
+			fprintf(stdout,"%s\t%d\t%d\t%s\n",PhysDimFactor[k & 0x1f],k,m,s);
+		}
+	}
+
+        getrusage(RUSAGE_SELF, &t[3]);
+
+
+	// trivial implementation PhysDimTable 
+	for (k=0; k<0x10000; k++) {
+		s = PhysDim2(k); 
+		if (s!=NULL) {
+			free(s);
+			c[3]++;
+		}
+	} 
+
+        getrusage(RUSAGE_SELF, &t[4]);
+
+	// trivial implementation PhysDimTable 
+	for (k=0; k<0x10000; k++) {
+		s = PhysDim2(k); 
+		if (s!=NULL) {
+			free(s);
+			c[4]++;
+		}
+	} 
+
+        getrusage(RUSAGE_SELF, &t[5]);
+
+	for (k=0; k<6; k++) {
+		//fprintf(stdout,"=== [%i]: %d.%06d\t%d.%06d\n",k, t[k].ru_utime.tv_sec,t[k].ru_utime.tv_usec,t[k].ru_stime.tv_sec,t[k].ru_stime.tv_usec);
+
+		if (!k) 
+			continue;
+	
+		timersub(&(t[k].ru_utime), &(t[k-1].ru_utime), &r[0]);
+		fprintf(stdout,"usr [%i]: %d.%06d\t",k, r[0].tv_sec,r[0].tv_usec);
+
+		timersub(&(t[k].ru_stime), &(t[k-1].ru_stime) ,&r[1]);
+		fprintf(stdout,"sys [%i]: %d.%06d\t",k, r[1].tv_sec,r[1].tv_usec);
+
+		timeradd(&r[0],&r[1],&r[2]);
+		fprintf(stdout,"tot [%i]: %d.%06d\t%i\n",k,r[2].tv_sec,r[2].tv_usec,c[k-1]);
+
+	}
+
+
+}
+
+
+#endif 
