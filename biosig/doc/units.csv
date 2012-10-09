@@ -7,11 +7,13 @@
 # CEN/TC251/PT40 2001	
 # File Exchange Format for Vital Signs - Annex A 
 #
-# $Id: units.csv,v 1.12 2008/08/29 16:30:14 schloegl Exp $
-# Copyright (C) 2005,2006,2008 Alois Schloegl <alois.schloegl@gmail.com>
+# $Id$
+# Copyright (C) 2005,2006,2008,2012 Alois Schloegl <alois.schloegl@ist.ac.at>
 # This file is part of the biosig project http://biosig.sf.net/
 #
-#
+# In some cases, there are more than one text representation for a certain code.
+# The text-to-binary conversion should accept all listed representations;
+# the binary-to-text conversion should return the first representation. 
 #"Code (base code)","Symbol  (not normative)","Dimension","Unit of Measurement"
 ,,"Unspecified",
 0,"?",,"<Unspecified>"
@@ -46,7 +48,7 @@
 1280,"m [km, mm,etc.]",,"<magnitude> metre(s)"
 1312,"yd",,"<magnitude> yard"
 1344,"ft",,"<magnitude> foot"
-1376,"In",,"<magnitude> inch"
+1376,"in",,"<magnitude> inch"
 ,,"L (areic volume)",
 1408,"lm-2",,"<magnitude> litre(s) per square metre"
 ,,"L-1 ",
@@ -263,7 +265,7 @@
 6624,"m/s²", "meter per second squared", "acceleration"
 6656,"rad s2-2", "radians per second squared", "(angular) acceleration" 
 6688,"ft min-1",,"Foot per minute"
-6720,"In min-1",,"Inch per minute"
+6720,"in min-1",,"Inch per minute"
 6752,"step min-1",,"Step per minute"
 6784,"kcal","Energy","Calorie (equal to 4.184 Joule)"
 6816,"rpm","Cadence","Revolution per minute"
@@ -278,12 +280,11 @@
 65312,"mHg s-1",,
 65344,"mol l-1 mm","change in blood chromophore concentration per effective optical path length","milli(Mol/Liter)*millimeter"
 65376,"r.p.m",,"rotations per minute"
-#65408,"B", "Bel", "relative power decibel"
+65408,"B", "Bel", "relative power decibel"
 65440,"dyne s m2 cm-5","Vascular Resistance Index","dyne seconds square meter per centimetre to the power of 5"
 65440,"dyne*s*m²/cm^5","Vascular Resistance Index","dyne seconds square meter per centimetre to the power of 5"
 65472,"l m-2","stroke index","litres per square meter"
 65472,"l/m²","stroke index","litres per square meter"
 65504,"T",,"<magnitude> Tesla" 
-65504,"ml/m²",,"<magnitude> Tesla" 
 #
 #
