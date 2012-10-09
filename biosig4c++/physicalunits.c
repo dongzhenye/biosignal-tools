@@ -226,7 +226,7 @@ const char* PhysDim3(uint16_t PhysDimCode) {
 #include <sys/time.h>
 #include <sys/resource.h>
 
-void main() {
+int main() {
 
 	int k; 
 	char *s = NULL;
@@ -241,27 +241,22 @@ void main() {
 
         getrusage(RUSAGE_SELF, &t[0]);
 
+	
 	// initialize PhysDimTable 
 	for (k=0; k<0x10000; k++) 
 		c[0] += (PhysDim3(k)!=NULL); 
 
         getrusage(RUSAGE_SELF, &t[1]);
 
-	// recall PhysDimTable 
+	// recall PhysDimTable - many entries are Null, triggering a call to PhysDim2
 	for (k=0; k<0x10000; k++)
 		c[1] += (PhysDim3(k)!=NULL); 
 
         getrusage(RUSAGE_SELF, &t[2]);
 
-	// trivial implementation PhysDimTable 
-	for (k=0; k<0x10000; k++) {
-		s = (char*)PhysDim3(k);
-		int m = PhysDimCode(s);
-		c[2] += (m==k); 
-		if ((m!=k) && (s!=NULL) && (s[0]!='#')) {
-			fprintf(stdout,"%s\t%d\t%d\t%s\n",PhysDimFactor[k & 0x1f],k,m,s);
-		}
-	}
+	// recall PhysDimTable with a fixed code
+	for (k=0; k<0x10000; k++)
+		c[2] += (PhysDim3(4275)!=NULL); 
 
         getrusage(RUSAGE_SELF, &t[3]);
 
@@ -277,9 +272,9 @@ void main() {
 
         getrusage(RUSAGE_SELF, &t[4]);
 
-	// trivial implementation PhysDimTable 
+	// trivial implementation PhysDimTable for a fixed code
 	for (k=0; k<0x10000; k++) {
-		s = PhysDim2(k); 
+		s = PhysDim2(4275); 
 		if (s!=NULL) {
 			free(s);
 			c[4]++;
@@ -287,6 +282,19 @@ void main() {
 	} 
 
         getrusage(RUSAGE_SELF, &t[5]);
+
+	// trivial implementation PhysDimTable 
+	for (k=0; k<0x10000; k++) {
+		if ( (k & ~0x001f)==65408) continue; // exclude user-defined code for Bel, because it was later added in the standard
+		s = (char*)PhysDim3(k);
+		int m = PhysDimCode(s);
+		c[5] += (m==k); 
+		if ((m!=k) && (s!=NULL) && (s[0]!='#')) {
+			fprintf(stdout,"%s\t%d\t%d\t%s\n",PhysDimFactor[k & 0x1f],k,m,s);
+		}
+	}
+
+
 
 	for (k=0; k<6; k++) {
 		//fprintf(stdout,"=== [%i]: %d.%06d\t%d.%06d\n",k, t[k].ru_utime.tv_sec,t[k].ru_utime.tv_usec,t[k].ru_stime.tv_sec,t[k].ru_stime.tv_usec);
@@ -304,8 +312,7 @@ void main() {
 		fprintf(stdout,"tot [%i]: %d.%06d\t%i\n",k,r[2].tv_sec,r[2].tv_usec,c[k-1]);
 
 	}
-
-
+	return 0;
 }
 
 

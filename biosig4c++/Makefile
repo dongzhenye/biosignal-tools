@@ -82,7 +82,7 @@ PathToSigViewerWIN64 = ../sigviewer4win64
 ## default options
 CC            = gcc
 CXX           = g++
-#DEFINES      += -D=NDEBUG 
+DEFINES      += -D=NDEBUG 
 #DEFINES      = -D=WITHOUT_SCP_DECODE
 DEFINES      += -D=WITH_ZLIB 
 #DEFINES      += -D=WITH_CURL
@@ -733,7 +733,7 @@ distclean:
 	-$(DELETE) *.mex*
 	-$(DELETE) *.oct
 	-$(DELETE) t5.scp t6.scp save2gdf gztest test_scp_decode biosig_server biosig_client
-	-$(DELETE) t?.[bge]df* t?.hl7* t?.scp* t?.cfw* t?.gd1* t?.*.gz *.fil $(TEMP_DIR)/t1.* $(DATA_DIR)/t1.*
+	-$(DELETE) t?.[bge]df* t?.hl7* t?.scp* t?.cfw* t?.gd1* t?.*.gz *.fil $(TEMP_DIR)t1.* $(DATA_DIR)/t1.*
 	-$(DELETE) python/swig_wrap.* python/biosig.py* python/_biosig.so
 	-$(DELETE) QMakefile
 	-$(DELETE) igor/libIgor.a
@@ -758,7 +758,7 @@ clean:
 	-$(DELETE) *.so.*
 	-$(DELETE) *.mex*
 	-$(DELETE) *.oct
-	-$(DELETE) $(TEMP_DIR)/t1.*
+	-$(DELETE) $(TEMP_DIR)t1.*
 	-$(DELETE) python/biosig.py* _biosig.so
 	-$(DELETE) python/swig_wrap.*
 	-$(DELETE) win32/*.exe win32/*.o* win32/*.lib win32/*.a
@@ -861,29 +861,29 @@ $(TEMP_DIR)scp/redred/PFE103.scp:
 	rm -rf $(TEMP_DIR)ECGsamples*.zip
 	rm -rf $(TEMP_DIR)scp*.zip
 
-$(DATA_DIR)t1.scp: $(TEMP_DIR)scp/redred/PFE103.scp
-	$(COPY) $(TEMP_DIR)scp/redred/PFE103.scp $(DATA_DIR)t1.scp
-	touch $(DATA_DIR)t1.scp
+$(DATA_DIR)/t1.scp: $(TEMP_DIR)/scp/redred/PFE103.scp
+	$(COPY) "$<" "$@"
+	touch "$@"
 
 #"$(DATA_DIR)aECG Release 1 Schema and Example.zip":
-$(DATA_DIR)2003-12\ Schema/example/Example\ aECG.xml:
+$(DATA_DIR)/2003-12\ Schema/example/Example\ aECG.xml:
 	# HL7aECG example data set
 	wget -q -P$(DATA_DIR) https://www.hl7.org/documentcenter/public/wg/rcrim/annecg/aECG%20Release%201%20Schema%20and%20Example.zip
 	unzip -u $(DATA_DIR)"aECG Release 1 Schema and Example.zip" -d $(DATA_DIR)
 
-$(TEMP_DIR)t1.hl7: $(DATA_DIR)2003-12\ Schema/example/Example\ aECG.xml
-	$(COPY) $(DATA_DIR)2003-12\ Schema/example/Example\ aECG.xml $(TEMP_DIR)t1.hl7
+$(TEMP_DIR)/t1.hl7: $(DATA_DIR)2003-12\ Schema/example/Example\ aECG.xml
+	$(COPY) "$<" "$@"
 	#rm -rf "$(TEMP_DIR)aECG Release 1 Schema and Example.zip"
 	#rm -rf "$(TEMP_DIR)2003-12 Schema"
 
 $(TEMP_DIR)Osas2002plusQRS.edf:
 	# EDF+ example data set
 	wget -q -P$(TEMP_DIR) http://www.edfplus.info/downloads/files/osas.zip
-	unzip -u "$(TEMP_DIR)osas.zip"  -d $(TEMP_DIR)
+	unzip -u "$(TEMP_DIR)/osas.zip"  -d $(TEMP_DIR)
 
-$(DATA_DIR)t1.edf: $(TEMP_DIR)Osas2002plusQRS.edf
-	cp "$(TEMP_DIR)Osas2002plusQRS.edf" $(DATA_DIR)t1.edf
-	touch $(DATA_DIR)t1.edf
+$(DATA_DIR)/t1.edf: $(TEMP_DIR)/Osas2002plusQRS.edf
+	$(COPY) "$<" "$@"
+	touch "$@"
 
 asc: save2gdf
 	./save2gdf -f=ASCII t0.xxx $(TEMP_DIR)t1.asc
@@ -891,46 +891,46 @@ asc: save2gdf
 bin: save2gdf
 	./save2gdf -f=BIN t0.xxx $(TEMP_DIR)t1.bin
 
-json: save2gdf
-	./save2gdf -JSON t0.xxx >$(TEMP_DIR)t1.xxx.json
+testjson: save2gdf  $(DATA_DIR)/t1.edf
+	./save2gdf -JSON t0.xxx |tee $(TEMP_DIR)t1.xxx.json
+	./save2gdf -JSON  $(TEMP_DIR)/t1.edf |tee $(TEMP_DIR)/t1.edf.json
 
-testbin: save2gdf $(DATA_DIR)t1.edf
-	./save2gdf -f=BIN $(DATA_DIR)t1.edf $(TEMP_DIR)t1.hdr
-	./save2gdf -f=GDF $(TEMP_DIR)t1.edf >$(TEMP_DIR)t1.edf.json
-	./save2gdf -f=BIN $(TEMP_DIR)t1.hdr $(TEMP_DIR)t2.hdr
-	./save2gdf -f=GDF $(TEMP_DIR)t2.hdr $(TEMP_DIR)t2.gdf
+testbin: save2gdf $(DATA_DIR)/t1.edf
+	./save2gdf -f=BIN $(DATA_DIR)/t1.edf $(TEMP_DIR)/t1.hdr
+	./save2gdf -f=BIN $(TEMP_DIR)/t1.hdr $(TEMP_DIR)/t2.hdr
+	./save2gdf -f=GDF $(TEMP_DIR)/t2.hdr $(TEMP_DIR)/t2.gdf
 
-testscp: save2gdf $(DATA_DIR)t1.scp
+testscp: save2gdf $(DATA_DIR)/t1.scp
 	# test converting SCP data
-	./save2gdf -f=HL7 $(DATA_DIR)t1.scp $(TEMP_DIR)t1.scp.hl7
+	./save2gdf -f=HL7 "$<" $(TEMP_DIR)t1.scp.hl7
 	./save2gdf -f=GDF $(TEMP_DIR)t1.scp.hl7 $(TEMP_DIR)t1.scp.hl7.gdf
 	./save2gdf -f=SCP $(TEMP_DIR)t1.scp.hl7.gdf $(TEMP_DIR)t1.scp.hl7.gdf.scp
 	./save2gdf -f=GDF $(TEMP_DIR)t1.scp.hl7.gdf.scp $(TEMP_DIR)t1.scp.hl7.gdf.scp.gdf
 	./save2gdf -f=HL7 $(TEMP_DIR)t1.scp.hl7.gdf.scp.gdf $(TEMP_DIR)t1.scp.hl7.gdf.scp.gdf.hl7
 	./save2gdf -f=SCP $(TEMP_DIR)t1.scp.hl7.gdf.scp.gdf.hl7 $(TEMP_DIR)t1.scp.hl7.gdf.scp.gdf.hl7.scp
-	./save2gdf -f=GDF $(DATA_DIR)t1.scp $(TEMP_DIR)t1.scp.gdf
+	./save2gdf -f=GDF "$<" $(TEMP_DIR)t1.scp.gdf
 	./save2gdf -f=HL7 $(TEMP_DIR)t1.scp.gdf $(TEMP_DIR)t1.scp.gdf.hl7
 	./save2gdf -f=SCP $(TEMP_DIR)t1.scp.gdf.hl7 $(TEMP_DIR)t1.scp.gdf.hl7.scp
 	./save2gdf -f=HL7 $(TEMP_DIR)t1.scp.gdf.hl7.scp $(TEMP_DIR)t1.scp.gdf.hl7.scp.hl7
 	./save2gdf -f=GDF $(TEMP_DIR)t1.scp.gdf.hl7.scp.hl7 $(TEMP_DIR)t1.scp.gdf.hl7.scp.hl7.gdf
 	./save2gdf -f=SCP $(TEMP_DIR)t1.scp.gdf.hl7.scp.hl7.gdf $(TEMP_DIR)t1.scp.gdf.hl7.scp.hl7.gdf.scp
 
-testhl7: save2gdf $(TEMP_DIR)t1.hl7
+testhl7: save2gdf $(TEMP_DIR)/t1.hl7
 	# test converting HL7aECG data
-	./save2gdf -f=GDF $(TEMP_DIR)t1.hl7 $(TEMP_DIR)t1.hl7.gdf
+	./save2gdf -f=GDF "$<" $(TEMP_DIR)t1.hl7.gdf
 	./save2gdf -f=SCP $(TEMP_DIR)t1.hl7.gdf $(TEMP_DIR)t1.hl7.gdf.scp
 	./save2gdf -f=HL7 $(TEMP_DIR)t1.hl7.gdf.scp $(TEMP_DIR)t1.hl7.gdf.scp.hl7
 	./save2gdf -f=SCP $(TEMP_DIR)t1.hl7.gdf.scp.hl7 $(TEMP_DIR)t1.hl7.gdf.scp.hl7.scp
 	./save2gdf -f=GDF $(TEMP_DIR)t1.hl7.gdf.scp.hl7.scp $(TEMP_DIR)t1.hl7.gdf.scp.hl7.scp.gdf
 	./save2gdf -f=HL7 $(TEMP_DIR)t1.hl7.gdf.scp.hl7.scp.gdf $(TEMP_DIR)t1.hl7.gdf.scp.hl7.scp.gdf.hl7
-	./save2gdf -f=SCP $(TEMP_DIR)t1.hl7 $(TEMP_DIR)t1.hl7.scp
+	./save2gdf -f=SCP "$<" $(TEMP_DIR)t1.hl7.scp
 	./save2gdf -f=GDF $(TEMP_DIR)t1.hl7.scp $(TEMP_DIR)t1.hl7.scp.gdf
 	./save2gdf -f=HL7 $(TEMP_DIR)t1.hl7.scp.gdf $(TEMP_DIR)t1.hl7.scp.gdf.hl7
 	./save2gdf -f=GDF $(TEMP_DIR)t1.hl7.scp.gdf.hl7 $(TEMP_DIR)t1.hl7.scp.gdf.hl7.gdf
 	./save2gdf -f=SCP $(TEMP_DIR)t1.hl7.scp.gdf.hl7.gdf $(TEMP_DIR)t1.hl7.scp.gdf.hl7.gdf.scp
 	./save2gdf -f=HL7 $(TEMP_DIR)t1.hl7.scp.gdf.hl7.gdf.scp $(TEMP_DIR)t1.hl7.scp.gdf.hl7.gdf.scp.hl7
 
-test: $(DATA_DIR)t1.scp save2scp save2aecg save2gdf
+test: $(DATA_DIR)/t1.scp save2scp save2aecg save2gdf
 	# biosig4python
 	# includes test for on-the-fly compression and decompression
 	./save2gdf -z  $(DATA_DIR)t1.scp        $(TEMP_DIR)t1.scp.gdf
@@ -1038,17 +1038,31 @@ test6: $(DATA_DIR)t1.scp save2gdf
 	./save2gdf -f=SCP $(TEMP_DIR)t1.mwf.gz $(TEMP_DIR)t2.mwf.scp
 	./save2gdf -f=HL7 $(TEMP_DIR)t1.mwf.gz $(TEMP_DIR)t2.mwf.hl7
 
-testpybdf : $(TEMP_DIR)BDFtestfiles.zip
-	unzip -u $(TEMP_DIR)BDFtestfiles.zip -d $(TEMP_DIR) && \
+$(DATA_DIR)/Newtest17-2048.bdf : $(DATA_DIR)/BDFtestfiles.zip
+	unzip -u "$<" -d $(DATA_DIR)
+
+testbdf : $(DATA_DIR)Newtest17-2048.bdf
+	./save2gdf -V4 "$<" | awk '/NoChannels:/ { print $$2 } '
+	./save2gdf -V4 "$<" | awk '/NRec:/ { print $$2 } '
+	./save2gdf -V4 "$<" | awk '/Fs:/ { print $$2 } '
+	./save2gdf -V4 "$<" | awk '/Events\/Annotations:/ { print $$2 } '
+
+testpybdf : $(DATA_DIR)/Newtest17-2048.bdf
 	python python/demo.py $(TEMP_DIR)*-256.bdf
 	python python/example.py $(TEMP_DIR)*-256.bdf 256 && \
 	python python/example.py $(TEMP_DIR)*-2048.bdf 2048
 
-$(TEMP_DIR)BDFtestfiles.zip :
-	wget -P$(TEMP_DIR) http://www.biosemi.com/download/BDFtestfiles.zip
+$(DATA_DIR)/BDFtestfiles.zip :
+	wget -P$(DATA_DIR) http://www.biosemi.com/download/BDFtestfiles.zip
 
-test_physicalunits : 
-	gcc -D=TEST_PHYSDIMTABLE_PERFORMANCE physicalunits.c
-	./a.out
+.phony stat :
+	@echo 'TODO/FIXME:  ';
+	@grep -ri '\bTODO\b'  *.c *.h *.i t210/*.c t210/*.h |grep -v '\.svn' |wc -l;
+	@grep -ri '\bFIXME\b' *.c *.h *.i t210/*.c t210/*.h |grep -v '\.svn' |wc -l;
+
+test_physicalunits : units.i physicalunits.c physicalunits.h
+	gcc -D=TEST_PHYSDIMTABLE_PERFORMANCE physicalunits.c -o test_physicalunits
+	./test_physicalunits
+	@echo '--- end of test_physicalunits ---'
 
 
