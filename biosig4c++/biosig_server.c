@@ -254,7 +254,7 @@ void DoJob(int ns)
 					if (hdr->FILE.OPEN==0) {
 						msg.STATE = BSCS_VERSION_01 | BSCS_OPEN_R | BSCS_REPLY | STATE_INIT | BSCS_ERROR_CANNOT_OPEN_FILE;
 						STATUS = STATE_INIT; 
-					} else if (serror() || (hdr->NRec < 0)) {
+					} else if (serror2(hdr) || (hdr->NRec < 0)) {
 						sclose(hdr);
 						msg.STATE = BSCS_VERSION_01 | BSCS_OPEN_R | BSCS_REPLY | STATE_INIT | BSCS_ERROR_CANNOT_OPEN_FILE;
 						STATUS = STATE_INIT; 
@@ -306,7 +306,7 @@ void DoJob(int ns)
 				}	
 
 				hdr = NULL; 
-				if (serror())
+				if (serror2(hdr))
 					msg.STATE = BSCS_VERSION_01 | BSCS_CLOSE | BSCS_REPLY | STATE_INIT | BSCS_ERROR_CLOSE_FILE;
 
 				STATUS = STATE_INIT; 
@@ -634,7 +634,7 @@ if (VERBOSE_LEVEL>8) fprintf(stdout,"SND HDR RPLY: %08x\n",msg.STATE);
 				sopen_pdp_read(hdr);
 				
 				sread(NULL,0,hdr->NRec,hdr);	// rawdata -> data.block
-				status=serror();
+				status=serror2(hdr);
 
 				if (status) {
 					errcode = 2;
@@ -642,16 +642,16 @@ if (VERBOSE_LEVEL>8) fprintf(stdout,"SND HDR RPLY: %08x\n",msg.STATE);
         				{
 #endif
 					sopen(f2,"r",hdr);
-					if ((status=serror())) 
+					if ((status=serror2(hdr))) 
 					        errcode = 11;
 					
 					else {
 						count = sread(NULL,0,hdr->NRec,hdr);
-						if ((status=serror())) 
+						if ((status=serror2(hdr))) 
 							errcode = 12;
 						
 						sclose(hdr);
-						if ((status=serror())) 
+						if ((status=serror2(hdr))) 
 							errcode = 13;
 						
 					}
@@ -665,15 +665,15 @@ if (VERBOSE_LEVEL>8) fprintf(stdout,"SND HDR RPLY: %08x\n",msg.STATE);
 					hdr->TYPE = GDF;
 					hdr->VERSION = 2; 
 					sopen(fullfilename,"w",hdr);
-					if ((status=serror())) {
+					if ((status=serror2(hdr))) {
 						errcode = 21;
 					} else {
 						//count = swrite(hdr->data.block, hdr->NRec, hdr);
 						ifwrite(hdr->AS.rawdata,hdr->AS.bpb,hdr->NRec,hdr);
-						if ((status=serror()))
+						if ((status=serror2(hdr)))
 							errcode = 22;
 						sclose(hdr);
-						if ((status=serror()))
+						if ((status=serror2(hdr)))
 							errcode = 23;
 					}	
 				}
