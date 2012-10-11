@@ -24,14 +24,14 @@ function pos = get_local_maxima_above_threshold(data,TH)
 
 
 if numel(TH)==1,
-	%%% InVivo Data from Sarit
+	%%% InVitro Data from Sarit
 	data = [data;+inf];
 	pos = (data(1:end-1) >= TH) & (data(1:end-1) >  data(2:end) ) & (data(1:end-1) > [+inf;data(1:end-2)]);		%% local maxima above threshold
 
 	ix  = (data(1:end-1) >= TH) & (data(1:end-1) == data(2:end) ) & (data(1:end-1) > [+inf;data(1:end-2)]);		%% local maxima above threshold
 
 elseif numel(TH)==2,
-	%%% InVitro data from Alejo
+	%%% InVivo data from Alejo
 	th = repmat(NaN,size(data));
 	th(1:end/2) = TH(1);
 	th(end/2+1:end) = TH(2);

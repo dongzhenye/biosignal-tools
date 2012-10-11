@@ -17,9 +17,16 @@ function [A1,A2,A3,A4,A5,X6,X7] = baccala2001(list);
 %  [1] Baccala LA, Sameshima K. (2001)
 %       Partial directed coherence: a new concept in neural structure determination.
 %       Biol Cybern. 2001 Jun;84(6):463-74. 
+%  [2]	Yonghong Chen, Steven L. Bressler, Mingzhou Ding (2006)
+%	Frequency decomposition of conditional Granger causality and
+%	application to multivariate neural field potential data
+%	Journal of Neuroscience Methods 150 (2006) 228–237
+%  [3]  Winterhalter et al 2005, Signal Processing 85 (2005) 2137-2160
+% 	Comparison of linear signal processing techniques to infer directed 
+% 	interactions in multivariate neural systems.
 
 %	$Id$
-%	Copyright (C) 2004 by Alois Schloegl <a.schloegl@ieee.org>
+%	Copyright (C) 2004,2012 by Alois Schloegl <alois.schloegl@gmail.com>
 %    	This is part of the BIOSIG-toolbox http://biosig.sf.net/
 
 % This library is free software; you can redistribute it and/or
@@ -74,7 +81,7 @@ A5 = [[ .95*sqrt(2),0,0,0,0,            -.9025,0,0,0,0;  ...
 A5(3,16)=.1;
 
 
-% Chen, Bressler, Ding 2006: Example 1
+% Chen, Bressler, Ding 2006 [2]: Example 1
 A6 = [ 0,0,0,		0,0,0;  ...
        1,0,0,           0,0,0;  ...
        0,0,.5,          1,0,0;  ];
@@ -84,7 +91,7 @@ X6.C = diag([1,.2,.3]);
 X6.datatype = 'MVAR';
 
 
-% Chen, Bressler, Ding 2006: Example 1
+% Chen, Bressler, Ding 2006 [2]: Example 1
 A7 = [ 0,0,0;  ...
        0,1,0;  ...
        0,1,0	];
@@ -93,10 +100,8 @@ X7.B = [eye(3)];
 X7.C = diag([1,.2,.3]);
 X7.datatype = 'MVAR';
 
-% Winterhalter et al 2005, Signal Processing 85 (2005) 2137-2160
-% Comparison of linear signal processing techniques to infer directed 
-% interactions in multivariate neural systems.
-% p.2143 Equation (12)
+
+% Winterhalter et al 2005 [3] p.2143 Equation (12)
 A = [	0.8,  0,   0,  0; ...
   	0  ,  0.6, 0,  0; ...
 	-.6,  0,   0,  0; ...
@@ -139,3 +144,4 @@ for k = list(:)',
                 suptitle(tmp);        
         end;
 end;
+
