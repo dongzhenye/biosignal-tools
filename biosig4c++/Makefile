@@ -85,6 +85,7 @@ CXX           = g++
 DEFINES      += -D=NDEBUG 
 #DEFINES      = -D=WITHOUT_SCP_DECODE
 DEFINES      += -D=WITH_ZLIB 
+DEFINES      += -D=WITH_PTHREAD 
 #DEFINES      += -D=WITH_CURL
 DEFINES      += -D=__4HAERTEL__
 DEFINES      += -D=WITH_FAMOS
@@ -127,6 +128,9 @@ endif
 ifneq (,$(findstring WITH_ZLIB, $(DEFINES)))
   LDLIBS     += -lz
 endif
+ifneq (,$(findstring WITH_PTHREAD, $(DEFINES)))
+  LDLIBS     += -lpthread
+endif
 ifneq (,$(findstring WITH_CHOLMOD, $(DEFINES)))
   LDLIBS     += -lcholmod
 endif
@@ -158,6 +162,8 @@ ifneq ($(shell which matlab), )
   MEX_EXT    := $(shell $(MATLABDIR)mexext)
 endif
 
+# use environment variable to define OCTAVE_VERSION
+#   e.g. export OCTAVE_VERSION=-3.6.2
 # Octave - global install  (e.g. from debian package)
 #OCTAVE_VERSION = 
 # Octave - local install (e.g. compiled from sources) 
@@ -1038,7 +1044,7 @@ test6: $(DATA_DIR)t1.scp save2gdf
 	./save2gdf -f=SCP $(TEMP_DIR)t1.mwf.gz $(TEMP_DIR)t2.mwf.scp
 	./save2gdf -f=HL7 $(TEMP_DIR)t1.mwf.gz $(TEMP_DIR)t2.mwf.hl7
 
-$(DATA_DIR)/Newtest17-2048.bdf : $(DATA_DIR)/BDFtestfiles.zip
+$(DATA_DIR)Newtest17-2048.bdf : $(DATA_DIR)/BDFtestfiles.zip
 	unzip -u "$<" -d $(DATA_DIR)
 
 testbdf : $(DATA_DIR)Newtest17-2048.bdf

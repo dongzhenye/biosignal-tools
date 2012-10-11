@@ -22,11 +22,15 @@
 */
 
 #include <math.h>
-#include <pthread.h>
 #include <stdio.h>	// only needed for deprecated function PhysDim() 
 #include <stdlib.h>
 #include <string.h>
 #include "physicalunits.h"
+
+#ifdef WITH_PTHREAD
+// This is optional, because so far there are no multi-threaded applications for libbiosig.
+#include <pthread.h>
+#endif
 
 /* physical units are defined in
  prEN ISO 11073-10101 (Nov 2003)
@@ -120,6 +124,7 @@ char* PhysDim2(uint16_t PhysDimCode)
 	for (k = 0; _physdim[k].idx < 0xffff; k++)
 	if  ( (PhysDimCode & ~0x001F) == _physdim[k].idx) {
 		char *PhysDim = (char*)malloc(l2 + 1 + strlen(_physdim[k].PhysDimDesc));
+		if (PhysDim==NULL) return (NULL); 
 		memcpy(PhysDim, PhysDimFactor[PhysDimCode & 0x001F], l2);
 		strcpy(PhysDim+l2, _physdim[k].PhysDimDesc);
 		return(PhysDim);
@@ -176,27 +181,36 @@ uint16_t PhysDimCode(const char* PhysDim0)
 #define PHYS_DIM_TABLE_SIZE 0x10000
 static char *PhysDimTable[PHYS_DIM_TABLE_SIZE];
 static char FlagInit_PhysDimTable = 0; 
+#ifdef _PTHREAD_H
 pthread_mutex_t mutexPhysDimTable = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
+
+/***** 
+	Release allocated memory 
+*****/
 void ClearPhysDimTable() {
-
+#ifdef _PTHREAD_H
 	pthread_mutex_lock(&mutexPhysDimTable);
-
+#endif
 	unsigned k = 0;
 	while (k < PHYS_DIM_TABLE_SIZE) {
 		char *o = PhysDimTable[k++];
 		if (o != NULL) free(o); 
 	}
 	FlagInit_PhysDimTable = 0; 
-
+#ifdef _PTHREAD_H
 	pthread_mutex_unlock(&mutexPhysDimTable);
+#endif
 }
 
-
+/***** 
+	PhysDim3 returns the text representation of the provided 16bit code 
+ *****/
 const char* PhysDim3(uint16_t PhysDimCode) {
-
+#ifdef _PTHREAD_H
 	pthread_mutex_lock(&mutexPhysDimTable); 
-
+#endif 
 	if (!FlagInit_PhysDimTable) {
 		memset(PhysDimTable, 0, PHYS_DIM_TABLE_SIZE * sizeof(char*));
 		atexit(&ClearPhysDimTable);
@@ -206,9 +220,9 @@ const char* PhysDim3(uint16_t PhysDimCode) {
 	char **o = PhysDimTable+PhysDimCode; 
 
 	if (*o==NULL) *o = PhysDim2(PhysDimCode);
-
+#ifdef _PTHREAD_H
 	pthread_mutex_unlock(&mutexPhysDimTable);
-
+#endif
 	return( (const char*) *o);
 }
 
@@ -222,6 +236,9 @@ const char* PhysDim3(uint16_t PhysDimCode) {
 
 
 #ifdef TEST_PHYSDIMTABLE_PERFORMANCE
+/***********************************
+       this is just for testing and is not part of the library
+ ***********************************/
 
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -314,6 +331,5 @@ int main() {
 	}
 	return 0;
 }
-
 
 #endif 
