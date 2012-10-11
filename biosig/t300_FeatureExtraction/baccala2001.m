@@ -93,13 +93,30 @@ X7.B = [eye(3)];
 X7.C = diag([1,.2,.3]);
 X7.datatype = 'MVAR';
 
-
+% Winterhalter et al 2005, Signal Processing 85 (2005) 2137-2160
+% Comparison of linear signal processing techniques to infer directed 
+% interactions in multivariate neural systems.
+% p.2143 Equation (12)
+A = [	0.8,  0,   0,  0; ...
+  	0  ,  0.6, 0,  0; ...
+	-.6,  0,   0,  0; ...
+       	0  ,  0,   0,  1.2; ...
+    ];
+A(4,4*(2-1)+4)=-.7; % A(4,4)(n-2)
+A(3,4*(3-1)+3)= .5; % A(3,3)(n-3)
+A(1,4*(4-1)+2)= .65; % A(1,2)(n-4)
+A(3,4*(2-1)+2)= .4; % A(3,2)(n-4)
+A(2,4*(5-1)+4)= .6; % A(2,4)(n-5)
+X8.A = [eye(4),-A];
+X8.B = [eye(4)];
+X8.C = [eye(4)];
+X8.datatype = 'MVAR';
 
 
 if nargin==0, return; end; 
 
 F = gcf; 
-for k = list(:)', 
+for k = list(:)',
         AR  = eval(['A',int2str(k)]);
         X.A = [eye(size(AR,1)),-AR]; 
         X.B = eye(size(X.A,1));
