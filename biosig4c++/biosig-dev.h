@@ -1,6 +1,6 @@
 /*
 %
-% $Id: biosig-dev.h,v 1.17 2009/04/08 12:49:54 schloegl Exp $
+% $Id$
 % Copyright (C) 2005,2006,2007,2008,2009,2011 Alois Schloegl <a.schloegl@ieee.org>
 % This file is part of the "BioSig for C/C++" repository 
 % (biosig4c++) at http://biosig.sf.net/ 
@@ -507,6 +507,13 @@ int strcmpi(const char* str1, const char* str2);
 #endif
 int strncmpi(const char* str1, const char* str2, size_t n);
 int u32cmp(const void *a, const void *b); 
+
+void biosigERROR(HDRTYPE *hdr, enum B4C_ERROR errnum, const char *errmsg);
+/*
+	sets the local and the (deprecated) global error variables B4C_ERRNUM and B4C_ERRMSG
+	the global error variables are kept for backwards compatibility.
+*/
+
 
 //double strtod (const char *nptr, char **endptr); // no locale dependency 
 

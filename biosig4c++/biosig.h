@@ -1,5 +1,5 @@
 /*
-% $Id: biosig.h,v 1.140 2009/04/09 15:06:55 schloegl Exp $
+% $Id$
 % Copyright (C) 2005,2006,2007,2008,2009,2010,2011 Alois Schloegl <alois.schloegl@gmail.com>
 % This file is part of the "BioSig for C/C++" repository
 % (biosig4c++) at http://biosig.sf.net/
@@ -59,6 +59,23 @@ typedef char			int8_t;
 #define EXTERN_C extern "C"
 #else    
 #define EXTERN_C
+#endif
+
+#ifdef __GNUC__
+#define ATT_ALI __attribute__ ((aligned (8)))	/* Matlab v7.3+ requires 8 byte alignment*/
+#define ATT_DEPREC __attribute__ ((deprecated))
+#else
+/* 
+	TODO (FIXME): 
+	not clear whether this alignment definition is equivalent to the one above:
+	This might be crucial for a mixed compiler environment 
+	e.g. libbiosig compiled with MinGW used in a MS VC++ project
+	Nevertheless, there are too many GNUC dependencies, so it probably will not 
+	compile with anything else but GNUC.
+*/
+#pragma pack(8)	
+#define ATT_ALI
+#define ATT_DEPREC
 #endif
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -129,12 +146,17 @@ enum FileFormat {
 };
 
 
-extern int B4C_ERRNUM;
-extern const char *B4C_ERRMSG;
+/*
+ TODO: 
+   error handling must use error variables local to each HDR
+   otherwise, sopen() etc. is not re-entrant. 
+ */
+extern int B4C_ERRNUM ATT_DEPREC;
+extern const char *B4C_ERRMSG ATT_DEPREC;
 
 #define BIOSIG_VERSION_MAJOR 1
-#define BIOSIG_VERSION_MINOR 3
-#define BIOSIG_PATCHLEVEL 7
+#define BIOSIG_VERSION_MINOR 4
+#define BIOSIG_PATCHLEVEL 0
 // for backward compatibility 
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
@@ -217,23 +239,6 @@ typedef int64_t 		nrec_t;	/* type for number of records */
 #define MAX_LENGTH_NAME 	132	// max length of personal name: MFER<=128, EBS<=33*4
 #define MAX_LENGTH_MANUF 	128	// max length of manufacturer field: MFER<128
 #define MAX_LENGTH_TECHNICIAN 	128	// max length of manufacturer field: SCP<41
-
-#ifdef __GNUC__
-#define ATT_ALI __attribute__ ((aligned (8)))	/* Matlab v7.3+ requires 8 byte alignment*/
-#define ATT_DEPREC __attribute__ ((deprecated))
-#else
-/* 
-	TODO (FIXME): 
-	not clear whether this alignment definition is equivalent to the one above:
-	This might be crucial for a mixed compiler environment 
-	e.g. libbiosig compiled with MinGW used in a MS VC++ project
-	Nevertheless, there are too many GNUC dependencies, so it probably will not 
-	compile with anything else but GNUC.
-*/
-#pragma pack(8)	
-#define ATT_ALI
-#define ATT_DEPREC
-#endif
 
 typedef struct CHANNEL_STRUCT {
 	double 		PhysMin ATT_ALI;	/* physical minimum */
@@ -396,6 +401,7 @@ typedef struct HDR_STRUCT {
 
 	/*	internal variables (not public)  */
 	struct {
+		const char*	B4C_ERRMSG;	/* error message */
 //		char 		PID[MAX_LENGTH_PID+1];	// use HDR.Patient.Id instead
 //		char* 		RID;		// recording identification
 		uint32_t 	bpb;  		/* total bytes per block */
@@ -409,6 +415,7 @@ typedef struct HDR_STRUCT {
 		uint8_t*	auxBUF;  	/* auxillary buffer - used for storing EVENT.CodeDesc, MIT FMT infor, alpha:rawdata header */
 		char*		bci2000;
 		uint32_t	SegSel[5];	/* segment selection in a hirachical data formats, e.g. sweeps in HEKA/PatchMaster format */
+		enum B4C_ERROR	B4C_ERRNUM;	/* error code */
 		char		flag_collapsed_rawdata; /* 0 if rawdata contain obsolete channels, too. 	*/
 	} AS ATT_ALI;
 
@@ -580,7 +587,18 @@ long int stell(HDRTYPE* hdr);
  --------------------------------------------------------------- */
 
 
-int 	serror();
+int 	serror() ATT_DEPREC;
+/*	handles errors; it reports whether an error has occured.
+ *	if yes, an error message is displayed, and the error status is reset.
+ * 	the return value is 0 if no error has occured, otherwise the error code
+ *	is returned.
+ *  IMPORTANT NOTE:	
+ *	serror() uses the global error variables B4C_ERRNUM and B4C_ERRMSG, 
+ *	which is not re-entrant, because two opened files share the same 
+ *	error variables.  
+ --------------------------------------------------------------- */
+
+int 	serror2(HDRTYPE* hdr);
 /*	handles errors; it reports whether an error has occured.
  *	if yes, an error message is displayed, and the error status is reset.
  * 	the return value is 0 if no error has occured, otherwise the error code

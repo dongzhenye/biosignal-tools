@@ -577,7 +577,7 @@ int biosig_write_annotation(int handle, size_t onset, size_t duration, const cha
 	hdr->EVENT.DUR[N] = duration;
 	hdr->EVENT.CHN[N] = 0;
 	FreeTextEvent(hdr, N, description);
-	return (serror());
+	return (hdr->AS.B4C_ERRNUM);
 }
 
 int biosig_write_annotation_utf8(int handle, size_t onset, size_t duration, const char *description) {

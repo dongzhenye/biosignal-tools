@@ -248,7 +248,7 @@ int	seof(HDRTYPE* hdr);
 void	srewind(HDRTYPE* hdr);
 int 	sseek(HDRTYPE* hdr, long int offset, int whence);
 long int stell(HDRTYPE* hdr);
-int 	serror();
+int 	serror2(HDRTYPE* hdr);
 int	hdr2ascii(HDRTYPE* hdr, FILE *fid, int verbosity);
 
 int RerefCHANNEL(HDRTYPE *hdr, void *ReRef, char rrtype);

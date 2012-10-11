@@ -22,12 +22,7 @@
 
  */
 
-/*
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
-*/
-
+#include <assert.h>
 #include "../biosig-dev.h"
 
 
@@ -47,6 +42,8 @@ EXTERN_C void sopen_cfs_read(HDRTYPE* hdr) {
 
 		size_t count = hdr->HeadLen; 
 
+#define CFS_NEW		// this flag allows to switch back to old version 
+
 		while (!ifeof(hdr)) {
 			hdr->AS.Header = (uint8_t*) realloc(hdr->AS.Header,count*2+1);
 			count += ifread(hdr->AS.Header+count,1,count,hdr);
@@ -54,17 +51,23 @@ EXTERN_C void sopen_cfs_read(HDRTYPE* hdr) {
 		hdr->AS.Header[count] = 0;
 		hdr->FLAG.OVERFLOWDETECTION = 0;
 
+		/*
+			Implementation is based on the following reference: 
+		        CFS - The CED Filing System October 2006
+		*/
+
 		uint8_t k;
-		hdr->NS = leu16p(hdr->AS.Header+42);
+		typeof (hdr->NS) NS = 0;
+
 		/* General Header */
 		// uint32_t filesize = leu32p(hdr->AS.Header+22);	// unused
-		hdr->NS    = leu16p(hdr->AS.Header+42);	// 6  number of channels
-		uint8_t  n = leu16p(hdr->AS.Header+44);	// 7  number of file variables
-		uint16_t d = leu16p(hdr->AS.Header+46);	// 8  number of data section variables
-		uint16_t FileHeaderSize = leu16p(hdr->AS.Header+48);	// 9  byte size of file header
-		uint16_t DataHeaderSize = leu16p(hdr->AS.Header+50);	// 10 byte size of data section header
-		uint32_t LastDataSectionHeaderOffset = leu32p(hdr->AS.Header+52);	// 11 last data section header offset
-		uint16_t NumberOfDataSections = leu16p(hdr->AS.Header+56);	// 12 last data section header offset
+		hdr->NS    = leu16p(hdr->AS.Header+0x2a);	// 6  number of channels
+		uint16_t n = leu16p(hdr->AS.Header+0x2c);	// 7  number of file variables
+		uint16_t d = leu16p(hdr->AS.Header+0x2e);	// 8  number of data section variables
+		uint16_t FileHeaderSize = leu16p(hdr->AS.Header+0x30);	// 9  byte size of file header
+		uint16_t DataHeaderSize = leu16p(hdr->AS.Header+0x32);	// 10 byte size of data section header
+		uint32_t LastDataSectionHeaderOffset = leu32p(hdr->AS.Header+0x34);	// 11 last data section header offset
+		uint16_t NumberOfDataSections = leu16p(hdr->AS.Header+0x38);	// 12 last data section header offset
 
 		if (NumberOfDataSections) {
 			hdr->EVENT.TYP = (typeof(hdr->EVENT.TYP)) realloc(hdr->EVENT.TYP, (hdr->EVENT.N + NumberOfDataSections - 1) * sizeof(*hdr->EVENT.TYP));
@@ -102,8 +105,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n
 			uint8_t gdftyp   = H2[42 + k*H2LEN];
 			hc->GDFTYP = gdftyp < 5 ? gdftyp+1 : gdftyp+11;
 			if (H2[43 + k * H2LEN]) {
-				B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-				B4C_ERRMSG = "(CFS)Subsidiary or Matrix data not supported";
+				biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "(CFS)Subsidiary or Matrix data not supported");
 			}
 			hc->LowPass  = NAN;
 			hc->HighPass = NAN;
@@ -198,8 +200,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i\n
 					hdr->SampleRate = Fs;
 				}
 				else if (fabs(hdr->SampleRate - Fs) > 1e-3) {
-					B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-					B4C_ERRMSG = "CED/CFS: different sampling rates are not supported";
+					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: different sampling rates are not supported");
 				}
 
 				spr  = hc->SPR;
@@ -248,8 +249,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i\n
 						case 8:  val = leu64p(ptr); break;
 						default:
 							val = NAN;
-							B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-							B4C_ERRMSG = "CED/CFS: invalid data type";
+							biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: invalid data type");
 						}
 
 if (VERBOSE_LEVEL>8)
@@ -345,8 +345,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		datapos   = FileHeaderSize;  //+DataHeaderSize;
 
 		if (flag_ChanInfoChanged) {
-			B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-			B4C_ERRMSG = "CED/CFS: varying channel information not supported";
+			biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: varying channel information not supported");
 		}
 
 		for (k = 0; k < hdr->NS; k++) {

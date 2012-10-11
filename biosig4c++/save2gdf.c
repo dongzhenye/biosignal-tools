@@ -207,8 +207,8 @@ int main(int argc, char **argv){
     	}	
 
 	if (VERBOSE_LEVEL<0) VERBOSE=1; // default 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"[108] SAVE2GDF %s %s started \n", source, dest
-);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"[108] SAVE2GDF %s %s started \n", source, dest);
+	fprintf(stderr,"%s %s %s\n", argv[0], source, dest);
 
 	tzset();
 	hdr = constructHDR(0,0);
@@ -234,8 +234,8 @@ int main(int argc, char **argv){
 
 	hdr = sopen(source, "r", hdr);
 #ifdef WITH_PDP 
-	if (B4C_ERRNUM) {
-		B4C_ERRNUM = 0;  
+	if (hdr->AS.B4C_ERRNUM) {
+		biosigERROR(hdr, 0, NULL);  // reset error 
 		sopen_pdp_read(hdr);
 	}
 #endif
@@ -247,7 +247,7 @@ int main(int argc, char **argv){
 	} 
 	else {
                 fprintf(stdout,"error: only HEKA->ITX is supported - source file is not HEKA file");
-		B4C_ERRNUM = B4C_UNSPECIFIC_ERROR;
+		biosigERROR(hdr, B4C_UNSPECIFIC_ERROR, "error: only HEKA->ITX is supported - source file is not HEKA file");
 	} 
 	}
 
@@ -259,9 +259,9 @@ int main(int argc, char **argv){
 	} 
 #endif
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"[112] SOPEN-R finished\n");
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"[112] SOPEN-R finished (error %i)\n", hdr->AS.B4C_ERRNUM);
 
-	if ((status=serror())) {
+	if ((status=serror2(hdr))) {
 		destructHDR(hdr);
 		exit(status); 
 	} 
@@ -273,11 +273,10 @@ int main(int argc, char **argv){
 
 	if ( ( t1 - floor (t1) ) || ( t2 - floor(t2) ) ) {
 		fprintf(stderr,"ERROR SAVE2GDF: cutting from parts of blocks not supported; t1 (%f) and t2 (%f) must be a multiple of block duration %f\n", t1,t2,hdr->SPR / hdr->SampleRate);
-		B4C_ERRNUM = B4C_UNSPECIFIC_ERROR;
-		B4C_ERRMSG = "blocks must not be split";
+		biosigERROR(hdr, B4C_UNSPECIFIC_ERROR, "blocks must not be split");
 	} 
 
-	if ((status=serror())) {
+	if ((status=serror2(hdr))) {
 		destructHDR(hdr);
 		exit(status); 
 	} 
@@ -327,7 +326,7 @@ int main(int argc, char **argv){
 	if ((VERBOSE_LEVEL>8) && (hdr->data.size[0]*hdr->data.size[1]>500))
 		fprintf(stdout,"[125] UCAL=%i %e %e %e \n",hdr->FLAG.UCAL,data[100],data[110],data[500+hdr->SPR]);
 	
-	if ((status=serror())) {
+	if ((status=serror2(hdr))) {
 		destructHDR(hdr);
 		exit(status);
 	};
@@ -353,8 +352,9 @@ int main(int argc, char **argv){
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"[131] going for SCLOSE\n");
 		sclose(hdr);
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"[137] SCLOSE(HDR) finished\n");
+		status=serror2(hdr);
 		destructHDR(hdr);
-		exit(serror());
+		exit(status); 
 	}
 
 	if (hdr->FILE.OPEN) {
@@ -574,7 +574,7 @@ int main(int argc, char **argv){
 
 	hdr = sopen(tmp, "wb", hdr);
 	free(tmp); 
-	if ((status=serror())) {
+	if ((status=serror2(hdr))) {
 		destructHDR(hdr);
 		exit(status); 
 	}	
@@ -588,7 +588,7 @@ int main(int argc, char **argv){
 	swrite(data, hdr->NRec, hdr);
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[231] SWRITE finishes\n");
-	if ((status=serror())) { 
+	if ((status=serror2(hdr))) { 
 		destructHDR(hdr);
 		exit(status); 
     	}	
@@ -597,7 +597,9 @@ int main(int argc, char **argv){
 
 	sclose(hdr);
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[241] SCLOSE finished\n");
-	destructHDR(hdr);
-	exit(serror()); 
+	if ((status=serror2(hdr))) { 
+		destructHDR(hdr);
+		exit(status); 
+    	}	
 }
 

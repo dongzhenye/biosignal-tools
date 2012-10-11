@@ -468,13 +468,13 @@ void mexFunction(
 	}
 
 	hdr = sopen(FileName, "w", hdr);
-	if (serror()) mexErrMsgTxt("mexSSAVE: sopen failed \n");	
+	if (serror2(hdr)) mexErrMsgTxt("mexSSAVE: sopen failed \n");	
 
 	swrite((biosig_data_type*)data, hdr->NRec, hdr);
-	if (serror()) mexErrMsgTxt("mexSSAVE: swrite failed \n");	
+	if (serror2(hdr)) mexErrMsgTxt("mexSSAVE: swrite failed \n");	
 
 	destructHDR(hdr);
-	if (serror()) mexErrMsgTxt("mexSSAVE: sclose failed \n");	
+	if (serror2(hdr)) mexErrMsgTxt("mexSSAVE: sclose failed \n");	
 
 };
 

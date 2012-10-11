@@ -1,6 +1,6 @@
 /*
 
-    $Id: sopen_scp_read.c,v 1.66 2009/04/09 15:08:14 schloegl Exp $
+    $Id$
     Copyright (C) 2005,2006,2007,2011 Alois Schloegl <alois.schloegl@gmail.com>
     Copyright (C) 2011 Stoyan Mihaylov
 
@@ -247,8 +247,6 @@ int DecodeHuffman(htree_t *HTrees[], huffman_t *HuffmanTables, uint8_t* indata, 
 				if (node->child1 != NULL)
 					node = node->child1;
 				else {
-					B4C_ERRMSG = "Empty node in Huffman table! Do not know what to do !\n";
-					B4C_ERRNUM = B4C_DECOMPRESSION_FAILED;					
 					return(-1);
 				}	
 			}	
@@ -256,8 +254,6 @@ int DecodeHuffman(htree_t *HTrees[], huffman_t *HuffmanTables, uint8_t* indata, 
 				if (node->child0 != NULL)
 					node = node->child0;
 				else {
-					B4C_ERRMSG = "Empty node in Huffman table! Do not know what to do !\n";
-					B4C_ERRNUM = B4C_DECOMPRESSION_FAILED;					
 					return(-1);
 				}	
 			}	
@@ -485,8 +481,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 	if (len==0) continue;	 /***** empty section *****/
 	 	if (sectionStart + len > hdr->HeadLen) {
-	 		B4C_ERRNUM = B4C_INCOMPLETE_FILE;
-	 		B4C_ERRMSG = "SOPEN(SCP-READ): File inclomplete - Section length + start of section is more then total length of header.";
+	 		biosigERROR(hdr, B4C_INCOMPLETE_FILE, "SOPEN(SCP-READ): File inclomplete - Section length + start of section is more then total length of header");
 	 		break;
 	 	}
 
@@ -803,8 +798,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					}
 					HTrees[k2] = makeTree(Huffman[k2]); 
 					if (!checkTree(HTrees[k2])) {
-						B4C_ERRMSG = "Warning: invalid Huffman Tree\n";
-						B4C_ERRNUM = B4C_DECOMPRESSION_FAILED; 
+						biosigERROR(hdr, B4C_DECOMPRESSION_FAILED, "Warning: invalid Huffman Tree");
 						// AS_DECODE = 2; // forced use of SCP-DECODE 
 					}
 				}
@@ -912,11 +906,13 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				for (i=0; i < hdr->NS; i++) {
 					en1064.Section5.inlen[i] = leu16p(PtrCurSect+curSectPos+6+2*i);
 					if (en1064.FLAG.HUFFMAN) {
-						if (B4C_ERRNUM) {
+						if (DecodeHuffman(HTrees, Huffman, Ptr2datablock, en1064.Section5.inlen[i], en1064.Section5.datablock + en1064.Section5.Length*i, en1064.Section5.Length)) {
+							biosigERROR(hdr, B4C_DECOMPRESSION_FAILED, "Empty node in Huffman table! Do not know what to do !");
+						}
+						if (hdr->AS.B4C_ERRNUM) {
 							deallocEN1064(en1064);
 							return(-1);
 						}
-						DecodeHuffman(HTrees, Huffman, Ptr2datablock, en1064.Section5.inlen[i], en1064.Section5.datablock + en1064.Section5.Length*i, en1064.Section5.Length);
 					}
 					else {
 						for (k1=0; k1<en1064.Section5.Length; k1++)
@@ -1000,11 +996,13 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 				en1064.Section6.inlen[i]    = leu16p(PtrCurSect+curSectPos+6+2*i);
 				if (en1064.FLAG.HUFFMAN) {
-					if (B4C_ERRNUM) {
+					if (DecodeHuffman(HTrees, Huffman, Ptr2datablock, en1064.Section6.inlen[i], data + i*hdr->SPR, hdr->SPR)) {
+						biosigERROR(hdr, B4C_DECOMPRESSION_FAILED, "Empty node in Huffman table! Do not know what to do !");
+					}
+					if (hdr->AS.B4C_ERRNUM) {
 						deallocEN1064(en1064);
 						return(-1);
 					}
-					DecodeHuffman(HTrees, Huffman, Ptr2datablock, en1064.Section6.inlen[i], data + i*hdr->SPR, hdr->SPR);
 				}
 				else {
 					for (k1=0, ix = i*hdr->SPR; k1 < SPR; k1++)
@@ -1272,14 +1270,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	decode.flag_Res.bimodal = (aECG->Section1.Tag14.VERSION > 10 ? aECG->FLAG.BIMODAL : 0);  
 	decode.Reconstructed    = (int32_t*) hdr->AS.rawdata; 
 
+	// TODO: check error handling 
+	biosigERROR(hdr, 0, NULL); 
 	if (scp_decode(hdr, section, &decode, &record, &textual, add_filter)) {
 		if (Cal0>1)
 			for (i=0; i < hdr->NS * hdr->SPR * hdr->NRec; ++i)
 				data[i] /= Cal0;
 	}
 	else { 
-		B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
-		B4C_ERRMSG = "SCP-DECODE can not read file"; 
+		biosigERROR(hdr, B4C_CANNOT_OPEN_FILE, "SCP-DECODE can not read file"); 
 		return(0);
 	}
 	

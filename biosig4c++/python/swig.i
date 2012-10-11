@@ -1,6 +1,6 @@
 /*
 %
-% $Id: swig.i,v 1.25 2009-01-19 15:36:14 schloegl Exp $
+% $Id$
 % Copyright (C) 2008,2009 Alois Schloegl <a.schloegl@ieee.org>
 % This file is part of the "BioSig for C/C++" repository 
 % (biosig4c++) at http://biosig.sf.net/ 
@@ -81,8 +81,8 @@ typedef struct CHANNEL_STRUCT {
 	double		Cal;			/* gain factor */
 	double		Off;			/* bias */
 
-	char		OnOff;
 	char		Label[MAX_LENGTH_LABEL+1]; 		/* Label of channel */
+	char		OnOff;
 	uint16_t	LeadIdCode;				/* Lead identification code */
 	char 		Transducer[MAX_LENGTH_TRANSDUCER+1];	/* transducer e.g. EEG: Ag-AgCl electrodes */
 //	char 		PhysDim[MAX_LENGTH_PHYSDIM+1] ;		/* physical dimension */
@@ -243,7 +243,7 @@ typedef struct {
 //		char		flag_collapsed_rawdata; /*0 if rawdata contain obsolete channels, too. 	*/
 //		nrec_t		first;		/* first block loaded in buffer - this is equivalent to hdr->FILE.POS */
 //		nrec_t		length;		/* number of block(s) loaded in buffer */
-//		uint8_t*	auxBUF;		/* auxillary buffer - used for storing EVENT.CodeDesc, MIT FMT infor */
+		uint8_t*	auxBUF;		/* auxillary buffer - used for storing EVENT.CodeDesc, MIT FMT infor */
 		char*		bci2000;
 	} AS;
 	
@@ -261,7 +261,8 @@ int	seof(HDRTYPE* hdr);
 void	srewind(HDRTYPE* hdr);
 int 	sseek(HDRTYPE* hdr, long int offset, int whence);
 long int stell(HDRTYPE* hdr);
-int 	serror();
+int 	serror();	
+int 	serror2(HDRTYPE* hdr);
 int	hdr2ascii(HDRTYPE* hdr, FILE *fid, int verbosity);
 
 int RerefCHANNEL(HDRTYPE *hdr, void *ReRef, char rrtype);
@@ -273,6 +274,10 @@ char* 	PhysDim3(uint16_t PhysDimCode);
 void 	sort_eventtable(HDRTYPE *hdr);
 void 	convert2to4_eventtable(HDRTYPE *hdr);
 void 	convert4to2_eventtable(HDRTYPE *hdr);
+
+int asprintf_hdr2json(char **str, HDRTYPE* hdr);
+int  fprintf_hdr2json(FILE *stream, HDRTYPE* hdr);
+
 
 
 /*
@@ -340,3 +345,5 @@ void hdr2ascii(HDRTYPE* hdr, int verbosity);
 		hdr2ascii(hdr, stdout, verbosity);
         }
 %}
+
+

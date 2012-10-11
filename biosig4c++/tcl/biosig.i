@@ -1,6 +1,6 @@
 /*
 %
-% $Id: swig.i,v 1.25 2009-01-19 15:36:14 schloegl Exp $
+% $Id$
 % Copyright (C) 2008,2009 Alois Schloegl <a.schloegl@ieee.org>
 % This file is part of the "BioSig for C/C++" repository 
 % (biosig4c++) at http://biosig.sf.net/ 
@@ -248,7 +248,7 @@ int	seof(HDRTYPE* hdr);
 void	srewind(HDRTYPE* hdr);
 int 	sseek(HDRTYPE* hdr, long int offset, int whence);
 long int stell(HDRTYPE* hdr);
-int 	serror();
+int 	serror2(HDRTYPE* hdr);
 int	hdr2ascii(HDRTYPE* hdr, FILE *fid, int verbosity);
 
 int RerefCHANNEL(HDRTYPE *hdr, void *ReRef, char rrtype);

@@ -493,9 +493,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"FLOWMON 020\n");
 
                 if (VERBOSE_LEVEL>7) fprintf(stdout,"FLOWMON 010 %i\n", (int)hdr->NRec);
 
-		if (serror()) {
-		      fprintf(stderr,"%s (%i)\n",B4C_ERRMSG,B4C_ERRNUM);
-		      return(-1);
+		if (serror2(hdr)) {
+			destructHDR(hdr); 
+			return(EXIT_FAILURE);
 		}
 
                 if (VERBOSE_LEVEL>7) fprintf(stdout,"FLOWMON 020\n");
@@ -558,9 +558,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"FLOWMON 020\n");
 
                 if (VERBOSE_LEVEL>7) fprintf(stdout,"FLOWMON 120 %p\n", hdr);
 
-                        if (serror()) {
-                                fprintf(stderr,"%s (%i)\n",B4C_ERRMSG,B4C_ERRNUM);
-                                return(-1);
+                        if (serror2(hdr)) {
+				destructHDR(hdr); 
+				return(EXIT_FAILURE);
                         }
 
                 if (VERBOSE_LEVEL>7) fprintf(stdout,"FLOWMON 125 %i\n", (int)hdr->NRec);

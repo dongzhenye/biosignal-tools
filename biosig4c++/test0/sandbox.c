@@ -5,8 +5,8 @@
     The functions will be either fixed, then they are moved to another place;
     or the functions are discarded. Do not rely on the interface in this function
 
-    $Id: sandbox.c,v 1.5 2009-04-16 20:19:17 schloegl Exp $
-    Copyright (C) 2008,2009,2010,2011,2012 Alois Schloegl <alois.schloegl@ist.ac.at>
+    $Id$
+    Copyright (C) 2008,2009,2010,2011,2012 Alois Schloegl <alois.schloegl@gmail.com>
     This file is part of the "BioSig for C/C++" repository
     (biosig4c++) at http://biosig.sf.net/
 
@@ -455,8 +455,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA #%i: <%s> [%i:+%i]\n",k,ext,start,leng
 				Levels = *(int32_t*)(hdr->AS.Header+start+4);
 				if (SWAP) Levels = bswap_32(Levels);
 				if (Levels>5) {
-					B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-					B4C_ERRMSG = "Heka/Patchmaster format with more than 5 levels not supported;";
+					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster format with more than 5 levels not supported");
 					return;
 				}
 
@@ -643,8 +642,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i \n",(int)(po
 						default:
 							DigMax =  NAN;
 							DigMin =  NAN;
-							B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-							B4C_ERRMSG = "Heka/Patchmaster: data type not supported.";
+							biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: data type not supported");
 						};
 
 						if (SWAP) {
@@ -688,8 +686,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i \n",(int)(po
 							// samples per sweep
 							if (k4==0) SPR = spr;
 							else if (SPR != spr) {
-								B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-								B4C_ERRMSG = "Heka/Patchmaster: number of samples among channels within a single sweep do not match.";
+								biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: number of samples among channels within a single sweep do not match.");
 								return;
 							}
 						}
@@ -759,28 +756,23 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %g/%g %g/%g \n",(in
 						}
 
 						if (YOffset) {
-                                                        B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-                                                        B4C_ERRMSG = "Heka/Patchmaster: Yoffset is not zero.";
+                                                        biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: Yoffset is not zero");
 						}
 						if (hdr->AS.Header[pos+220] != 1) {
-                                                        B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-                                                        B4C_ERRMSG = "Heka/Patchmaster: ValidYRange not set.";
+                                                        biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: ValidYRange not set");
 						}
 /* OBSOLETE
 						if (hdr->CHANNEL[ns].GDFTYP != gdftyp) {
-                                                        B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-                                                        B4C_ERRMSG = "Heka/Patchmaster: data types do not match.";
+                                                        biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: data types do not match");
 						}
 */ 
 						if ((pdc & 0xFFE0) != (hdr->CHANNEL[ns].PhysDimCode & 0xFFE0)) {
                                                         fprintf(stdout, "Warning: Yunits do not match #%i,%f-%fHz\n",ns, DT[ns],dT);
-                                                        B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-                                                        B4C_ERRMSG = "Heka/Patchmaster: Yunits do not match.";
+                                                        biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: Yunits do not match");
 						}
                                                 if ( abs( DT[ns] - dT) > 1e-9 * dT) {
 							fprintf(stdout, "Warning sampling intervals do not match #%i,%f-%fHz\n",ns, DT[ns],dT);
-                                                        B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-                                                        B4C_ERRMSG = "Heka/Patchmaster: sampling intervals do not match.";
+                                                        biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: sampling intervals do not match");
                                                 }
 
 if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%i %i/%i %i/%i \n",(int)(pos+StartOfData),ns,AdcChan,Label,hdr->SampleRate,Fs,k1,K1,k2,K2,k3,K3,k4,K4);
@@ -789,8 +781,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 						// read number of children -- this should be 0 - ALWAYS;
 						K5 = (*(uint32_t*)(hdr->AS.Header+pos-4));
 						if (K5) {
-							B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-							B4C_ERRMSG = "Heka/Patchmaster: Level 4 has some children.";
+							biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: Level 4 has some children");
 						}
 					}	// end loop k4
 
@@ -821,7 +812,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 			hdr->AS.bpb += hc->SPR * GDFTYP_BITS[hc->GDFTYP]>>3;
 		}
 
-		if (B4C_ERRNUM) {
+		if (hdr->AS.B4C_ERRNUM) {
 #ifdef NO_BI
 			if (BI) free(BI);
 #endif
@@ -833,8 +824,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 		if (tmpptr!=NULL) 
 			hdr->AS.rawdata = (uint8_t*) tmpptr;
 		else {
-                        B4C_ERRNUM = B4C_MEMORY_ALLOCATION_FAILED;
-                        B4C_ERRMSG = "memory allocation failed - not enough memory!";
+                        biosigERROR(hdr, B4C_MEMORY_ALLOCATION_FAILED, "memory allocation failed - not enough memory!");
                         return;
 		}	
 		memset(hdr->AS.rawdata, 0xff, hdr->NRec * hdr->AS.bpb); 	// initialize with NAN's
@@ -953,8 +943,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA+L3 @%i=\t%i/%i %i/%i %i/%i sel=%i\n",(
 						case 2: gdftyp = 16; break;	// float32
 						case 3: gdftyp = 17; break;	// float64
 						default: 
-							B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-							B4C_ERRMSG = "Heka/Patchmaster unknown data type is used.";
+							biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster unknown data type is used");
 						};
 
 						if (SWAP) {
@@ -1132,8 +1121,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA+L4 @%i= #%i,%i,%i/%i %s\t%i/%i %i/%i %
 	}
 
 	else if (hdr->TYPE==HEKA) {
-		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-		B4C_ERRMSG = "Heka/Patchmaster format has unsupported version number.";
+		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster format has unsupported version number");
         }
 }
 
@@ -1189,8 +1177,7 @@ int sopen_zzztest(HDRTYPE* hdr) {
 		    			hdr->SampleRate = 1.0 / dur;
 				}
 				else if (deltaT != dur) {
-					B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-					B4C_ERRMSG = "different sampling rates not supported for ITX format";
+					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "different sampling rates not supported for ITX format");
 				}
 			}
 			else if (!strncmp(line,"X SetScale y,",13)) {
@@ -1303,8 +1290,7 @@ int sopen_unipro_read(HDRTYPE* hdr) {
 		hdr->Patient.Birthday = tm_time2gdf_time(&t0);
 
 		// filesize = leu32p(hdr->AS.Header + 0x24);
-		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-		B4C_ERRMSG = "UNIPRO not supported";
+		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "UNIPRO not supported");
 		return(0);
 }
 
@@ -1437,8 +1423,7 @@ int sopen_dicom_read(HDRTYPE* hdr) {
 				else if (!memcmp(hdr->AS.Header+pos-8,"SS",2))
 					c = lei16p(hdr->AS.Header+pos);
 				else  {
-					B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-					B4C_ERRMSG = "DICOM (0002,0000): unsupported";
+					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "DICOM (0002,0000): unsupported");
 				}
 				EndOfGroup2 = c + pos;
 				break;

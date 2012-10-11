@@ -1,7 +1,7 @@
 /*
 
-    $Id: sopen_hl7aecg.c,v 1.36 2009/04/09 13:54:04 schloegl Exp $
-    Copyright (C) 2006,2007,2009,2011 Alois Schloegl <alois.schloegl@gmail.com>
+    $Id$
+    Copyright (C) 2006,2007,2009,2011,2012 Alois Schloegl <alois.schloegl@gmail.com>
     Copyright (C) 2007 Elias Apostolopoulos
     Copyright (C) 2011 Stoyan Mihaylov
 
@@ -892,9 +892,9 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 		hdr->FLAG.OVERFLOWDETECTION = 0;
 
 		if (VERBOSE_LEVEL>7) {
-			fprintf(stdout,"hl7r: [430] %i\n",B4C_ERRNUM); 
+			fprintf(stdout,"hl7r: [430] %i\n",hdr->AS.B4C_ERRNUM); 
 			hdr2ascii(hdr,stdout,3);
-			fprintf(stdout,"hl7r: [431] %i\n",B4C_ERRNUM); 
+			fprintf(stdout,"hl7r: [431] %i\n",hdr->AS.B4C_ERRNUM); 
 		}
 
 	    } else {
@@ -954,8 +954,7 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
 	xmlAddChild(root, node);
  
 	if (ifopen(hdr, "w")) {
-		B4C_ERRNUM = B4C_CANNOT_WRITE_FILE;
-		B4C_ERRMSG = "Cannot open file for writing";
+		biosigERROR(hdr, B4C_CANNOT_WRITE_FILE, "Cannot open file for writing");
 	} 
 	else if (hdr->FILE.COMPRESSION) 
 		xmlElemDump(hdr->FILE.gzFID, doc, root);

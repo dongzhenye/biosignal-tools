@@ -45,6 +45,7 @@
 
 /* TODO: ensure that hdr->CHANNEL[.].TOffset gets initialized after very alloc() */
 
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <float.h>
@@ -73,8 +74,13 @@
 
 char * xgethostname (void);
 
-int B4C_ERRNUM  = 0;
-const char *B4C_ERRMSG;
+/*
+ TODO: 
+   error handling must use error variables local to each HDR
+   otherwise, sopen() etc. is not re-entrant. 
+ */
+int B4C_ERRNUM ATT_DEPREC = 0;
+const char *B4C_ERRMSG ATT_DEPREC;
 
 #ifdef WITH_CHOLMOD
 #ifdef __APPLE__
@@ -1212,8 +1218,7 @@ void FreeTextEvent(HDRTYPE* hdr,size_t N_EVENT, const char* annotation) {
 		hdr->EVENT.LenCodeDesc++;
 	}
 	if (hdr->EVENT.LenCodeDesc > 255) {
-		B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
-		B4C_ERRMSG = "Maximum number of user-defined events (256) exceeded";
+		biosigERROR(hdr, B4C_INSUFFICIENT_MEMORY, "Maximum number of user-defined events (256) exceeded");
 	}
 }
 
@@ -1275,18 +1280,10 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	size_t BitsPerBlock;
 
 	EndianTest.testword = 0x4a3b2c1d;
-	LittleEndian = (EndianTest.testbyte[0]==0x1d);
+	LittleEndian = (EndianTest.testbyte[0]==0x1d && EndianTest.testbyte[1]==0x2c  && EndianTest.testbyte[2]==0x3b  && EndianTest.testbyte[3]==0x4a );
 
-	if  ((LittleEndian) && (__BYTE_ORDER == __BIG_ENDIAN))	{
-		B4C_ERRNUM = B4C_ENDIAN_PROBLEM;
-		B4C_ERRMSG = "Panic: mixed results on Endianity test.";
-		return(NULL);
-	}
-	if  ((!LittleEndian) && (__BYTE_ORDER == __LITTLE_ENDIAN))	{
-		B4C_ERRNUM = B4C_ENDIAN_PROBLEM;
-		B4C_ERRMSG = "Panic: mixed results on Endianity test.";
-		return(NULL);
-	}
+	assert (  ( LittleEndian) && (__BYTE_ORDER == __LITTLE_ENDIAN) 
+	       || (!LittleEndian) && (__BYTE_ORDER == __BIG_ENDIAN   ) );
 
 	hdr->FileName = NULL;
 	hdr->FILE.OPEN = 0;
@@ -1299,6 +1296,8 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->FILE.gzFID = 0;
 #endif
 
+	hdr->AS.B4C_ERRNUM = B4C_NO_ERROR;
+	hdr->AS.B4C_ERRMSG = NULL;
 	hdr->AS.Header = NULL;
 	hdr->AS.rawEventData = NULL;
 	hdr->AS.auxBUF = NULL;
@@ -1325,7 +1324,7 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->data.block = NULL;
 	hdr->T0 = (gdf_time)0;
 	hdr->tzmin = 0;
-	hdr->ID.Equipment = *(uint64_t*) & "b4c_1.2 ";
+	hdr->ID.Equipment = *(uint64_t*) & "b4c_1.4 ";
 	hdr->ID.Manufacturer._field[0]    = 0;
 	hdr->ID.Manufacturer.Name         = NULL;
 	hdr->ID.Manufacturer.Model        = NULL;
@@ -2283,7 +2282,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 
 	    	hdr->AS.Header = (uint8_t*) realloc(hdr->AS.Header, hdr->HeadLen);
 	    	if (hdr->AS.Header == NULL) {
-	    		B4C_ERRNUM = B4C_MEMORY_ALLOCATION_FAILED;
+	    		biosigERROR(hdr, B4C_MEMORY_ALLOCATION_FAILED, "Memory allocation failed");
 			return; 
 	    	}
 	     	sprintf((char*)hdr->AS.Header,"GDF %4.2f",hdr->VERSION);
@@ -2724,17 +2723,15 @@ int gdfbin2struct(HDRTYPE *hdr)
 		    	hdr->HeadLen 	= leu64p(hdr->AS.Header+184);
 	    	}
 	    	else {
-    			B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-	    		B4C_ERRMSG = "Error SOPEN(GDF); invalid version number.";
-	    		return(B4C_ERRNUM);
+    			biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Error SOPEN(GDF); invalid version number.");
+	    		return (hdr->AS.B4C_ERRNUM);
 	    	}
 
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"[GDFBIN2STRUCT 242] #%i Ver=%f\n", hdr->NS, hdr->VERSION);
 
 		if (hdr->HeadLen < (256u * (hdr->NS + 1u))) {
-			B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-			B4C_ERRMSG = "(GDF) Length of Header is too small";
-			return(B4C_ERRNUM);
+			biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "(GDF) Length of Header is too small");
+			return (hdr->AS.B4C_ERRNUM);
 		}
 
 		hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
@@ -2846,9 +2843,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"#%2i: <%s> %i %i\n",k,hc->Label,(int)len,(i
 				hdr->SPR = lcm(hdr->SPR,hdr->CHANNEL[k].SPR);
 
 			if (GDFTYP_BITS[hdr->CHANNEL[k].GDFTYP]==0) {
-				B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-				B4C_ERRMSG = "GDF: Invalid or unsupported GDFTYP";
-				return(B4C_ERRNUM);
+				biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "GDF: Invalid or unsupported GDFTYP");
+				return(hdr->AS.B4C_ERRNUM);
 			}
 		}
 		hdr->SampleRate = ((double)(hdr->SPR))/Dur;
@@ -2945,7 +2941,7 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"user-specific events defined\n");
 		}
 
 		// if (VERBOSE_LEVEL>8) fprintf(stdout,"[GDF 217] #=%li\n",iftell(hdr));
-		return(B4C_ERRNUM);
+		return(hdr->AS.B4C_ERRNUM);
 }
 
 /*********************************************************************************
@@ -3074,8 +3070,7 @@ int RerefCHANNEL(HDRTYPE *hdr, void *arg2, char Mode)
 #ifndef CHOLMOD_H
                 if (!arg2 || !Mode) return(0); // do nothing
 
-                B4C_ERRNUM = B4C_REREF_FAILED;
-                B4C_ERRMSG = "Error RerefCHANNEL: cholmod library is missing";
+                biosigERROR(hdr, B4C_REREF_FAILED, "Error RerefCHANNEL: cholmod library is missing");
                 return(1);
 #else
                 if (arg2==NULL) Mode = 0; // do nothing
@@ -3123,8 +3118,7 @@ int RerefCHANNEL(HDRTYPE *hdr, void *arg2, char Mode)
                 for (k=0, NS=0; k<hdr->NS; k++)
                         if (hdr->CHANNEL[k].OnOff) NS++;
                 if (NS - A->nrow) {
-                        B4C_ERRNUM = B4C_REREF_FAILED;
-                        B4C_ERRMSG = "Error REREF_CHAN: size of data does not fit ReRef-matrix";
+                        biosigERROR(hdr, B4C_REREF_FAILED, "Error REREF_CHAN: size of data does not fit ReRef-matrix");
                         return(1);
                 }
 
@@ -3279,8 +3273,7 @@ int read_header(HDRTYPE *hdr) {
 
         if (count < hdr->HeadLen) {
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"ambigous GDF header size: %i %i\n",(int)count,hdr->HeadLen);
-                B4C_ERRNUM = B4C_INCOMPLETE_FILE;
-                B4C_ERRMSG = "reading GDF header failed";
+                biosigERROR(hdr, B4C_INCOMPLETE_FILE, "reading GDF header failed");
                 return(-2);
 	}
 
@@ -3343,8 +3336,7 @@ int read_header(HDRTYPE *hdr) {
 			c = ifread(hdr->AS.rawEventData+8, sze, hdr->EVENT.N, hdr);
 			ifseek(hdr, hdr->HeadLen, SEEK_SET);
 			if (c < hdr->EVENT.N) {
-                                B4C_ERRNUM = B4C_INCOMPLETE_FILE;
-                                B4C_ERRMSG = "reading GDF eventtable failed";
+                                biosigERROR(hdr, B4C_INCOMPLETE_FILE, "reading GDF eventtable failed");
                                 return(-3);
 			}
 			rawEVT2hdrEVT(hdr);
@@ -3390,8 +3382,7 @@ HDRTYPE* sopen(const char* FileName, const char* MODE, HDRTYPE* hdr)
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN( %s, %s) \n",FileName, MODE);
 
 	if (FileName == NULL) {
-		B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
-		B4C_ERRMSG = "no filename specified";
+		biosigERROR(hdr, B4C_CANNOT_OPEN_FILE, "no filename specified");
 		return (hdr); 
 	}
 	if (hdr==NULL)
@@ -3425,8 +3416,7 @@ if (!strncmp(MODE,"a",1)) {
 		return( sopen(FileName, "w", hdr) );
 	} 
 	else if (hdr->FILE.size < 256) {
-		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-    		B4C_ERRMSG = "Error SOPEN(APPEND);  file format not supported.";
+		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Error SOPEN(APPEND);  file format not supported.");
 		return (hdr);
 	} 
 	else {
@@ -3437,8 +3427,7 @@ if (!strncmp(MODE,"a",1)) {
 
 	if (hdr2->TYPE != GDF) {
 		// currently only GDF is tested and supported
-		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-    		B4C_ERRMSG = "Error SOPEN(APPEND);  file format not supported.";
+		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Error SOPEN(APPEND);  file format not supported.");
 		destructHDR(hdr2);
 		return (hdr);
 	} 
@@ -3446,8 +3435,7 @@ if (!strncmp(MODE,"a",1)) {
 	// test for additional restrictions
 	if ( hdr2->EVENT.N > 0 && hdr2->FILE.COMPRESSION ) {
 		// gzopen does not support "rb+" (simultaneous read/write) but can only append at the end of file
-		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-    		B4C_ERRMSG = "Error SOPEN(GDF APPEND);  cannot append to compressed GDF file containing event table.";
+		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Error SOPEN(GDF APPEND);  cannot append to compressed GDF file containing event table.");
 		destructHDR(hdr2);
 		return (hdr);
 	} 
@@ -3461,8 +3449,7 @@ if (!strncmp(MODE,"a",1)) {
 		ifseek(hdr, hdr->HeadLen + hdr->NRec*hdr->AS.bpb, SEEK_SET);
 	}
 	if (!hdr->FILE.OPEN) {
-		B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
-    		B4C_ERRMSG = "Error SOPEN(APPEND); Cannot open file.";
+		biosigERROR(hdr, B4C_CANNOT_OPEN_FILE, "Error SOPEN(APPEND); Cannot open file.");
 		return(hdr);
 	}
 	hdr->FILE.OPEN = 2;
@@ -3477,8 +3464,7 @@ else if (!strncmp(MODE,"r",1)) {
     		char *hostname = (char*)hdr->FileName+7;
     		char *t = strrchr(hostname,'/');
     		if (t==NULL) {
-			B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
-    			B4C_ERRMSG = "SOPEN-NETWORK: file identifier not specifed";
+			biosigERROR(hdr, B4C_CANNOT_OPEN_FILE, "SOPEN-NETWORK: file identifier not specifed");
     			return(hdr);
     		}
     		*t=0;
@@ -3486,8 +3472,7 @@ else if (!strncmp(MODE,"r",1)) {
 		int sd,s;
 		sd = bscs_connect(hostname);
 		if (sd<0) {
-			B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
-			B4C_ERRMSG = "could not connect to server";
+			biosigERROR(hdr, B4C_CANNOT_OPEN_FILE, "could not connect to server");
 			return(hdr);
 		}
   		hdr->FILE.Des = sd;
@@ -3528,8 +3513,7 @@ else if (!strncmp(MODE,"r",1)) {
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, tmpfid); 
 	                if (curl_easy_perform(curl) != CURLE_OK) {
 				fprintf(stderr,"CURL ERROR: %s\n",errbuffer);
-				B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
-		    		B4C_ERRMSG = "Error SOPEN(READ); file download failed.";
+				biosigERROR(hdr, B4C_CANNOT_OPEN_FILE, "Error SOPEN(READ); file download failed.");
 				fclose(tmpfid);
 				return(hdr);
 			}
@@ -3583,8 +3567,7 @@ else if (!strncmp(MODE,"r",1)) {
 	        hdr->FILE.COMPRESSION = 0;
 		hdr   = ifopen(hdr,"rb");
 		if (!hdr->FILE.OPEN) {
-			B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
-	    		B4C_ERRMSG = "Error SOPEN(READ); Cannot open file.";
+			biosigERROR(hdr, B4C_CANNOT_OPEN_FILE, "Error SOPEN(READ); Cannot open file.");
 	    		return(hdr);
 		}
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN 101:\n");
@@ -3603,8 +3586,7 @@ else if (!strncmp(MODE,"r",1)) {
 			count = ifread(hdr->AS.Header, 1, 512, hdr);
 	        	hdr->AS.Header[512]=0;
 #else
-			B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-		    	B4C_ERRMSG = "Error SOPEN(READ); *.gz file not supported because not linked with zlib.";
+			biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Error SOPEN(READ); *.gz file not supported because not linked with zlib.");
 #endif
 	    	}
 
@@ -3621,8 +3603,7 @@ else if (!strncmp(MODE,"r",1)) {
 	    	hdr->TYPE = MIT;
 
     	if (hdr->TYPE == unknown) {
-    		B4C_ERRNUM = B4C_FORMAT_UNKNOWN;
-    		B4C_ERRMSG = "ERROR BIOSIG4C++ SOPEN(read): Dataformat not known.\n";
+    		biosigERROR(hdr, B4C_FORMAT_UNKNOWN, "ERROR BIOSIG4C++ SOPEN(read): Dataformat not known.\n");
     		ifclose(hdr);
 		return(hdr);
 	}
@@ -3644,8 +3625,7 @@ else if (!strncmp(MODE,"r",1)) {
 		Header1[6]=0;
     		char *t = strrchr(hostname,'/');
     		if (t==NULL) {
-			B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
-    			B4C_ERRMSG = "SOPEN-NETWORK: file identifier not specifed";
+			biosigERROR(hdr, B4C_CANNOT_OPEN_FILE, "SOPEN-NETWORK: file identifier not specifed");
     			return(hdr);
     		}
     		t[0]=0;
@@ -3654,8 +3634,7 @@ else if (!strncmp(MODE,"r",1)) {
 		sd = bscs_connect(hostname);
 		if (sd<0) {
     			fprintf(stderr,"could not connect to %s\n",hostname);
-			B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
-			B4C_ERRMSG = "could not connect to server";
+			biosigERROR(hdr, B4C_CANNOT_OPEN_FILE, "could not connect to server");
 			return(hdr);
 		}
   		hdr->FILE.Des = sd;
@@ -3680,8 +3659,7 @@ else if (!strncmp(MODE,"r",1)) {
     	}
     	else if ((hdr->TYPE == EDF) || (hdr->TYPE == BDF))	{
                 if (count < 256) {
-                        B4C_ERRNUM = B4C_INCOMPLETE_FILE;
-                        B4C_ERRMSG = "reading BDF/EDF fixed header failed";
+                        biosigERROR(hdr,  B4C_INCOMPLETE_FILE, "reading BDF/EDF fixed header failed");
                         return(hdr);
                 }
 
@@ -3715,9 +3693,8 @@ else if (!strncmp(MODE,"r",1)) {
 	    	hdr->NS		= atoi(memcpy(tmp,Header1+252,4));
 	    	hdr->HeadLen	= atoi(memcpy(tmp,Header1+184,8));
 	    	if (hdr->HeadLen != ((hdr->NS+1u)<<8)) {
-	    		B4C_ERRNUM = B4C_UNSPECIFIC_ERROR;
-	    		B4C_ERRMSG = "EDF/BDF corrupted: HDR.NS and HDR.HeadLen do not fit";
-	    		if (VERBOSE_LEVEL>8)
+	    		biosigERROR(hdr, B4C_UNSPECIFIC_ERROR, "EDF/BDF corrupted: HDR.NS and HDR.HeadLen do not fit");
+	    		if (VERBOSE_LEVEL > 7)
 	    		fprintf(stdout,"HeadLen=%i,%i\n",hdr->HeadLen ,(hdr->NS+1)<<8);
 	    	};
 
@@ -3821,8 +3798,7 @@ else if (!strncmp(MODE,"r",1)) {
 	    	count  += ifread(hdr->AS.Header+count, 1, hdr->HeadLen-count, hdr);
 
                 if (count < hdr->HeadLen) {
-                        B4C_ERRNUM = B4C_INCOMPLETE_FILE;
-                        B4C_ERRMSG = "reading BDF/EDF variable header failed";
+                        biosigERROR(hdr, B4C_INCOMPLETE_FILE, "reading BDF/EDF variable header failed");
                         return(hdr);
                 }
 
@@ -3998,7 +3974,7 @@ else if (!strncmp(MODE,"r",1)) {
 						hdr->EVENT.CHN = (uint16_t*)realloc(hdr->EVENT.CHN, hdr->EVENT.N*sizeof(*hdr->EVENT.CHN));
 					}
 					
-					char *s0 = Marker+k; 		// Onset 
+					unsigned char *s0 = Marker+k; 		// Onset 
 					char *s2 = NULL; 
 					while (Marker[k] != 20) {
 						if (Marker[k] == 21) s2=Marker+k+1;	// Duration
@@ -4285,8 +4261,7 @@ else if (!strncmp(MODE,"r",1)) {
 				hc->DigMin = -32678;
 				break;
 			default:
-				B4C_ERRNUM = B4C_UNSPECIFIC_ERROR;
-				B4C_ERRMSG = "SOPEN(ACQ-READ): invalid channel type.";
+				biosigERROR(hdr, B4C_UNSPECIFIC_ERROR, "SOPEN(ACQ-READ): invalid channel type.");
 			};
 			hc->PhysMax = hc->DigMax * hc->Cal + hc->Off;
 			hc->PhysMin = hc->DigMin * hc->Cal + hc->Off;
@@ -4802,8 +4777,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 						}
 					}
 					else {
-						B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-						B4C_ERRMSG = "ASCII/BIN: data type unsupported";
+						biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "ASCII/BIN: data type unsupported");
 					}
 					hdr->AS.bpb  = lengthRawData;
 				}
@@ -4898,7 +4872,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
     	}
 
 	else if (hdr->TYPE==BCI2000) {
-		if (VERBOSE_LEVEL>8)
+		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"[201] start reading BCI2000 data!\n");
 
 		char *ptr, *t1;
@@ -4907,7 +4881,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 		hdr->HeadLen = 0;
 		ptr = strstr((char*)hdr->AS.Header,"HeaderLen=");
 		if (ptr==NULL)
-			B4C_ERRNUM = B4C_FORMAT_UNKNOWN;
+			biosigERROR(hdr, B4C_FORMAT_UNKNOWN, "not a BCI2000 format");
 		else {
 			/* read whole header */
 			hdr->HeadLen = (typeof(hdr->HeadLen)) strtod(ptr+10,&ptr);
@@ -4926,14 +4900,14 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 		t1  = strtok((char*)hdr->AS.Header,"\x0a\x0d");
 		ptr = strstr(t1,"SourceCh=");
 		if (ptr==NULL)
-			B4C_ERRNUM = B4C_FORMAT_UNKNOWN;
+			biosigERROR(hdr, B4C_FORMAT_UNKNOWN, "not a BCI2000 format");
 		else
 			hdr->NS = (typeof(hdr->NS)) strtod(ptr+9,&ptr);
 
 		/* decode length of state vector */
 		ptr = strstr(t1,"StatevectorLen=");
 		if (ptr==NULL)
-			B4C_ERRNUM = B4C_FORMAT_UNKNOWN;
+			biosigERROR(hdr, B4C_FORMAT_UNKNOWN, "not a BCI2000 format");
 		else
 		    	BCI2000_StatusVectorLength = (size_t) strtod(ptr+15,&ptr);
 
@@ -4949,11 +4923,9 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 		else if (!strncmp(ptr+12,"uint32",5))	gdftyp = 6;
 		else if (!strncmp(ptr+12,"uint24",5))	gdftyp = 511+24;
 		else if (!strncmp(ptr+12,"float64",6))	gdftyp = 17;
-		else B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+		else biosigERROR(hdr, B4C_FORMAT_UNKNOWN, "SOPEN(BCI2000): invalid file format");
 
-		if (B4C_ERRNUM) {
-			/* return if any error has occured. */
-			B4C_ERRMSG = "ERROR 1234 SOPEN(BCI2000): invalid file format .\n";
+		if (hdr->AS.B4C_ERRNUM) {
 			return(hdr);
 		}
 
@@ -5513,7 +5485,7 @@ if (VERBOSE_LEVEL>8)
 			Header1[pos] = 0;	// line terminator
 			pos += strspn(Header1+pos+1,EOL)+1; // skip <CR><LF>
 
-			if (VERBOSE_LEVEL>8) fprintf(stdout,"[212]: %i pos=%i <%s>, ERR=%i\n",seq,(int)pos,t,B4C_ERRNUM);
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"[212]: %i pos=%i <%s>, ERR=%i\n",seq,(int)pos,t,hdr->AS.B4C_ERRNUM);
 
 			if (!strncmp(t,";",1)) 	// comments
 				;
@@ -5526,8 +5498,7 @@ if (VERBOSE_LEVEL>8)
 				FLAG_ASCII = 1;
 				gdftyp = 17;
 
-//				B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
-//				B4C_ERRMSG = "Error SOPEN(BrainVision): ASCII-format not supported (yet).";
+//				biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "Error SOPEN(BrainVision): ASCII-format not supported (yet).");
 			}
 			else if (!strncmp(t,"[Channel Infos]",14)) {
 				seq = 3;
@@ -5621,15 +5592,14 @@ if (VERBOSE_LEVEL>8)
 					sclose(hdr2);
 					destructHDR(hdr2);
 					free(mrkfile);
-					B4C_ERRNUM = 0; // reset error status - missing or incorrect marker file is not critical
+					biosigERROR(hdr, B4C_NO_ERROR, NULL); // reset error status - missing or incorrect marker file is not critical
 				}
 				else if (!strncmp(t,"DataFormat=BINARY",11))
 					;
 				else if (!strncmp(t,"DataFormat=ASCII",16)) {
 					FLAG_ASCII = 1;
 					gdftyp     = 17;
-//					B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
-//					B4C_ERRMSG = "Error SOPEN(BrainVision): ASCII-format not supported (yet).";
+//					biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "Error SOPEN(BrainVision): ASCII-format not supported (yet).");
 				}
 				else if (!strncmp(t,"DataOrientation=VECTORIZED",25))
 					orientation = VEC;
@@ -5638,8 +5608,7 @@ if (VERBOSE_LEVEL>8)
 				else if (!strncmp(t,"DataType=TIMEDOMAIN",19))
 					;
 				else if (!strncmp(t,"DataType=",9)) {
-					B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
-					B4C_ERRMSG = "Error SOPEN(BrainVision): DataType is not TIMEDOMAIN";
+					biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "Error SOPEN(BrainVision): DataType is not TIMEDOMAIN");
 				}
 				else if (!strncmp(t,"NumberOfChannels=",17)) {
 					hdr->NS = atoi(t+17);
@@ -5671,8 +5640,7 @@ if (VERBOSE_LEVEL>8)
 					hdr->FLAG.OVERFLOWDETECTION = 1;
 				}
 				else if (!strncmp(t,"BinaryFormat",12)) {
-					B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
-					B4C_ERRMSG = "Error SOPEN(BrainVision): BinaryFormat=<unknown>";
+					biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "Error SOPEN(BrainVision): BinaryFormat=<unknown>");
 				}
 				else if (!strncmp(t,"UseBigEndianOrder=NO",20)) {
 					// hdr->FLAG.SWAP = (__BYTE_ORDER == __BIG_ENDIAN);
@@ -5692,14 +5660,13 @@ if (VERBOSE_LEVEL>8)
 					SKIPCOLUMNS = atoi(t+12);
 				}
 				else if (0) {
-					B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
-					B4C_ERRMSG = "Error SOPEN(BrainVision): BinaryFormat=<unknown>";
+					biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "Error SOPEN(BrainVision): BinaryFormat=<unknown>");
 					return(hdr);
 				}
 			}
 			else if (seq==3) {
 				if (VERBOSE_LEVEL==9)
-					fprintf(stdout,"BVA: seq=%i,line=<%s>,ERR=%i\n",seq,t,B4C_ERRNUM );
+					fprintf(stdout,"BVA: seq=%i,line=<%s>,ERR=%i\n",seq,t,hdr->AS.B4C_ERRNUM );
 
 				if (!strncmp(t,"Ch",2)) {
 					char* ptr;
@@ -5708,8 +5675,7 @@ if (VERBOSE_LEVEL>8)
 
 					int n = strtoul(t+2, &ptr, 10)-1;
 					if ((n < 0) || (n >= hdr->NS)) {
-						B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-						B4C_ERRMSG = "Error SOPEN(BrainVision): invalid channel number";
+						biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Error SOPEN(BrainVision): invalid channel number");
 						ifclose(hdr);
 						return(hdr);
 					}
@@ -5929,8 +5895,7 @@ if (VERBOSE_LEVEL>8)
 	    				gdftyp = 5;
 	    			}
 	    			else {
-	    				B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-	    				B4C_ERRMSG = "CNT/EEG: type of format not supported";
+	    				biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CNT/EEG: type of format not supported");
 			    		return(hdr);
 	    			}
 		    	}
@@ -6427,8 +6392,7 @@ if (VERBOSE_LEVEL>8)
                 case TI_16D:
                 case CI_16D:
                 default:
-                	B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-                	B4C_ERRMSG = "EBS: unsupported Encoding";
+                	biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "EBS: unsupported Encoding");
                 	return(hdr);
                 }
 
@@ -6792,8 +6756,7 @@ if (VERBOSE_LEVEL>8)
 	}
 
 	else if (hdr->TYPE==EEProbe) {
-		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-		B4C_ERRMSG = "EEProbe currently not supported";
+		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "EEProbe currently not supported");
 	}
 
 	else if (hdr->TYPE==EGI) {
@@ -7015,8 +6978,7 @@ if (VERBOSE_LEVEL>8)
 		count  += ifread(hdr->AS.Header+count, 1, hdr->HeadLen-count, hdr);
 
 		if (count < hdr->HeadLen) {
-			B4C_ERRNUM = B4C_INCOMPLETE_FILE;
-			B4C_ERRMSG = "EMSA file corrupted"; 
+			biosigERROR(hdr, B4C_INCOMPLETE_FILE, "EMSA file corrupted"); 
 		}
 		hdr->HeadLen = count;
 		
@@ -7039,7 +7001,7 @@ if (VERBOSE_LEVEL>8)
 			strncpy(tmp, (char*)(hdr->AS.Header+169), 8); 
 			for (k=0; k<8; k++) 
 				if (tmp[k]<'0' || tmp[k]>'9') 
-					B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
+					biosigERROR(hdr, B4C_FORMAT_UNKNOWN, NULL); // error ;
 			tmp[8] = 0; t.tm_mday = atoi(tmp+6); 
 			tmp[6] = 0; t.tm_mon = atoi(tmp+4)-1; 
 			tmp[4] = 0; t.tm_year  = atoi(tmp+4)-1900; 
@@ -7052,7 +7014,7 @@ if (VERBOSE_LEVEL>8)
 			strncpy(tmp, (char*)hdr->AS.Header+205, 8); 
 			for (k=0; k<8; k++) 
 				if (tmp[k]<'0' || tmp[k]>'9') 
-					B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
+					biosigERROR(hdr, B4C_FORMAT_UNKNOWN, NULL); // error ;
 			tmp[8] = 0; t.tm_mday  = atoi(tmp+6); 
 			tmp[6] = 0; t.tm_mon = atoi(tmp+4)-1; 
 			tmp[4] = 0; t.tm_year  = atoi(tmp+4)-1900; 
@@ -7061,17 +7023,17 @@ if (VERBOSE_LEVEL>8)
 			strncpy(tmp, (char*)hdr->AS.Header+214, 8); 
 			for (k=0; k<8; k++) {
 				if ((k==2 || k==5) && tmp[k] != ':') 
-					B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
+					biosigERROR(hdr, B4C_FORMAT_UNKNOWN, NULL); // error ;
 				else if (tmp[k]<'0' || tmp[k]>'9') 
-					B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
+					biosigERROR(hdr, B4C_FORMAT_UNKNOWN, NULL); // error ;
 			}
 			tmp[8] = 0; t.tm_sec = atoi(tmp+6); 
 			tmp[5] = 0; t.tm_min = atoi(tmp+3); 
 			tmp[2] = 0; t.tm_hour= atoi(tmp); 
 			hdr->T0 = tm_time2gdf_time(&t); 
 
-			if (B4C_ERRNUM) 
-				B4C_ERRMSG = "Reading EMSA file failed - invalid data / time format"; 
+			if (hdr->AS.B4C_ERRNUM) 
+				biosigERROR(hdr, B4C_FORMAT_UNKNOWN, "Reading EMSA file failed - invalid data / time format"); 
 			
 		}
 
@@ -7149,9 +7111,9 @@ if (VERBOSE_LEVEL>8)
 				char *tmp = buf;
 				for (k=0; k<8; k++) {
 					if ((k==2 || k==5) && tmp[k] != ':') 
-						B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
+						biosigERROR(hdr, B4C_FORMAT_UNKNOWN, NULL); // error ;
 					else if (tmp[k]<'0' || tmp[k]>'9') 
-						B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
+						biosigERROR(hdr, B4C_FORMAT_UNKNOWN, NULL); // error ;
 				}
 				tmp[2] = 0; 
 				tmp[5] = 0; 
@@ -7164,9 +7126,9 @@ if (VERBOSE_LEVEL>8)
 				tmp = buf+9;
 				for (k=0; k<8; k++) {
 					if ((k==2 || k==5) && tmp[k] != ':') 
-						B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
+						biosigERROR(hdr, B4C_FORMAT_UNKNOWN, NULL); // error ;
 					else if (tmp[k]<'0' || tmp[k]>'9') 
-						B4C_ERRNUM = B4C_FORMAT_UNKNOWN; // error ;
+						biosigERROR(hdr, B4C_FORMAT_UNKNOWN, NULL); // error ;
 				}
 				tmp[2] = 0; 
 				tmp[5] = 0; 
@@ -7373,8 +7335,7 @@ if (VERBOSE_LEVEL>8)
 	}
 
     	else if (hdr->TYPE==ET_MEG) {
-		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-		B4C_ERRMSG = "FLT/ET-MEG format not supported";
+		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "FLT/ET-MEG format not supported");
 	}
 
 	else if (hdr->TYPE==ETG4000) {
@@ -7580,8 +7541,7 @@ if (VERBOSE_LEVEL>8)
 		sopen_fef_read(hdr);
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"ASN1 [491]\n");
 #else
-		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-		B4C_ERRMSG = "VITAL/FEF Format not supported\n";
+		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "VITAL/FEF Format not supported");
 		return(hdr);
 
 #endif
@@ -7590,12 +7550,10 @@ if (VERBOSE_LEVEL>8)
     	else if (hdr->TYPE==HDF) {
 #ifdef WITH_HDF
                 if (sopen_hdf5(hdr) != 0) {
-        		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-        		B4C_ERRMSG = "Error reading HDF file\n";
+        		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Error reading HDF file");
                 }
 #else
-		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-		B4C_ERRMSG = "Format HDF not supported\n";
+		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Format HDF not supported");
 		ifclose(hdr);
 #endif
 		return(hdr);
@@ -7789,8 +7747,8 @@ if (VERBOSE_LEVEL>8)
                         fprintf(stdout,"[751] scaning %s,v%4.2f format \n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
 
 		if (!flagSupported) {
-			B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-			B4C_ERRMSG = "This ITX format is not supported. Possible reasons: not generated by Heka-Patchmaster, corrupted, physical units do not match between sweeos, or do not fullfil some other requirements\n";
+			biosigERROR(hdr, hdr->AS.B4C_ERRNUM,
+ "This ITX format is not supported. Possible reasons: not generated by Heka-Patchmaster, corrupted, physical units do not match between sweeos, or do not fullfil some other requirements");
 			return(hdr);
 		}
 
@@ -7993,12 +7951,10 @@ if (VERBOSE_LEVEL>8)
     	else if (hdr->TYPE==Matlab) {
 #ifdef WITH_MATIO
                 if (sopen_matlab(hdr) != 0) {
-        		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-        		B4C_ERRMSG = "Error reading MATLAB file\n";
+        		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Error reading MATLAB file");
                 }
 #else
-		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-		B4C_ERRMSG = "Format MAT not supported\n";
+		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Format MAT not supported");
 		ifclose(hdr);
 #endif
 		return(hdr);
@@ -8503,8 +8459,7 @@ if (VERBOSE_LEVEL>8)
 
 		if (strchr(line,'/') != NULL) {
 			NumberOfSegments = atol(strchr(line,'/')+1);
-			B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-			B4C_ERRMSG = "MIT/HEA/PhysioBank: multi-segment records are not supported\n";
+			biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "MIT/HEA/PhysioBank: multi-segment records are not supported");
 		}
 		hdr->NS = (typeof(hdr->NS))strtod(ptr+1,&ptr);		// number of channels
 
@@ -8518,15 +8473,13 @@ if (VERBOSE_LEVEL>8)
 			if (ptr[0]=='/') {
 				double CounterFrequency = strtod(ptr+1,&ptr);
 				if (fabs(CounterFrequency-hdr->SampleRate) > 1e-5) {
-					B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-					B4C_ERRMSG = "MIT format: Sampling rate and counter frequency differ - this is currently not supported !";	
+					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "MIT format: Sampling rate and counter frequency differ - this is currently not supported!");	
 				} 		
 			}
 			if (ptr[0]=='(') {
 				double BaseCounterValue = strtod(ptr+1,&ptr);
 				if (BaseCounterValue) {
-					B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-					B4C_ERRMSG = "MIT format: BaseCounterValue is not zero - this is currently not supported !";	
+					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "MIT format: BaseCounterValue is not zero - this is currently not supported !");	
 				} 		
 				ptr++; // skip ")"
 			}
@@ -8580,8 +8533,7 @@ if (VERBOSE_LEVEL>8)
 			fmt = (typeof(fmt))strtod(ptr+1,&ptr);
 			if (k==0) FMT = fmt;
 			else if (FMT != fmt) {
-				B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-				B4C_ERRMSG = "MIT/HEA/PhysioBank: different formats within a single data set is not supported\n";
+				biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "MIT/HEA/PhysioBank: different formats within a single data set is not supported");
 			}
 
 			size_t DIV=1;
@@ -8633,8 +8585,7 @@ if (VERBOSE_LEVEL>8)
 				gdftyp = 1;
 				hc->DigMax =  127.0;
 				hc->DigMin = -128.0;
-				B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-				B4C_ERRMSG = "MIT/HEA/PhysioBank format 8(diff) not supported.\n";
+				biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "MIT/HEA/PhysioBank format 8(diff) not supported");
 				break;
 			case 80:
 				gdftyp = 2; 	// uint8;
@@ -8687,13 +8638,11 @@ if (VERBOSE_LEVEL>8)
 				NUM = 4; DEN = 3;
 				hc->DigMax = ldexp( 1.0,9)-1.0;
 				hc->DigMin = ldexp(-1.0,9);
-				B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-				B4C_ERRMSG = "MIT/HEA/PhysioBank format 310/311 not supported.\n";
+				biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "MIT/HEA/PhysioBank format 310/311 not supported");
 				break;
 			default:
 				gdftyp = 0xffff;
-				B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-				B4C_ERRMSG = "MIT/HEA/PhysioBank: unknown format.\n";
+				biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "MIT/HEA/PhysioBank: unknown format");
 			}
 
 			hc->GDFTYP   = gdftyp;
@@ -8890,8 +8839,7 @@ if (VERBOSE_LEVEL>8)
 		    	fprintf(stdout,"[MIT 199] #%i: (%i) %s FMT=%i\n",(int)k+1,(int)nDatFiles,DatFiles[0],fmt);
 
 		if (nDatFiles != 1) {
-			B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-			B4C_ERRMSG = "MIT/HEA/PhysioBank: multiply data files within a single data set is not supported\n";
+			biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "MIT/HEA/PhysioBank: multiply data files within a single data set is not supported");
 			return(hdr);
 		}
 		hdr->AS.length  = hdr->NRec;
@@ -9070,8 +9018,7 @@ if (VERBOSE_LEVEL>8)
         	hdr->NS = 8;
         	// uint16_t gdftyp = 2;
 
-		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-		B4C_ERRMSG = "NeuroLogger HEX format not supported, yet";
+		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "NeuroLogger HEX format not supported, yet");
 		return(hdr);
 
 	}
@@ -9087,10 +9034,10 @@ if (VERBOSE_LEVEL>8)
 		case 0x0100:	// readnev1
 		case 0x0101:	// readnev1_1
 		case 0x0200:	// readnev2
-			//B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
+			//biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, NULL);
 			break;
 		default: 
-			B4C_ERRNUM = B4C_FORMAT_UNKNOWN;
+			biosigERROR(hdr, B4C_FORMAT_UNKNOWN, NULL);
 		}
 		const int H1Len = 28+16+32+256+4; 
 
@@ -9098,7 +9045,7 @@ if (VERBOSE_LEVEL>8)
 		// uint16_t fileFormat = beu16p(hdr->AS.Header+10);	
 		uint32_t HeadLen = leu32p(hdr->AS.Header+12);	
 		if (HeadLen < H1Len) {
-			B4C_ERRNUM = B4C_INCOMPLETE_FILE;
+			biosigERROR(hdr, B4C_INCOMPLETE_FILE, NULL);
 			return(hdr);
 		}
 		hdr->AS.bpb = leu32p(hdr->AS.Header+16);	
@@ -9216,8 +9163,7 @@ if (VERBOSE_LEVEL>8)
 			else  {
 /*
 				// IGNORE 	
-				B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-				B4C_ERRMSG = "NEV: unknown extended header";			
+				biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "NEV: unknown extended header");
 */
 			}
 		}
@@ -9262,8 +9208,7 @@ if (VERBOSE_LEVEL>8)
 #endif
 
 		ifclose(hdr);
-		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-		B4C_ERRMSG = "Format NIFTI not supported\n";
+		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Format NIFTI not supported");
 		return(hdr);
 	}
 
@@ -9395,8 +9340,7 @@ if (VERBOSE_LEVEL>8)
 							DigMax =  ldexp(1.0,-7);
 							break;
 						default: 
-							B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-							B4C_ERRMSG = "Format Persyst: unsupported data type\n";
+							biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Format Persyst: unsupported data type");
 						}
 					}
 					break;
@@ -9554,8 +9498,7 @@ if (VERBOSE_LEVEL>8)
 			if (tmpstr!=NULL) 
 				strcpy(tmpstr,datfile);
 			else {
-		    		B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
-		    		B4C_ERRMSG = "Format Persyst: cannot open dat file.";
+		    		biosigERROR(hdr, B4C_CANNOT_OPEN_FILE, "Format Persyst: cannot open dat file.");
 			}
 		}
 		else {
@@ -9585,8 +9528,7 @@ if (VERBOSE_LEVEL>8)
 			}
 		}
 		else {
-	    		B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
-	    		B4C_ERRMSG = "Format Persyst: cannot open dat file.";
+	    		biosigERROR(hdr, B4C_CANNOT_OPEN_FILE, "Format Persyst: cannot open dat file.");
 		}	
 
 		ifopen(hdr,"r");
@@ -9665,8 +9607,7 @@ if (VERBOSE_LEVEL>8)
 			hc->LeadIdCode = 0; 
 		}
 
-    		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-    		B4C_ERRMSG = "Format RDF (UCSD ERPSS) not supported,yet.";
+    		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Format RDF (UCSD ERPSS) not supported");
 	}
 
 	else if (hdr->TYPE==SCP_ECG) {
@@ -9675,11 +9616,10 @@ if (VERBOSE_LEVEL>8)
 		count += ifread(hdr->AS.Header+count, 1, hdr->HeadLen-count, hdr);
 		uint16_t crc   = CRCEvaluate(hdr->AS.Header+2,hdr->HeadLen-2);
 		if ( leu16p(hdr->AS.Header) != crc) {
-			B4C_ERRNUM = B4C_CRC_ERROR;
-			B4C_ERRMSG = "Warning SOPEN(SCP-READ): Bad CRC!";
+			biosigERROR(hdr, B4C_CRC_ERROR, "Warning SOPEN(SCP-READ): Bad CRC!");
 		}
 		sopen_SCP_read(hdr);
-		serror();	// report and reset error, but continue
+		serror2(hdr);	// report and reset error, but continue
 		// hdr->FLAG.SWAP = 0; 	// no swapping
 		hdr->FILE.LittleEndian = (__BYTE_ORDER == __LITTLE_ENDIAN); 	// no swapping
 		hdr->AS.length = hdr->NRec;
@@ -9997,8 +9937,7 @@ if (VERBOSE_LEVEL>8)
 	 	    	hdr->NS    = atoi(tmp);
 		}
 		if (!hdr->NS) {
-			B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-			B4C_ERRMSG = "TMSiLOG: multiple data files not supported\n";
+			biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "TMSiLOG: multiple data files not supported");
 		}
 		hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
 
@@ -10054,11 +9993,8 @@ if (VERBOSE_LEVEL>8)
 					if (!filename)
 						filename = val;
 					else if (strcmp(val, filename)) {
-
-					fprintf(stdout,"<%s><%s>",val,filename);
-
-						B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-						B4C_ERRMSG = "TMSiLOG: multiple data files not supported\n";
+						fprintf(stdout,"<%s><%s>",val,filename);
+						biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "TMSiLOG: multiple data files not supported");
 					}
 				}
 				else if (!strcmp(field,"Index")) {}
@@ -10077,8 +10013,7 @@ if (VERBOSE_LEVEL>8)
 		char *fullfilename = (char*)malloc(strlen(hdr->FileName)+strlen(filename)+1);
 
 		if (!filename) {
-			B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-			B4C_ERRMSG = "TMSiLOG: data file not specified\n";
+			biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "TMSiLOG: data file not specified");
 		}
 		else if (strrchr(hdr->FileName,FILESEP)) {
 			strcpy(fullfilename,hdr->FileName);
@@ -10093,8 +10028,7 @@ if (VERBOSE_LEVEL>8)
 			FILE *fid = fopen(fullfilename,"rb");
 
 			if (!fid) {
-				B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-				B4C_ERRMSG = "TMSiLOG: data file not found\n";
+				biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "TMSiLOG: data file not found");
 			}
 			else {
 				int16_t h[3];
@@ -10105,8 +10039,7 @@ if (VERBOSE_LEVEL>8)
 				else                h[2] = 0xffff;  	// this triggers the error trap
 
 				if ( (c<2) || (h[0] != hdr->NS) || (((double)h[1]) != hdr->SampleRate) || (h[2] != gdftyp) ) {
-					B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-					B4C_ERRMSG = "TMSiLOG: Binary file corrupted\n";
+					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "TMSiLOG: Binary file corrupted");
 				}
 				else {
 					size_t sz = hdr->NS*hdr->SPR*hdr->NRec*GDFTYP_BITS[gdftyp]>>3;
@@ -10123,8 +10056,7 @@ if (VERBOSE_LEVEL>8)
 			FILE *fid = fopen(fullfilename,"rt");
 
 			if (!fid) {
-				B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-				B4C_ERRMSG = "TMSiLOG: data file not found\n";
+				biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "TMSiLOG: data file not found");
 			}
 			else {
 				size_t sz  = (hdr->NS+1)*24;
@@ -10142,8 +10074,7 @@ if (VERBOSE_LEVEL>8)
 				
 				// TODO: sanity checks
 				if (0) {
-					B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-					B4C_ERRMSG = "TMSiLOG: Binary file corrupted\n";
+					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "TMSiLOG: Binary file corrupted");
 				}
 				else {
 					// hdr->FLAG.SWAP = 0; 	// no swaping required
@@ -10374,7 +10305,7 @@ if (VERBOSE_LEVEL>8)
 		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"[181] #%i\n",hdr->NS);
 
-    		if (serror()) return(hdr);
+    		if (hdr->AS.B4C_ERRNUM) return(hdr);
     		// hdr->FLAG.SWAP = 0;
 		hdr->FILE.LittleEndian = (__BYTE_ORDER == __LITTLE_ENDIAN); // no swapping
 		hdr->AS.length  = hdr->NRec;
@@ -10391,7 +10322,7 @@ if (VERBOSE_LEVEL>8)
 		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"[181] #%i\n",hdr->NS);
 
-    		if (serror()) return(hdr);
+    		if (hdr->AS.B4C_ERRNUM) return(hdr);
     		// hdr->FLAG.SWAP = 0;
 	}
 
@@ -10410,21 +10341,18 @@ if (VERBOSE_LEVEL>8)
 			uint16_t startblock = leu16p(hdr->AS.Header+0x112);			
 			// FIXME: 
 
-	    		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-	    		B4C_ERRMSG = "ERROR BIOSIG SOPEN(READ): WG1 0x5555FEAF format is not supported yet";
+	    		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "ERROR BIOSIG SOPEN(READ): WG1 0x5555FEAF format is not supported yet");
 		}
 		else {
 			hdr->SampleRate = 1e6 / leu32p(Header1+16);			
 			hdr->NS = leu16p(Header1+22);			
-	    		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-	    		B4C_ERRMSG = "ERROR BIOSIG SOPEN(READ): WG1 data format is not supported yet";
+	    		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "ERROR BIOSIG SOPEN(READ): WG1 data format is not supported yet");
 		}
     		return(hdr);
 	}
 
 	else {
-    		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-    		B4C_ERRMSG = "ERROR BIOSIG SOPEN(READ): data format is not supported";
+    		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "ERROR BIOSIG SOPEN(READ): data format is not supported");
     		ifclose(hdr);
     		return(hdr);
 	}
@@ -10495,8 +10423,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		sd = bscs_connect(hostname);
 		if (sd<0) {
 			fprintf(stdout,"could not connect to <%s>\n",hostname);
-			B4C_ERRNUM = B4C_CANNOT_OPEN_FILE;
-			B4C_ERRMSG = "could not connect to server";
+			biosigERROR(hdr, B4C_CANNOT_OPEN_FILE, "could not connect to server";
 			return(hdr);
 		}
   		hdr->FILE.Des = sd;
@@ -11248,7 +11175,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
     	else if (hdr->TYPE==SCP_ECG) {
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN_SCP_WRITE -112\n");
     		sopen_SCP_write(hdr);
-    		if (serror()) return(hdr);
+    		if (hdr->AS.B4C_ERRNUM) return(hdr);
 	}
 
 #ifdef WITH_TMSiLOG
@@ -11301,23 +11228,20 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 #endif  // WITH_TMSiLOG
 
 	else {
-		B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-		B4C_ERRMSG = "ERROR: Writing of format not supported\n";
+		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Writing of format not supported");
 		return(NULL);
 	}
 
 	if ((hdr->TYPE != ASCII) && (hdr->TYPE != BIN) && (hdr->TYPE != HL7aECG) && (hdr->TYPE != TMSiLOG)){
 	    	hdr = ifopen(hdr,"wb");
 
-		if (!hdr->FILE.COMPRESSION && (hdr->FILE.FID == NULL) ){
-			B4C_ERRNUM = B4C_CANNOT_WRITE_FILE;
-			B4C_ERRMSG = "ERROR: Unable to open file for writing.\n";
+		if (!hdr->FILE.COMPRESSION && (hdr->FILE.FID == NULL) ) {
+			biosigERROR(hdr, B4C_CANNOT_WRITE_FILE, "Unable to open file for writing");
 			return(NULL);
 		}
 #ifdef ZLIB_H
 		else if (hdr->FILE.COMPRESSION && (hdr->FILE.gzFID == NULL) ){
-			B4C_ERRNUM = B4C_CANNOT_WRITE_FILE;
-			B4C_ERRMSG = "ERROR: Unable to open file for writing.\n";
+			biosigERROR(hdr, B4C_CANNOT_WRITE_FILE, "Unable to open file for writing");
 			return(NULL);
 		}
 #endif
@@ -11381,8 +11305,8 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 			fprintf(stdout,"GDFTYP=%i [12bit BE/BE] not well tested\n",hdr->CHANNEL[k].GDFTYP);
 	}
 
-	if (VERBOSE_LEVEL>8)
-		fprintf(stdout,"sopen{return} %i %s\n", B4C_ERRNUM,GetFileTypeString(hdr->TYPE) );
+	if (VERBOSE_LEVEL>7)
+		fprintf(stdout,"sopen{return} %i %s\n", hdr->AS.B4C_ERRNUM,GetFileTypeString(hdr->TYPE) );
 #endif
 	return(hdr);
 }  // end of SOPEN
@@ -11430,8 +11354,7 @@ void collapse_rawdata(HDRTYPE *hdr)
 	if (bpb == hdr->AS.bpb<<3) return; 	// no collapsing needed
 
 	if ((bpb & 7) || (hdr->AS.bpb8 & 7)) {
-		B4C_ERRNUM = B4C_RAWDATA_COLLAPSING_FAILED;
-		B4C_ERRMSG = "collapse_rawdata: does not support bitfields";
+		biosigERROR(hdr, B4C_RAWDATA_COLLAPSING_FAILED, "collapse_rawdata: does not support bitfields");
 	}
 	bpb >>= 3;
 
@@ -11446,8 +11369,7 @@ void collapse_rawdata(HDRTYPE *hdr)
 
 		SZ = CHptr->SPR*GDFTYP_BITS[CHptr->GDFTYP];
 		if (SZ & 7) {
-			B4C_ERRNUM = B4C_RAWDATA_COLLAPSING_FAILED;
-			B4C_ERRMSG = "collapse_rawdata: does not support bitfields";
+			biosigERROR(hdr, B4C_RAWDATA_COLLAPSING_FAILED, "collapse_rawdata: does not support bitfields");
 		}
 		SZ >>= 3;
 
@@ -11567,8 +11489,7 @@ size_t sread_raw(size_t start, size_t length, HDRTYPE* hdr, char flag) {
 		if (tmpptr!=NULL || hdr->AS.bpb*nelem==0) 
 			hdr->AS.rawdata = (uint8_t*) tmpptr;
 		else {
-                        B4C_ERRNUM = B4C_MEMORY_ALLOCATION_FAILED;
-                        B4C_ERRMSG = "memory allocation failed - not enough memory!";
+                        biosigERROR(hdr, B4C_MEMORY_ALLOCATION_FAILED, "memory allocation failed");
                         return(0);
 		}	
 
@@ -11655,7 +11576,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 
 	count = sread_raw(start, length, hdr, 0);
 
-	if (B4C_ERRNUM) return(0);
+	if (hdr->AS.B4C_ERRNUM) return(0);
 
 	toffset = start - hdr->AS.first;
 
@@ -11674,8 +11595,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 //Stoyan: Arm has some problem with log2 - or I dont know how to fix it - it exists but do not work.
         if (log2(hdr->SPR) + log2(count) + log2(NS) + log2(sizeof(biosig_data_type)) + 1 >= sizeof(size_t)*8) {
                 // used to check the 2GByte limit on 32bit systems
-                B4C_ERRNUM = B4C_MEMORY_ALLOCATION_FAILED;
-                B4C_ERRMSG = "Size of required data buffer too large (exceeds size_t addressable space)!";
+                biosigERROR(hdr, B4C_MEMORY_ALLOCATION_FAILED, "Size of required data buffer too large (exceeds size_t addressable space)");
                 return(0);
         }
 #endif
@@ -11687,8 +11607,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 		if (tmpptr!=NULL || !sz) 
 			data1 = (biosig_data_type*) tmpptr;
 		else {
-                        B4C_ERRNUM = B4C_MEMORY_ALLOCATION_FAILED;
-                        B4C_ERRMSG = "memory allocation failed - not enough memory!";
+                        biosigERROR(hdr, B4C_MEMORY_ALLOCATION_FAILED, "memory allocation failed - not enough memory");
                         return(0);
 		}	
 		hdr->data.block = data1;
@@ -11933,8 +11852,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 			else
 */
 
-			B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
-			B4C_ERRMSG = "Error SREAD: datatype not supported";
+			biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "Error SREAD: datatype not supported");
 			return(-1);
 		}	// end switch
 
@@ -12051,8 +11969,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 				sample_value = (biosig_data_type)int32_value;
 			}
 			else {
-				B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
-				B4C_ERRMSG = "Error SREAD: datatype not supported";
+				biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "Error SREAD: datatype not supported");
 				return(0);
 			}
 
@@ -12234,8 +12151,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 	// memory allocation for SCP is done in SOPEN_SCP_WRITE Section 6
 		ptr = (typeof(ptr))realloc(hdr->AS.rawdata, (hdr->NRec*bpb8>>3)+1);
 		if (ptr==NULL) {
-			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
-			B4C_ERRMSG = "SWRITE: memory allocation failed.";
+			biosigERROR(hdr, B4C_INSUFFICIENT_MEMORY, "SWRITE: memory allocation failed.");
 			return(0);
 		}
 		else
@@ -12425,8 +12341,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 				break;
 			}
 			default:
-				B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
-				B4C_ERRMSG = "SWRITE: datatype not supported";
+				biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "SWRITE: datatype not supported");
 				return(0);
 			}
 		}        // end for k5
@@ -12647,8 +12562,7 @@ int sclose(HDRTYPE* hdr)
 		if (hdr->FILE.OPEN > 1) bscs_send_evt(hdr->FILE.Des,hdr);
   		int s = bscs_close(hdr->FILE.Des);
   		if (s) {
-			B4C_ERRNUM = B4C_SCLOSE_FAILED;
-			B4C_ERRMSG = "bscs_close failed";
+			biosigERROR(hdr, B4C_SCLOSE_FAILED, "bscs_close failed");
   		}
   		hdr->FILE.Des = 0;
   		hdr->FILE.OPEN = 0;
@@ -12740,13 +12654,35 @@ int sclose(HDRTYPE* hdr)
 
 
 /****************************************************************************/
-/**                     SERROR                                             **/
+/**                     Error Handling                                     **/
 /****************************************************************************/
+void biosigERROR(HDRTYPE *hdr, enum B4C_ERROR errnum, const char *errmsg) {
+/*
+	sets the local and the (deprecated) global error variables B4C_ERRNUM and B4C_ERRMSG
+	the global error variables are kept for backwards compatibility.
+*/
+	B4C_ERRNUM = errnum; 
+	B4C_ERRMSG = errmsg; 
+	hdr->AS.B4C_ERRNUM = errnum; 
+	hdr->AS.B4C_ERRMSG = errmsg; 
+}
+
 int serror() {
 	int status = B4C_ERRNUM;
+	fprintf(stderr,"Warning: use of function SERROR() is deprecated - use SERROR2() instead");
 	if (status) {
 		fprintf(stderr,"ERROR %i: %s\n",B4C_ERRNUM,B4C_ERRMSG);
 		B4C_ERRNUM = B4C_NO_ERROR;
+	}
+	return(status);
+}
+
+int serror2(HDRTYPE *hdr) {
+	int status = hdr->AS.B4C_ERRNUM;
+	if (status) {
+		fprintf(stderr,"ERROR %i: %s\n",hdr->AS.B4C_ERRNUM,hdr->AS.B4C_ERRMSG);
+		hdr->AS.B4C_ERRNUM = B4C_NO_ERROR;
+		hdr->AS.B4C_ERRMSG = NULL;
 	}
 	return(status);
 }

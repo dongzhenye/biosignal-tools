@@ -320,8 +320,8 @@ void mexFunction(
 	hdr = sopen(FileName, "r", hdr);
 /*
 #ifdef WITH_PDP 
-	if (B4C_ERRNUM) {
-		B4C_ERRNUM = 0;
+	if (hdr->AS.B4C_ERRNUM) {
+		hdr->AS.B4C_ERRNUM = 0;
 		sopen_pdp_read(hdr);
 	}	
 #endif
@@ -329,7 +329,7 @@ void mexFunction(
 	if (VERBOSE_LEVEL>7) 
 		mexPrintf("121: sopen done\n");
 
-	if ((status=serror())) {
+	if ((status=serror2(hdr))) {
 
 		const char* fields[]={"TYPE","VERSION","FileName","FLAG","ErrNum","ErrMsg"};
 		HDR = mxCreateStructMatrix(1, 1, 6, fields);
@@ -448,7 +448,7 @@ void mexFunction(
                 hdr->Calib = NULL; 
         }                
 #endif 
-	if ((status=serror())) return;  
+	if ((status=serror2(hdr))) return;  
 
 	if (VERBOSE_LEVEL>7) 
 		fprintf(stderr,"\n[129] SREAD/SCLOSE on %s successful [%i,%i] [%Li,%i] %i.\n",hdr->FileName,hdr->data.size[0],hdr->data.size[1],hdr->NRec,count,NS);

@@ -1,7 +1,7 @@
 /*
 
-    $Id: sopen_famos_read.c,v 1.5 2009/04/06 07:38:33 schloegl Exp $
-    Copyright (C) 2008,2009 Alois Schloegl <a.schloegl@ieee.org>
+    $Id$
+    Copyright (C) 2008,2009,2012 Alois Schloegl <alois.schloegl@gmail.com>
     This file is part of the "BioSig for C/C++" repository 
     (biosig4c++) at http://biosig.sf.net/ 
 
@@ -107,8 +107,7 @@ EXTERN_C void sopen_FAMOS_read(HDRTYPE* hdr) {
 				int p = strcspn(t2,",");
 				t2[p] = 0;
 				if (atoi(t2) != 1) {
-					B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-					B4C_ERRMSG = "FAMOS: more than one buffer not supported (yet)";
+					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "FAMOS: more than one buffer not supported");
 				}
 				// BytesInUserInfo
 				t2 += 1+p;
@@ -185,8 +184,7 @@ EXTERN_C void sopen_FAMOS_read(HDRTYPE* hdr) {
 				int p = strcspn(t2,",");
 				t2[p] = 0;
 				if (atol(t2)>1) {
-					B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-					B4C_ERRMSG = "FAMOS: more than one group not supported (yet)";
+					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "FAMOS: more than one group not supported");
 				}	
 				level = 2; 
 			}
@@ -208,8 +206,7 @@ EXTERN_C void sopen_FAMOS_read(HDRTYPE* hdr) {
 				OnOff = 1; 
 				if (atoi(t2) != 1) {
 //					OnOff = 0; 
-//					B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
-//					B4C_ERRMSG = "FAMOS: data is not real and aquidistant sampled";
+//					biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "FAMOS: data is not real and aquidistant sampled");
 				}
 				// Dimension 
 				p = strcspn(t2,",");
@@ -279,8 +276,7 @@ EXTERN_C void sopen_FAMOS_read(HDRTYPE* hdr) {
 			}
 			else if (!strncmp(t,"CC,1",4) && (level>=3)) {
 				if (NoChanCurrentGroup<1) {
-					B4C_ERRNUM = B4C_UNSPECIFIC_ERROR;
-					B4C_ERRMSG = "FAMOS: too many CC definitions in group";
+					biosigERROR(hdr, B4C_UNSPECIFIC_ERROR, "FAMOS: too many CC definitions in group");
 				}
 				CHAN = hdr->NS - NoChanCurrentGroup--;
 
@@ -288,8 +284,7 @@ EXTERN_C void sopen_FAMOS_read(HDRTYPE* hdr) {
 					hdr->SampleRate = Fs; 
 				else if (OnOff && (abs(hdr->SampleRate - Fs)>1e-9*Fs)) {
 					fprintf(stdout,"ERR2: %i %f %f\n",CHAN,hdr->SampleRate, Fs);
-//					B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
-//					B4C_ERRMSG = "FAMOS: multiple sampling rates not supported";
+//					biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "FAMOS: multiple sampling rates not supported");
 				} 
 				if (VERBOSE_LEVEL>7)
 					fprintf(stdout,"CC: %i#%i Fs=%f,%i\n",OnOff,CHAN,Fs,(int)len);
@@ -336,8 +331,7 @@ EXTERN_C void sopen_FAMOS_read(HDRTYPE* hdr) {
 				p   = strcspn(t2,",");
 				t2[p] = 0;
 				if (atoi(t2)) {
-					B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
-					B4C_ERRMSG = "FAMOS: Mask != 0 not supported";
+					biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "FAMOS: Mask != 0 not supported");
 				};
 
 				// Offset  
@@ -348,8 +342,7 @@ EXTERN_C void sopen_FAMOS_read(HDRTYPE* hdr) {
 					fprintf(stdout,"Offset:<%s>\n",t2);
 					flag_AbstandFile = 1;
 #ifndef __4HAERTEL__
-					B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
-					B4C_ERRMSG = "FAMOS: Offset != 0 not supported";
+					biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "FAMOS: Offset != 0 not supported");
 #endif
 				};
 				// DirekteFolgeAnzahl  
@@ -357,8 +350,7 @@ EXTERN_C void sopen_FAMOS_read(HDRTYPE* hdr) {
 				p   = strcspn(t2,",");
 				t2[p] = 0;
 				if (atoi(t2) != 1) {
-					B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
-					B4C_ERRMSG = "FAMOS: DirekteFolgeAnzahl != 1 not supported";
+					biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "FAMOS: DirekteFolgeAnzahl != 1 not supported");
 				};
 
 				// AbstandBytes  
@@ -369,8 +361,7 @@ EXTERN_C void sopen_FAMOS_read(HDRTYPE* hdr) {
 					fprintf(stdout,"Abstandbytes:<%s>\n",t2);
 					flag_AbstandFile = 1;
 #ifndef __4HAERTEL__
-					B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
-					B4C_ERRMSG = "FAMOS: AbstandBytes != 0 not supported";
+					biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "FAMOS: AbstandBytes != 0 not supported");
 #endif
 				};
 				
@@ -422,8 +413,7 @@ EXTERN_C void sopen_FAMOS_read(HDRTYPE* hdr) {
 					break;
 				default:
 					gdftyp = 0;	
-					B4C_ERRNUM = B4C_DATATYPE_UNSUPPORTED;
-					B4C_ERRMSG = "FAMOS: unknown datatype";
+					biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "FAMOS: unknown datatype");
 				};
 				
 				hdr->CHANNEL[CHAN].LeadIdCode = 0; 
@@ -526,8 +516,7 @@ EXTERN_C void sopen_FAMOS_read(HDRTYPE* hdr) {
 				int p = strcspn(t2,",");
 				t2[p] = 0;
 				if (atol(t2)>1) {
-					B4C_ERRNUM = B4C_FORMAT_UNSUPPORTED;
-					B4C_ERRMSG = "FAMOS: more than one CS section not supported (yet)";
+					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "FAMOS: more than one CS section not supported");
 				}	
 				hdr->HeadLen = pos-len+p;
 

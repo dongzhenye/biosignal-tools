@@ -42,7 +42,8 @@ if (VERBOSE_LEVEL > 5)
 
 	// ********* open file and read header ************
 	hdr = sopen(fn, "r", hdr);
-	if (serror()) {
+	if (serror2(hdr)) {
+		destructHDR(hdr);
 		fprintf(stdout,"Cannot open file <%s>\n", fn);
 		return;
 	}
@@ -53,6 +54,11 @@ if (VERBOSE_LEVEL > 5)
 	// ********** read data ********************
 	hdr->FLAG.ROW_BASED_CHANNELS = 0;
 	sread(NULL, 0, hdr->NRec*hdr->SPR, hdr);
+	if (serror2(hdr)) {
+		destructHDR(hdr);
+		fprintf(stdout,"Error reading data from file <%s>\n", fn);
+		return;
+	}
 
 #ifdef _WIN32
 	long int sz[2];
