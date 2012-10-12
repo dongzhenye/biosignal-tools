@@ -147,9 +147,11 @@ enum FileFormat {
 
 
 /*
- TODO: 
-   error handling must use error variables local to each HDR
+   error handling should use error variables local to each HDR
    otherwise, sopen() etc. is not re-entrant. 
+
+   Therefore, use of variables B4C_ERRNUM and B4C_ERRMSG is deprecated; 	
+   Use instead serror2(hdr), hdr->AS.B4C_ERRNUM, hdr->AS.B4C_ERRMSG.   
  */
 extern int B4C_ERRNUM ATT_DEPREC;
 extern const char *B4C_ERRMSG ATT_DEPREC;
