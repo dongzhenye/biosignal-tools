@@ -109,6 +109,13 @@ Index: src/src.pro
      #-lGDF
  
  macx:INCLUDEPATH += /opt/local/include
+Index: src/version.txt
+===================================================================
+--- src/version.txt	(revision 557)
++++ src/version.txt	(working copy)
+@@ -1,2 +1 @@
+ 0.5.2
+-
 Index: src/file_handling_impl/sinus_dummy_reader.cpp
 ===================================================================
 --- src/file_handling_impl/sinus_dummy_reader.cpp	(revision 557)
@@ -175,18 +182,30 @@ Index: src/file_handling_impl/biosig_reader.cpp
  {
      QMutexLocker lock (&mutex_);
  
-@@ -179,9 +184,9 @@
-     {
+@@ -157,7 +162,8 @@
+     char *c_file_name = new char[file_name.length() + 1];
+     strcpy (c_file_name, file_name.toLocal8Bit ().data());
+     c_file_name[file_name.length()] = '\0';
+-
++    
++ 
+     tzset();
+ 
+     // set flags
+@@ -175,11 +181,10 @@
+ 
+     /// waldesel: REMOVE OLD STUFF from here downwards
+     ///           and move it into BiosigBasicHeader!!!
+-    if (biosig_header_ == NULL || serror())
+-    {
++    if (serror2(biosig_header_)) {
              sclose (biosig_header_);
              destructHDR(biosig_header_);
 -            biosig_header_ = 0;
 +            biosig_header_ = NULL;
              delete c_file_name;
--            return "file not supported";
-+            return B4C_ERRMSG;
+             return "file not supported";
      }
- 
-     // (C) 2008 AS: EVENT.DUR and EVENT.CHN are optional in SOPEN, but SigViewer needs them.
 @@ -190,22 +195,18 @@
      //hdr2ascii(biosig_header_,stdout,4);
  
