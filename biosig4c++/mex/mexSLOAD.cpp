@@ -360,9 +360,9 @@ void mexFunction(
 		    else if (status==B4C_FORMAT_UNKNOWN)
 			sprintf(msg,"Error mexSLOAD: Cannot open file %s - format %s not known.\n",FileName,GetFileTypeString(hdr->TYPE));	/* Flawfinder: ignore *** sufficient memory is allocated above */
 		    else if (status==B4C_FORMAT_UNSUPPORTED)
-			sprintf(msg,"Error mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", FileName, GetFileTypeString(hdr->TYPE), B4C_ERRMSG);	/* Flawfinder: ignore *** sufficient memory is allocated above */
+			sprintf(msg,"Error mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", FileName, GetFileTypeString(hdr->TYPE), hdr->AS.B4C_ERRMSG);	/* Flawfinder: ignore *** sufficient memory is allocated above */
 		    else 	
-			sprintf(msg,"Error %i mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", status, FileName, GetFileTypeString(hdr->TYPE), B4C_ERRMSG); 	/* Flawfinder: ignore *** sufficient memory is allocated above */
+			sprintf(msg,"Error %i mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", status, FileName, GetFileTypeString(hdr->TYPE), hdr->AS.B4C_ERRMSG); 	/* Flawfinder: ignore *** sufficient memory is allocated above */
 			
 		    mxSetField(HDR,0,"ErrMsg",mxCreateString(msg));
 		    free(msg);
