@@ -58,7 +58,6 @@ EXTERN_C void sopen_cfs_read(HDRTYPE* hdr) {
 		        CFS - The CED Filing System October 2006
 		*/
 
-		uint8_t k;
 
 		/* General Header */
 		// uint32_t filesize = leu32p(hdr->AS.Header+22);	// unused
@@ -73,8 +72,6 @@ EXTERN_C void sopen_cfs_read(HDRTYPE* hdr) {
 		if (NumberOfDataSections) {
 			hdr->EVENT.TYP = (typeof(hdr->EVENT.TYP)) realloc(hdr->EVENT.TYP, (hdr->EVENT.N + NumberOfDataSections - 1) * sizeof(*hdr->EVENT.TYP));
 			hdr->EVENT.POS = (typeof(hdr->EVENT.POS)) realloc(hdr->EVENT.POS, (hdr->EVENT.N + NumberOfDataSections - 1) * sizeof(*hdr->EVENT.POS));
-			hdr->EVENT.CHN = (typeof(hdr->EVENT.CHN)) realloc(hdr->EVENT.CHN, (hdr->EVENT.N + NumberOfDataSections - 1) * sizeof(*hdr->EVENT.CHN));
-			hdr->EVENT.DUR = (typeof(hdr->EVENT.DUR)) realloc(hdr->EVENT.DUR, (hdr->EVENT.N + NumberOfDataSections - 1) * sizeof(*hdr->EVENT.DUR));
 		}
 
 if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n",hdr->NS,n,d,FileHeaderSize,DataHeaderSize,LastDataSectionHeaderOffset,NumberOfDataSections,leu32p(hdr->AS.Header+0x86));
@@ -84,6 +81,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n
 #define H2LEN (22+10+10+1+1+2+2)
  		char* H2 = (char*)(hdr->AS.Header + H1LEN);
 		double xPhysDimScale[100];		// CFS is limited to 99 channels
+		typeof(hdr->NS) NS = hdr->NS;
+		uint8_t k;
 		for (k = 0; k < hdr->NS; k++) {
 			CHANNEL_TYPE *hc = hdr->CHANNEL + k;
 			/*
@@ -108,10 +107,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n
 			//uint16_t next      = leu16p(H2+46 + k*H2LEN);
 			hc->GDFTYP = dataType < 5 ? dataType+1 : dataType+11;
 			if (H2[43 + k * H2LEN] == 1) {
-				// TODO: add support for matrix data 	
-				// Matrix data not supported;
-				fprintf(stderr,"Warning SOPEN(CFS): matrix data is currently not supported"); 
+				// Matrix data does not return an extra channel, but contains Markers and goes into the event table.
 				hc->OnOff = 0;
+				NS--;
 			}
 			hc->LowPass  = NAN;
 			hc->HighPass = NAN;
@@ -130,7 +128,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* file variable information *******
 			uint16_t typ = leu16p(hdr->AS.Header+pos+22);
 			uint16_t off = leu16p(hdr->AS.Header+pos+34);
 
-//fprintf(stdout,"\n%3i @0x%6x: <%s>  %i  [%s] %i ",k, pos, hdr->AS.Header+pos+1,typ,hdr->AS.Header+pos+25,off);
 			size_t p3 = H1LEN + H2LEN*hdr->NS + (n+d)*36 + off + 42;
 
 			switch (typ) {
@@ -175,6 +172,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* DS variable information *********
 		hdr->NRec = NumberOfDataSections;
 		size_t SPR = 0, SZ = 0;
 		for (m = 0; m < NumberOfDataSections; m++) {
+			if (m>0) {
+				hdr->EVENT.TYP[hdr->EVENT.N] = 0x7ffe;
+				hdr->EVENT.POS[hdr->EVENT.N] = SPR;
+				hdr->EVENT.N++;
+			}
+
 			datapos = DATAPOS[m];
 			if (!leu32p(hdr->AS.Header+datapos+8)) continue; 	// empty segment
 
@@ -209,7 +212,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 					flag_firstchan = 0;
 				}
 				else if (fabs(hdr->SampleRate - Fs) > 1e-3) {
-					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: different sampling rates are not supported");
+					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: different sampling rates are not supported\n");
 				}
 
 				if (hc->OnOff && (spr < hc->SPR)) 
@@ -232,73 +235,82 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 				hdr->AS.rawdata = (uint8_t*)ptr;
 
 				hdr->AS.first = 0;
+				uint8_t ns = 0; 
 				for (k = 0; k < hdr->NS; k++) {
 					CHANNEL_TYPE *hc = hdr->CHANNEL + k;
+					
 
-					uint32_t memoffset = leu32p(hdr->AS.Header+datapos + 4) + hc->bi;
-					uint8_t *srcaddr = hdr->AS.Header + memoffset;
+					uint32_t memoffset = + hc->bi;
+					uint8_t *srcaddr = hdr->AS.Header + leu32p(hdr->AS.Header+datapos + 4) ;
 					//uint16_t byteSpace = leu16p(H2+44 + k*H2LEN);
 					int16_t stride = leu16p(H2+44 + k*H2LEN);
 
 					uint8_t  dataType  = H2[42 + k*H2LEN];
 					//uint8_t  dataKind  = H2[43 + k*H2LEN];		// equidistant, Subsidiary or Matrix data 
-					//uint16_t byteSpace = leu16p(H2+44 + k*H2LEN);		// stride 
-					//uint16_t next      = leu16p(H2+46 + k*H2LEN);
+					//uint16_t stride = leu16p(H2+44 + k*H2LEN);		// byteSpace
+					uint16_t next      = leu16p(H2+46 + k*H2LEN);
 					hc->GDFTYP = dataType < 5 ? dataType+1 : dataType+11;
-					// TODO: handling of subsidiary or matrix data 
 		
 
-				if (VERBOSE_LEVEL>7)
-				 	fprintf(stdout,"CFS 412 #%i %i %i %i: %i @%p %i\n", k, hc->SPR, hc->GDFTYP, stride, memoffset, srcaddr, leu32p(hdr->AS.Header+datapos + 4) + leu32p(hdr->AS.Header + datapos + 30 + 24 * k));
+if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 412 #%i %i %i %i: %i @%p %i\n", k, hc->SPR, hc->GDFTYP, stride, memoffset, srcaddr, leu32p(hdr->AS.Header+datapos + 4) + leu32p(hdr->AS.Header + datapos + 30 + 24 * k));
 
 					size_t k2;
 					for (k2 = 0; k2 < hc->SPR; k2++) {
-						uint8_t *ptr = srcaddr + k2*stride;
+						uint8_t *ptr = srcaddr + hc->bi + k2*stride;
 						double val;
 						
-					   	if (!hc->OnOff || hc->SPR < spr) {
+						switch (hc->GDFTYP) {
+						// reorder for performance reasons - more frequent gdftyp's come first
+						case 3:  val = lei16p(ptr); break;
+						case 4:  val = leu16p(ptr); break;
+						case 16: val = lef32p(ptr); break;
+						case 17: val = lef64p(ptr); break;
+						case 0:  val = *(   char*) ptr; break;
+						case 1:  val = *( int8_t*) ptr; break;
+						case 2:  val = *(uint8_t*) ptr; break;
+						case 5:  val = lei32p(ptr); break;
+						case 6:  val = leu32p(ptr); break;
+						case 7:  val = lei64p(ptr); break;
+						case 8:  val = leu64p(ptr); break;
+						default:
+							val = NAN;
+							biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: invalid data type");
+						}
+
+					   	if (hc->OnOff) {
 							/* TODO: channels with less samples are currently ignored - resampling or ignoring the channel ? */
-							val = NAN; 
+							*(double*) (hdr->AS.rawdata + k * sizeof(double) + (SPR + k2) * hdr->NS * sizeof(double)) = val * hc->Cal + hc->Off;
+							continue;
 					   	}
-					   	else	{
+						
+						if (!strncmp(hc->Label,"Marker",6) && hc->PhysDimCode==2176 && hc->GDFTYP==5 && next != 0) { 
+							// matrix data might contain time markers. 						
 
-							switch (hc->GDFTYP) {
-							// reorder for performance reasons - more frequent gdftyp's come first
-							case 3:  val = lei16p(ptr); break;
-							case 4:  val = leu16p(ptr); break;
-							case 16: val = lef32p(ptr); break;
-							case 17: val = lef64p(ptr); break;
-							case 0:  val = *(   char*) ptr; break;
-							case 1:  val = *( int8_t*) ptr; break;
-							case 2:  val = *(uint8_t*) ptr; break;
-							case 5:  val = lei32p(ptr); break;
-							case 6:  val = leu32p(ptr); break;
-							case 7:  val = lei64p(ptr); break;
-							case 8:  val = leu64p(ptr); break;
-							default:
-								val = NAN;
-								biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: invalid data type");
-							}
+							// memory allocation for additional events - more efficient implementation would be nice
+							hdr->EVENT.TYP = (typeof(hdr->EVENT.TYP)) realloc(hdr->EVENT.TYP, (hdr->EVENT.N + NumberOfDataSections) * sizeof(*hdr->EVENT.TYP));
+							hdr->EVENT.POS = (typeof(hdr->EVENT.POS)) realloc(hdr->EVENT.POS, (hdr->EVENT.N + NumberOfDataSections) * sizeof(*hdr->EVENT.POS));
 
-if (VERBOSE_LEVEL>8)	fprintf(stdout,"CFS 413 [%i %i]: @%p\t%g\t%g\n", k, k2, memoffset+k2*stride, val, val * hc->Cal + hc->Off);
+							/*
+							char Desc[2]; Desc[0] = srcaddr[hdr->CHANNEL[next].bi + k2*stride]; Desc[1] = 0; 
+								this does currently not work because FreeTextEvent expects that 
+								the string constant is available as long as hdr, which is not the case here. 
+							*/
 
-					   	}
-						*(double*) (hdr->AS.rawdata + k * sizeof(double) + (SPR + k2) * hdr->NS * sizeof(double)) = val * hc->Cal + hc->Off;
+						 	// typically a single character within a 4 byte integer, this should be sufficient to ensure \0 termination
+							char *Desc = srcaddr + hdr->CHANNEL[next].bi + k2*stride;
+							Desc[1] = 0; 
+							FreeTextEvent(hdr, hdr->EVENT.N, Desc);
+							hdr->EVENT.POS[hdr->EVENT.N] = (val * hc->Cal) * hdr->SampleRate + SPR; 
+							hdr->EVENT.N++;
+						}
 					}
+					ns += hc->OnOff;
 				}
 			}
 			else {
 				hdr->AS.rawdata = (uint8_t*)realloc(hdr->AS.rawdata,sz);
 				memcpy(hdr->AS.rawdata, hdr->AS.Header + leu32p(hdr->AS.Header+datapos + 4), leu32p(hdr->AS.Header+datapos + 8));
 				hdr->AS.bpb = sz;
-			}
-
-			if (m>0) {
-				hdr->EVENT.TYP[hdr->EVENT.N] = 0x7ffe;
-				hdr->EVENT.POS[hdr->EVENT.N] = SPR;
-				hdr->EVENT.CHN[hdr->EVENT.N] = 0;
-				hdr->EVENT.DUR[hdr->EVENT.N] = 0;
-				hdr->EVENT.N++;
 			}
 
 			SPR += spr;

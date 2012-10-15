@@ -1187,6 +1187,12 @@ fprintf(stdout,"write_gdf_eventtable is obsolete - use hdrEVT2rawEVT instead;\n"
 void FreeTextEvent(HDRTYPE* hdr,size_t N_EVENT, const char* annotation) {
 	/* free text annotations encoded as user specific events (codes 1-255) */
 
+/* !!! 
+	annotation is not copied, but it is assumed that annotation string is also available after return 
+	usually, the string is available in hdr->AS.Header; still this can disappear (free, or rellocated)
+	before the Event table is destroyed. 
+  !!! */
+
 	size_t k;
 	int flag;
 //	static int LengthCodeDesc = 0;
@@ -11416,7 +11422,6 @@ size_t sread_raw(size_t start, size_t length, HDRTYPE* hdr, char flag) {
  *		are collapsed
  */
 
-
 	if (hdr->AS.flag_collapsed_rawdata && ! flag)
 		hdr->AS.length = 0; // 	force reloading of data
 
@@ -11471,6 +11476,9 @@ size_t sread_raw(size_t start, size_t length, HDRTYPE* hdr, char flag) {
 	}
 #endif
 	else {
+		
+		assert(hdr->TYPE != CFS);	// CFS data has been already cached in SOPEN
+
 		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"sread-raw: 223\n");
 
