@@ -77,7 +77,6 @@ EXTERN_C void sopen_cfs_read(HDRTYPE* hdr) {
 			hdr->EVENT.DUR = (typeof(hdr->EVENT.DUR)) realloc(hdr->EVENT.DUR, (hdr->EVENT.N + NumberOfDataSections - 1) * sizeof(*hdr->EVENT.DUR));
 		}
 
-
 if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n",hdr->NS,n,d,FileHeaderSize,DataHeaderSize,LastDataSectionHeaderOffset,NumberOfDataSections,leu32p(hdr->AS.Header+0x86));
 
 		/* channel information */
@@ -105,12 +104,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n
 
 			uint8_t  dataType  = H2[42 + k*H2LEN];
 			//uint8_t  dataKind  = H2[43 + k*H2LEN];
-			//uint16_t byteSpace = leu16p(H2+44 + k*H2LEN);
+			//uint16_t byteSpace = leu16p(H2+44 + k*H2LEN);		// stride 
 			//uint16_t next      = leu16p(H2+46 + k*H2LEN);
 			hc->GDFTYP = dataType < 5 ? dataType+1 : dataType+11;
-			if (H2[43 + k * H2LEN]) {
-				// Subsidiary or Matrix data not supported;
-				fprintf(stderr,"Warning SOPEN(CFS): subsidiary and matrix data is currently not supported"); 
+			if (H2[43 + k * H2LEN] == 1) {
+				// TODO: add support for matrix data 	
+				// Matrix data not supported;
+				fprintf(stderr,"Warning SOPEN(CFS): matrix data is currently not supported"); 
 				hc->OnOff = 0;
 			}
 			hc->LowPass  = NAN;
@@ -191,15 +191,14 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n[DS#%3i] 0x%x 0x%x [0x%x 0x%x szChanData=
 
 				CHANNEL_TYPE *hc = hdr->CHANNEL + k;
 
-				uint32_t p  = leu32p(pos);
+				hc->bi      = leu32p(pos);
 				hc->SPR     = leu32p(pos+4);
 				hc->Cal     = lef32p(pos+8);
 				hc->Off     = lef32p(pos+12);
 				double Xcal = lef32p(pos+16);
 				//double Xoff = lef32p(pos+20);// unused
-				hc->bi      = sz;
 
-if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x%g %g\n",m,k,spr,(int)SPR,hc->SPR,hc->Cal,hc->Off,p,xPhysDimScale[k], Xcal);
+if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x%g %g\n",m,k,spr,(int)SPR,hc->SPR,hc->Cal,hc->Off,hc->bi,xPhysDimScale[k], Xcal);
 
 				double Fs = 1.0 / (xPhysDimScale[k] * Xcal);
 				if ( (hc->OnOff == 0) || (Xcal == 0.0) ) {
@@ -221,7 +220,11 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 			}
 
 			if (NumberOfDataSections > 1) {
-				// hack: copy data into a single block, only if more than one section
+				/* hack: copy data into a single block (rawdata)
+				   this is used as a data cache, no I/O is needed in sread, at the cost that sopen is slower
+				   sread_raw does not attempt to reload the data
+				 */
+				hdr->AS.flag_collapsed_rawdata = 0; 
 				void *ptr = realloc(hdr->AS.rawdata, hdr->NS * (SPR + spr) * sizeof(double));
 				if (!ptr) {
 					biosigERROR(hdr,B4C_MEMORY_ALLOCATION_FAILED, "CFS: memory allocation failed in line __LINE__");
@@ -232,22 +235,29 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 				for (k = 0; k < hdr->NS; k++) {
 					CHANNEL_TYPE *hc = hdr->CHANNEL + k;
 
-					uint32_t memoffset = leu32p(hdr->AS.Header + datapos + 30 + 24 * k);
-					uint8_t *srcaddr = hdr->AS.Header+leu32p(hdr->AS.Header+datapos + 4) + memoffset;
+					uint32_t memoffset = leu32p(hdr->AS.Header+datapos + 4) + hc->bi;
+					uint8_t *srcaddr = hdr->AS.Header + memoffset;
+					//uint16_t byteSpace = leu16p(H2+44 + k*H2LEN);
+					int16_t stride = leu16p(H2+44 + k*H2LEN);
+
+					uint8_t  dataType  = H2[42 + k*H2LEN];
+					//uint8_t  dataKind  = H2[43 + k*H2LEN];		// equidistant, Subsidiary or Matrix data 
+					//uint16_t byteSpace = leu16p(H2+44 + k*H2LEN);		// stride 
+					//uint16_t next      = leu16p(H2+46 + k*H2LEN);
+					hc->GDFTYP = dataType < 5 ? dataType+1 : dataType+11;
+					// TODO: handling of subsidiary or matrix data 
+		
 
 				if (VERBOSE_LEVEL>7)
-				 	fprintf(stdout,"CFS 412 #%i %i: @%p %i\n", k, hc->SPR, srcaddr, leu32p(hdr->AS.Header+datapos + 4) + leu32p(hdr->AS.Header + datapos + 30 + 24 * k));
+				 	fprintf(stdout,"CFS 412 #%i %i %i %i: %i @%p %i\n", k, hc->SPR, hc->GDFTYP, stride, memoffset, srcaddr, leu32p(hdr->AS.Header+datapos + 4) + leu32p(hdr->AS.Header + datapos + 30 + 24 * k));
 
-					int16_t szz = (GDFTYP_BITS[hc->GDFTYP]>>3);
 					size_t k2;
 					for (k2 = 0; k2 < hc->SPR; k2++) {
-						uint8_t *ptr = srcaddr + k2*szz;
+						uint8_t *ptr = srcaddr + k2*stride;
 						double val;
 						
 					   	if (!hc->OnOff || hc->SPR < spr) {
-							/* TODO: 
-								channels with less samples are currently ignored - resampling or ignoring the channel ? 
-							*/
+							/* TODO: channels with less samples are currently ignored - resampling or ignoring the channel ? */
 							val = NAN; 
 					   	}
 					   	else	{
@@ -269,6 +279,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 								val = NAN;
 								biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: invalid data type");
 							}
+
+if (VERBOSE_LEVEL>8)	fprintf(stdout,"CFS 413 [%i %i]: @%p\t%g\t%g\n", k, k2, memoffset+k2*stride, val, val * hc->Cal + hc->Off);
+
 					   	}
 						*(double*) (hdr->AS.rawdata + k * sizeof(double) + (SPR + k2) * hdr->NS * sizeof(double)) = val * hc->Cal + hc->Off;
 					}
@@ -326,6 +339,7 @@ if (VERBOSE_LEVEL>7) {
 
 if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 419: SPR=%i=%i NRec=%i  @%p\n",(int)SPR,hdr->SPR,(int)hdr->NRec, hdr->AS.rawdata);
 
+		// set variables such that sread_raw does not attempt to reload the data
 		hdr->AS.first = 0;
 		hdr->EVENT.SampleRate = hdr->SampleRate;
 		if (NumberOfDataSections < 1) {
@@ -344,6 +358,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 419: SPR=%i=%i NRec=%i  @%p\n",(int)SPR
 			hdr->NRec      = SPR;
 			hdr->AS.bpb    = hdr->NS * sizeof(double);
 			hdr->AS.length = SPR;
+
 			for (k = 0; k < hdr->NS; k++) {
 				CHANNEL_TYPE *hc = hdr->CHANNEL + k;
 				hc->GDFTYP  = 17;	// double
