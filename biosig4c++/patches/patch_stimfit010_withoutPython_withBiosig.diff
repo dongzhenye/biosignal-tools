@@ -1,0 +1,672 @@
+diff --git a/configure.in b/configure.in
+index 95855ed..5943f6e 100644
+--- a/configure.in
++++ b/configure.in
+@@ -81,9 +81,9 @@ case ${STFKERNEL} in
+     darwin)
+         LIBSTF_LDFLAGS="-avoid-version"
+ 	if test "$enable_module" = "yes" ; then
+-	    CPPFLAGS="${CPPFLAGS} -DWITH_PYTHON -DMODULE_ONLY"
++	    CPPFLAGS="${CPPFLAGS} -DMODULE_ONLY"
+ 	else
+-	    CPPFLAGS="${CPPFLAGS} -DWITH_PYTHON"
++	    CPPFLAGS="${CPPFLAGS} "
+ 	fi
+         STF_PYTHON_LIBNAME="libstf.dylib"
+         STFIO_PYTHON_LIBNAME="libstfio.dylib"
+@@ -97,14 +97,14 @@ case ${STFKERNEL} in
+     linux)
+ 	if test "$enable_module" = "yes" ; then
+ 	    LIBSTF_LDFLAGS="-avoid-version"
+-	    CPPFLAGS="${CPPFLAGS} -DWITH_PYTHON -DMODULE_ONLY"
++	    CPPFLAGS="${CPPFLAGS} -DMODULE_ONLY"
+ 	else
+ 	    if test "$enable_debian" = "yes" ; then
+ 	      LIBSTF_LDFLAGS="-Wl,-rpath,/usr/lib/stimfit -avoid-version"
+ 	    else
+ 	      LIBSTF_LDFLAGS="-Wl,-rpath,${prefix}/lib/stimfit -avoid-version"
+ 	    fi
+-	    CPPFLAGS="${CPPFLAGS} -DWITH_PYTHON"
++	    CPPFLAGS="${CPPFLAGS}"
+ 	fi
+         STF_PYTHON_LIBNAME="libstf.so"
+         STFIO_PYTHON_LIBNAME="libstfio.so"
+@@ -121,6 +121,11 @@ AC_SUBST(STF_PYTHON_LIBNAME)
+ AC_SUBST(STFIO_PYTHON_LIBNAME)
+ 
+ # Checks for python libraries.
++AC_ARG_ENABLE([python], AS_HELP_STRING([--enable-python],[enable python shell]),[])
++if test "$enable_ipython" = "yes" ; then
++    CPPFLAGS="${CPPFLAGS} -DPYTHON"
++fi
++
+ AC_ARG_ENABLE([ipython], AS_HELP_STRING([--enable-ipython],[enable ipython as the default shell (experimental); implies --enable-python]),[])
+ if test "$enable_ipython" = "yes" ; then
+     CPPFLAGS="${CPPFLAGS} -DIPYTHON"
+@@ -136,7 +141,7 @@ AC_ARG_WITH([biosig], AS_HELP_STRING([--with-biosig],[build with support for lib
+ AM_CONDITIONAL(WITH_BIOSIG, test "$with_biosig" = "yes")
+ if test "$with_biosig" = "yes" ; then
+     CPPFLAGS="${CPPFLAGS} -DWITH_BIOSIG"
+-    LIBBIOSIG_LDFLAGS="-lbiosig"
++    LIBBIOSIG_LDFLAGS="-lbiosig -lcholmod -lz"
+ fi
+ AC_SUBST(LIBBIOSIG_LDFLAGS)
+ 
+@@ -315,7 +320,7 @@ CXXFLAGS="${CXXFLAGS} -Wall"
+ 
+ AC_CONFIG_HEADERS([stfconf.h])
+ 
+-SHAVE_INIT(["."], [enable])
++#SHAVE_INIT(["."], [enable])
+ AC_CONFIG_FILES([Makefile src/Makefile src/stfswig/Makefile src/app/Makefile stimfit.plist shave shave-libtool])
+ 
+ AC_OUTPUT
+diff --git a/src/app/app.cpp b/src/app/app.cpp
+index f875a75..64547a9 100755
+--- a/src/app/app.cpp
++++ b/src/app/app.cpp
+@@ -1,3 +1,4 @@
++
+ // This program is free software; you can redistribute it and/or
+ // modify it under the terms of the GNU General Public License
+ // as published by the Free Software Foundation; either version 2
+@@ -94,7 +95,7 @@ EVT_MENU_RANGE(ID_USERDEF, ID_USERDEF+32, wxStfApp::OnUserdef)
+ END_EVENT_TABLE()
+ 
+ wxStfApp::wxStfApp(void) : directTxtImport(false), isBars(true), isHires(false), txtImport(), funcLib(),
+-    extensionLib(), CursorsDialog(NULL), storedLinFunc( stf::initLinFunc() ), /*m_file_menu(0),*/ m_fileToLoad(wxEmptyString)/*, activeDoc(0)*/ {}
++    /* extensionLib(), */ CursorsDialog(NULL), storedLinFunc( stf::initLinFunc() ), /*m_file_menu(0),*/ m_fileToLoad(wxEmptyString)/*, activeDoc(0)*/ {}
+ 
+ void wxStfApp::OnInitCmdLine(wxCmdLineParser& parser)
+ {
+@@ -300,7 +301,7 @@ bool wxStfApp::OnInit(void)
+ #endif
+     // load user-defined plugins:
+     // pluginLib = stf::GetPluginLib();
+-    extensionLib = LoadExtensions();
++    // extensionLib = LoadExtensions();
+     
+     // load fit function library:
+     funcLib = stf::GetFuncLib();
+@@ -766,6 +767,7 @@ wxMenuBar *wxStfApp::CreateUnifiedMenuBar(wxStfDoc* doc) {
+     }
+     analysis_menu->AppendSubMenu(userdefSub,wxT("User-defined functions"));
+ #endif
++#if 0
+     wxMenu *extensions_menu = new wxMenu;
+     for (std::size_t n=0;n<GetExtensionLib().size();++n) {
+ #if (wxCHECK_VERSION(2, 9, 0) || defined(MODULE_ONLY))
+@@ -775,6 +777,7 @@ wxMenuBar *wxStfApp::CreateUnifiedMenuBar(wxStfDoc* doc) {
+                                 wxString(GetExtensionLib()[n].menuEntry.c_str(), wxConvUTF8));
+ #endif        
+     }
++#endif 
+     
+     wxMenu *help_menu = new wxMenu;
+     help_menu->Append(wxID_HELP, wxT("Online &help\tF1"));
+@@ -787,7 +790,7 @@ wxMenuBar *wxStfApp::CreateUnifiedMenuBar(wxStfDoc* doc) {
+     menu_bar->Append(m_edit_menu, wxT("&Edit"));
+     menu_bar->Append(m_view_menu, wxT("&View"));
+     menu_bar->Append(analysis_menu, wxT("&Analysis"));
+-    menu_bar->Append(extensions_menu, wxT("E&xtensions"));
++//    menu_bar->Append(extensions_menu, wxT("E&xtensions"));
+     menu_bar->Append(help_menu, wxT("&Help"));
+ 
+     return menu_bar;
+diff --git a/src/app/app.h b/src/app/app.h
+index 3408a6e..418c478 100755
+--- a/src/app/app.h
++++ b/src/app/app.h
+@@ -345,8 +345,8 @@ public:
+ 
+     //! Retrieves the user-defined extension functions.
+     /*! \return A vector containing the user-defined functions.
+-     */
+     const std::vector< stf::Extension >& GetExtensionLib() const { return extensionLib; }
++     */
+ 
+     //! Retrieves the cursor settings dialog.
+     /*! \return A pointer to the cursor settings dialog.
+@@ -515,7 +515,7 @@ private:
+     // Registry:
+     boost::shared_ptr<wxFileConfig> config;
+     std::vector<stf::storedFunc> funcLib;
+-    std::vector< stf::Extension > extensionLib;
++//    std::vector< stf::Extension > extensionLib;
+     // Pointer to the cursors settings dialog box
+     wxStfCursorsDlg* CursorsDialog;
+     wxDocTemplate* m_cfsTemplate, *m_hdf5Template, *m_txtTemplate,*m_abfTemplate,
+diff --git a/src/app/childframe.cpp b/src/app/childframe.cpp
+index b45625b..b8ad637 100755
+--- a/src/app/childframe.cpp
++++ b/src/app/childframe.cpp
+@@ -67,7 +67,7 @@
+ IMPLEMENT_CLASS(wxStfChildFrame, wxStfChildType)
+ 
+ BEGIN_EVENT_TABLE(wxStfChildFrame, wxStfChildType)
+-EVT_SPINCTRL( ID_SPINCTRLTRACES, wxStfChildFrame::OnSpinCtrlTraces )
++//EVT_SPINCTRL( ID_SPINCTRLTRACES, wxStfChildFrame::OnSpinCtrlTraces )
+ EVT_COMBOBOX( ID_COMBOACTCHANNEL, wxStfChildFrame::OnComboActChannel )
+ EVT_COMBOBOX( ID_COMBOINACTCHANNEL, wxStfChildFrame::OnComboInactChannel )
+ EVT_CHECKBOX( ID_ZERO_INDEX, wxStfChildFrame::OnZeroIndex)
+@@ -214,6 +214,7 @@ void wxStfChildFrame::CreateMenuTraces(const std::size_t value) {
+ 
+     m_mgr.AddPane( m_table, wxAuiPaneInfo().Caption(wxT("Results")).Position(pDoc->size()).
+                    CloseButton(false).Floatable().Dock().Top().Name(wxT("Results")) );
++
+     m_mgr.Update();
+     Refresh();
+ }
+@@ -318,6 +319,7 @@ void wxStfChildFrame::SetCurTrace(std::size_t n) {
+         trace_spinctrl->SetValue((int)n+1);
+ }
+ 
++#ifdef WITH_PYTHON
+ void wxStfChildFrame::OnSpinCtrlTraces( wxSpinEvent& event ){
+     event.Skip();
+ 
+@@ -339,6 +341,7 @@ void wxStfChildFrame::OnSpinCtrlTraces( wxSpinEvent& event ){
+         pView->GetGraph()->SetFocus();
+     }
+ }
++#endif
+ 
+ void wxStfChildFrame::OnActivate(wxActivateEvent &event) {
+     wxStfView* pView=(wxStfView*)GetView();
+diff --git a/src/app/childframe.h b/src/app/childframe.h
+index 9929da8..fe6d091 100755
+--- a/src/app/childframe.h
++++ b/src/app/childframe.h
+@@ -223,7 +223,7 @@ public:
+     void OnMenuHighlight(wxMenuEvent& event);
+     void OnShowselected(wxCommandEvent& event);
+     void OnZeroIndex(wxCommandEvent& event);
+-    void OnSpinCtrlTraces(wxSpinEvent& event);
++//    void OnSpinCtrlTraces(wxSpinEvent& event);
+     void OnComboActChannel(wxCommandEvent& event);
+     void OnComboInactChannel(wxCommandEvent& event);
+ 
+diff --git a/src/app/dlgs/smalldlgs.cpp b/src/app/dlgs/smalldlgs.cpp
+index 8e93843..870e390 100755
+--- a/src/app/dlgs/smalldlgs.cpp
++++ b/src/app/dlgs/smalldlgs.cpp
+@@ -1101,12 +1101,14 @@ srcFileNames(0)
+     
+     // SOURCE 2.- A wxGenericDirCtrl to select the source directory:
+ 
++#ifdef WITH_PYTHON
+     //wxGenericDirCtrl *mySrcDirCtrl; 
+     mySrcDirCtrl = new wxGenericDirCtrl(this, wxGENERICDIRCTRL_SRC, srcDir,
+         wxDefaultPosition, wxSize(300,300), wxDIRCTRL_DIR_ONLY);
+     // add to myLeftSizer
+     myLeftSizer->Add( mySrcDirCtrl, 0, wxEXPAND | wxALL , 2 );
+     // ---- A wxGenericDirCtrl to select the source directory:
++#endif
+ 
+     // Finally add myLeftSizer to the gridSizer
+     gridSizer->Add( myLeftSizer, 0, wxALIGN_LEFT, 5 );
+@@ -1142,6 +1144,7 @@ srcFileNames(0)
+ 
+     // DESTINATION 2.- A wxGenericDirCtrl to select the destiny directory:
+ 
++#ifdef WITH_PYTHON
+     //wxGenericDirCtrl *myDestDirCtrl; 
+     myDestDirCtrl = new wxGenericDirCtrl(this, wxGENERICDIRCTRL_DEST, destDir,
+         wxDefaultPosition, wxSize(300,300), wxDIRCTRL_DIR_ONLY);
+@@ -1152,7 +1155,7 @@ srcFileNames(0)
+     // Finally add myRightSizer to gridSizer and this to topSizer
+     gridSizer->Add( myRightSizer, 0, wxALIGN_RIGHT, 5);
+     topSizer->Add( gridSizer, 0, wxALIGN_CENTER, 5 );
+-
++#endif
+ 
+     // OK / Cancel buttons-----------------------------------------------
+     wxStdDialogButtonSizer* sdbSizer = new wxStdDialogButtonSizer();
+@@ -1249,6 +1252,7 @@ void wxStfConvertDlg::EndModal(int retCode) {
+ 
+ bool wxStfConvertDlg::OnOK() {
+ 
++#ifdef WITH_PYTHON
+     srcDir  = mySrcDirCtrl->GetPath();
+     destDir = myDestDirCtrl->GetPath();
+ 
+@@ -1271,6 +1275,7 @@ bool wxStfConvertDlg::OnOK() {
+         wxLogMessage(msg);
+         return false;
+     }
++#endif 
+     return true;
+ }
+ 
+diff --git a/src/app/parentframe.cpp b/src/app/parentframe.cpp
+index 9c1742e..ab73845 100755
+--- a/src/app/parentframe.cpp
++++ b/src/app/parentframe.cpp
+@@ -885,6 +885,7 @@ void wxStfParentFrame::OnMpl(wxCommandEvent& WXUNUSED(event))
+ {
+     if (wxGetApp().GetActiveDoc()==NULL) return;
+ 
++/*
+     wxWindow* pPython = DoPythonStuff(this, true);
+     if ( pPython == 0 ) {
+         wxGetApp().ErrorMsg(wxT("Can't create a window for matplotlib\nPointer is zero"));
+@@ -893,6 +894,7 @@ void wxStfParentFrame::OnMpl(wxCommandEvent& WXUNUSED(event))
+                        CloseButton(true).
+                        Show(true).Caption(wxT("Matplotlib")).Float().BestSize(800,600));
+     }
++*/
+     m_mgr.Update();
+ }
+ 
+diff --git a/src/core/core.cpp b/src/core/core.cpp
+index 73ba154..8da289e 100755
+--- a/src/core/core.cpp
++++ b/src/core/core.cpp
+@@ -65,13 +65,6 @@ bool stf::importFile(
+ ) {
+     try {
+         switch (type) {
+-        case stf::cfs: {
+-            int res = stf::importCFSFile(fName, ReturnData, progress);
+-            if (res==-7) {
+-                stf::importHEKAFile(fName, ReturnData, progress);
+-            }
+-            break;
+-        }
+         case stf::hdf5: {
+             stf::importHDF5File(fName, ReturnData, progress);
+             break;
+@@ -88,11 +81,19 @@ bool stf::importFile(
+             stf::importAXGFile(fName, ReturnData, progress, parent);
+             break;
+         }
+-        case stf::heka: {
++#ifndef WITH_BIOSIG
++	case stf::cfs: {
++	    int res = stf::importCFSFile(fName, ReturnData, progress);
++	    if (res!=-7) break;
++	    // else try importHEKAFile
++	}
++	case stf::heka: {
+             stf::importHEKAFile(fName, ReturnData, progress);
+             break;
+         }
+-#ifdef WITH_BIOSIG
++#else
++        case stf::cfs:
++        case stf::heka:
+         case stf::biosig: {
+             stf::importBSFile(fName, ReturnData, progress);
+             break;
+diff --git a/src/core/filelib/biosiglib.cpp b/src/core/filelib/biosiglib.cpp
+index d372bcf..5fe06ac 100644
+--- a/src/core/filelib/biosiglib.cpp
++++ b/src/core/filelib/biosiglib.cpp
+@@ -1,148 +1,196 @@
+-// This program is free software; you can redistribute it and/or
+-// modify it under the terms of the GNU General Public License
+-// as published by the Free Software Foundation; either version 2
+-// of the License, or (at your option) any later version.
+-
+-// This program is distributed in the hope that it will be useful,
+-// but WITHOUT ANY WARRANTY; without even the implied warranty of
+-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-// GNU General Public License for more details.
+-
+-// You should have received a copy of the GNU General Public License
+-// along with this program; if not, write to the Free Software
+-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+-
+-#include <string>
+-#include <iomanip>
+-#include <vector>
+-#include <boost/shared_ptr.hpp>
+-#include <boost/shared_array.hpp>
+-#ifndef MODULE_ONLY
+-#include <wx/wx.h>
+-#include <wx/progdlg.h>
+-#else
+-#include <iostream>
+-#endif
+-#include <biosig.h>
+-
+-#include "./../core.h"
+-#include "./biosiglib.h"
+-
+-class BiosigHDR {
+-  public:
+-    BiosigHDR(unsigned int NS, unsigned int N_EVENT) {
+-        pHDR = constructHDR(NS, N_EVENT);
+-    }
+-    ~BiosigHDR() {
+-        destructHDR(pHDR);
+-    }
+-
+-  private:
+-    HDRTYPE* pHDR;
+-};
+-
+-void stf::importBSFile(const wxString &fName, Recording &ReturnData, bool progress, wxWindow* parent) {
+-#ifndef MODULE_ONLY
+-    wxProgressDialog progDlg( wxT("Biosig binary file import"), wxT("Starting file import"),
+-                              100, parent, wxPD_SMOOTH | wxPD_AUTO_HIDE | wxPD_APP_MODAL | wxPD_CAN_SKIP );
+-#endif
+-    std::string errorMsg("Exception while calling std::importBSFile():\n");
+-    std::string yunits;
+-    // =====================================================================================================================
+-    //
+-    // Open an AxoGraph file and read in the data
+-    //
+-    // =====================================================================================================================
+-    
+-#if (wxCHECK_VERSION(2, 9, 0) || defined(MODULE_ONLY))
+-    HDRTYPE* hdr =  sopen( fName.c_str(), "r", NULL );
+-#else
+-    HDRTYPE* hdr =  sopen( fName.mb_str(), "r", NULL );
+-#endif
+-    if (hdr==NULL) {
+-        errorMsg += "\nBiosig header is empty";
+-        ReturnData.resize(0);
+-	sclose(hdr);
+-        throw std::runtime_error(std::string(errorMsg.c_str()));
+-    }
+-    hdr->FLAG.ROW_BASED_CHANNELS = 1;
+-    size_t blks = sread(NULL, 0, hdr->NS*hdr->NRec*hdr->SPR, hdr);
+-
+-#ifdef _STFDEBUG
+-    std::cout << "Number of channels: " << hdr->NS << std::endl;
+-    std::cout << "Number of records per channel: " << hdr->NRec << std::endl;
+-    std::cout << "Number of samples per record: " << hdr->SPR << std::endl;
+-    std::cout << "Data size: " << hdr->data.size[0] << "x" << hdr->data.size[1] << std::endl;
+-    std::cout << "Sampling rate: " << hdr->SampleRate << std::endl;
+-    std::cout << "Number of events: " << hdr->EVENT.N << std::endl;
+-    int	res = hdr2ascii(hdr, stdout, 3);
+-#endif
+-
+-    int nchannels = hdr->NS;
+-    for (int nc=0; nc<nchannels; ++nc) {
+-        int nsections = hdr->NRec;
+-
+-        Channel TempChannel(nsections);
+-        TempChannel.SetChannelName(""); // TODO: hdr->channelname[nc];
+-        TempChannel.SetYUnits(""); // TODO: hdr->yunits[nc];
+-        
+-        for (int ns=0; ns<nsections; ++ns) {
+-            if (progress) {
+-                int progbar =
+-                    // Channel contribution:
+-                    (int)(((double)nc/(double)nchannels)*100.0+
+-                          // Section contribution:
+-                          (double)ns/(double)nsections*(100.0/nchannels));
+-#ifndef MODULE_ONLY
+-                wxString progStr;
+-                progStr << wxT("Reading channel #") << nc + 1 << wxT(" of ") << nchannels
+-                        << wxT(", Section #") << ns + 1 << wxT(" of ") << nsections;
+-                progDlg.Update(progbar, progStr);
+-#else
+-                std::cout << "\r";
+-                std::cout << progbar << "%" << std::flush;
+-#endif
+-            }
+-            Section TempSection(
+-                                hdr->SPR, // TODO: hdr->nsamplingpoints[nc][ns]
+-                                "" // TODO: hdr->sectionname[nc][ns]
+-            );
+-            std::copy(&(hdr->data.block[nc*hdr->SPR]), &(hdr->data.block[(nc+1)*hdr->SPR]), TempSection.get_w().begin());
+-            try {
+-                TempChannel.InsertSection(TempSection, ns);
+-            }
+-            catch (...) {
+-                ReturnData.resize(0);
+-                sclose(hdr);
+-                destructHDR(hdr);
+-                throw;
+-            }
+-        }
+-        try {
+-            if ((int)ReturnData.size() < nchannels) {
+-                ReturnData.resize(nchannels);
+-            }
+-            ReturnData.InsertChannel(TempChannel, nc);
+-        }
+-        catch (...) {
+-            ReturnData.resize(0);
+-            sclose(hdr);
+-            destructHDR(hdr);
+-            throw;
+-        }
+-    }
+-    ReturnData.SetXScale(hdr->SampleRate);
+-    ReturnData.SetComment(""); // TODO: hdr->comment
+-    ReturnData.SetDate(""); // TODO: hdr->datestring
+-    ReturnData.SetTime(""); // TODO: hdr->timestring
+-
+-#ifdef MODULE_ONLY
+-    if (progress) {
+-        std::cout << "\r";
+-        std::cout << "100%" << std::endl;
+-    }
+-#endif
+-
+-    sclose(hdr);
+-    destructHDR(hdr);
+-}
++// This program is free software; you can redistribute it and/or
++// modify it under the terms of the GNU General Public License
++// as published by the Free Software Foundation; either version 2
++// of the License, or (at your option) any later version.
++
++// This program is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++
++// You should have received a copy of the GNU General Public License
++// along with this program; if not, write to the Free Software
++// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++
++// Copyright 2012 Alois Schloegl, IST Austria <alois.schloegl@ist.ac.at>
++
++#include <string>
++#include <iomanip>
++#include <vector>
++#include <boost/shared_ptr.hpp>
++#include <boost/shared_array.hpp>
++#include <sstream>
++#include <biosig.h>
++
++#include "../core.h"
++#include "./biosiglib.h"
++
++class BiosigHDR {
++  public:
++    BiosigHDR(unsigned int NS, unsigned int N_EVENT) {
++        pHDR = constructHDR(NS, N_EVENT);
++    }
++    ~BiosigHDR() {
++        destructHDR(pHDR);
++    }
++
++  private:
++    HDRTYPE* pHDR;
++};
++
++void stf::importBSFile(const wxString &fName, Recording &ReturnData, bool progress) {
++
++    std::string errorMsg("Exception while calling std::importBSFile():\n");
++    std::string yunits;
++    // =====================================================================================================================
++    //
++    // Open an AxoGraph file and read in the data
++    //
++    // =====================================================================================================================
++    
++#if (wxCHECK_VERSION(2, 9, 0) || defined(MODULE_ONLY))
++    HDRTYPE* hdr =  sopen( fName.c_str(), "r", NULL );
++#else
++    HDRTYPE* hdr =  sopen( fName.mb_str(), "r", NULL );
++#endif
++
++    if (hdr==NULL || serror2(hdr)) {
++        errorMsg += "\nBiosig header is empty";
++        ReturnData.resize(0);
++        destructHDR(hdr);	// free allocated memory
++        throw std::runtime_error(errorMsg.c_str());
++    }
++    hdr->FLAG.ROW_BASED_CHANNELS = 0;
++    /* size_t blks = */ sread(NULL, 0, hdr->NRec, hdr);
++
++#ifdef _STFDEBUG
++    std::cout << "Number of channels: " << hdr->NS << std::endl;
++    std::cout << "Number of records per channel: " << hdr->NRec << std::endl;
++    std::cout << "Number of samples per record: " << hdr->SPR << std::endl;
++    std::cout << "Data size: " << hdr->data.size[0] << "x" << hdr->data.size[1] << std::endl;
++    std::cout << "Sampling rate: " << hdr->SampleRate << std::endl;
++    std::cout << "Number of events: " << hdr->EVENT.N << std::endl;
++    /*int res = */ hdr2ascii(hdr, stdout, 4);
++#endif
++
++    // ensure the event table is in chronological order	
++    sort_eventtable(hdr);
++
++    /*
++	count sections and generate list of indeces indicating start and end of sweeps
++     */	
++    size_t LenIndexList = 256; 
++    if (LenIndexList > hdr->EVENT.N) LenIndexList = hdr->EVENT.N + 2;
++    size_t *SegIndexList = (size_t*)malloc(LenIndexList*sizeof(size_t)); 
++    uint32_t nsections = 0; 
++    SegIndexList[nsections] = 0; 
++    size_t MaxSectionLength = 0; 
++    for (size_t k=0; k <= hdr->EVENT.N; k++) {
++	if (LenIndexList <= nsections+2) {
++		LenIndexList *=2; 
++		SegIndexList = (size_t*)realloc(SegIndexList, LenIndexList*sizeof(size_t)); 
++	}
++	/* 
++           count number of sections and stores it in nsections; 
++  	   EVENT.TYP==0x7ffe indicate number of breaks between sweeps
++	   SegIndexList includes index to first sample and index to last sample,
++	   thus, the effective length of SegIndexList is the number of 0x7ffe plus two.
++	*/
++	if (0) ; 
++        else if (k>=hdr->EVENT.N)		SegIndexList[++nsections] = hdr->NRec*hdr->SPR; 
++	else if (hdr->EVENT.TYP[k]==0x7ffe)	SegIndexList[++nsections] = hdr->EVENT.POS[k]; 
++	else					continue; 
++
++        size_t SPS = SegIndexList[nsections]-SegIndexList[nsections-1];	// length of segment, samples per segment
++	if (MaxSectionLength < SPS) MaxSectionLength = SPS;
++    }
++
++    // allocate local memory for intermediate results;    
++    const int strSize=100;     
++    char str[strSize];
++
++    for (size_t nc=0; nc<hdr->NS; ++nc) {
++	Channel TempChannel(nsections);
++	TempChannel.SetChannelName(hdr->CHANNEL[nc].Label);
++#if defined(BIOSIG_VERSION) && (BIOSIG_VERSION > 10301)
++        TempChannel.SetYUnits(PhysDim3(hdr->CHANNEL[nc].PhysDimCode));
++#else
++        PhysDim(hdr->CHANNEL[nc].PhysDimCode,str);
++        TempChannel.SetYUnits(str);
++#endif
++
++        for (size_t ns=1; ns<=nsections; ns++) {
++	    size_t SPS = SegIndexList[ns]-SegIndexList[ns-1];	// length of segment, samples per segment
++
++            if (progress) {
++                int progbar = 100.0*(1.0*ns/(nsections+1) + nc)/(hdr->NS); 
++#if 0 //#ifndef MODULE_ONLY
++                wxString progStr;
++                progStr << wxT("Reading channel #") << nc + 1 << wxT(" of ") << hdr->NS
++                        << wxT(", Section #") << ns + 1 << wxT(" of ") << nsections;
++                bool skip = false;
++                progDlg.Update(progbar, progStr, &skip);
++                if (skip) {
++                    RecordingInOut.resize(0);
++                    return;
++                }
++#else
++                std::cout << "\r";
++                std::cout << progbar << "%" << std::flush;
++#endif
++            }
++
++		char sweepname[20];
++		sprintf(sweepname,"sweep %i",(int)ns);		
++		Section TempSection(
++                                SPS, // TODO: hdr->nsamplingpoints[nc][ns]
++                                "" // TODO: hdr->sectionname[nc][ns]
++            	);
++
++		std::copy(&(hdr->data.block[nc*hdr->SPR*hdr->NRec + SegIndexList[ns-1]]), 
++			  &(hdr->data.block[nc*hdr->SPR*hdr->NRec + SegIndexList[ns]]), 
++			  TempSection.get_w().begin() );
++
++		try {
++			TempChannel.InsertSection(TempSection, ns-1);
++		}
++		catch (...) {
++			ReturnData.resize(0);
++			destructHDR(hdr);
++			throw;
++		}
++	}        
++        try {
++		if (ReturnData.size() < hdr->NS) {
++			ReturnData.resize(hdr->NS);
++		}
++		ReturnData.InsertChannel(TempChannel, nc);
++        }
++        catch (...) {
++		ReturnData.resize(0);
++		destructHDR(hdr);
++		throw;
++        }
++    }
++
++    free(SegIndexList); 	
++
++    ReturnData.SetXScale(1000.0/hdr->SampleRate);
++    ReturnData.SetComment(hdr->FileName);
++
++    struct tm T; 
++    gdf_time2tm_time_r(hdr->T0, &T); 
++    strftime(str,strSize,"%Y-%m-%d",&T);
++    ReturnData.SetDate(str);
++    strftime(str,strSize,"%H:%M:%S",&T);
++    ReturnData.SetTime(str);
++
++#ifdef MODULE_ONLY
++    if (progress) {
++        std::cout << "\r";
++        std::cout << "100%" << std::endl;
++    }
++#endif
++
++    destructHDR(hdr);
++}
+diff --git a/src/core/filelib/biosiglib.h b/src/core/filelib/biosiglib.h
+index 5d8ee0e..d2ff9f2 100644
+--- a/src/core/filelib/biosiglib.h
++++ b/src/core/filelib/biosiglib.h
+@@ -35,6 +35,8 @@
+ #ifndef _BIOSIGLIB_H
+ #define _BIOSIGLIB_H
+ 
++#include "../core.h"
++
+ namespace stf {
+ 
+ //! Open an BIOSIG file and store its contents to a Recording object.
+@@ -43,8 +45,7 @@ namespace stf {
+  *         the data stored in \e fName.
+  *  \param progress True if the progress dialog should be updated.
+  */
+-    void importBSFile(const wxString& fName, Recording& ReturnData, bool progress = true,
+-                       wxWindow* parent=NULL);
++void importBSFile(const wxString &fName, Recording &ReturnData, bool progress);
+ 
+ }
+ 
