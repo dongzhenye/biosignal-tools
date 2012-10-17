@@ -1964,6 +1964,9 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	else if (!memcmp(Header1,".snd",5))
 		hdr->TYPE = SND;
 
+	else if (!memcmp(Header1,"\x54\x44\x53\x6d",4))
+		hdr->TYPE = TDMS; 	// http://www.ni.com/white-paper/5696/en
+
 	else if ((hdr->HeadLen>30) && !memcmp(Header1,"POLY SAMPLE FILEversion ",24) && !memcmp(Header1+28, "\x0d\x0a\x1a",3))
 		hdr->TYPE = TMS32;
 	else if ((hdr->HeadLen>35) && !memcmp(Header1,"FileId=TMSi PortiLab sample log file\x0a\x0dVersion=",35))
@@ -2131,7 +2134,8 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ SQLite,    	"SQLite" },
 	{ STATA,    	"STATA" },
 	{ SVG,    	"SVG" },
-        { SYNERGY,      "SYNERGY"},
+	{ SYNERGY,      "SYNERGY"},
+	{ TDMS,    	"TDMS (NI)" },
 	{ TIFF,    	"TIFF" },
 	{ TMS32,    	"TMS32" },
 	{ TMSiLOG,    	"TMSiLOG" },
@@ -9843,10 +9847,34 @@ if (VERBOSE_LEVEL>8)
 		}
 	}
 
+	else if (hdr->TYPE==TDMS) {
+		/*
+			Specification obtained from http://www.ni.com/white-paper/5696/en
+			however, there are also TDMS data out there, that is based on an XML header 
+ 			and a separate binary file. This is somewhat confusing. 
+		 */ 
+		fprintf(stderr,"Format TDMS is very experimental");
+
+#define kTocMetaData 		(1L<<1)
+#define kTocRawData 		(1L<<3)
+#define kTocDAQmxRawData 	(1L<<7)
+#define kTocInterleavedData 	(1L<<5) 
+#define kTocBigEndian 		(1L<<6)
+#define kTocNewObjList 		(1L<<2)
+
+		char flagBigEndian = (beu32p(hdr->AS.Header+4) & kTocBigEndian) != 0; 
+		uint32_t ToCmask = leu32p(hdr->AS.Header+4);
+		hdr->VERSION 	 = leu32p(hdr->AS.Header+8);
+		uint64_t nextSegmentOffset = leu64p(hdr->AS.Header+12);
+		uint64_t rawDataOffset = leu64p(hdr->AS.Header+20);
+
+		biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"Format TDMS is currently not supported"); 
+	}
+
 	else if (hdr->TYPE==TMS32) {
-		hdr->VERSION 	= lei16p(hdr->AS.Header+31);
-		hdr->SampleRate = lei16p(hdr->AS.Header+114);
-		size_t NS 	= lei16p(hdr->AS.Header+119);
+		hdr->VERSION 	= leu16p(hdr->AS.Header+31);
+		hdr->SampleRate = leu16p(hdr->AS.Header+114);
+		size_t NS 	= leu16p(hdr->AS.Header+119);
 		hdr->HeadLen 	= 217 + NS*136;
 		if (hdr->HeadLen > count) {
 			hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen);
