@@ -42,18 +42,18 @@ int sload( inSLOAD_t* p)
 {
 	// read header
 	hdr = sopen( p->FileName, "r", hdr ); 
-	p->res = serror();
+	p->res = serror2(hdr);
 	if (p->res) return(0);
 
 	// read data
 	biosig_data_type* data = NULL;
 	sread(data, 0, -1, hdr);
-	p->res = serror();
+	p->res = serror2(hdr);
 	if (p->res) return(0);
 
 	// close file
 	sclose(hdr);
-	p->res = serror();
+	p->res = serror2(hdr);
 	return(0);
 } 
 
@@ -62,17 +62,17 @@ int UFPE_BioSigOpen( inSOpen_t* p)
 // IGOR wrapper for Biosig.SOpen()
 {
 
-   int    hState;
+      int hState;
       hdr = sopen( p->FileName, "r", hdr ); 
-      p->res = (double)B4C_ERRNUM;				// 
-      if ( B4C_ERRNUM )
+      p->res = (double)hdr->AS.B4C_ERRNUM;				// 
+      if ( hdr->AS.B4C_ERRNUM )
       {
       	 char buf[500];
          sprintf( buf, "\t\tUFPE_BioSigOpen...receives '%s' : %s,  returns code=%d \r",
-                          p->FileName, B4C_ERRMSG, B4C_ERRNUM ); 
+                          p->FileName, hdr->AS.B4C_ERRMSG, hdr->AS.B4C_ERRNUM ); 
          XOPNotice( buf ); 
-		 B4C_ERRNUM = B4C_NO_ERROR;
-	  }
+	 hdr->AS.B4C_ERRNUM = B4C_NO_ERROR;
+	}
   p->res = 0; 
   return 0;								// Returning 0 prevents IGOR from doing anything with the error (no error box, no debugger)
 }
@@ -81,7 +81,7 @@ int UFPE_BioSigOpen( inSOpen_t* p)
 int UFPE_BioSigClose( inSClose_t *p)
 {
    short     code    = sclose( hdr );
-   p->res = serror();                        // ..we return the error code to the calling function. After having done all that...
+   p->res = serror2(hdr);                        // ..we return the error code to the calling function. After having done all that...
    return 0;                             // ..we don't want IGOR to do anything with the error (no error box, no debugger)
 }
 
