@@ -6,15 +6,26 @@ This library is called "BioSig for C/C++" and is complementary to "BioSig for Oc
 
 BioSig4C++ provides several tools:  
 
-(1) "libbiosig" provides a library for accessing different dataformats. 
+(1) = LIBRARIES = 
+(1a) "libbiosig" provides a library for accessing different dataformats. 
 The supported data formats are listed here: 
 http://pub.ist.ac.at/~schloegl/biosig/TESTED
+(1b) "libgdf" is a lightweight version of libbiosig, supporting only the GDF format. 
+it requires only GCC not G++ for linking, has potentially much less security loopholes (XML) and bugs, 
+and a much smaller memory footprint, which might be especially useful for embedded devices. 
+It's interface is the same than for libbiosig, namely biosig.h
+(1c) "libbiosig2" is a level two interface for managing multiple files, 
+it resembles the interface of edflib. It's interface is defined in biosig2.h.
+Currently, this is in an experimental state 
 
 The following DEFINES are recommended and require:
  -D=WITH_CHOLMOD        used for re-referencing of data, REQUIREMENT: cholmod from libsuitesparse
  -D=WITH_ZLIB	        used to handle gzip-ped files,  REQUIREMENT: zlib (http://zlib.net/)
+There are some more defines to tweak your version.
+ -D=NDEBUG		removes and debugging information 
+ -D=WITH_PTHREAD 	recommended for multi-threaded appliations
  -D=WITH_GSL	        provides interface to GSL, REQUIREMENT: GNU Scientific Library (GSL), 
- -D=WITH_FEF	        includes support for FEF-format from CNSystems (fails with MinGW) 
+ -D=WITH_FEF	        includes support for FEF-format from CNSystems
  -D=WITH_FAMOS	        includes (partial) support for FAMOS format 
  -D=__4HAERTEL__	support for special flavor of FAMOS format (experimental) 
  Other flags are used for experimental development 
@@ -22,9 +33,11 @@ The following DEFINES are recommended and require:
  -D=WITH_LIBXML2	experimental: tinyxml is replaced by libxml2
 If some libraries are not available on your system, remove the corresponding DEFINES in Makefile. 
 
-(2) "save2gdf" is a converter between different file formats, 
+
+(2) = save2gdf = is a converter between different file formats, 
 including but not limited to SCP-ECG(EN1064), HL7aECG (FDA-XML), GDF, EDF, BDF, CWFB.
-    save2gdf can be also used to upload or retrieve data from a bscs server. 
+    save2gdf can be also used to upload or retrieve data from a bscs server, and to display 
+    the header information, in ascii and in JSON format. 
 
 (3) "mexSLOAD" is a MEX-interface for Octave and Matlab
 for details see mex/README
@@ -44,8 +57,10 @@ see ./ruby/test.rb for more information
 Interfaces to other languages (including Java, PHP, Perl and TCL) are also provided through 
 SWIG. However, these are very experimental
 
-(5) SigViewer 
+(5) = SigViewer =
 Requirement: qmake, Qt4
+   an important patch to overcome several limitations (event handling beyond 16.7 Mio samples)
+   is applied. 
 
 (6) Precompiled binaries for Win32
    win32/save2gdf.exe  binary converter
@@ -53,8 +68,8 @@ Requirement: qmake, Qt4
    mma/sload.exe     Mathematica binding through Mathlink interface
    mex/mexSLOAD.mexw32   Mex-file for Win32/Matlab
 
-(7) MathLink interface to Mathematica
-   see ../mma/ for more details. 
+(7) = MathLink interface to Mathematica =
+   see mma/sload, mma/hdrinfo.nb, mma/mySLOAD.nb for more details. 
 
 
 The internal data structure resemble the header structure similar to

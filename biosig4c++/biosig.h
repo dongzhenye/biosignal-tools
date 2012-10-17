@@ -589,7 +589,7 @@ long int stell(HDRTYPE* hdr);
 /*	returns position of file point in segments
  --------------------------------------------------------------- */
 
-
+#ifndef  ONLYGDF
 int 	serror() ATT_DEPREC;
 /*	handles errors; it reports whether an error has occured.
  *	if yes, an error message is displayed, and the error status is reset.
@@ -600,6 +600,7 @@ int 	serror() ATT_DEPREC;
  *	which is not re-entrant, because two opened files share the same 
  *	error variables.  
  --------------------------------------------------------------- */
+#endif //ONLYGDF
 
 int 	serror2(HDRTYPE* hdr);
 /*	handles errors; it reports whether an error has occured.

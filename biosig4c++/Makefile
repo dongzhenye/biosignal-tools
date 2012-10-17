@@ -420,10 +420,16 @@ sopen_scp_read.o: t210/sopen_scp_read.c biosig-dev.h biosig.h biosig.h t210/stru
 scp-decode.o: t210/scp-decode.cpp biosig-dev.h biosig.h t210/structures.h t210/codes.h
 	$(CC) -c $(CFLAGS) $(INCPATH) -o "$@" "$<"
 
+gdf.o: biosig.c biosig-dev.h biosig.h
+	$(CC) -c -D=ONLYGDF $(CFLAGS) $(INCPATH) -o "$@" "$<"
+
 #getlogin_r.o: win32/getlogin_r.c
 #	$(CC) -c $(CFLAGS) $(INCPATH) -o "$@" "$<"
 
 ########### WIN32 ##################
+
+win32/gdf.obj: biosig.c biosig-dev.h biosig.h
+	$(MinGWCC) -c -D=ONLYGDF $(MinGWCFLAGS) -o "$@" "$<"
 
 win32/sopen_scp_read.obj: t210/sopen_scp_read.c biosig-dev.h biosig.h t210/structures.h
 	$(MinGWCC) -c $(MinGWCFLAGS) -o "$@" "$<"
@@ -456,6 +462,9 @@ win32/sigviewer.exe: win32/libbiosig.a win32/libbiosig.dll
 	-$(COPY) $(PathToSigViewerWIN32)/bin/release/sigviewer.exe win32/sigviewer.exe
 
 ########### WIN64 ##################
+
+win64/gdf.obj: biosig.c biosig-dev.h biosig.h
+	$(MinGW64CC) -c -D=ONLYGDF $(MinGW64CFLAGS) -o "$@" "$<"
 
 win64/sopen_scp_read.obj: t210/sopen_scp_read.c biosig-dev.h biosig.h t210/structures.h
 	$(MinGW64CC) -c $(MinGW64CFLAGS) -o "$@" "$<"
@@ -527,6 +536,16 @@ tcl: libbiosig.$(LIBEXT) tcl/biosig.i
 #	WIN32 - BUILD
 #############################################################
 
+win32/libgdf.a: win32/gdf.obj
+	-$(DELETE) "$@"
+	$(CROSS)-$(AR) "$@" "$<"
+
+win32/libgdf.dll: win32/gdf.obj
+	$(MinGWLINK) -shared -fPIC  $(MinGWLIBS) -o "$@" -Wl,--output-def,win32/libgdf.def,--out-implib,win32/libgdf.dll.a
+
+win32/libgdf.lib: win32/libgdf.a 
+	$(COPY) "$<" "$@"
+
 win32/libbiosig.lib: win32/libbiosig.a 
 	$(COPY) "$<" "$@"
 
@@ -560,6 +579,16 @@ win32 exe: win32/save2gdf.exe win32/libbiosig.dll win32/libbiosig.a #mexw32 win3
 #############################################################
 #	WIN64 - BUILD
 #############################################################
+
+win64/libgdf.a: win64/gdf.obj
+	-$(DELETE) "$@"
+	$(CROSS64)-$(AR) "$@" "$<"
+
+win64/libgdf.dll: win64/gdf.obj
+	$(MinGW64LINK) -shared -fPIC  $(MinGW64LIBS) -o "$@" -Wl,--output-def,win64/libgdf.def,--out-implib,win64/libgdf.dll.a
+
+win64/libgdf.lib: win64/libgdf.a 
+	$(COPY) "$<" "$@"
 
 win64/libbiosig.lib: win64/libbiosig.a 
 	$(COPY) "$<" "$@"
@@ -595,11 +624,22 @@ win64: win64/save2gdf.exe win64/libbiosig.dll win64/libbiosig.a #mexw64 win64mma
 #	GNU/Linux - BUILD
 #############################################################
 
-.phony libbiosig: libbiosig.a libbiosig.so libbiosig2.a libbiosig2.so 
+.phony libbiosig: libbiosig.a libbiosig.so libbiosig2.a libbiosig2.so libgdf.a libgdf.so
 
 t240/libcnsfef.a:
 #	$(MAKE) -C t240 regen		#
 	$(MAKE) -C t240 libcnsfef.a	# generate t240/*.o files
+
+libgdf.a: gdf.o
+	-$(DELETE) libgdf.a
+	$(AR) libgdf.a "$<"
+
+libgdf.so: gdf.o
+	$(CC) -shared -fPIC -Wl,-soname,"$@".${MAJOR_VERSION} $(LDLIBS) \
+		-o libgdf.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$<"
+	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} libbgdf.so.${MAJOR_VERSION}
+	ln -sf "$@".${MAJOR_VERSION} "$@"
+
 
 libbiosig.a: $(OBJECTS) t240/libcnsfef.a biosig.h biosig-dev.h
 	-$(DELETE) libbiosig.a

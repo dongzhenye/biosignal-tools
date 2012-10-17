@@ -81,6 +81,7 @@ char * xgethostname (void);
    Therefore, use of variables B4C_ERRNUM and B4C_ERRMSG is deprecated; 	
    Use instead serror2(hdr), hdr->AS.B4C_ERRNUM, hdr->AS.B4C_ERRMSG.   
   ----------------------------------------------------------------------- */
+// do not expose deprecated interface in libgdf	
 int B4C_ERRNUM ATT_DEPREC = 0;
 const char *B4C_ERRMSG ATT_DEPREC;
 
@@ -109,6 +110,9 @@ int VERBOSE_LEVEL = 0;
 extern "C" {
 #endif
 
+
+#ifndef  ONLYGDF
+
 int sopen_SCP_read     (HDRTYPE* hdr);
 int sopen_SCP_write    (HDRTYPE* hdr);
 int sopen_HL7aECG_read (HDRTYPE* hdr);
@@ -136,7 +140,7 @@ int sopen_dicom_read(HDRTYPE* hdr);
 }
 #endif
 
-
+#endif //ONLYGDF
 
 const uint16_t GDFTYP_BITS[] = {
 	8, 8, 8,16,16,32,32,64,64,32,64, 0, 0, 0, 0, 0,   /* 0  */
@@ -182,7 +186,7 @@ const char *gdftyp_string[] = {
 	"","","","","","","","float32","float64","float128"
 	};
 
-
+#ifndef  ONLYGDF
 const char *LEAD_ID_TABLE[] = { "unspecified",
 	"I","II","V1","V2","V3","V4","V5","V6",
 	"V7","V2R","V3R","V4R","V5R","V6R","V7R","X",
@@ -225,7 +229,6 @@ const char *LEAD_ID_TABLE[] = { "unspecified",
 	"ERL","ELA","ELB","ERA","ERB"
 */
 	, "\0\0" };  // stop marker
-
 
 /*
         This information was obtained from here:
@@ -282,6 +285,8 @@ const char *MIT_EVENT_DESC[] = {
         "condition 48",
         "not-QRS (not a getann/putann code)",        // code = 0 is mapped to 49(ACMAX)
         ""};
+#endif //ONLYGDF
+
 
 /* --------------------------------------------------- *
  *	Predefined Event Code Table                    *
@@ -562,6 +567,8 @@ void bef64a(  double i, uint8_t* r) {
 #endif
 
 
+#ifndef  ONLYGDF
+
 void* mfer_swap8b(uint8_t *buf, int8_t len, char FLAG_SWAP)
 {
 	if (VERBOSE_LEVEL==9)
@@ -594,7 +601,6 @@ void* mfer_swap8b(uint8_t *buf, int8_t len, char FLAG_SWAP)
 
 	return(buf);
 }
-
 
 /* --------------------------------
  * float to ascii[8] conversion
@@ -630,6 +636,10 @@ int is_nihonkohden_signature(char *str) {
   	strncmp(str, "DAE-2100D V02.00", 16)
   ));
 }
+
+#endif //ONLYGDF
+
+
 
 /*
 	compare first n characters of two strings, ignore case
@@ -1593,6 +1603,7 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[GETFILETYPE 101]! %i\n", hdr->HeadLen);
 
+#ifndef  ONLYGDF
    	const uint8_t MAGIC_NUMBER_FEF1[] = {67,69,78,13,10,0x1a,4,0x84};
 	const uint8_t MAGIC_NUMBER_FEF2[] = {67,69,78,0x13,0x10,0x1a,4,0x84};
 	const uint8_t MAGIC_NUMBER_Z[]    = {31,157,144};
@@ -1627,11 +1638,14 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
     			return(hdr);
     		}
     	}
+#endif //ONLYGDF
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[GETFILETYPE 200] %x %x!\n",leu16p(hdr->AS.Header),leu16p(hdr->AS.Header+154));
 
     	if (hdr->TYPE != unknown)
       		return(hdr);
+
+#ifndef  ONLYGDF
 	else if (beu32p(hdr->AS.Header) == 0x41424620) {
     	// else if (!memcmp(Header1,"ABF \x66\x66\xE6\x3F",4)) { // ABF v1.8
 	    	hdr->TYPE = ABF;
@@ -1777,12 +1791,16 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
     	}
     	else if (!memcmp(Header1,"fLaC",4))
 	    	hdr->TYPE = FLAC;
+#endif //ONLYGDF
+
     	else if (!memcmp(Header1,"GDF",3) && (hdr->HeadLen > 255)) {
 	    	hdr->TYPE = GDF;
 	    	char *tmp = strndup((char*)hdr->AS.Header+3,5);
 	    	hdr->VERSION 	= strtod(tmp,NULL);
 		free(tmp);
 	}
+
+#ifndef  ONLYGDF
     	else if (!memcmp(Header1,"GIF87a",6))
 	    	hdr->TYPE = GIF;
     	else if (!memcmp(Header1,"GIF89a",6))
@@ -2034,8 +2052,9 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	{	hdr->TYPE = MS_LNK; // Microsoft *.LNK format
 		hdr->FILE.LittleEndian = 1;
  	}
+#endif //ONLYGDF
 
-	if (VERBOSE_LEVEL>9) fprintf(stdout,"[228] %i %s %s \n",hdr->TYPE,GetFileTypeString(hdr->TYPE),hdr->FileName);
+	if (VERBOSE_LEVEL > 7) fprintf(stdout,"[228] %i %s %s \n",hdr->TYPE,GetFileTypeString(hdr->TYPE),hdr->FileName);
 
 	return(hdr);
 }
@@ -3375,22 +3394,23 @@ HDRTYPE* sopen(const char* FileName, const char* MODE, HDRTYPE* hdr)
  */
 {
 
-	const char*	GENDER = "XMFX";
-	const uint16_t	CFWB_GDFTYP[] = {17,16,3};
-	const float	CNT_SETTINGS_NOTCH[] = {0.0, 50.0, 60.0};
-	const float	CNT_SETTINGS_LOWPASS[] = {30, 40, 50, 70, 100, 200, 500, 1000, 1500, 2000, 2500, 3000};
-	const float	CNT_SETTINGS_HIGHPASS[] = {NAN, 0, .05, .1, .15, .3, 1, 5, 10, 30, 100, 150, 300};
-
 //    	unsigned int 	k2;
 //    	uint32_t	k32u;
     	size_t	 	count;
+#ifndef  ONLYGDF
     	char 		tmp[81];
 //    	double 		Dur;
 	char*		ptr_str;
 	struct tm 	tm_time;
 //	time_t		tt;
-	uint16_t	BCI2000_StatusVectorLength=0;	// specific for BCI2000 format
 
+	const char*	GENDER = "XMFX";
+	const uint16_t	CFWB_GDFTYP[] = {17,16,3};
+	const float	CNT_SETTINGS_NOTCH[] = {0.0, 50.0, 60.0};
+	const float	CNT_SETTINGS_LOWPASS[] = {30, 40, 50, 70, 100, 200, 500, 1000, 1500, 2000, 2500, 3000};
+	const float	CNT_SETTINGS_HIGHPASS[] = {NAN, 0, .05, .1, .15, .3, 1, 5, 10, 30, 100, 150, 300};
+	uint16_t	BCI2000_StatusVectorLength=0;	// specific for BCI2000 format
+#endif //ONLYGDF 
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN( %s, %s) \n",FileName, MODE);
 
@@ -3503,8 +3523,11 @@ else if (!strncmp(MODE,"r",1)) {
 		if (hdr->FileName[k]==FILESEP) name = k+1;
 		if (hdr->FileName[k]=='.')     ext  = k+1;
 	}
+
+#ifndef  ONLYGDF
 	const char *FileExt  = hdr->FileName+ext;
 	const char *FileName = hdr->FileName+name;
+#endif //ONLYGDF
 
 #ifdef __CURL_CURL_H
 	if (! strncmp(hdr->FileName,"file://", 7) 
@@ -3552,6 +3575,7 @@ else if (!strncmp(MODE,"r",1)) {
 	{
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN 101: <%s>\n",hdr->FileName);
 
+#ifndef  ONLYGDF
 		/* AINF */
 		if (!strcmp(FileExt, "ainf")) {
 			if (VERBOSE_LEVEL>8) fprintf(stdout,"getfiletype ainf1 %s %i\n",hdr->FileName,(int)ext);
@@ -3576,6 +3600,7 @@ else if (!strncmp(MODE,"r",1)) {
 			}
 			free(AINF_RAW_FILENAME);
 		}
+#endif //ONLYGDF
 	
 	        hdr->FILE.COMPRESSION = 0;
 		hdr   = ifopen(hdr,"rb");
@@ -3610,10 +3635,12 @@ else if (!strncmp(MODE,"r",1)) {
 	getfiletype(hdr);
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[201] FMT=%s Ver=%4.2f\n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
 
+#ifndef  ONLYGDF
 	if (hdr->TYPE != unknown)
 		;
     	else if (!memcmp(Header1,FileName,strspn(FileName,".")) && (!strcmp(FileExt,"HEA") || !strcmp(FileExt,"hea") ))
 	    	hdr->TYPE = MIT;
+#endif //ONLYGDF
 
     	if (hdr->TYPE == unknown) {
     		biosigERROR(hdr, B4C_FORMAT_UNKNOWN, "ERROR BIOSIG4C++ SOPEN(read): Dataformat not known.\n");
@@ -3670,6 +3697,7 @@ else if (!strncmp(MODE,"r",1)) {
 		}
 
     	}
+#ifndef  ONLYGDF
     	else if ((hdr->TYPE == EDF) || (hdr->TYPE == BDF))	{
                 if (count < 256) {
                         biosigERROR(hdr,  B4C_INCOMPLETE_FILE, "reading BDF/EDF fixed header failed");
@@ -10387,7 +10415,7 @@ if (VERBOSE_LEVEL>8)
 		}
     		return(hdr);
 	}
-
+#endif //ONLYGDF
 	else {
     		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "ERROR BIOSIG SOPEN(READ): data format is not supported");
     		ifclose(hdr);
@@ -10483,6 +10511,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 	if (VERBOSE_LEVEL>7)
 		fprintf(stdout,"sopen-W ns=%i (%s)\n",NS,GetFileTypeString(hdr->TYPE));
 
+#ifndef  ONLYGDF 
     	if ((hdr->TYPE==ASCII) || (hdr->TYPE==BIN)) {
 
 		size_t k;
@@ -10828,7 +10857,11 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		}
 	}
 
-    	else if ((hdr->TYPE==GDF) || (hdr->TYPE==GDF1)) {
+    	else 
+
+#endif //ONLYGDF 
+
+	      if ((hdr->TYPE==GDF) || (hdr->TYPE==GDF1)) {
 
 		struct2gdfbin(hdr);
 
@@ -10852,6 +10885,8 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 			fprintf(stdout,"GDFw h3\n");
 
 	}
+
+#ifndef  ONLYGDF 
 
     	else if ((hdr->TYPE==EDF) || (hdr->TYPE==BDF)) {
 	     	hdr->HeadLen   = (NS+1)*256;
@@ -11264,6 +11299,9 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 	}
 #endif  // WITH_TMSiLOG
 
+#endif //ONLYGDF 
+
+
 	else {
 		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Writing of format not supported");
 		return(NULL);
@@ -11291,11 +11329,14 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 	}
 
 	size_t bpb8 = 0;
+
+#ifndef  ONLYGDF
 	if (hdr->TYPE==AINF) {
 		hdr->AS.bpb = 4;
 		bpb8 = 32;
 	}
 	else
+#endif //ONLYGDF 
 		hdr->AS.bpb = 0;
 
 	typeof(hdr->NS) k; 
@@ -11662,8 +11703,10 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 	char SWAP = !hdr->FILE.LittleEndian;
 #endif
 
-	uint16_t MITTYP=0;
 	int stride = 1; 
+
+#ifndef  ONLYGDF
+	uint16_t MITTYP=0;
 	if (hdr->TYPE==MIT) {
 		MITTYP = *(uint16_t*)hdr->AS.auxBUF;
 		if (VERBOSE_LEVEL>7)
@@ -11673,6 +11716,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 		stride = 64; 
 	else if (hdr->TYPE==TMS32) 
 		stride = hdr->NS; 
+#endif //ONLYGDF
 
 	if (VERBOSE_LEVEL>7)
 		fprintf(stdout,"sread 223 alpha12bit=%i SWAP=%i spr=%i   %p\n", ALPHA12BIT, SWAP, hdr->SPR, hdr->AS.rawdata);
@@ -11697,10 +11741,12 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 		for (k4 = 0; k4 < count; k4++)
 		{  	uint8_t *ptr1;
 
+#ifndef  ONLYGDF
 			if (hdr->TYPE == FEF) {
 				ptr1 = CHptr->bufptr;
 			}
 			else
+#endif //ONLYGDF
 				ptr1 = hdr->AS.rawdata + (k4+toffset)*hdr->AS.bpb + CHptr->bi;
 
 
@@ -12032,7 +12078,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 			}
 
 		if (VERBOSE_LEVEL>7)
-			fprintf(stdout,"E%02i: s(%d,%d)= %d %e %e %e\n",(int)k1,k2,hdr->EVENT.CHN[k1],leu32p(ptr),sample_value,(*(double*)(ptr)),(*(float*)(ptr)));
+			fprintf(stdout,"E%02i: s(%d,%d)= %d %e %e %e\n",(int)k1,(int)k2,hdr->EVENT.CHN[k1],leu32p(ptr),sample_value,(*(double*)(ptr)),(*(float*)(ptr)));
 
 		}
 		free(ChanList);
@@ -12409,6 +12455,8 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 	}
 	else
 #endif
+
+#ifndef  ONLYGDF
 	if ((hdr->TYPE == ASCII) || (hdr->TYPE == BIN)) {
 		HDRTYPE H1;
 		H1.CHANNEL = NULL; 
@@ -12483,19 +12531,22 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 		count = hdr->NRec;
 		free(fn);
 	}
-	else if ((hdr->TYPE != SCP_ECG) && (hdr->TYPE != HL7aECG)) {
+	else 
+#endif //ONLYGDF
+	     if ((hdr->TYPE != SCP_ECG) && (hdr->TYPE != HL7aECG)) {
 		// for SCP: writing to file is done in SCLOSE
-	if (VERBOSE_LEVEL>7)
-		fprintf(stdout,"swrite 317 <%s>\n", hdr->FileName );
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"swrite 317 <%s>\n", hdr->FileName );
 
 		count = ifwrite((uint8_t*)(hdr->AS.rawdata), hdr->AS.bpb, hdr->NRec, hdr);
 
-	if (VERBOSE_LEVEL>7)
-		fprintf(stdout,"swrite 319 <%i>\n", (int)count);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"swrite 319 <%i>\n", (int)count);
 
 	}
 	else { 	// SCP_ECG, HL7aECG#ifdef CHOLMOD_H
-
+#ifndef  ONLYGDF
+		assert(0);
+#endif //ONLYGDF
 		count = 1;
 	}
 
@@ -12653,6 +12704,8 @@ int sclose(HDRTYPE* hdr)
 		}
 
 	}
+
+#ifndef  ONLYGDF
 	else if ((hdr->FILE.OPEN>1) && (hdr->TYPE==SCP_ECG)) {
 		uint16_t 	crc;
 		uint8_t*	ptr; 	// pointer to memory mapping of the file layout
@@ -12681,6 +12734,7 @@ int sclose(HDRTYPE* hdr)
 		sclose_HL7aECG_write(hdr);
 		hdr->FILE.OPEN = 0;
 	}
+#endif //ONLYGDF
 
 	if (hdr->FILE.OPEN > 0) {
 		int status = ifclose(hdr);
@@ -12700,12 +12754,16 @@ void biosigERROR(HDRTYPE *hdr, enum B4C_ERROR errnum, const char *errmsg) {
 	sets the local and the (deprecated) global error variables B4C_ERRNUM and B4C_ERRMSG
 	the global error variables are kept for backwards compatibility.
 */
+#ifndef  ONLYGDF
 	B4C_ERRNUM = errnum; 
 	B4C_ERRMSG = errmsg; 
+#endif //ONLYGDF
 	hdr->AS.B4C_ERRNUM = errnum; 
 	hdr->AS.B4C_ERRMSG = errmsg; 
 }
 
+#ifndef  ONLYGDF
+// do not expose deprecated interface in libgdf	
 int serror() {
 	int status = B4C_ERRNUM;
 	fprintf(stderr,"Warning: use of function SERROR() is deprecated - use SERROR2() instead");
@@ -12715,6 +12773,7 @@ int serror() {
 	}
 	return(status);
 }
+#endif //ONLYGDF
 
 int serror2(HDRTYPE *hdr) {
 	int status = hdr->AS.B4C_ERRNUM;
