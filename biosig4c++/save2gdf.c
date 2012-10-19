@@ -581,7 +581,7 @@ int main(int argc, char **argv){
 #ifndef WITHOUT_NETWORK
 	if (hdr->FILE.Des>0) 
 		savelink(source);
-#endif 
+#endif
 	if (VERBOSE_LEVEL>7)
 		fprintf(stdout,"\n[221] File %s opened. %i %i %i Des=%i\n",hdr->FileName,hdr->AS.bpb,hdr->NS,(int)(hdr->NRec),hdr->FILE.Des);
 
@@ -596,10 +596,11 @@ int main(int argc, char **argv){
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[236] SCLOSE finished\n");
 
 	sclose(hdr);
+
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[241] SCLOSE finished\n");
-	if ((status=serror2(hdr))) { 
-		destructHDR(hdr);
-		exit(status); 
-    	}	
+
+	status = serror2(hdr);
+	destructHDR(hdr);
+	exit(status); 
 }
 
