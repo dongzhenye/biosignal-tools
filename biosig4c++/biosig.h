@@ -152,7 +152,9 @@ enum FileFormat {
    otherwise, sopen() etc. is not re-entrant. 
 
    Therefore, use of variables B4C_ERRNUM and B4C_ERRMSG is deprecated; 	
-   Use instead serror2(hdr), hdr->AS.B4C_ERRNUM, hdr->AS.B4C_ERRMSG.   
+   Instead, use errorBIOSIG for setting error status, and 
+   serror2(hdr), hdr->AS.B4C_ERRNUM, hdr->AS.B4C_ERRMSG for error handling.   
+
  */
 extern int B4C_ERRNUM ATT_DEPREC;
 extern const char *B4C_ERRMSG ATT_DEPREC;
@@ -755,3 +757,4 @@ int asprintf_hdr2json(char **str, HDRTYPE* hdr);
 /****************************************************************************/
 
 #endif	/* __BIOSIG_EXT_H__ */
+

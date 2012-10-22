@@ -1254,6 +1254,10 @@ const char* GetEventDescription(HDRTYPE *hdr, size_t N) {
 	if (TYP < 256) // not defined by user
 		return NULL; 
 
+        // end of event: encoded by 0x8000+TYP  
+	if ((hdr->EVENT.TYP[N] & 0x8000) && (hdr->TYPE==GDF))
+			return (NULL);  
+
 	if ((hdr->EVENT.TYP[N] == 0x7fff) && (hdr->TYPE==GDF))
 			return "[neds]";
 
@@ -1264,7 +1268,7 @@ const char* GetEventDescription(HDRTYPE *hdr, size_t N) {
                         return ETD[k].desc;
         
         fprintf(stderr,"Warning: invalid event type 0x%04x\n",TYP);
-        return "Invalid event type";
+        return (NULL);
 }
 
 /****************************************************************************/

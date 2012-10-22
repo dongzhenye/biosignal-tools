@@ -519,8 +519,8 @@ void biosigERROR(HDRTYPE *hdr, enum B4C_ERROR errnum, const char *errmsg);
 
 /*
 	some important functions used internally, 
-	the interface for these functios is a bit clumsy and is 
-	(therefore) not 
+	the interface for these functios is a bit clumsy and are
+	therefore not exported to standard user applications. 
 */
 
 void struct2gdfbin(HDRTYPE *hdr);
