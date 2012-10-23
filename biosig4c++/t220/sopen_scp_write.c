@@ -1,7 +1,7 @@
 /*
 
-    $Id: sopen_scp_write.c,v 1.42 2009-04-09 15:08:14 schloegl Exp $
-    Copyright (C) 2005,2006,2007 Alois Schloegl <a.schloegl@ieee.org>
+    $Id$
+    Copyright (C) 2005,2006,2007,2012 Alois Schloegl <alois.schloegl@gmail.com>
 
     This file is part of the "BioSig for C/C++" repository 
     (biosig4c++) at http://biosig.sf.net/ 
@@ -42,7 +42,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 	struct tm* 	T0_tm;
 	double 		AVM, avm; 
 	uint16_t	avm16; 
-	aECG_TYPE*	aECG;		
+	struct aecg*	aECG;		
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN_SCP_WRITE 101\n");
 
@@ -53,8 +53,8 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 	uint8_t VERSION = 20; // (uint8_t)round(hdr->VERSION*10); // implemented version number 
 	if (hdr->aECG==NULL) {
 		fprintf(stderr,"Warning SOPEN_SCP_WRITE: No aECG info defined\n");
-		hdr->aECG = malloc(sizeof(aECG_TYPE));
-		aECG = (aECG_TYPE*)hdr->aECG;
+		hdr->aECG = malloc(sizeof(struct aecg));
+		aECG = (struct aecg*)hdr->aECG;
 		aECG->diastolicBloodPressure=0.0;				 
 		aECG->systolicBloodPressure=0.0;
 		aECG->MedicationDrugs="/0";
@@ -68,7 +68,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 		aECG->Section11.Statements = NULL; 
 	}
 	else 
-		aECG = (aECG_TYPE*)hdr->aECG;
+		aECG = (struct aecg*)hdr->aECG;
 
 
 //fprintf(stdout,"SCP-Write: IIb %s\n",hdr->aECG->ReferringPhysician);

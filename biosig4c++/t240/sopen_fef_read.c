@@ -6,8 +6,8 @@
     or the functions are discarded. Do not rely on the interface in this function
 
 
-    $Id: sandbox.c$
-    Copyright (C) 2009 Alois Schloegl <a.schloegl@ieee.org>
+    $Id$
+    Copyright (C) 2009,2012 Alois Schloegl <alois.schloegl@gmail.com>
     This file is part of the "BioSig for C/C++" repository 
     (biosig4c++) at http://biosig.sf.net/ 
 
@@ -70,9 +70,9 @@ EXTERN_C void sopen_fef_read(HDRTYPE* hdr) {
 	pos += rval.consumed;
 
 	/* backup info for proper freeing of memery */
-	hdr->aECG = malloc(sizeof(ASN1_t));
+	hdr->aECG = malloc(sizeof(struct asn1));
 	{
-		ASN1_t *asn1info = (ASN1_t*)hdr->aECG;
+		struct asn1 *asn1info = (struct asn1*)hdr->aECG;
 		asn1info->pduType = pduType; 
 		asn1info->SAS = SAS; 
 	}	
@@ -401,7 +401,7 @@ EXTERN_C void sclose_fef_read(HDRTYPE* hdr) {
 #ifdef WITH_FEF
 	
 	if (hdr->aECG) {
-		ASN1_t *asn1info = (ASN1_t*)hdr->aECG;	
+		struct asn1 *asn1info = (struct asn1*)hdr->aECG;	
 		ASN_STRUCT_FREE((*(asn_TYPE_descriptor_t *)(asn1info->pduType)), ((SessionArchiveSection_t*)asn1info->SAS));
 		free(hdr->aECG);
 		hdr->aECG = NULL; 

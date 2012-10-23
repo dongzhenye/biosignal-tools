@@ -384,7 +384,7 @@ extern int   VERBOSE_LEVEL; 	// used for debugging
 /*
 	This structure defines the fields used for "VitalFEF"
  */
-typedef struct {
+typedef struct asn1 {
 	void *pduType;
 	void *SAS;
 } ASN1_t;
@@ -392,7 +392,7 @@ typedef struct {
 /*
 	This structure defines the fields used for "Annotated ECG"
  */
-typedef struct {
+typedef struct aecg {
 	char*		test;		/* test field for annotated ECG */
 	
 	float		diastolicBloodPressure;		/* in mmHg */

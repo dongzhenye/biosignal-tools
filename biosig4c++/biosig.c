@@ -82,8 +82,8 @@ char * xgethostname (void);
    Use instead serror2(hdr), hdr->AS.B4C_ERRNUM, hdr->AS.B4C_ERRMSG.   
   ----------------------------------------------------------------------- */
 // do not expose deprecated interface in libgdf	
-int B4C_ERRNUM ATT_DEPREC = 0;
-const char *B4C_ERRMSG ATT_DEPREC;
+ATT_DEPREC int B4C_ERRNUM = 0;
+ATT_DEPREC const char *B4C_ERRMSG;
 
 
 #ifdef WITH_CHOLMOD
@@ -292,12 +292,12 @@ const char *MIT_EVENT_DESC[] = {
  *	Predefined Event Code Table                    *
  * --------------------------------------------------- */
 static uint8_t GLOBAL_EVENTCODES_ISLOADED = 0;
-struct global_t {
+ATT_DEPREC struct global_t {
 	uint16_t LenCodeDesc;
 	uint16_t *CodeIndex;
 	const char **CodeDesc;
 	char  	 *EventCodesTextBuffer;
-} Global ATT_DEPREC;  // deprecated since Oct 2012, v1.4.0
+} Global;  // deprecated since Oct 2012, v1.4.0
 
 // event table desription
 const struct etd_t ETD [] = { 
@@ -579,32 +579,34 @@ void bef64a(  double i, uint8_t* r) {
 void* mfer_swap8b(uint8_t *buf, int8_t len, char FLAG_SWAP)
 {
 	if (VERBOSE_LEVEL==9)
-
-        fprintf(stdout,"swap=%i %i %i \nlen=%i %2x%2x%2x%2x%2x%2x%2x%2x\n",(int)FLAG_SWAP, __BYTE_ORDER, __LITTLE_ENDIAN, (int)len, (unsigned)buf[0],(unsigned)buf[1],(unsigned)buf[2],(unsigned)buf[3],(unsigned)buf[4],(unsigned)buf[5],(unsigned)buf[6],(unsigned)buf[7]);
+        	fprintf(stdout,"swap=%i %i %i \nlen=%i %2x%2x%2x%2x%2x%2x%2x%2x\n",
+			(int)FLAG_SWAP, __BYTE_ORDER, __LITTLE_ENDIAN, (int)len, 
+			(unsigned)buf[0],(unsigned)buf[1],(unsigned)buf[2],(unsigned)buf[3],
+			(unsigned)buf[4],(unsigned)buf[5],(unsigned)buf[6],(unsigned)buf[7] );
 
 #ifndef S_SPLINT_S
-	typedef uint64_t iType;
 #if __BYTE_ORDER == __BIG_ENDIAN
         if (FLAG_SWAP) {
         	unsigned k;
-                for (k=len; k < sizeof(iType); buf[k++]=0);
-                *(iType*)buf = bswap_64(*(iType*)buf);
-        }
-        else
-                *(iType*)buf >>= (sizeof(iType)-len)*8;
-
+                for (k=len; k < sizeof(uint64_t); buf[k++]=0);
+                *(uint64_t*)buf = bswap_64(*(uint64_t*)buf);
+        } else {
+                *(uint64_t*)buf >>= (sizeof(uint64_t)-len)*8;
+	}
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
-        if (FLAG_SWAP)
-                *(iType*)buf = bswap_64(*(iType*)buf) >> (sizeof(iType)-len)*8;
-        else {
+        if (FLAG_SWAP) {
+                *(uint64_t*)buf = bswap_64(*(uint64_t*)buf) >> (sizeof(uint64_t)-len)*8;
+        } else {
         	unsigned k;
-		for (k=len; k < sizeof(iType); buf[k++]=0) {};
+		for (k=len; k < sizeof(uint64_t); buf[k++]=0) {};
 	}
 
 #endif
 #endif
 	if (VERBOSE_LEVEL==9)
-		fprintf(stdout,"%2x%2x%2x%2x%2x%2x%2x%2x %i %f\n",buf[0],buf[1],buf[2],buf[3],buf[4],buf[5],buf[6],buf[7],(int)*(uint64_t*)buf,*(double*)buf);
+		fprintf(stdout,"%2x%2x%2x%2x%2x%2x%2x%2x %i %f\n",
+			buf[0],buf[1],buf[2],buf[3],buf[4],buf[5],
+			buf[6],buf[7],(int)*(uint64_t*)buf,*(double*)buf );
 
 	return(buf);
 }
@@ -630,7 +632,8 @@ int ftoa8(char* buf, double num)
 	return (fabs(f1-f2) > (fabs(f1)+fabs(f2)) * 1e-6);
 }
 
-int is_nihonkohden_signature(char *str) {
+int is_nihonkohden_signature(char *str) 
+{
   return (!(
 	strncmp(str, "EEG-1100A V01.00", 16) &&
 	strncmp(str, "EEG-1100B V01.00", 16) &&
@@ -1031,20 +1034,20 @@ int iferror(HDRTYPE* hdr) {
 /*------------------------------------------------------------------------
 	sort event table according to EVENT.POS
   ------------------------------------------------------------------------*/
-typedef struct {
+struct event {
 	uint32_t POS;
 	uint32_t DUR;
 	uint16_t TYP;
 	uint16_t CHN;
-}  entry_t;
+};
 
-int compare_eventpos(const void *e1, const void *e2) {
-	return(((entry_t*)(e1))->POS - ((entry_t*)(e2))->POS);
+int compare_eventpos(struct event *e1, struct event *e2) {
+	return(((struct event*)(e1))->POS - ((struct event*)(e2))->POS);
 }
 
 void sort_eventtable(HDRTYPE *hdr) {
 	size_t k;
-	entry_t *entry = (entry_t*) calloc(hdr->EVENT.N,sizeof(entry_t));
+	struct event *entry = (struct event*) calloc(hdr->EVENT.N, sizeof(struct event));
 	if ((hdr->EVENT.DUR != NULL) && (hdr->EVENT.CHN != NULL))
 	for (k=0; k<hdr->EVENT.N;k++) {
 		entry[k].TYP = hdr->EVENT.TYP[k];
@@ -1058,7 +1061,7 @@ void sort_eventtable(HDRTYPE *hdr) {
 		entry[k].POS = hdr->EVENT.POS[k];
 	}
 
-	qsort(entry,hdr->EVENT.N,sizeof(entry_t),&compare_eventpos);
+	qsort(entry,hdr->EVENT.N, sizeof(struct event), &compare_eventpos);
 
 	if ((hdr->EVENT.DUR != NULL) && (hdr->EVENT.CHN != NULL))
 	for (k=0; k<hdr->EVENT.N;k++) {
@@ -1195,8 +1198,8 @@ fprintf(stdout,"write_gdf_eventtable is obsolete - use hdrEVT2rawEVT instead;\n"
 
 
 /* Stubs for deprecated functions */
-void FreeGlobalEventCodeTable() {} ATT_DEPREC // since Oct 2012, v1.4.0
-void LoadGlobalEventCodeTable() {} ATT_DEPREC // since Oct 2012, v1.4.0
+ATT_DEPREC void FreeGlobalEventCodeTable() {} // deprecated since Oct 2012, v1.4.0
+ATT_DEPREC void LoadGlobalEventCodeTable() {} // deprecated since Oct 2012, v1.4.0
 
 /*------------------------------------------------------------------------
 	adds free text annotation to event table
@@ -1212,7 +1215,7 @@ void FreeTextEvent(HDRTYPE* hdr,size_t N_EVENT, const char* annotation) {
 	annotation is not copied, but it is assumed that annotation string is also available after return 
 	usually, the string is available in hdr->AS.Header; still this can disappear (free, or rellocated)
 	before the Event table is destroyed. 
-  !!! */
+   !!! */
 
 	size_t k;
 	int flag;
@@ -1247,6 +1250,7 @@ void FreeTextEvent(HDRTYPE* hdr,size_t N_EVENT, const char* annotation) {
 		hdr->EVENT.CodeDesc[hdr->EVENT.LenCodeDesc] = annotation;
 		hdr->EVENT.LenCodeDesc++;
 	}
+
 	if (hdr->EVENT.LenCodeDesc > 255) {
 		biosigERROR(hdr, B4C_INSUFFICIENT_MEMORY, "Maximum number of user-defined events (256) exceeded");
 	}
@@ -1535,10 +1539,10 @@ void destructHDR(HDRTYPE* hdr) {
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"destructHDR(%s): free HDR.aECG\n",hdr->FileName);
     	if (hdr->aECG != NULL) {
-		if (((aECG_TYPE*)hdr->aECG)->Section8.NumberOfStatements>0)
-			free(((aECG_TYPE*)hdr->aECG)->Section8.Statements);
-		if (((aECG_TYPE*)hdr->aECG)->Section11.NumberOfStatements>0)
-			free(((aECG_TYPE*)hdr->aECG)->Section11.Statements);
+		if (((struct aecg*)hdr->aECG)->Section8.NumberOfStatements>0)
+			free(((struct aecg*)hdr->aECG)->Section8.Statements);
+		if (((struct aecg*)hdr->aECG)->Section11.NumberOfStatements>0)
+			free(((struct aecg*)hdr->aECG)->Section11.Statements);
     		free(hdr->aECG);
     	}
 
@@ -9612,7 +9616,7 @@ if (VERBOSE_LEVEL>8)
 		#define RH_LFILL         6   /* long filler */
 		#define RH_ALOG        828   /* max # chars in ASCII log */
 
-		typedef struct rawhdr {
+		struct rawhdr {
 			uint16_t rh_byteswab;          /* ERPSS byte swab indicator */
 			uint16_t rh_magic;             /* file magic number */
 			uint16_t rh_flags;             /* flags */
@@ -9641,7 +9645,7 @@ if (VERBOSE_LEVEL>8)
 			char     rh_filedesc[RH_DESC]; /* file description */
 			char     rh_arbdescs[RH_DESC]; /* (art. rej. descriptions) */
 			char     rh_alog[RH_ALOG];     /* ASCII log */
-		} RAWHDR;
+		};
 
 		if (count < sizeof(struct rawhdr)) {
 			hdr->HeadLen = sizeof(struct rawhdr);
@@ -12726,7 +12730,7 @@ int sclose(HDRTYPE* hdr)
 		uint8_t*	ptr; 	// pointer to memory mapping of the file layout
 
 		hdr->AS.rawdata = NULL;
-		aECG_TYPE* aECG = (aECG_TYPE*)hdr->aECG;
+		struct aecg* aECG = (struct aecg*)hdr->aECG;
 		if (aECG->Section5.Length>0) {
 			// compute CRC for Section 5
 			uint16_t crc = CRCEvaluate(hdr->AS.Header + aECG->Section5.StartPtr+2,aECG->Section5.Length-2); // compute CRC
@@ -13007,9 +13011,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%i\n", (int)c);
 /**	displaying header information                                      **/
 /****************************************************************************/
 // for backwards compatibility
-int hdr2json( HDRTYPE *hdr, FILE *fid)  {
+ATT_DEPREC int hdr2json( HDRTYPE *hdr, FILE *fid)  {
 	return fprintf_hdr2json(fid, hdr);
-} ATT_DEPREC   // deprecatedd since Oct 2012, v1.4.0
+} // deprecatedd since Oct 2012, v1.4.0
 
 int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
 {
@@ -13309,7 +13313,7 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 
 	if (VERBOSE>4) {
 		if (hdr->aECG && (hdr->TYPE==SCP_ECG)) {
-			aECG_TYPE* aECG = (aECG_TYPE*)hdr->aECG;
+			struct aecg* aECG = (struct aecg*)hdr->aECG;
 			fprintf(stdout,"\nInstitution Number: %i\n",aECG->Section1.Tag14.INST_NUMBER);
 			fprintf(stdout,"DepartmentNumber : %i\n",aECG->Section1.Tag14.DEPT_NUMBER);
 			fprintf(stdout,"Device Id        : %i\n",aECG->Section1.Tag14.DEVICE_ID);

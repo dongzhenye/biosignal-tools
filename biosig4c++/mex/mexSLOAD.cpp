@@ -24,7 +24,6 @@
   #endif 
 #endif 
 
-typedef mwSize Int;
 #define TRUE (1)
 
 #ifdef CHOLMOD_H
@@ -76,15 +75,15 @@ cholmod_sparse *sputil_get_sparse
     const mxArray *Amatlab, /* MATLAB version of the matrix */
     cholmod_sparse *A,	    /* CHOLMOD version of the matrix */
     double *dummy,	    /* a pointer to a valid scalar double */
-    Int stype		    /* -1: lower, 0: unsymmetric, 1: upper */
+    mwSize stype		    /* -1: lower, 0: unsymmetric, 1: upper */
 )
 {
-    Int *Ap ;
+    mwSize *Ap ;
     A->nrow = mxGetM (Amatlab) ;
     A->ncol = mxGetN (Amatlab) ;
-    A->p = (Int *) mxGetJc (Amatlab) ;
-    A->i = (Int *) mxGetIr (Amatlab) ;
-    Ap = (Int*)A->p ;
+    A->p = (mwSize *) mxGetJc (Amatlab) ;
+    A->i = (mwSize *) mxGetIr (Amatlab) ;
+    Ap = (mwSize*)A->p ;
     A->nzmax = Ap [A->ncol] ;
     A->packed = TRUE ;
     A->sorted = TRUE ;

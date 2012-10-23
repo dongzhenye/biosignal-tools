@@ -1,7 +1,7 @@
 /*
 
     $Id$
-    Copyright (C) 2005,2006,2007,2011 Alois Schloegl <alois.schloegl@gmail.com>
+    Copyright (C) 2005,2006,2007,2011,2012 Alois Schloegl <alois.schloegl@gmail.com>
     Copyright (C) 2011 Stoyan Mihaylov
 
     This file is part of the "BioSig for C/C++" repository 
@@ -352,15 +352,15 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		- currently Huffman and Bimodal compression is not supported. 
 	*/	
 
-	aECG_TYPE* aECG;
+	struct aecg* aECG;
  	en1064.Section5.inlen = NULL;
  	en1064.Section5.datablock = NULL;
  	en1064.Section3.lead = NULL;
  	en1064.Section4.beat = NULL;
  	en1064.Section6.inlen = NULL;
 	if (hdr->aECG == NULL) {
-		hdr->aECG = malloc(sizeof(aECG_TYPE));
-		aECG = (aECG_TYPE*)hdr->aECG;
+		hdr->aECG = malloc(sizeof(struct aecg));
+		aECG = (struct aecg*)hdr->aECG;
 		aECG->diastolicBloodPressure=0.0;				 
 		aECG->systolicBloodPressure=0.0;
 		aECG->MedicationDrugs = NULL;
@@ -371,7 +371,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		aECG->EmergencyLevel=0;
 	}
 	else 
-		aECG = (aECG_TYPE*)hdr->aECG;
+		aECG = (struct aecg*)hdr->aECG;
 
 	
 	aECG->Section1.Tag14.VERSION = 0; // acquiring.protocol_revision_number 

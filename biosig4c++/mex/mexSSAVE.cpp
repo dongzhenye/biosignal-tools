@@ -25,7 +25,6 @@
   #endif 
 #endif 
 
-typedef mwSize Int;
 #define TRUE (1)
 
 //#define VERBOSE_LEVEL  9 
