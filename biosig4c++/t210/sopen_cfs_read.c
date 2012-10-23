@@ -300,7 +300,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 412 #%i %i %i %i: %i @%p %i\n", k, hc->
 							char *Desc = srcaddr + hdr->CHANNEL[next].bi + k2*stride;
 							Desc[1] = 0; 
 							FreeTextEvent(hdr, hdr->EVENT.N, Desc);
-							hdr->EVENT.POS[hdr->EVENT.N] = (size_t)round((val * hc->Cal + hc->Off) * hdr->SampleRate) + SPR; 
+							hdr->EVENT.POS[hdr->EVENT.N] = lround( (val * hc->Cal + hc->Off) * hdr->SampleRate) + SPR;  
 							hdr->EVENT.N++;
 						}
 					}
