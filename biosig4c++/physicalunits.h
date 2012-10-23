@@ -52,6 +52,7 @@ const char* PhysDim3(uint16_t PhysDimCode);
 double PhysDimScale(uint16_t PhysDimCode);
 /* returns scaling factor of physical dimension
 	e.g. 0.001 for milli, 1000 for kilo etc.
+	for undefined codes, not-a-number (NAN) is returned
  --------------------------------------------------------------- */
 
 #ifdef __cplusplus

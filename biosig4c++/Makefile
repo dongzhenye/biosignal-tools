@@ -396,7 +396,7 @@ eventcodes.i eventcodegroups.i : extern/eventcodes.txt
 	gawk -f eventcodes.awk "$<"
 
 units.i : extern/units.csv
-	gawk -f units.awk "$<" > "$@"
+	awk -f units.awk "$<" > "$@"
 
 
 #############################################################
@@ -538,12 +538,20 @@ tcl: libbiosig.$(LIBEXT) tcl/biosig.i
 #	WIN32 - BUILD
 #############################################################
 
+win32/libphysicalunits.a: win32/physicalunits.obj
+	-$(DELETE) "$@"
+	$(CROSS)-$(AR) "$@" "$<"
+
+win32/libphysicalunits.dll: win32/physicalunits.obj
+	$(MinGWLINK) -shared -fPIC  "$<" -o "$@" -Wl,--output-def,win32/physicalunits.def,--out-implib,win32/physicalunits.dll.a
+
+
 win32/libgdf.a: win32/gdf.obj
 	-$(DELETE) "$@"
 	$(CROSS)-$(AR) "$@" "$<"
 
 win32/libgdf.dll: win32/gdf.obj
-	$(MinGWLINK) -shared -fPIC  $(MinGWLIBS) -o "$@" -Wl,--output-def,win32/libgdf.def,--out-implib,win32/libgdf.dll.a
+	$(MinGWLINK) -shared -fPIC "$<" -o "$@" -Wl,--output-def,win32/libgdf.def,--out-implib,win32/libgdf.dll.a
 
 win32/libgdf.lib: win32/libgdf.a 
 	$(COPY) "$<" "$@"
@@ -582,12 +590,20 @@ win32 exe: win32/save2gdf.exe win32/libbiosig.dll win32/libbiosig.a #mexw32 win3
 #	WIN64 - BUILD
 #############################################################
 
+win64/libphysicalunits.a: win64/physicalunits.obj
+	-$(DELETE) "$@"
+	$(CROSS)-$(AR) "$@" "$<"
+
+win64/libphysicalunits.dll: win64/physicalunits.obj
+	$(MinGWLINK) -shared -fPIC  "$<" -o "$@" -Wl,--output-def,win64/physicalunits.def,--out-implib,win64/physicalunits.dll.a
+
+
 win64/libgdf.a: win64/gdf.obj
 	-$(DELETE) "$@"
 	$(CROSS64)-$(AR) "$@" "$<"
 
 win64/libgdf.dll: win64/gdf.obj
-	$(MinGW64LINK) -shared -fPIC  $(MinGW64LIBS) -o "$@" -Wl,--output-def,win64/libgdf.def,--out-implib,win64/libgdf.dll.a
+	$(MinGW64LINK) -shared -fPIC  "$<" -o "$@" -Wl,--output-def,win64/libgdf.def,--out-implib,win64/libgdf.dll.a
 
 win64/libgdf.lib: win64/libgdf.a 
 	$(COPY) "$<" "$@"
@@ -626,20 +642,27 @@ win64: win64/save2gdf.exe win64/libbiosig.dll win64/libbiosig.a #mexw64 win64mma
 #	GNU/Linux - BUILD
 #############################################################
 
-.phony libbiosig: libbiosig.a libbiosig.so libbiosig2.a libbiosig2.so libgdf.a libgdf.so
+.phony libbiosig lib: libbiosig.a libbiosig.so libbiosig2.a libbiosig2.so libgdf.a libgdf.so libphysicalunits.a libphysicalunits.so
 
 t240/libcnsfef.a:
 #	$(MAKE) -C t240 regen		#
 	$(MAKE) -C t240 libcnsfef.a	# generate t240/*.o files
 
+libphysicalunits.a: physicalunits.o
+	-$(DELETE) "$@"
+	$(AR) "$@" "$<"
+
+libphysicalunits.so: physicalunits.o
+	$(CC) -shared -fPIC -Wl,-soname,"$@" $(LDLIBS) -o "$@" "$<"
+
 libgdf.a: gdf.o
-	-$(DELETE) libgdf.a
-	$(AR) libgdf.a "$<"
+	-$(DELETE) "$@"
+	$(AR) "$@" "$<"
 
 libgdf.so: gdf.o
 	$(CC) -shared -fPIC -Wl,-soname,"$@".${MAJOR_VERSION} $(LDLIBS) \
-		-o libgdf.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$<"
-	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} libbgdf.so.${MAJOR_VERSION}
+		-o "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$<"
+	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$@".${MAJOR_VERSION}
 	ln -sf "$@".${MAJOR_VERSION} "$@"
 
 
@@ -831,37 +854,39 @@ install_ttl2trig: bin/ttl2trig
 	install bin/ttl2trig $(BIN)
 
 install_octave: mexSLOAD.mex 
-	mkdir -p  		$(DESTDIR)/usr/share/octave/site-m/
+	mkdir -p  			$(DESTDIR)/usr/share/octave/site-m/
 	install mex/mexSLOAD.mex* 	$(DESTDIR)/usr/share/octave/site-m/
 	install mex/mexSOPEN.mex* 	$(DESTDIR)/usr/share/octave/site-m/
 
-install_libbiosig: libbiosig.a libbiosig.so  libbiosig2.a libbiosig2.so 
-	install biosig.h    	$(DESTDIR)/usr/include
+install_libbiosig: libbiosig.a libbiosig.so libbiosig2.a libbiosig2.so libphysicalunits.a libphysicalunits.so
+	install biosig.h    		$(DESTDIR)/usr/include
 	install physicalunits.h    	$(DESTDIR)/usr/include
 	install libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)
 	ln -sf libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}
 	ln -sf libbiosig.so.${MAJOR_VERSION} $(LIB)/libbiosig.so
-	install libbiosig.a	$(LIB)
-	install biosig2.h    	$(DESTDIR)/usr/include
-	install libbiosig2.a	$(LIB)
-	install libbiosig2.so	$(LIB)
+	install libbiosig.a		$(LIB)
+	install libphysicalunits.a 	$(LIB)
+	install libphysicalunits.so	$(LIB)
+	install biosig2.h    		$(DESTDIR)/usr/include
+	install libbiosig2.a		$(LIB)
+	install libbiosig2.so		$(LIB)
 
 install: save2gdf libbiosig.a doc/save2gdf.1
-	install -d 		$(BIN)
-	install save2gdf 	$(BIN)
-	install heka2itx 	$(BIN)
-	install save2aecg 	$(BIN)
-	install save2scp  	$(BIN)
-	-install bin/tt2trig  	$(BIN)
-	#install rec2bin  	$(BIN)
-	#install bin2rec  	$(BIN)
-	install -d		$(LIB) $(DESTDIR)/usr/include
-	install biosig.h    	$(DESTDIR)/usr/include
+	install -d 			$(BIN)
+	install save2gdf 		$(BIN)
+	install heka2itx 		$(BIN)
+	install save2aecg 		$(BIN)
+	install save2scp  		$(BIN)
+	-install bin/tt2trig  		$(BIN)
+	#install rec2bin  		$(BIN)
+	#install bin2rec  		$(BIN)
+	install -d			$(LIB) $(DESTDIR)/usr/include
+	install biosig.h    		$(DESTDIR)/usr/include
 	install physicalunits.h    	$(DESTDIR)/usr/include
-	install libbiosig.a	$(LIB)
-	mkdir -p  		$(DESTDIR)/usr/share/man/man1
-	install doc/*.1  	$(DESTDIR)/usr/share/man/man1
-	#install libbiosig.man $(DESTDIR)/usr/share/
+	install libbiosig.a libphysicalunits.a	$(LIB)
+	mkdir -p  			$(DESTDIR)/usr/share/man/man1
+	install doc/*.1  		$(DESTDIR)/usr/share/man/man1
+	#install libbiosig.man 		$(DESTDIR)/usr/share/
 	#$(MAKE)  install_sigviewer
 	#$(MAKE)  install_octave
 
@@ -878,6 +903,8 @@ uninstall remove:
 	-rm $(DESTDIR)/usr/include/biosig.h
 	-rm $(DESTDIR)/usr/include/physicalunits.h
 	-rm $(LIB)/libbiosig.*
+	-rm $(LIB)/libbiosig2.*
+	-rm $(LIB)/libphysicalunits.*
 	-rm $(DESTDIR)/usr/share/man/man1/save2gdf.1
 	-rm $(DESTDIR)/usr/share/man/man1/mexSLOAD.1
 	-rm $(DESTDIR)/usr/share/man/man1/sigviewer.1
@@ -892,12 +919,14 @@ uninstall remove:
 	./save2gdf -f=TMSi t0.scp $(TEMP_DIR)t2.log
 	cat $(TEMP_DIR)t2.log
 
+fetchdata: $(TEMP_DIR)scp/redred/PFE103.scp  $(TEMP_DIR)Osas2002plusQRS.edf $(DATA_DIR)Newtest17-2048.bdf $(DATA_DIR)2003-12\ Schema/example/Example\ aECG.xml
+
 $(TEMP_DIR)scp/redred/PFE103.scp:
 	# scp example data sets
-	wget  -q -P$(TEMP_DIR) http://www.openecg.net/ECGsamples.zip
-	wget  -q -P$(TEMP_DIR) http://www.openecg.net/ECGsamplesc.zip
-	unzip -u $(TEMP_DIR)ECGsamples.zip "scp*.zip" -d $(TEMP_DIR)
-	unzip -u $(TEMP_DIR)ECGsamplesc.zip "scp*.zip" -d $(TEMP_DIR)
+	wget  -q -P$(DATA_DIR) http://www.openecg.net/ECGsamples.zip
+	wget  -q -P$(DATA_DIR) http://www.openecg.net/ECGsamplesc.zip
+	unzip -u $(DATA_DIR)ECGsamples.zip "scp*.zip" -d $(TEMP_DIR)
+	unzip -u $(DATA_DIR)ECGsamplesc.zip "scp*.zip" -d $(TEMP_DIR)
 	mkdir -p $(TEMP_DIR)scp/high
 	mkdir -p $(TEMP_DIR)scp/highc
 	mkdir -p $(TEMP_DIR)scp/redred
@@ -1113,7 +1142,7 @@ $(DATA_DIR)BDFtestfiles.zip :
 	@grep -ri '\bFIXME\b' *.c *.h *.i t210/*.c t210/*.h |grep -v '\.svn' |wc -l;
 
 test_physicalunits : units.i physicalunits.c physicalunits.h
-	gcc -D=TEST_PHYSDIMTABLE_PERFORMANCE physicalunits.c -o test_physicalunits
+	gcc -D=TEST_PHYSDIMTABLE_PERFORMANCE -D=WITH_PTHREAD physicalunits.c -o test_physicalunits
 	./test_physicalunits
 	@echo '--- end of test_physicalunits ---'
 
