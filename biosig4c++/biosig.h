@@ -1,6 +1,6 @@
 /*
 % $Id$
-% Copyright (C) 2005,2006,2007,2008,2009,2010,2011 Alois Schloegl <alois.schloegl@gmail.com>
+% Copyright (C) 2005-2012 Alois Schloegl <alois.schloegl@gmail.com>
 % This file is part of the "BioSig for C/C++" repository
 % (biosig4c++) at http://biosig.sf.net/
 
@@ -156,8 +156,8 @@ enum FileFormat {
    serror2(hdr), hdr->AS.B4C_ERRNUM, hdr->AS.B4C_ERRMSG for error handling.   
 
  */
-extern int B4C_ERRNUM ATT_DEPREC;
-extern const char *B4C_ERRMSG ATT_DEPREC;
+ATT_DEPREC extern int B4C_ERRNUM;
+ATT_DEPREC extern const char *B4C_ERRMSG;
 
 #define BIOSIG_VERSION_MAJOR 1
 #define BIOSIG_VERSION_MINOR 4
@@ -367,7 +367,7 @@ typedef struct HDR_STRUCT {
 	/* EVENTTABLE */
 	struct {
 		double  	SampleRate ATT_ALI;	/* for converting POS and DUR into seconds  */
-		uint16_t 	*TYP ATT_ALI;	/* defined at http://cvs.sourceforge.net/viewcvs.py/biosig/biosig/t200/eventcodes.txt?view=markup */
+		uint16_t 	*TYP ATT_ALI;	/* defined at http://biosig.svn.sourceforge.net/viewvc/biosig/trunk/biosig/doc/eventcodes.txt */
 		uint32_t 	*POS ATT_ALI;	/* starting position [in samples] using a 0-based indexing */
 		uint32_t 	*DUR ATT_ALI;	/* duration [in samples] */
 		uint16_t 	*CHN ATT_ALI;	/* channel number; 0: all channels  */
@@ -441,12 +441,12 @@ typedef struct HDR_STRUCT {
 struct etd_t {
         uint16_t typ;		// used in HDR.EVENT.TYP
         uint16_t groupid;	// defines the group id as used in EventCodeGroups below
-        const char*    desc;		// name/description of event code // const decrease signifitiantly number of warning
+        const char* desc;	// name/description of event code // const decrease signifitiantly number of warning
 }; 
 // Groups of event codes 
 struct event_groups_t {
         uint16_t groupid;	
-        const char*   GroupDescription; // const decrease signifitiantly number of warning
+        const char* GroupDescription; // const decrease signifitiantly number of warning
 };  
 struct FileFormatStringTable_t {
 	enum FileFormat	fmt;
@@ -482,8 +482,7 @@ HDRTYPE* getfiletype(HDRTYPE* hdr);
 /* 	identify file format from header information
 	input:
 		hdr->AS.Header contains header of hdr->HeadLen bytes
-		hdr->TYPE must	CHANNEL_TYPE 	*CHANNEL ATT_ALI;
- be unknown, otherwise no FileFormat evaluation is performed
+		hdr->TYPE must be unknown, otherwise no FileFormat evaluation is performed
 	output:
 		hdr->TYPE	file format
 		hdr->VERSION	is defined for some selected formats e.g. ACQ, EDF, BDF, GDF
@@ -596,7 +595,7 @@ long int stell(HDRTYPE* hdr);
  --------------------------------------------------------------- */
 
 #ifndef  ONLYGDF
-int 	serror() ATT_DEPREC;
+ATT_DEPREC int serror();
 /*	handles errors; it reports whether an error has occured.
  *	if yes, an error message is displayed, and the error status is reset.
  * 	the return value is 0 if no error has occured, otherwise the error code
@@ -733,7 +732,7 @@ int	hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSITY);
  *	VERBOSITY=-1 header and event table is shown in JSON format
  --------------------------------------------------------------- */
 
-int hdr2json (HDRTYPE *hdr, FILE *fid) ATT_DEPREC; 
+ATT_DEPREC int hdr2json (HDRTYPE *hdr, FILE *fid); 
 int fprintf_hdr2json(FILE *stream, HDRTYPE* hdr);
 /* prints header in json format into stream; 
    hdr2json is the old form and deprecated, 
