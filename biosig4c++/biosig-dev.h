@@ -40,6 +40,14 @@
 #include <sys/param.h>
 #include <time.h>
 
+
+#ifdef NDEBUG
+#define VERBOSE_LEVEL 0		// turn off debugging information
+#else
+extern int VERBOSE_LEVEL; 	// used for debugging
+#endif
+
+
 /*
 	Including ZLIB enables reading gzipped files (they are decompressed on-the-fly)
 	The output files can be zipped, too.

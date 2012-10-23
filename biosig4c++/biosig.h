@@ -166,11 +166,15 @@ extern const char *B4C_ERRMSG ATT_DEPREC;
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
 
+/*
+This part has moved into biosig-dev.h in v1.4.1, because VERBOSE_LEVEL is just 
+used for debugging and should not be exposed to common applications 
 #ifdef NDEBUG
 #define VERBOSE_LEVEL 0		// turn off debugging information
 #else
 extern int VERBOSE_LEVEL; 	// used for debugging
 #endif
+*/ 
 
 /****************************************************************************/
 /**                                                                        **/
@@ -729,12 +733,11 @@ int	hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSITY);
  *	VERBOSITY=-1 header and event table is shown in JSON format
  --------------------------------------------------------------- */
 
+int hdr2json (HDRTYPE *hdr, FILE *fid) ATT_DEPREC; 
 int fprintf_hdr2json(FILE *stream, HDRTYPE* hdr);
 /* prints header in json format into stream; 
- --------------------------------------------------------------- */
-
-#define hdr2json(hdr,fid)  fprintf_hdr2json(fid, hdr)
-/* defined for historical reasons
+   hdr2json is the old form and deprecated, 
+   use fprintf_hdr2json instead
  --------------------------------------------------------------- */
 
 int asprintf_hdr2json(char **str, HDRTYPE* hdr);

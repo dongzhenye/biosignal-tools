@@ -291,6 +291,13 @@ const char *MIT_EVENT_DESC[] = {
 /* --------------------------------------------------- *
  *	Predefined Event Code Table                    *
  * --------------------------------------------------- */
+static uint8_t GLOBAL_EVENTCODES_ISLOADED = 0;
+struct global_t {
+	uint16_t LenCodeDesc;
+	uint16_t *CodeIndex;
+	const char **CodeDesc;
+	char  	 *EventCodesTextBuffer;
+} Global ATT_DEPREC;  // deprecated since Oct 2012, v1.4.0
 
 // event table desription
 const struct etd_t ETD [] = { 
@@ -1186,6 +1193,10 @@ fprintf(stdout,"write_gdf_eventtable is obsolete - use hdrEVT2rawEVT instead;\n"
 	}
 }
 
+
+/* Stubs for deprecated functions */
+void FreeGlobalEventCodeTable() {} ATT_DEPREC // since Oct 2012, v1.4.0
+void LoadGlobalEventCodeTable() {} ATT_DEPREC // since Oct 2012, v1.4.0
 
 /*------------------------------------------------------------------------
 	adds free text annotation to event table
@@ -12995,7 +13006,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%i\n", (int)c);
 /**                     HDR2ASCII                                          **/
 /**	displaying header information                                      **/
 /****************************************************************************/
-#define hdr2json(hdr,fid)  fprintf_hdr2json(fid, hdr)
+// for backwards compatibility
+int hdr2json( HDRTYPE *hdr, FILE *fid)  {
+	return fprintf_hdr2json(fid, hdr);
+} ATT_DEPREC   // deprecatedd since Oct 2012, v1.4.0
 
 int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
 {
@@ -13129,6 +13143,7 @@ int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
 }
 
 
+
 /****************************************************************************/
 /**                     HDR2ASCII                                          **/
 /**	displaying header information                                      **/
@@ -13148,7 +13163,7 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 	}
 
 	if (VERBOSE==-1) {
-		return(hdr2json(hdr,fid));
+		return(fprintf_hdr2json(fid, hdr));
 	}
 
 	if (VERBOSE>0) {
