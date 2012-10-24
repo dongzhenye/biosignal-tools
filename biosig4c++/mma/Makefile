@@ -26,6 +26,8 @@ MLLIB     = ML64i3 # ML32i3 # Set this to ML64i3 if using a 64-bit system
 #MLINKDIR  = /usr/local/Wolfram/gridMathematicaServer/7.0/SystemFiles/Links/MathLink/DeveloperKit
 SYSwin       = Windows# Set this value with the result of evaluating $SystemID
 MLLIBwin     = ml32i3m# Set this to ML64i3 if using a 64-bit system
+SYSwin64     = Windows-x86-64# Set this value with the result of evaluating $SystemID
+MLLIBwin64   = ml64i3m# Set this to ML64i3 if using a 64-bit system
 ###########################################
 
 CADDSDIR  = ${MLINKDIR}/${SYS}/CompilerAdditions
@@ -55,8 +57,8 @@ sloadtm.c: sload.tm
 	# enable macro expansion
 	sed -i 's# __DATE__# ",__DATE__," ",__TIME__,"#' "$@"
 
-sload: sload.o sloadtm.o ../libbiosig.a
-	${CC} sloadtm.o sload.o -L${LIBDIR} -l${MLLIB} ${EXTRALIBS} ../libbiosig.a -o $@
+sload: sload.o sloadtm.o
+	${CC} sloadtm.o sload.o -L.. -lbiosig -L${LIBDIR} -l${MLLIB} ${EXTRALIBS} -o "$@"
 	# copy to users directory if available
 	-cp $@ ../../mma/
 	-cp $@ ../../mma/sload-$(shell date +%Y%m%d)
@@ -71,7 +73,7 @@ CADDSDIRwin  = ${MLINKDIR}/${SYSwin}/CompilerAdditions/mldev32
 INCDIRwin    = ${CADDSDIRwin}/include
 LIBDIRwin    = ${CADDSDIRwin}/lib
 
-EXTRALIBSwin =  ../win32/libbiosig.a -lgdi32 -lm -lpthread -lstdc++ -lws2_32 $(LDLIBS) # Set these with appropriate libs for your system.
+EXTRALIBSwin = -lgdi32 -lm -lpthread -lstdc++ -lws2_32 $(LDLIBS) # Set these with appropriate libs for your system.
 
 MPREPwin     = ${CADDSDIRwin}/bin/mprep.exe
 
@@ -85,7 +87,7 @@ sloadtm.obj : sloadtm.win32.c
 	${CCw32} -c -I${INCDIRwin} $< -o "$@"
 
 sload.exe : sload.obj sloadtm.obj ../win32/libbiosig.a
-	${CCw32} sload.obj sloadtm.obj -static-libgcc -static-libstdc++ -L${LIBDIRwin} -l${MLLIBwin} ${EXTRALIBSwin} -o "$@"
+	${CCw32} sload.obj sloadtm.obj -static-libgcc -static-libstdc++ ../win32/libbiosig.a -L${LIBDIRwin} -l${MLLIBwin} ${EXTRALIBSwin} -o "$@"
 	# copy to users directory if available
 	-cp $@ ../../mma/
 	-cp $@ ../../mma/sload-$(shell date +%Y%m%d).exe
@@ -96,25 +98,23 @@ sload.exe : sload.obj sloadtm.obj ../win32/libbiosig.a
 ###########################################
 
 CCw64         = $(CROSS64)-gcc
-CADDSDIRwin64 = ${MLINKDIR}/${SYSwin}/CompilerAdditions/mldev64
+CADDSDIRwin64 = ${MLINKDIR}/${SYSwin64}/CompilerAdditions/mldev64
 INCDIRwin64   = ${CADDSDIRwin64}/include
 LIBDIRwin64   = ${CADDSDIRwin64}/lib
-
-EXTRALIBSwin64 =  ../win64/libbiosig.a -lgdi32 -lm -lpthread -lstdc++ -lws2_32 $(LDLIBS) # Set these with appropriate libs for your system.
 
 MPREPwin64     = ${CADDSDIRwin64}/bin/mprep.exe
 
 sloadtm.win64.c : sload.tm
-	wine ${MPREPwin64} $? -o "$@"
+	wine ${MPREPwin} $? -o "$@"   ## use 32bit mprep.exe because wine can not handle the 64bit mprep.exe
 	sed -i 's# __DATE__# ",__DATE__," ",__TIME__,"#' "$@"
 
 sload.w64.obj : sload.c
-	${CCw64} -c -I${INCDIRwin64} $< -o "$@"
+	${CCw64} -c -I${INCDIRwin64} "$<" -o "$@"
 sloadtm.w64.obj : sloadtm.win64.c
-	${CCw64} -c -I${INCDIRwin64} $< -o "$@"
+	${CCw64} -c -I${INCDIRwin64} "$<" -o "$@"
 
-sload.w64.exe : sload.obj sloadtm.w64.obj ../win64/libbiosig.a
-	${CCw64} sload.w64.obj sloadtm.w64.obj -static-libgcc -static-libstdc++ -L${LIBDIRwin64} -l${MLLIBwin64} ${EXTRALIBSwin64} -o "$@"
+sload.w64.exe : sload.w64.obj sloadtm.w64.obj ../win64/libbiosig.a
+	${CCw64} sload.w64.obj sloadtm.w64.obj -static-libgcc -static-libstdc++  ../win64/libbiosig.a -L${LIBDIRwin64} -l${MLLIBwin64} ${EXTRALIBSwin} -o "$@"
 	# copy to users directory if available
 	-cp $@ ../../mma/
 	-cp $@ ../../mma/sload-$(shell date +%Y%m%d).win64.exe
