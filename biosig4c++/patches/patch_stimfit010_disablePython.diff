@@ -1,0 +1,262 @@
+diff --git a/configure.in b/configure.in
+index 2b3914e..5943f6e 100644
+--- a/configure.in
++++ b/configure.in
+@@ -81,9 +81,9 @@ case ${STFKERNEL} in
+     darwin)
+         LIBSTF_LDFLAGS="-avoid-version"
+ 	if test "$enable_module" = "yes" ; then
+-	    CPPFLAGS="${CPPFLAGS} -DWITH_PYTHON -DMODULE_ONLY"
++	    CPPFLAGS="${CPPFLAGS} -DMODULE_ONLY"
+ 	else
+-	    CPPFLAGS="${CPPFLAGS} -DWITH_PYTHON"
++	    CPPFLAGS="${CPPFLAGS} "
+ 	fi
+         STF_PYTHON_LIBNAME="libstf.dylib"
+         STFIO_PYTHON_LIBNAME="libstfio.dylib"
+@@ -97,14 +97,14 @@ case ${STFKERNEL} in
+     linux)
+ 	if test "$enable_module" = "yes" ; then
+ 	    LIBSTF_LDFLAGS="-avoid-version"
+-	    CPPFLAGS="${CPPFLAGS} -DWITH_PYTHON -DMODULE_ONLY"
++	    CPPFLAGS="${CPPFLAGS} -DMODULE_ONLY"
+ 	else
+ 	    if test "$enable_debian" = "yes" ; then
+ 	      LIBSTF_LDFLAGS="-Wl,-rpath,/usr/lib/stimfit -avoid-version"
+ 	    else
+ 	      LIBSTF_LDFLAGS="-Wl,-rpath,${prefix}/lib/stimfit -avoid-version"
+ 	    fi
+-	    CPPFLAGS="${CPPFLAGS} -DWITH_PYTHON"
++	    CPPFLAGS="${CPPFLAGS}"
+ 	fi
+         STF_PYTHON_LIBNAME="libstf.so"
+         STFIO_PYTHON_LIBNAME="libstfio.so"
+@@ -121,6 +121,11 @@ AC_SUBST(STF_PYTHON_LIBNAME)
+ AC_SUBST(STFIO_PYTHON_LIBNAME)
+ 
+ # Checks for python libraries.
++AC_ARG_ENABLE([python], AS_HELP_STRING([--enable-python],[enable python shell]),[])
++if test "$enable_ipython" = "yes" ; then
++    CPPFLAGS="${CPPFLAGS} -DPYTHON"
++fi
++
+ AC_ARG_ENABLE([ipython], AS_HELP_STRING([--enable-ipython],[enable ipython as the default shell (experimental); implies --enable-python]),[])
+ if test "$enable_ipython" = "yes" ; then
+     CPPFLAGS="${CPPFLAGS} -DIPYTHON"
+@@ -315,7 +320,7 @@ CXXFLAGS="${CXXFLAGS} -Wall"
+ 
+ AC_CONFIG_HEADERS([stfconf.h])
+ 
+-SHAVE_INIT(["."], [enable])
++#SHAVE_INIT(["."], [enable])
+ AC_CONFIG_FILES([Makefile src/Makefile src/stfswig/Makefile src/app/Makefile stimfit.plist shave shave-libtool])
+ 
+ AC_OUTPUT
+diff --git a/src/app/app.cpp b/src/app/app.cpp
+index f875a75..44091e4 100755
+--- a/src/app/app.cpp
++++ b/src/app/app.cpp
+@@ -94,7 +94,10 @@ EVT_MENU_RANGE(ID_USERDEF, ID_USERDEF+32, wxStfApp::OnUserdef)
+ END_EVENT_TABLE()
+ 
+ wxStfApp::wxStfApp(void) : directTxtImport(false), isBars(true), isHires(false), txtImport(), funcLib(),
+-    extensionLib(), CursorsDialog(NULL), storedLinFunc( stf::initLinFunc() ), /*m_file_menu(0),*/ m_fileToLoad(wxEmptyString)/*, activeDoc(0)*/ {}
++#ifdef WITH_PYTHON
++	extensionLib(), 
++#endif
++	CursorsDialog(NULL), storedLinFunc( stf::initLinFunc() ), /*m_file_menu(0),*/ m_fileToLoad(wxEmptyString)/*, activeDoc(0)*/ {}
+ 
+ void wxStfApp::OnInitCmdLine(wxCmdLineParser& parser)
+ {
+@@ -300,7 +303,10 @@ bool wxStfApp::OnInit(void)
+ #endif
+     // load user-defined plugins:
+     // pluginLib = stf::GetPluginLib();
++
++#ifdef WITH_PYTHON
+     extensionLib = LoadExtensions();
++#endif
+     
+     // load fit function library:
+     funcLib = stf::GetFuncLib();
+@@ -756,7 +762,7 @@ wxMenuBar *wxStfApp::CreateUnifiedMenuBar(wxStfDoc* doc) {
+                           wxT("Analyze selected traces and show results in a table")
+                           );
+ 
+-#if 0
++#ifdef WITH_PYTHON
+     wxMenu* userdefSub=new wxMenu;
+     for (std::size_t n=0;n<GetPluginLib().size();++n) {
+         userdefSub->Append(
+@@ -765,7 +771,6 @@ wxMenuBar *wxStfApp::CreateUnifiedMenuBar(wxStfDoc* doc) {
+                            );
+     }
+     analysis_menu->AppendSubMenu(userdefSub,wxT("User-defined functions"));
+-#endif
+     wxMenu *extensions_menu = new wxMenu;
+     for (std::size_t n=0;n<GetExtensionLib().size();++n) {
+ #if (wxCHECK_VERSION(2, 9, 0) || defined(MODULE_ONLY))
+@@ -775,6 +780,7 @@ wxMenuBar *wxStfApp::CreateUnifiedMenuBar(wxStfDoc* doc) {
+                                 wxString(GetExtensionLib()[n].menuEntry.c_str(), wxConvUTF8));
+ #endif        
+     }
++#endif 
+     
+     wxMenu *help_menu = new wxMenu;
+     help_menu->Append(wxID_HELP, wxT("Online &help\tF1"));
+@@ -787,7 +793,9 @@ wxMenuBar *wxStfApp::CreateUnifiedMenuBar(wxStfDoc* doc) {
+     menu_bar->Append(m_edit_menu, wxT("&Edit"));
+     menu_bar->Append(m_view_menu, wxT("&View"));
+     menu_bar->Append(analysis_menu, wxT("&Analysis"));
++#ifdef WITH_PYTHON
+     menu_bar->Append(extensions_menu, wxT("E&xtensions"));
++#endif
+     menu_bar->Append(help_menu, wxT("&Help"));
+ 
+     return menu_bar;
+diff --git a/src/app/app.h b/src/app/app.h
+index 3408a6e..efe74e7 100755
+--- a/src/app/app.h
++++ b/src/app/app.h
+@@ -343,10 +343,12 @@ public:
+      */
+     stf::storedFunc* GetLinFuncPtr( ) { return &storedLinFunc; }
+ 
++#ifdef WITH_PYTHON
+     //! Retrieves the user-defined extension functions.
+     /*! \return A vector containing the user-defined functions.
+      */
+     const std::vector< stf::Extension >& GetExtensionLib() const { return extensionLib; }
++#endif
+ 
+     //! Retrieves the cursor settings dialog.
+     /*! \return A pointer to the cursor settings dialog.
+@@ -515,7 +517,9 @@ private:
+     // Registry:
+     boost::shared_ptr<wxFileConfig> config;
+     std::vector<stf::storedFunc> funcLib;
++#ifdef WITH_PYTHON
+     std::vector< stf::Extension > extensionLib;
++#endif
+     // Pointer to the cursors settings dialog box
+     wxStfCursorsDlg* CursorsDialog;
+     wxDocTemplate* m_cfsTemplate, *m_hdf5Template, *m_txtTemplate,*m_abfTemplate,
+diff --git a/src/app/childframe.cpp b/src/app/childframe.cpp
+index b45625b..eb6642a 100755
+--- a/src/app/childframe.cpp
++++ b/src/app/childframe.cpp
+@@ -67,7 +67,9 @@
+ IMPLEMENT_CLASS(wxStfChildFrame, wxStfChildType)
+ 
+ BEGIN_EVENT_TABLE(wxStfChildFrame, wxStfChildType)
++#ifdef WITH_PYTHON
+ EVT_SPINCTRL( ID_SPINCTRLTRACES, wxStfChildFrame::OnSpinCtrlTraces )
++#endif
+ EVT_COMBOBOX( ID_COMBOACTCHANNEL, wxStfChildFrame::OnComboActChannel )
+ EVT_COMBOBOX( ID_COMBOINACTCHANNEL, wxStfChildFrame::OnComboInactChannel )
+ EVT_CHECKBOX( ID_ZERO_INDEX, wxStfChildFrame::OnZeroIndex)
+@@ -318,6 +320,7 @@ void wxStfChildFrame::SetCurTrace(std::size_t n) {
+         trace_spinctrl->SetValue((int)n+1);
+ }
+ 
++#ifdef WITH_PYTHON
+ void wxStfChildFrame::OnSpinCtrlTraces( wxSpinEvent& event ){
+     event.Skip();
+ 
+@@ -339,6 +342,7 @@ void wxStfChildFrame::OnSpinCtrlTraces( wxSpinEvent& event ){
+         pView->GetGraph()->SetFocus();
+     }
+ }
++#endif
+ 
+ void wxStfChildFrame::OnActivate(wxActivateEvent &event) {
+     wxStfView* pView=(wxStfView*)GetView();
+diff --git a/src/app/childframe.h b/src/app/childframe.h
+index 9929da8..915dfca 100755
+--- a/src/app/childframe.h
++++ b/src/app/childframe.h
+@@ -223,7 +223,9 @@ public:
+     void OnMenuHighlight(wxMenuEvent& event);
+     void OnShowselected(wxCommandEvent& event);
+     void OnZeroIndex(wxCommandEvent& event);
++#ifdef WITH_PYTHON
+     void OnSpinCtrlTraces(wxSpinEvent& event);
++#endif
+     void OnComboActChannel(wxCommandEvent& event);
+     void OnComboInactChannel(wxCommandEvent& event);
+ 
+diff --git a/src/app/dlgs/smalldlgs.cpp b/src/app/dlgs/smalldlgs.cpp
+index 8e93843..8b20e9a 100755
+--- a/src/app/dlgs/smalldlgs.cpp
++++ b/src/app/dlgs/smalldlgs.cpp
+@@ -1101,12 +1101,14 @@ srcFileNames(0)
+     
+     // SOURCE 2.- A wxGenericDirCtrl to select the source directory:
+ 
++#ifdef WITH_PYTHON
+     //wxGenericDirCtrl *mySrcDirCtrl; 
+     mySrcDirCtrl = new wxGenericDirCtrl(this, wxGENERICDIRCTRL_SRC, srcDir,
+         wxDefaultPosition, wxSize(300,300), wxDIRCTRL_DIR_ONLY);
+     // add to myLeftSizer
+     myLeftSizer->Add( mySrcDirCtrl, 0, wxEXPAND | wxALL , 2 );
+     // ---- A wxGenericDirCtrl to select the source directory:
++#endif
+ 
+     // Finally add myLeftSizer to the gridSizer
+     gridSizer->Add( myLeftSizer, 0, wxALIGN_LEFT, 5 );
+@@ -1142,12 +1144,14 @@ srcFileNames(0)
+ 
+     // DESTINATION 2.- A wxGenericDirCtrl to select the destiny directory:
+ 
++#ifdef WITH_PYTHON
+     //wxGenericDirCtrl *myDestDirCtrl; 
+     myDestDirCtrl = new wxGenericDirCtrl(this, wxGENERICDIRCTRL_DEST, destDir,
+         wxDefaultPosition, wxSize(300,300), wxDIRCTRL_DIR_ONLY);
+     // add to myLeftSizer
+     myRightSizer->Add( myDestDirCtrl, 0, wxEXPAND | wxALL, 2 );
+     // ---- A wxGenericDirCtrl to select the source directory:
++#endif
+ 
+     // Finally add myRightSizer to gridSizer and this to topSizer
+     gridSizer->Add( myRightSizer, 0, wxALIGN_RIGHT, 5);
+@@ -1249,6 +1253,7 @@ void wxStfConvertDlg::EndModal(int retCode) {
+ 
+ bool wxStfConvertDlg::OnOK() {
+ 
++#ifdef WITH_PYTHON
+     srcDir  = mySrcDirCtrl->GetPath();
+     destDir = myDestDirCtrl->GetPath();
+ 
+@@ -1271,6 +1276,7 @@ bool wxStfConvertDlg::OnOK() {
+         wxLogMessage(msg);
+         return false;
+     }
++#endif
+     return true;
+ }
+ 
+diff --git a/src/app/parentframe.cpp b/src/app/parentframe.cpp
+index 9c1742e..eb00052 100755
+--- a/src/app/parentframe.cpp
++++ b/src/app/parentframe.cpp
+@@ -885,14 +885,16 @@ void wxStfParentFrame::OnMpl(wxCommandEvent& WXUNUSED(event))
+ {
+     if (wxGetApp().GetActiveDoc()==NULL) return;
+ 
++#ifdef WITH_PYTHON
+     wxWindow* pPython = DoPythonStuff(this, true);
+-    if ( pPython == 0 ) {
+-        wxGetApp().ErrorMsg(wxT("Can't create a window for matplotlib\nPointer is zero"));
+-    } else {
++    if ( pPython != 0 ) {
+         m_mgr.AddPane( pPython, wxAuiPaneInfo().Name(wxT("mpl")).
+                        CloseButton(true).
+                        Show(true).Caption(wxT("Matplotlib")).Float().BestSize(800,600));
+-    }
++    } else 
++#endif
++        wxGetApp().ErrorMsg(wxT("Can't create a window for matplotlib\nPointer is zero"));
++
+     m_mgr.Update();
+ }
+ 
