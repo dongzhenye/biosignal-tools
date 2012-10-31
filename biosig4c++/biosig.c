@@ -4035,14 +4035,14 @@ else if (!strncmp(MODE,"r",1)) {
 					}
 					
 					unsigned char *s0 = Marker+k; 		// Onset 
-					char *s2 = NULL; 
+					unsigned char *s2 = NULL; 
 					while (Marker[k] != 20) {
 						if (Marker[k] == 21) s2=Marker+k+1;	// Duration
 						k++;
 					}
 					if (k>=len) break;
 					Marker[k++]=0;
-					char *s3 = Marker+k;		// annotation
+					unsigned char *s3 = Marker+k;		// annotation
 
 					while (Marker[k] != 20) k++;
 					if (k>=len) break;
@@ -9206,8 +9206,8 @@ if (VERBOSE_LEVEL>8)
 				hc->HighPass = NAN;
 				hc->Notch = NAN;
 				hc->XYZ[0] = 0;
+				hc->XYZ[1] = 0;
 				hc->XYZ[2] = 0;
-				hc->XYZ[3] = 0;
 				hc->Impedance = NAN;
 
 				
@@ -9290,7 +9290,7 @@ if (VERBOSE_LEVEL>8)
 		hdr->SPR = 1;
 
 		int32_t gdftyp = 3;
-		double Cal; 
+		double Cal = 1.0; 
 		int status = 0;
 		size_t pos=0;
 		char *remHDR=(char*)hdr->AS.Header;
@@ -9544,13 +9544,13 @@ if (VERBOSE_LEVEL>8)
 		char *FileName = hdr->FileName;
 		hdr->FileName = (char*) malloc(len+strlen(datfile)+2);
 	
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [283] %d<%s>  %d/%d\n",len,datfile,hdr->SPR,hdr->NRec); 		
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [283] %d<%s>  %d/%d\n",(int)len,datfile,(int)hdr->SPR,(int)hdr->NRec); 		
 			
 		if (strspn(FileName,"/\\")) {
 			strcpy(hdr->FileName, FileName);
 			char *tmpstr = strrchr(hdr->FileName,'/')+1;
 
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [285] %d<%s>\n",len,tmpstr); 		
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [285] %d<%s>\n",(int)len,tmpstr); 		
 			
 			if (tmpstr==NULL) 
 				tmpstr = strrchr(hdr->FileName,'\\')+1;
@@ -9597,7 +9597,7 @@ if (VERBOSE_LEVEL>8)
 		free(hdr->FileName);
 		hdr->FileName = FileName; 
 		
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [298] %d %d %d\n",FileBuf.st_size,hdr->AS.bpb,FileBuf.st_size/hdr->AS.bpb); 		
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [298] %d %d %d\n",(int)FileBuf.st_size,(int)hdr->AS.bpb,(int)(FileBuf.st_size/hdr->AS.bpb)); 		
 
 	}
 
@@ -10506,8 +10506,8 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
                 int sd, s;
 		sd = bscs_connect(hostname);
 		if (sd<0) {
-			fprintf(stdout,"could not connect to <%s>\n",hostname);
-			biosigERROR(hdr, B4C_CANNOT_OPEN_FILE, "could not connect to server";
+			fprintf(stdout,"could not connect to <%s> (err %i)\n",hostname, sd);
+			biosigERROR(hdr, B4C_CANNOT_OPEN_FILE, "could not connect to server");
 			return(hdr);
 		}
   		hdr->FILE.Des = sd;
@@ -12563,7 +12563,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 
 	}
 	else { 	// SCP_ECG, HL7aECG#ifdef CHOLMOD_H
-#ifndef  ONLYGDF
+#ifdef  ONLYGDF
 		assert(0);
 #endif //ONLYGDF
 		count = 1;
@@ -12670,7 +12670,8 @@ int sclose(HDRTYPE* hdr)
 		// network connection
 		if (hdr->FILE.OPEN > 1) bscs_send_evt(hdr->FILE.Des,hdr);
   		int s = bscs_close(hdr->FILE.Des);
-  		if (s) {
+  		if (s & ERR_MASK) {
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"bscs_close failed (err %i %08x)\n",s,s);
 			biosigERROR(hdr, B4C_SCLOSE_FAILED, "bscs_close failed");
   		}
   		hdr->FILE.Des = 0;
