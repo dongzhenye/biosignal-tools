@@ -43,7 +43,7 @@
 */
 
 
-/* TODO: ensure that hdr->CHANNEL[.].TOffset gets initialized after very alloc() */
+/* TODO: ensure that hdr->CHANNEL[.].TOffset gets initialized after every alloc() */
 
 #include <assert.h>
 #include <ctype.h>
@@ -118,6 +118,7 @@ int sopen_SCP_write    (HDRTYPE* hdr);
 int sopen_HL7aECG_read (HDRTYPE* hdr);
 void sopen_cfs_read     (HDRTYPE* hdr);
 void sopen_HL7aECG_write(HDRTYPE* hdr);
+void sopen_abf_read   (HDRTYPE* hdr);
 void sopen_alpha_read   (HDRTYPE* hdr);
 void sopen_FAMOS_read   (HDRTYPE* hdr);
 int sclose_HL7aECG_write(HDRTYPE* hdr);
@@ -1665,13 +1666,13 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
       		return(hdr);
 
 #ifndef  ONLYGDF
-	else if (beu32p(hdr->AS.Header) == 0x41424620) {
+	else if (!memcmp(hdr->AS.Header, "ABF ", 4)) {
     	// else if (!memcmp(Header1,"ABF \x66\x66\xE6\x3F",4)) { // ABF v1.8
 	    	hdr->TYPE = ABF;
     		hdr->VERSION = lef32p(hdr->AS.Header+4);
     	}
 	//else if (!memcmp(Header1,"ABF2",4)) {
-	else if (beu32p(hdr->AS.Header) == 0x41424632) {
+	else if (!memcmp(hdr->AS.Header, "ABF2", 4)) {
 	    	hdr->TYPE = ABF;
     		hdr->VERSION = beu32p(hdr->AS.Header+4);
     	}
@@ -3529,8 +3530,11 @@ else if (!strncmp(MODE,"r",1)) {
 		}
   		hdr->FILE.Des = sd;
 		s  = bscs_open(sd, &ID);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"%i = bscs_open\n",s);
   		s  = bscs_requ_hdr(sd,hdr);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"%i = bscs_requ_hdr\n",s);
   		s  = bscs_requ_evt(sd,hdr);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"%i = bscs_requ_evt\n",s);
   		hdr->FILE.OPEN = 1;
   		return(hdr);
     	}
@@ -4154,83 +4158,8 @@ else if (!strncmp(MODE,"r",1)) {
 
 	else if (hdr->TYPE==ABF) {
 		fprintf(stdout,"Warning ABF v%4.2f: implementation is not complete!\n",hdr->VERSION);
-		if (hdr->VERSION < 2.0) {  // ABF v1.x
-
-		}
-		else {	// ABF 2.0+
-			hdr->HeadLen = leu32p(hdr->AS.Header+8);
-		    	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen);
-	    		count   += ifread(Header1+count, 1, hdr->HeadLen-count, hdr);
-
-			//uint16_t gdftyp = 3;
-			float fADCRange;
-			float fDACRange;
-			long  lADCResolution;
-			long  lDACResolution;
-			uint8_t* b = NULL;
-			int k1;
-			for (k1=0; k1<18; ++k1) {
-				size_t BlockIndex  = leu32p(hdr->AS.Header + k1*16 + 19*4);
-				size_t BlockSize   = leu32p(hdr->AS.Header + k1*16 + 19*4+4);
-				uint64_t numBlocks = leu64p(hdr->AS.Header + k1*16 + 19*4+8);
-
-				if (VERBOSE_LEVEL>8)
-					fprintf(stdout,"ABF %02i: %04i %04i %08i\n",k1,(int)BlockIndex,(int)BlockSize,(int)numBlocks);
-
-				ifseek(hdr, BlockIndex*512, SEEK_SET);
-				b  = (uint8_t*)realloc(b,numBlocks*BlockSize);
-				ifread(b,numBlocks,BlockSize,hdr);
-
-				if 	(BlockIndex==1) {
-					hdr->SampleRate = 1.0 / lef32p(b+k*BlockSize+2);
-					hdr->NRec       = leu32p(b+k*BlockSize+36);
-   					fADCRange 	= lef32p(b+k*BlockSize+108);
-					fDACRange 	= lef32p(b+k*BlockSize+112);
-					lADCResolution	= leu32p(b+k*BlockSize+116);
-					lDACResolution	= leu32p(b+k*BlockSize+120);
-				}
-				else if (BlockIndex==2) {
-					hdr->NS = numBlocks;
-					hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
-
-					hdr->AS.bpb = 0;
-					for (k=0;k<hdr->NS;k++)	{
-						CHANNEL_TYPE *hc = hdr->CHANNEL+k;
-						// initialize fields
-					      	hc->Label[0]  = 0;
-					      	strcpy(hc->Transducer, "EEG: Ag-AgCl electrodes");
-					      	hc->PhysDimCode = 19+4256; // uV
-					      	hc->PhysMax   = +100;
-					      	hc->PhysMin   = -100;
-					      	hc->DigMax    = +2047;
-					      	hc->DigMin    = -2048;
-					      	hc->GDFTYP    = 3;	// int16
-					      	hc->SPR       = leu32p(b+k*BlockSize+20);
-					      	hc->OnOff     = 1;
-					      	hc->Notch     = 50;
-					      	hc->Impedance = INFINITY;
-					      	hc->fZ        = NAN;
-					      	hc->bi 	  = hdr->AS.bpb;
-					      	hdr->AS.bpb += (GDFTYP_BITS[hc->GDFTYP]*hc->SPR)>>3;
-					}
-
-					uint16_t ch;
-					for (k=0;k<hdr->NS;k++)	{
-						ch = leu16p(b+k*BlockSize);
-					      	hdr->CHANNEL[ch].LeadIdCode= 0;
-					      	hdr->CHANNEL[ch].OnOff     = 1;
-						hdr->CHANNEL[ch].Cal 	 = lef32p(b+k*BlockSize+48);
-						hdr->CHANNEL[ch].Off 	 = lef32p(b+k*BlockSize+52);
-						hdr->CHANNEL[ch].LowPass = lef32p(b+k*BlockSize+56);
-						hdr->CHANNEL[ch].HighPass= lef32p(b+k*BlockSize+60);
-					}
-				}
-				else if (BlockIndex==11) {
-//					fprintf(stdout,"%i: %s\n",c,buf);
-				}
-			}
-			free(b);
-	    	}
+		hdr->HeadLen = count; 
+		sopen_abf_read(hdr);
 	}
 
 	else if (hdr->TYPE==ACQ) {

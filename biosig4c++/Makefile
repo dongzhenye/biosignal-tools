@@ -103,8 +103,9 @@ DEFINES      += -D=WITH_FEF
 #DEFINES      += -D=SOFTCODED_PHYSDIMTABLE	# obsolete
 DEFINES      += -D=MAKE_EDFLIB
 
-CFLAGS        += -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
-CXXFLAGS      += -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
+CFLAGS       += -fstack-protector -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wl,-z,relro -Wl,-z,now -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
+#CXXFLAGS      += -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
+CXXFLAGS      = $(CFLAGS)
 AR            = ar crs
 #INCPATH       = -I /usr/include/libxml2/ -I/opt/local/include/
 #INCPATH       = -I /usr/local/include/gdcm-2.0/
@@ -221,6 +222,7 @@ SOURCES       = biosig.c \
 		t210/sopen_cfs_read.c \
 		t210/sopen_scp_read.c \
 		t210/sopen_famos_read.c \
+		t210/sopen_abf_read.c \
 		t210/sopen_alpha_read.c \
 		t210/scp-decode.cpp \
 		t220/sopen_scp_write.c \
@@ -249,6 +251,7 @@ OBJECTS       = \
 		sopen_cfs_read.o \
 		sopen_scp_read.o \
 		sopen_alpha_read.o \
+		sopen_abf_read.o \
 		sopen_scp_write.o \
 		sopen_hl7aecg.o \
 		biosig-network.o \
@@ -264,6 +267,7 @@ MinGWOBJECTS  = \
 		win32/strnlen.obj \
 		win32/sopen_cfs_read.obj \
 		win32/sopen_scp_read.obj \
+		win32/sopen_abf_read.obj \
 		win32/sopen_alpha_read.obj \
 		win32/sopen_scp_write.obj \
 		win32/sopen_hl7aecg.obj \
@@ -309,7 +313,6 @@ TARGET = save2gdf libbiosig.a
 
 first: $(TARGET)
 all:   $(TARGET) mex4o biosig4python sigviewer win32 win64 win32/sigviewer.exe win64/sigviewer.exe #biosig_client biosig_server mma java tcl perl php ruby #sigviewer 
-lib:	libbiosig.a win32/libbiosig.dll win32/libbiosig.a win64/libbiosig.a
 
 #############################################################
 #	Compilation: Implicit, default rules
