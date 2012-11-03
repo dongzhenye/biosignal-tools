@@ -22,7 +22,6 @@
 */
 
 #include <math.h>
-#include <stdio.h>	// only needed for deprecated function PhysDim() 
 #include <stdlib.h>
 #include <string.h>
 #include "physicalunits.h"
@@ -95,10 +94,9 @@ double PhysDimScale(uint16_t PhysDimCode)
 }
 
 // DEPRECATED: USE INSTEAD  PhysDim3(uint16_t PhysDimCode)
-char* PhysDim(uint16_t PhysDimCode, char *PhysDim)
+__attribute__ ((deprecated)) char* PhysDim(uint16_t PhysDimCode, char *PhysDim)
 {
 #define MAX_LENGTH_PHYSDIM      20	// DEPRECATED - DO NOT USE
-	fprintf(stderr,"deprecated function PhysDim() is used - use PhysDim3() instead\n"); 
 	// converting PhysDimCode -> PhysDim
 	uint16_t k=0;
 	size_t l2 = strlen(PhysDimFactor[PhysDimCode & 0x001F]);	
