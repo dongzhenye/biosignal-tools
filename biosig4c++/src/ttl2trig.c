@@ -31,10 +31,13 @@
 
 #ifdef WITH_BIOSIG
 #include "../biosig.h" 
-extern int VERBOSE_LEVEL;
+#ifdef NDEBUG
+#define VERBOSE_LEVEL 0		// turn off debugging information
 #else
-int VERBOSE_LEVEL=3;
+extern int VERBOSE_LEVEL; 	// used for debugging
 #endif
+#endif
+int VERBOSE=3;
     
 
 #define TO_STOP_PRESS_ANY_KEY
@@ -63,6 +66,12 @@ int is_key_pressed(void)
 
 
 int main(int argc, const char* argv[]) {
+
+
+#if defined(WITH_BIOSIG) && !defined(NDEBUG)
+	// set verbose level of libbiosig
+	VERBOSE_LEVEL = VERBOSE; 
+#endif 	
 
 /*********************************************
 	read arguments 
@@ -141,7 +150,7 @@ int main(int argc, const char* argv[]) {
 	k = 0;
 	while (k<argc) {
 
-                if (VERBOSE_LEVEL>3) fprintf(stdout,"%i/%i\t%s\n",k,argc,argv[k]);
+                if (VERBOSE>3) fprintf(stdout,"%i/%i\t%s\n",k,argc,argv[k]);
                 
                 if (0) {
 		}
@@ -173,7 +182,11 @@ int main(int argc, const char* argv[]) {
 			TH = atof(argv[++k]);
 		}
 		else if (!strncmp(argv[k],"-v",2)) {
-			VERBOSE_LEVEL = atoi(argv[k]+2);
+			VERBOSE = atoi(argv[k]+2);
+#if defined(WITH_BIOSIG) && !defined(NDEBUG)
+			// set verbose level of libbiosig
+			VERBOSE_LEVEL = VERBOSE; 
+#endif 	
 		}
 		else if (!strcmp(argv[k],"-h") || !strcmp(argv[k],"--help")) {
 			fprintf(stdout,"%s",help);
@@ -201,9 +214,9 @@ int main(int argc, const char* argv[]) {
 //		exit(-1);
 	}
 
-	if (VERBOSE_LEVEL>6) fprintf(stdout,"pcm_name:\t%s \n", pcm_name);
+	if (VERBOSE>6) fprintf(stdout,"pcm_name:\t%s \n", pcm_name);
 
-	if (VERBOSE_LEVEL>7) {
+	if (VERBOSE>7) {
 		int val;
 
 		printf("ALSA library version: %s\n", SND_LIB_VERSION_STR);
@@ -266,7 +279,7 @@ int main(int argc, const char* argv[]) {
 	unsigned int minChan, maxChan;
 	snd_pcm_hw_params_get_channels_min(hwparams, &minChan);
 	snd_pcm_hw_params_get_channels_max(hwparams, &maxChan);
-	if (VERBOSE_LEVEL>7) printf("chans = [%i %i]\n", minChan, maxChan);
+	if (VERBOSE>7) printf("chans = [%i %i]\n", minChan, maxChan);
 
 	if ( chan >= minChan) {
 		fprintf(stderr,"ERROR: Channel %i not available.\n", chan);
@@ -322,9 +335,9 @@ int main(int argc, const char* argv[]) {
 		hdr->FLAG.UCAL = 0; 
 		hdr->TYPE      = GDF; 
 		hdr->VERSION   = 3.0;
-		hdr->FileName  = outFile;
+		hdr->FileName  = strdup(outFile);
 		sopen(outFile, "w", hdr);
-		if (VERBOSE_LEVEL>6) hdr2ascii(hdr, stdout, 3);
+		if (VERBOSE>6) hdr2ascii(hdr, stdout, 3);
 		if (hdr->FILE.OPEN < 2) {
 			destructHDR(hdr); 
 			hdr = NULL;
