@@ -187,7 +187,6 @@ const char *gdftyp_string[] = {
 	"","","","","","","","float32","float64","float128"
 	};
 
-#ifndef  ONLYGDF
 const char *LEAD_ID_TABLE[] = { "unspecified",
 	"I","II","V1","V2","V3","V4","V5","V6",
 	"V7","V2R","V3R","V4R","V5R","V6R","V7R","X",
@@ -231,6 +230,8 @@ const char *LEAD_ID_TABLE[] = { "unspecified",
 */
 	, "\0\0" };  // stop marker
 
+
+#ifndef  ONLYGDF
 /*
         This information was obtained from here:
         http://www.physionet.org/physiotools/wfdb/lib/ecgcodes.h
@@ -1062,7 +1063,7 @@ void sort_eventtable(HDRTYPE *hdr) {
 		entry[k].POS = hdr->EVENT.POS[k];
 	}
 
-	qsort(entry,hdr->EVENT.N, sizeof(struct event), &compare_eventpos);
+	qsort(entry, hdr->EVENT.N, sizeof(struct event), &compare_eventpos);
 
 	if ((hdr->EVENT.DUR != NULL) && (hdr->EVENT.CHN != NULL))
 	for (k=0; k<hdr->EVENT.N;k++) {
@@ -1321,8 +1322,8 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	EndianTest.testword = 0x4a3b2c1d;
 	LittleEndian = (EndianTest.testbyte[0]==0x1d && EndianTest.testbyte[1]==0x2c  && EndianTest.testbyte[2]==0x3b  && EndianTest.testbyte[3]==0x4a );
 
-	assert (  ( LittleEndian) && (__BYTE_ORDER == __LITTLE_ENDIAN) 
-	       || (!LittleEndian) && (__BYTE_ORDER == __BIG_ENDIAN   ) );
+	assert (  ( LittleEndian && __BYTE_ORDER == __LITTLE_ENDIAN) 
+	       || (!LittleEndian && __BYTE_ORDER == __BIG_ENDIAN   ) );
 
 	hdr->FileName = NULL;
 	hdr->FILE.OPEN = 0;
