@@ -1,0 +1,390 @@
+diff --git a/configure.in b/configure.in
+index 1b0a1de..f86e3ae 100644
+--- a/configure.in
++++ b/configure.in
+@@ -144,6 +144,18 @@ if test "$with_biosig" = "yes" ; then
+ fi
+ AC_SUBST(LIBBIOSIG_LDFLAGS)
+ 
++AC_ARG_WITH([hdf5], AS_HELP_STRING([--with-hdf5],[build with support for hdf5]),[])
++AM_CONDITIONAL(WITH_HDF5, test "$with_hdf5" = "yes")
++if test "$with_hdf5" = "yes" ; then
++    CPPFLAGS="${CPPFLAGS} -DWITH_HDF5"
++fi
++
++AC_ARG_WITH([axon], AS_HELP_STRING([--with-axon],[build with support for axon format (*.ABF, *.ATF)]),[])
++AM_CONDITIONAL(WITH_AXON, test "$with_axon" = "yes")
++if test "$with_axon" = "yes" ; then
++    CPPFLAGS="${CPPFLAGS} -DWITH_AXON"
++fi
++
+ # stuff not required for standalone module
+ if test "$enable_module" != "yes"; then
+     # Checks for libraries.
+@@ -284,12 +296,15 @@ AC_SUBST(MACSETFILE)
+ fi
+ 
+ # Checks for hdf5 libraries.
++if test "$with_hdf5" = "yes" ; then
+ AC_CHECK_HEADER([hdf5.h])
+ AC_CHECK_LIB([hdf5],[H5Fopen],HAVE_HDF5="yes")
+ if test "${HAVE_HDF5}" != "yes" ; then
+     AC_MSG_ERROR([Couldn't find hdf5 libraries.])
+ else
+     CPPFLAGS="${CPPFLAGS} -DH5_USE_16_API"
++    LIBHDF5_LDFLAGS="-lhdf5 -lhdf5_hl"
++fi
+ fi
+ 
+ AC_ARG_ENABLE([debug],
+diff --git a/src/libstfio/Makefile.am b/src/libstfio/Makefile.am
+index d9dbf9b..73773ae 100644
+--- a/src/libstfio/Makefile.am
++++ b/src/libstfio/Makefile.am
+@@ -8,25 +8,6 @@ pkglib_LTLIBRARIES = libstfio.la
+ libstfio_la_SOURCES =  ./channel.cpp ./section.cpp ./recording.cpp ./stfio.cpp \
+ 	./cfs/cfslib.cpp ./cfs/cfs.c \
+ 	./hdf5/hdf5lib.cpp \
+-	./abf/abflib.cpp \
+-	./abf/axon/AxAbfFio32/abffiles.cpp \
+-	./abf/axon/AxAbfFio32/csynch.cpp \
+-	./abf/axon/AxAbfFio32/filedesc.cpp \
+-	./abf/axon/Common/FileReadCache.cpp \
+-	./abf/axon/Common/FileIO.cpp \
+-	./abf/axon/AxAbfFio32/abfheadr.cpp \
+-	./abf/axon/AxAbfFio32/abfhwave.cpp \
+-	./abf/axon/AxAbfFio32/Oldheadr.cpp \
+-	./abf/axon/AxAbfFio32/abfutil.cpp \
+-	./abf/axon/AxAbfFio32/msbincvt.cpp \
+-	./abf/axon/Common/unix.cpp \
+-	./abf/axon/AxAbfFio32/abferror.cpp \
+-        ./abf/axon/AxAtfFio32/axatffio32.cpp \
+-        ./abf/axon/AxAtfFio32/fileio2.cpp \
+-        ./abf/axon2/ProtocolReaderABF2.cpp \
+-        ./abf/axon2/SimpleStringCache.cpp \
+-	./abf/axon2/abf2headr.cpp \
+-	./atf/atflib.cpp \
+ 	./axg/axglib.cpp \
+ 	./axg/AxoGraph_ReadWrite.cpp \
+ 	./axg/fileUtils.cpp \
+@@ -42,7 +23,7 @@ libstfio_la_SOURCES += ./biosig/biosiglib.cpp
+ endif
+ 
+ libstfio_la_LDFLAGS = 
+-libstfio_la_LIBADD = $(LIBSTF_LDFLAGS) -lhdf5 -lhdf5_hl $(LIBBIOSIG_LDFLAGS)
++libstfio_la_LIBADD = $(LIBSTF_LDFLAGS) $(LIBHDF5_LDFLAGS) $(LIBBIOSIG_LDFLAGS)
+ 
+ if ISDARWIN
+ # don't install anything because it has to go into the app bundle
+diff --git a/src/libstfio/biosig/biosiglib.cpp b/src/libstfio/biosig/biosiglib.cpp
+index e0bf1c0..f3c04f3 100644
+--- a/src/libstfio/biosig/biosiglib.cpp
++++ b/src/libstfio/biosig/biosiglib.cpp
+@@ -20,7 +20,7 @@
+ #include <boost/shared_ptr.hpp>
+ #include <boost/shared_array.hpp>
+ #include <sstream>
+-#include <biosig.h>
++#include "biosig.h"
+ 
+ #include "../stfio.h"
+ #include "./biosiglib.h"
+diff --git a/src/libstfio/hdf5/hdf5lib.cpp b/src/libstfio/hdf5/hdf5lib.cpp
+index fd15ca9..7f6e2af 100755
+--- a/src/libstfio/hdf5/hdf5lib.cpp
++++ b/src/libstfio/hdf5/hdf5lib.cpp
+@@ -12,6 +12,10 @@
+ // along with this program; if not, write to the Free Software
+ // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ 
++#include "./hdf5lib.h"
++
++#ifdef WITH_HDF5
++
+ #include "hdf5.h"
+ #if H5_VERS_MINOR > 6
+   #include "hdf5_hl.h"
+@@ -23,7 +27,6 @@
+ #include <sstream>
+ #include <iostream>
+ 
+-#include "./hdf5lib.h"
+ #include "../recording.h"
+ 
+ const static unsigned int DATELEN = 128;
+@@ -523,3 +526,6 @@ void stfio::importHDF5File(const std::string& fName, Recording& ReturnData, Prog
+     }
+     
+ }
++
++#endif // WITH_HDF5
++
+diff --git a/src/libstfio/stfio.cpp b/src/libstfio/stfio.cpp
+index d2f1e5f..0f38624 100644
+--- a/src/libstfio/stfio.cpp
++++ b/src/libstfio/stfio.cpp
+@@ -29,13 +29,17 @@
+ #include "stfio.h"
+ 
+ // TODO #include "./ascii/asciilib.h"
+-#include "./hdf5/hdf5lib.h"
+-#include "./abf/abflib.h"
+-#include "./atf/atflib.h"
++#ifdef WITH_HDF5
++  #include "./hdf5/hdf5lib.h"
++#endif
++#ifdef WITH_AXON
++  #include "./abf/abflib.h"
++  #include "./atf/atflib.h"
++#endif
+ #include "./axg/axglib.h"
+ #include "./igor/igorlib.h"
+ #ifdef WITH_BIOSIG
+-#include "./biosig/biosiglib.h"
++  #include "./biosig/biosiglib.h"
+ #else
+ #include "./cfs/cfslib.h"
+ #include "./heka/hekalib.h"
+@@ -91,9 +95,14 @@ bool stfio::importFile(
+     try {
+         switch (type) {
+         case stfio::hdf5: {
++#ifdef WITH_HDF5
+             stfio::importHDF5File(fName, ReturnData, progDlg);
++#else
++            throw std::runtime_error("hdf5 not supported when compiled with mingw.");
++#endif
+             break;
+         }
++#ifdef WITH_AXON
+         case stfio::abf: {
+             stfio::importABFFile(fName, ReturnData, progDlg);
+             break;
+@@ -102,10 +111,12 @@ bool stfio::importFile(
+             stfio::importATFFile(fName, ReturnData, progDlg);
+             break;
+         }
++#endif
+         case stfio::axg: {
+             stfio::importAXGFile(fName, ReturnData, progDlg);
+             break;
+         }
++
+ #ifndef WITH_BIOSIG
+         case stfio::cfs: {
+             int res = stfio::importCFSFile(fName, ReturnData, progDlg);
+@@ -162,7 +173,11 @@ bool stfio::exportFile(const std::string& fName, stfio::filetype type, const Rec
+     try {
+         switch (type) {
+         case stfio::hdf5: {
++#ifdef WITH_HDF5
+             stfio::exportHDF5File(fName, Data, progDlg);
++#else
++            throw std::runtime_error("hdf5 not supported when compiled with mingw.");
++#endif
+             break;
+         }
+         case stfio::igor: {
+diff --git a/src/libstfio/stfio.h b/src/libstfio/stfio.h
+index 6e585b1..bd5dfb0 100644
+--- a/src/libstfio/stfio.h
++++ b/src/libstfio/stfio.h
+@@ -21,6 +21,11 @@
+  *  Header file for libstfio
+  */
+ 
++#ifndef __MINGW32__
++// HDF5 is currently not supported with MINGW
++#define WITH_HDF5
++#endif
++
+ #ifndef _STFIO_H_
+ #define _STFIO_H_
+ 
+diff --git a/src/stimfit/gui/app.cpp b/src/stimfit/gui/app.cpp
+index cb0f415..ca764ac 100755
+--- a/src/stimfit/gui/app.cpp
++++ b/src/stimfit/gui/app.cpp
+@@ -62,10 +62,12 @@
+ #include "./dlgs/smalldlgs.h"
+ #include "./../math/funclib.h"
+ 
+-#if defined(__LINUX__) || defined(__WXMAC__)
++#if defined(__LINUX__) || defined(__WXMAC__) 
++#if !defined(__MINGW32__)
+ #include "./../../libstfio/abf/axon/Common/axodefn.h"
+ #include "./../../libstfio/abf/axon/AxAbfFio32/abffiles.h"
+ #endif
++#endif
+ #include "./../math/fit.h"
+ 
+ #ifdef __WXMAC__
+@@ -180,8 +182,10 @@ bool wxStfApp::OnInit(void)
+                                      wxT("ABF Document"), wxT("ABF View"), CLASSINFO(wxStfDoc),
+                                      CLASSINFO(wxStfView) );
+ #if defined(__LINUX__) || defined(__WXMAC__)
++#if !defined(__MINGW32__)
+     ABF_Initialize();
+ #endif
++#endif
+     m_atfTemplate=new wxDocTemplate( docManager,
+                                      wxT("Axon text file"), wxT("*.atf"), wxT(""), wxT("atf"),
+                                      wxT("ATF Document"), wxT("ATF View"), CLASSINFO(wxStfDoc),
+@@ -564,8 +568,10 @@ wxMenuBar *wxStfApp::CreateUnifiedMenuBar(wxStfDoc* doc) {
+     file_menu->Append(ID_FILEINFO, wxT("File information..."));
+ 
+     file_menu->AppendSeparator();
++#ifdef WITH_PYTHON
+     file_menu->Append(ID_MPL, wxT("Create &figure..."));
+-#ifdef _WINDOWS
++#endif
++#ifdef _WINDOWS 
+     file_menu->Append(ID_PRINT_PRINT, wxT("&Print..."));
+     file_menu->Append(ID_PRINT_PAGE_SETUP, wxT("Print &Setup..."));
+ #endif
+@@ -807,7 +813,9 @@ wxMenuBar *wxStfApp::CreateUnifiedMenuBar(wxStfDoc* doc) {
+     menu_bar->Append(m_edit_menu, wxT("&Edit"));
+     menu_bar->Append(m_view_menu, wxT("&View"));
+     menu_bar->Append(analysis_menu, wxT("&Analysis"));
++#ifdef WITH_PYTHON
+     menu_bar->Append(extensions_menu, wxT("E&xtensions"));
++#endif
+     menu_bar->Append(help_menu, wxT("&Help"));
+ 
+     return menu_bar;
+diff --git a/src/stimfit/gui/dlgs/smalldlgs.h b/src/stimfit/gui/dlgs/smalldlgs.h
+index 17cfee3..f4378ae 100755
+--- a/src/stimfit/gui/dlgs/smalldlgs.h
++++ b/src/stimfit/gui/dlgs/smalldlgs.h
+@@ -663,7 +663,9 @@ class wxStfConvertDlg : public wxDialog
+ private:
+     wxDirPickerCtrl *m_srcDirPicker,*m_destDirPicker;
+     wxTextCtrl *m_textCtrlSrcFilter;
++#ifdef WITH_PYTHON
+     wxGenericDirCtrl *mySrcDirCtrl, *myDestDirCtrl; 
++#endif
+     wxString srcDir,destDir;
+     wxString srcFilter;
+ 
+diff --git a/src/stimfit/gui/doc.cpp b/src/stimfit/gui/doc.cpp
+index d0252be..3a22cc2 100755
+--- a/src/stimfit/gui/doc.cpp
++++ b/src/stimfit/gui/doc.cpp
+@@ -16,6 +16,7 @@
+ // The document class, derived from both wxDocument and recording
+ // 2007-12-27, Christoph Schmidt-Hieber, University of Freiburg
+ 
++
+ // For compilers that support precompilation, includes "wx/wx.h".
+ #include <wx/wxprec.h>
+ #include <wx/progdlg.h>
+@@ -44,8 +45,12 @@
+ #include "./../math/fit.h"
+ #include "./../math/measure.h"
+ #include "./../../libstfio/cfs/cfslib.h"
++#ifdef WITH_AXON
+ #include "./../../libstfio/atf/atflib.h"
++#endif
++#ifdef WITH_HDF5
+ #include "./../../libstfio/hdf5/hdf5lib.h"
++#endif
+ #if 0 // TODO: backport ascii
+ #include "./../../libstfio/ascii/asciilib.h"
+ #endif
+@@ -660,7 +665,11 @@ bool wxStfDoc::SaveAs() {
+                  return stfio::exportCFSFile(stf::wx2std(filename), writeRec, progDlg);
+ #endif
+              case 2:
++#ifdef WITH_AXON
+                  return stfio::exportATFFile(stf::wx2std(filename), writeRec);
++#else 
++                 return false; 
++#endif
+              case 3:
+                  return stfio::exportIGORFile(stf::wx2std(filename), writeRec, progDlg);
+              case 4:
+@@ -670,7 +679,11 @@ bool wxStfDoc::SaveAs() {
+ #endif
+              case 0:
+              default:
++#ifdef WITH_HDF5
+                  return stfio::exportHDF5File(stf::wx2std(filename), writeRec, progDlg);
++#else
++                 return false; 
++#endif 
+             }
+         }
+         catch (const std::runtime_error& e) {
+@@ -727,9 +740,11 @@ bool wxStfDoc::DoSaveDocument(const wxString& filename) {
+     if (writeRec.size() == 0) return false;
+     try {
+         stf::wxProgressInfo progDlg("Reading file", "Opening file", 100);
++#ifdef WITH_HDF5
+         if (stfio::exportHDF5File(stf::wx2std(filename), writeRec, progDlg))
+             return true;
+         else
++#endif
+             return false;
+     }
+     catch (const std::runtime_error& e) {
+diff --git a/src/stimfit/gui/parentframe.cpp b/src/stimfit/gui/parentframe.cpp
+index 265b2ff..31b6218 100755
+--- a/src/stimfit/gui/parentframe.cpp
++++ b/src/stimfit/gui/parentframe.cpp
+@@ -63,7 +63,9 @@
+ #include "./printout.h"
+ #include "./dlgs/smalldlgs.h"
+ #include "./copygrid.h"
++#ifdef WITH_AXON
+ #include "./../../libstfio/atf/atflib.h"
++#endif 
+ #include "./../../libstfio/igor/igorlib.h"
+ 
+ #include "./childframe.h"
+@@ -540,8 +542,17 @@ void wxStfParentFrame::OnAbout(wxCommandEvent& WXUNUSED(event) )
+ 	info.SetName(wxT("Stimfit"));
+ 	info.SetVersion(wxString(VERSION, wxConvLocal));
+ 	info.SetWebSite(wxT("http://www.stimfit.org"));
+-	wxString about(wxT("Credits:\n\nOriginal idea (Stimfit for DOS):\n\
+-Peter Jonas, Physiology Department, University of Freiburg\n\n\
++	wxString about(wxT("This version was crosscompiled with Mingw - the following features \n\
++have been disabled: python shell, support for ABF, ATF and HDF5 formats.\n\
++CFS and Heka format are read through libbiosig. \n\
++\n\
++Credits:\n\nOriginal idea (Stimfit for DOS):\n\
++Peter Jonas, Physiology Department, University of Freiburg\n\
++\n\
++Contributor(s):\n\
++  Alois Schlögl, IST Austria\n\
++  Jose Guzman\n\
++\n\
+ Fourier transform:\nFFTW, http://www.fftw.org\n\n\
+ Levenberg-Marquardt non-linear regression:\n\
+ Manolis Lourakis, http://www.ics.forth.gr/~lourakis/levmar/ \n\n\
+@@ -760,11 +771,12 @@ void wxStfParentFrame::OnConvert(wxCommandEvent& WXUNUSED(event) ) {
+ 
+                 stf::wxProgressInfo progDlgOut("Writing file", "Opening file", 100);
+                 switch ( eft ) {
++#ifdef WITH_AXON
+                  case stfio::atf:
+                      stfio::exportATFFile(stf::wx2std(destFilename), sourceFile);
+                      dest_ext = wxT("Axon textfile [*.atf]");
+                      break;
+-
++#endif
+                  case stfio::igor:
+                      stfio::exportIGORFile(stf::wx2std(destFilename), sourceFile, progDlgOut);
+                      dest_ext = wxT("Igor binary file [*.ibw]");
+diff --git a/stfconf.h b/stfconf.h
+index abdefb0..e65c8ce 100644
+--- a/stfconf.h
++++ b/stfconf.h
+@@ -2,7 +2,7 @@
+ /* stfconf.h.in.  Generated from configure.in by autoheader.  */
+ 
+ /* Define to 1 if you have the <dlfcn.h> header file. */
+-#define HAVE_DLFCN_H 1
++/* #undef HAVE_DLFCN_H */
+ 
+ /* Define to 1 if you have the <inttypes.h> header file. */
+ #define HAVE_INTTYPES_H 1
