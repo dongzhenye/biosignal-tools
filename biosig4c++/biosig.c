@@ -117,6 +117,7 @@ int sopen_SCP_read     (HDRTYPE* hdr);
 int sopen_SCP_write    (HDRTYPE* hdr);
 int sopen_HL7aECG_read (HDRTYPE* hdr);
 void sopen_cfs_read     (HDRTYPE* hdr);
+void sopen_smr_read     (HDRTYPE* hdr);
 void sopen_HL7aECG_write(HDRTYPE* hdr);
 void sopen_abf_read   (HDRTYPE* hdr);
 void sopen_alpha_read   (HDRTYPE* hdr);
@@ -1729,6 +1730,8 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    	hdr->TYPE = CDF;
     	else if (!memcmp(Header1,"CEDFILE",7))
 	    	hdr->TYPE = CFS;
+    	else if (!memcmp(Header1+2,"(C) CED 87",10))  
+	    	hdr->TYPE = SMR;        // CED's SMR/SON format 
     	else if (!memcmp(Header1,"CFWB\1\0\0\0",8))
 	    	hdr->TYPE = CFWB;
     	else if (!memcmp(Header1,"Version 3.0",11))
@@ -2169,6 +2172,7 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ SIGIF,    	"SIGIF" },
 	{ Sigma,    	"Sigma" },
 	{ SMA,    	"SMA" },
+	{ SMR,    	"SON/SMR" },
 	{ SND,    	"SND" },
 	{ SPSS,    	"SPSS" },
 	{ SQLite,    	"SQLite" },
@@ -5736,7 +5740,18 @@ if (VERBOSE_LEVEL>8)
 	}
 
 	else if (hdr->TYPE==CFS) {
+	        hdr->HeadLen = count;
 		sopen_cfs_read(hdr); 
+	}
+
+	else if (hdr->TYPE==SMR) {
+	        hdr->HeadLen = 512; 
+	        if (count<hdr->HeadLen) {
+		    	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen+1);
+        		count += ifread(hdr->AS.Header, 1, hdr->HeadLen-count, hdr);
+        		hdr->AS.Header[count]=0;
+        	}	
+		sopen_smr_read(hdr); 
 	}
 
 	else if (hdr->TYPE==CFWB) {

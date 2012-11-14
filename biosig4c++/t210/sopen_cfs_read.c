@@ -91,6 +91,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n
 			*/
 			hc->OnOff = 1;
 			hc->LeadIdCode = 0; 
+			hc->bi8 = 0; 
 
 			uint8_t len = min(21, MAX_LENGTH_LABEL);
 			strncpy(hc->Label, H2 + 1 + k*H2LEN, len);	// Channel name 
@@ -111,6 +112,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n
 				hc->OnOff = 0;
 				NS--;
 			}
+			hc->Impedance = NAN;
+			hc->TOffset  = NAN;
 			hc->LowPass  = NAN;
 			hc->HighPass = NAN;
 			hc->Notch    = NAN;
@@ -199,9 +202,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n[DS#%3i] 0x%x 0x%x [0x%x 0x%x szChanData=
 				hc->Cal     = lef32p(pos+8);
 				hc->Off     = lef32p(pos+12);
 				double Xcal = lef32p(pos+16);
-				//double Xoff = lef32p(pos+20);// unused
+				double Xoff = lef32p(pos+20);// unused
 
-if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x%g %g\n",m,k,spr,(int)SPR,hc->SPR,hc->Cal,hc->Off,hc->bi,xPhysDimScale[k], Xcal);
+if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x%g %g %g\n",m,k,spr,(int)SPR,hc->SPR,hc->Cal,hc->Off,hc->bi,xPhysDimScale[k], Xcal, Xoff);
 
 				double Fs = 1.0 / (xPhysDimScale[k] * Xcal);
 				if ( (hc->OnOff == 0) || (Xcal == 0.0) ) {
@@ -419,7 +422,21 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		hdr->FLAG.UCAL = 0;
 
 #undef H1LEN
-
-
 }
 
+/*
+#include "../src/libson/Son.h"
+#include "../src/libson/Sonintl.h"
+*/
+
+EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {	
+        /*TODO: implemnt SON/SMR format */
+        fprintf(stdout,"SOPEN: Support for CED's SMR/SON format is under construction \n");
+
+        hdr->VERSION = leu16p(hdr->AS.Header); 
+        size_t off= (size_t)&TFileHead - (size_t)&TFileHead.channels;       
+        hdr->NS = leu16p(hdr->AS.Header+off); 
+
+        biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"Support for CED's SMR/SON format is under construction.");
+        
+}
