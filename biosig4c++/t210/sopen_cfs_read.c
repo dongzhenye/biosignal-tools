@@ -434,7 +434,7 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
         fprintf(stdout,"SOPEN: Support for CED's SMR/SON format is under construction \n");
 
         hdr->VERSION = leu16p(hdr->AS.Header); 
-        size_t off= (size_t)&TFileHead - (size_t)&TFileHead.channels;       
+//        size_t off= (size_t)&TFileHead - (size_t)&TFileHead.channels;       
         hdr->NS = leu16p(hdr->AS.Header+off); 
 
         biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"Support for CED's SMR/SON format is under construction.");
