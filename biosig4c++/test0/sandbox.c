@@ -27,6 +27,7 @@
  */
 
 
+#include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
@@ -612,11 +613,17 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i \n",(int)(po
 						uint32_t ns      = (*(uint32_t*)(hdr->AS.Header+pos+36));
 						uint32_t DataPos = (*(uint32_t*)(hdr->AS.Header+pos+40));
 						spr              = (*(uint32_t*)(hdr->AS.Header+pos+44));
+						double DataScaler= (*(double*)(hdr->AS.Header+pos+72));
 						double Toffset   = (*(double*)(hdr->AS.Header+pos+80));		// time offset of 
 						uint16_t pdc     = PhysDimCode((char*)(hdr->AS.Header + pos + 96));
 						double dT        = (*(double*)(hdr->AS.Header+pos+104));
+						uint16_t XUnits  = PhysDimCode((char*)(hdr->AS.Header+pos+120));
 						double YRange    = (*(double*)(hdr->AS.Header+pos+128));
 						double YOffset   = (*(double*)(hdr->AS.Header+pos+136));
+						double Bandwidth   = (*(double*)(hdr->AS.Header+pos+144));
+						double PipetteResistance  = (*(double*)(hdr->AS.Header+pos+152));
+						double RsValue  = (*(double*)(hdr->AS.Header+pos+192));
+						
 						uint16_t AdcChan = (*(uint16_t*)(hdr->AS.Header+pos+222));
 						double PhysMin   = (*(double*)(hdr->AS.Header+pos+224));
 						double PhysMax   = (*(double*)(hdr->AS.Header+pos+232));
@@ -662,9 +669,15 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i \n",(int)(po
 							c.f64 = PhysMin; c.u64 = bswap_64(c.u64); PhysMin = c.f64;
 							c.f64 = Toffset; c.u64 = bswap_64(c.u64); Toffset = c.f64;
  						}
+
+						if (YOffset != 0.0) 
+							fprintf(stderr,"!!! WARNING !!!  HEKA: the offset is not zero - "
+							"this case is not tested and might result in incorrect scaling of "
+							"the data,\n!!! YOU ARE WARNED !!!\n"); 
+
 						double Cal = 2 * YRange / (DigMax - DigMin);
 						double Off = YOffset;
-                                                double Fs = round(1.0 / dT);
+						double Fs = round(1.0 / ( dT  * PhysDimScale(XUnits) ) );
 
 						if (flagSweepSelected) {
 							if (hdr->SampleRate <= 0.0) hdr->SampleRate = Fs;
@@ -712,8 +725,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 							hc->LeadIdCode = 0;
 							hc->DigMin  = DigMin;
 							hc->DigMax  = DigMax;
-							// hc->PhysMax = PhysMax;
-							// hc->PhysMin = PhysMin;
+
+							// TODO: case of non-zero YOffset is not tested //
 							hc->PhysMax =  YRange+YOffset;
 							hc->PhysMin = -YRange-YOffset;
 
@@ -724,21 +737,27 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 							hc->Off = Off;
 							hc->TOffset = Toffset;
 
-{ //DEBUG 
+#ifndef NDEBUG
 							double Cal2 = (hc->PhysMax-hc->PhysMin)/(hc->DigMax-hc->DigMin);
 							double Off2 = hc->PhysMin - Cal2*hc->DigMin;
+							double Off3 = hc->PhysMax - Cal2*hc->DigMax;
+
 							hc->Off = Off2;
 if (VERBOSE_LEVEL>6) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %g/%g %g/%g \n",(int)(pos+StartOfData),ns,AdcChan,Label,Cal,Cal2,Off,Off2);
 
-}
+							assert(Cal==Cal2);
+							assert(Off==Off2);
+							assert(Off==Off3);
+
+#endif
 
 
 							/* TODO: fix remaining channel header  */
 							/* LowPass, HighPass, Notch, Impedance, */
 							hc->LowPass = NAN; 
-							hc->HighPass = NAN;
+							hc->HighPass = hc->HighPass = (Bandwidth > 0) ? Bandwidth : NAN;
 							hc->Notch = NAN;
-							hc->Impedance = NAN;	
+							hc->Impedance = (RsValue > 0) ? RsValue : NAN;	
 
 							DT = (double*) realloc(DT, hdr->NS*sizeof(double));
 							DT[ns] = dT;
