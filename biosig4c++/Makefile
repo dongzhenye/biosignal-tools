@@ -83,9 +83,10 @@ PathToSigViewerWIN64 = ../sigviewer4win64
 CC            = gcc
 CXX           = g++
 
-DEFINES_ALL   = #-D=NDEBUG 
+DEFINES_ALL   = -D=NDEBUG 
 
 DEFINES      += $(DEFINES_ALL)
+#DEFINES     += -D=WITH_SON 
 #DEFINES     += -D=WITHOUT_SCP_DECODE
 DEFINES      += -D=WITH_ZLIB 
 DEFINES      += -D=WITH_PTHREAD 
@@ -418,6 +419,9 @@ sopen_fef_read.o: t240/sopen_fef_read.c biosig-dev.h biosig.h
 #	$(MAKE) -C t240 -f Makefile.am.sample
 	$(CC) -c $(DEFINES) $(CFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
 
+sopen_abf_read.o: t210/sopen_abf_read.c biosig-dev.h biosig.h
+	$(CXX) -c $(DEFINES) $(CFLAGS) $(INCPATH) -o "$@" "$<"
+
 sopen_hl7aecg.o: t230/sopen_hl7aecg.c biosig-dev.h biosig.h
 	$(CXX) -c $(DEFINES) $(CFLAGS) $(INCPATH) -o "$@" "$<"
 
@@ -443,6 +447,9 @@ win32/sopen_scp_read.obj: t210/sopen_scp_read.c biosig-dev.h biosig.h t210/struc
 
 win32/scp-decode.obj: t210/scp-decode.cpp biosig-dev.h biosig.h t210/structures.h t210/codes.h
 	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -o "$@" "$<"
+
+win32/sopen_abf_read.obj: t210/sopen_abf_read.c biosig-dev.h biosig.h 
+	$(MinGWCXX) -c $(DEFINES) $(MinGWCFLAGS) -o "$@" "$<"
 
 win32/sopen_hl7aecg.obj: t230/sopen_hl7aecg.c biosig-dev.h biosig.h 
 	$(MinGWCXX) -c $(DEFINES) $(MinGWCFLAGS) -o "$@" "$<"
@@ -478,6 +485,9 @@ win64/sopen_scp_read.obj: t210/sopen_scp_read.c biosig-dev.h biosig.h t210/struc
 
 win64/scp-decode.obj: t210/scp-decode.cpp biosig-dev.h biosig.h t210/structures.h t210/codes.h
 	$(MinGW64CC) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
+
+win64/sopen_abf_read.obj: t210/sopen_abf_read.c biosig-dev.h biosig.h 
+	$(MinGW64CXX) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
 
 win64/sopen_hl7aecg.obj: t230/sopen_hl7aecg.c biosig-dev.h biosig.h
 	$(MinGW64CXX) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
@@ -902,6 +912,7 @@ uninstall remove:
 	-rm $(BIN)/sigviewer
 	-rm $(BIN)/eventcodes.txt
 	-rm $(DESTDIR)/usr/include/biosig.h
+	-rm $(DESTDIR)/usr/include/biosig2.h
 	-rm $(DESTDIR)/usr/include/physicalunits.h
 	-rm $(LIB)/libbiosig.*
 	-rm $(LIB)/libbiosig2.*
@@ -916,8 +927,9 @@ uninstall remove:
 #############################################################
 #	Testing
 #############################################################
+testtms: $(DATA_DIR)t1.scp
 #	./save2gdf -V8 ~/data/test/tms32/small_test.float32.log
-	./save2gdf -f=TMSi t0.scp $(TEMP_DIR)t2.log
+	./save2gdf -f=TMSi $(DATA_DIR)t1.scp $(TEMP_DIR)t2.log
 	cat $(TEMP_DIR)t2.log
 
 fetchdata: $(TEMP_DIR)scp/redred/PFE103.scp  $(TEMP_DIR)Osas2002plusQRS.edf $(DATA_DIR)Newtest17-2048.bdf $(DATA_DIR)2003-12\ Schema/example/Example\ aECG.xml

@@ -5745,12 +5745,31 @@ if (VERBOSE_LEVEL>8)
 	}
 
 	else if (hdr->TYPE==SMR) {
-	        hdr->HeadLen = 512; 
-	        if (count<hdr->HeadLen) {
-		    	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen+1);
-        		count += ifread(hdr->AS.Header, 1, hdr->HeadLen-count, hdr);
-        		hdr->AS.Header[count]=0;
-        	}	
+		hdr->HeadLen = 512; 
+		if (count < hdr->HeadLen) {
+			// read fixed header 
+			hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen+1);
+			count += ifread(hdr->AS.Header+count, 1, hdr->HeadLen-count, hdr);
+			hdr->AS.Header[count]=0;
+		}	
+
+		// get Endianity, Version and Header size
+		hdr->FILE.LittleEndian = (*(uint16_t*)(hdr->AS.Header+38) == 0);   // 0x0000: little endian, 0x0101: big endian
+		if (hdr->FILE.LittleEndian) {
+			hdr->VERSION = leu16p(hdr->AS.Header); 
+			hdr->HeadLen = leu32p(hdr->AS.Header + 26 ); // first data 
+		} else {
+			hdr->VERSION = beu16p(hdr->AS.Header); 
+			hdr->HeadLen = beu32p(hdr->AS.Header + 26); // first data
+		}        
+
+		if (count < hdr->HeadLen) {
+			// read channel header and extra data
+			hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen+1);
+			count += ifread(hdr->AS.Header+count, 1, hdr->HeadLen-count, hdr);
+			hdr->AS.Header[count]=0;
+		}
+
 		sopen_smr_read(hdr); 
 	}
 
@@ -6954,9 +6973,9 @@ if (VERBOSE_LEVEL>8)
 		fprintf(stdout,"Reading EGIS is under construction\n");
 
 #if __BYTE_ORDER == __BIG_ENDIAN
-		char FLAG_SWAP = hdr->FLAG.LittleEndian;
+		char FLAG_SWAP = hdr->FILE.LittleEndian;
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
-		char FLAG_SWAP = hdr->FLAG.LittleEndian;
+		char FLAG_SWAP = hdr->FILE.LittleEndian;
 #endif
 		hdr->VERSION = *(int16_t*) mfer_swap8b(hdr->AS.Header+4, sizeof(int16_t), char FLAG_SWAP);
 		hdr->HeadLen = *(uint16_t*) mfer_swap8b(hdr->AS.Header+6, sizeof(uint16_t), char FLAG_SWAP);
@@ -11455,7 +11474,7 @@ size_t sread_raw(size_t start, size_t length, HDRTYPE* hdr, char flag) {
  *		are collapsed
  */
 
-	if (hdr->AS.flag_collapsed_rawdata && ! flag)
+	if (hdr->AS.flag_collapsed_rawdata && !flag)
 		hdr->AS.length = 0; // 	force reloading of data
 
 	size_t	count, nelem;
@@ -11511,6 +11530,7 @@ size_t sread_raw(size_t start, size_t length, HDRTYPE* hdr, char flag) {
 	else {
 		
 		assert(hdr->TYPE != CFS);	// CFS data has been already cached in SOPEN
+		assert(hdr->TYPE != SMR);	// CFS data has been already cached in SOPEN
 
 		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"sread-raw: 223\n");
@@ -11618,7 +11638,11 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 
 	if (start >= (size_t)hdr->NRec) return(0);
 
-	count = sread_raw(start, length, hdr, 0);
+ 	if (hdr->TYPE == SMR) // data is already cached in SMR
+ 		count = hdr->NRec; 
+	else 
+	 	count = sread_raw(start, length, hdr, 0);
+
 
 	if (hdr->AS.B4C_ERRNUM) return(0);
 
