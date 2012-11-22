@@ -631,12 +631,16 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i \n",(int)(po
 
 						switch (hdr->AS.Header[pos+70]) {
 						case 0: gdftyp = 3; 		//int16
-							DigMax = (double)(int16_t)0x7fff;
-							DigMin = (double)(int16_t)0x8000;
+							/*
+								It seems that the range is 1.024*(2^15-1)/2^15 nA or V
+								and symetric around zero. i.e. YOffset is zero
+							*/
+							DigMax =  ldexp(1.0,15)-1.0;
+							DigMin = -DigMax;
 							break;
 						case 1: gdftyp = 5; 		//int32
-							DigMax = (double)(int32_t)0x7fffffff;
-							DigMin = (double)(int32_t)0x80000000;
+							DigMax =  ldexp(1.0, 31) - 1.0;
+							DigMin = -DigMax;
 							break;
 						case 2: gdftyp = 16; 		//float32
 							DigMax =  1e9;
@@ -675,7 +679,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i \n",(int)(po
 							"this case is not tested and might result in incorrect scaling of "
 							"the data,\n!!! YOU ARE WARNED !!!\n"); 
 
-						double Cal = 2 * YRange / (DigMax - DigMin);
+						double Cal = DataScaler;
 						double Off = YOffset;
 						double Fs = round(1.0 / ( dT  * PhysDimScale(XUnits) ) );
 
@@ -727,11 +731,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 							hc->DigMax  = DigMax;
 
 							// TODO: case of non-zero YOffset is not tested //
-							hc->PhysMax =  YRange+YOffset;
-							hc->PhysMin = -YRange-YOffset;
-
-							Cal = (hc->PhysMax-hc->PhysMin)/(hc->DigMax-hc->DigMin);
-							Off = hc->PhysMin - Cal*hc->DigMin;
+							hc->PhysMax = hc->DigMax * Cal + Off;
+							hc->PhysMin = hc->DigMin * Cal + Off;
 
 							hc->Cal = Cal;
 							hc->Off = Off;
@@ -742,7 +743,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 							double Off2 = hc->PhysMin - Cal2*hc->DigMin;
 							double Off3 = hc->PhysMax - Cal2*hc->DigMax;
 
-							hc->Off = Off2;
 if (VERBOSE_LEVEL>6) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %g/%g %g/%g \n",(int)(pos+StartOfData),ns,AdcChan,Label,Cal,Cal2,Off,Off2);
 
 							assert(Cal==Cal2);
