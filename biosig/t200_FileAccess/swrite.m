@@ -54,7 +54,7 @@ if strcmp(HDR.TYPE,'EDF') || strcmp(HDR.TYPE,'GDF') || strcmp(HDR.TYPE,'BDF'),
                 D = data; 
                 
         elseif (HDR.SPR == 1), 
-                D = data'; 
+                D = data(:, HDR.AS.SPR > 0)'; 
                 
         else    
                 % fill missing data with NaN
