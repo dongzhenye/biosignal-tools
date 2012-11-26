@@ -26,6 +26,7 @@
 
  */
 
+#define WITH_TIMESTAMP
 
 #include <assert.h>
 #include <ctype.h>
@@ -359,7 +360,22 @@ int sopen_matlab(HDRTYPE* hdr) {
 }
 #endif 
 
+/****************************************************************************
+   heka2gdftime 
+     converts heka time format into gdftime 
+ ****************************************************************************/
+gdf_time heka2gdftime(double t) {		
+	t -= 1580970496; if (t<0) t += 4294967296; t += 9561652096;
+	return (uint64_t)ldexp(t/(24.0*60*60) + 584755, 32); // +datenum(1601,1,1));
+}		
 
+/****************************************************************************
+   sopen_heka
+     reads heka format 
+
+     if itx is not null, the file is converted into an ITX formated file 
+     and streamed to itx, too. 	
+ ****************************************************************************/
 void sopen_heka(HDRTYPE* hdr, FILE *itx) {
 	size_t count = hdr->HeadLen;
 
@@ -487,7 +503,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 989: \n");
 		+ get number of sweeps
 		+ get number of channels
 		+ check whether all traces of a single sweep have the same SPR, and Fs
-		- check whether channelnumber (TrAdcChannel) and Label fit among all sweeps
+		- check whether channelnumber (TrAdcChannel), scaling (DataScaler) and Label fit among all sweeps
 		+ extract the total number of samples
 		+ physical units
 		+ level 4 may have no children
@@ -526,8 +542,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 995 %i %i \n",StartOfPulse, Sizes.Rec.
 
 if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 997\n");
 		
-		t -= 1580970496; if (t<0) t += 4294967296; t += 9561652096;
-		hdr->T0 = (uint64_t)ldexp(t/(24.0*60*60) + 584755, 32); // +datenum(1601,1,1));
+		hdr->T0 = heka2gdftime(t);
 		hdr->SampleRate = 0.0;
 		double *DT = NULL; 	// list of sampling intervals per channel
 		hdr->SPR = 0;
@@ -560,10 +575,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L1 @%i=\t%i/%i \n",(int)(pos+StartOfDa
 				char *SeLabel =  (char*)(hdr->AS.Header+pos+4);		// max 32 bytes
 				strncpy((char*)hdr->AS.auxBUF + 33*k2, (char*)hdr->AS.Header+pos+4, 32); hdr->AS.auxBUF[33*k2+32] = 0;
 				SeLabel = (char*)hdr->AS.auxBUF + 33*k2;
-				//double t  = *(double*)(hdr->AS.Header+pos+136);		// time of series. TODO: this time should be taken into account 
+				double t  = *(double*)(hdr->AS.Header+pos+136);		// time of series. TODO: this time should be taken into account 
 				Delay.u64 = bswap_64(*(uint64_t*)(hdr->AS.Header+pos+472+176));
 	
-if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i \n",(int)(pos+StartOfData),SeLabel,Delay.f64,k1,K1,k2,K2);
+				struct tm tm;
+				gdf_time2tm_time_r(heka2gdftime(t),&tm); 
+if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i     t=%.17g %s\n",(int)(pos+StartOfData),SeLabel,Delay.f64,k1,K1,k2,K2,t,asctime(&tm));
 
 				pos += Sizes.Rec.Series + 4;
 				// read number of children
@@ -590,7 +607,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i \n",(int)(po
 					// read sweep
 					hdr->NRec++; 	// increase number of sweeps
 					uint32_t SPR = 0, spr = 0;
-					// double t  = *(double*)(hdr->AS.Header+pos+48);		// time of sweep. TODO: this should be taken into account 
+					double t  = *(double*)(hdr->AS.Header+pos+48);		// time of sweep. TODO: this should be taken into account 
+
+					gdf_time2tm_time_r(heka2gdftime(t),&tm); 
+if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L3 @%i= %fHz\t%i/%i %i/%i %i/%i t=%.17g %s\n",(int)(pos+StartOfData),hdr->SampleRate,k1,K1,k2,K2,k3,K3,t,asctime(&tm));
 
 					char flagSweepSelected = (hdr->AS.SegSel[0]==0 || k1+1==hdr->AS.SegSel[0])
 						              && (hdr->AS.SegSel[1]==0 || k2+1==hdr->AS.SegSel[1])
@@ -617,6 +637,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i \n",(int)(po
 						double Toffset   = (*(double*)(hdr->AS.Header+pos+80));		// time offset of 
 						uint16_t pdc     = PhysDimCode((char*)(hdr->AS.Header + pos + 96));
 						double dT        = (*(double*)(hdr->AS.Header+pos+104));
+						double XStart    = (*(double*)(hdr->AS.Header+pos+112));
 						uint16_t XUnits  = PhysDimCode((char*)(hdr->AS.Header+pos+120));
 						double YRange    = (*(double*)(hdr->AS.Header+pos+128));
 						double YOffset   = (*(double*)(hdr->AS.Header+pos+136));
@@ -717,7 +738,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 
 						if (ns >= hdr->NS) {
 							hdr->NS = ns + 1;
-							hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
+#ifdef WITH_TIMESTAMP
+							// allocate memory for an extra time stamp channel, which is define only after the end of the channel loop - see below
+							hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, (hdr->NS+1) * sizeof(CHANNEL_TYPE));  
+#else
+							hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));  
+#endif
 							CHANNEL_TYPE *hc = hdr->CHANNEL + ns;
 							strncpy(hc->Label, Label, max(32, MAX_LENGTH_LABEL));
 							hc->Label[max(32,MAX_LENGTH_LABEL)] = 0;
@@ -818,6 +844,38 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 #endif
                 DT = NULL;
 
+#ifdef WITH_TIMESTAMP
+		{
+			/*
+				define time stamp channel, memory is already allocated above
+			*/		
+			CHANNEL_TYPE *hc = hdr->CHANNEL + hdr->NS; 
+			hc->GDFTYP  = 7; 	// corresponds to int64_t, gdf_time
+			strcpy(hc->Label,"Timestamp");
+			hc->Transducer[0]=0;
+			hc->PhysDimCode = 2272; // units: days [d]
+                        hc->LeadIdCode = 0;
+                        hc->SPR     = 1;
+			hc->Cal     = ldexp(1.0, -32); 
+			hc->Off     = 0.0; 
+			hc->OnOff   = 1; 
+			hc->DigMax  = ldexp( 1.0, 61); 	
+			hc->DigMin  = 0; 	
+			hc->PhysMax = hc->DigMax * hc->Cal;  	
+			hc->PhysMin = hc->DigMin * hc->Cal;
+			hc->TOffset   = 0.0; 
+			hc->Impedance = NAN; 
+			hc->HighPass = NAN; 
+			hc->LowPass  = NAN; 
+			hc->Notch    = NAN; 
+			hc->XYZ[0] = 0.0; 
+			hc->XYZ[1] = 0.0; 
+			hc->XYZ[2] = 0.0; 
+
+			hdr->NS++;
+		}
+#endif
+
 		hdr->NRec = 1;
 		hdr->AS.bpb = 0;
 		for (k = 0; k < hdr->NS; k++) {
@@ -863,6 +921,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 				break;
 			case 5:
 				for (k1=0; k1<hc->SPR; k1++) *(uint32_t*)(hdr->AS.rawdata + _BI + k1 * 4) = 0x80000000;
+				break;
+			case 7:
+				for (k1=0; k1<hc->SPR; k1++) *(int64_t*)(hdr->AS.rawdata + _BI + k1 * 4) = 0x8000000000000000LL;
 				break;
 			case 16:
 				for (k1=0; k1<hc->SPR; k1++) *(float*)(hdr->AS.rawdata + _BI + k1 * 4) = NAN;
@@ -924,6 +985,21 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA+L2 @%i=%s %f\t%i/%i %i/%i \n",(int)(po
 				// read number of children
 				K3 = (*(uint32_t*)(hdr->AS.Header+pos-4));
 				for (k3=0; k3<K3; k3++)	{
+#ifdef WITH_TIMESTAMP
+					double t  = *(double*)(hdr->AS.Header+pos+48);		// time of sweep. TODO: this should be taken into account 
+
+if (VERBOSE_LEVEL>7) fprintf(stdout,"   %i %i %i\n",k3,hdr->AS.bpb,SPR);
+
+#ifdef NO_BI
+#define _BI (BI[hdr->NS-1])
+#else
+#define _BI (hdr->CHANNEL[hdr->NS-1].bi)
+#endif
+					*(int64_t*)(hdr->AS.rawdata + _BI + SPR * 8) = heka2gdftime(t);
+#undef _BI
+#endif
+
+
 					// read sweep
 					char flagSweepSelected = (hdr->AS.SegSel[0]==0 || k1+1==hdr->AS.SegSel[0])
 						              && (hdr->AS.SegSel[1]==0 || k2+1==hdr->AS.SegSel[1])
@@ -1137,6 +1213,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA+L4 @%i= #%i,%i,%i/%i %s\t%i/%i %i/%i %
 		free(hdr->AS.Header);
 		hdr->AS.Header = NULL; 
 
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"End of SOPEN_HEKA\n");
 	}
 
 	else if (hdr->TYPE==HEKA) {
