@@ -223,6 +223,7 @@ LIB	      = $(DESTDIR)/usr/lib
 ####### Files
 SOURCES       = biosig.c \
 		t210/sopen_cfs_read.c \
+		t210/sopen_heka_read.c \
 		t210/sopen_scp_read.c \
 		t210/sopen_famos_read.c \
 		t210/sopen_abf_read.c \
@@ -252,6 +253,7 @@ OBJECTS       = \
 		crc4scp.o \
 		biosig.o \
 		sopen_cfs_read.o \
+		sopen_heka_read.o \
 		sopen_scp_read.o \
 		sopen_alpha_read.o \
 		sopen_abf_read.o \
@@ -269,6 +271,7 @@ MinGWOBJECTS  = \
 		win32/strndup.obj \
 		win32/strnlen.obj \
 		win32/sopen_cfs_read.obj \
+		win32/sopen_heka_read.obj \
 		win32/sopen_scp_read.obj \
 		win32/sopen_abf_read.obj \
 		win32/sopen_alpha_read.obj \
