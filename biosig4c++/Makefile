@@ -86,8 +86,10 @@ CXX           = g++
 DEFINES_ALL   = -D=NDEBUG 
 
 DEFINES      += $(DEFINES_ALL)
-#DEFINES     += -D=WITH_SON 
-#DEFINES     += -D=WITHOUT_SCP_DECODE
+#DEFINES      += -D=WITH_SON 
+#DEFINES      += -D=WITHOUT_SCP_DECODE
+#DEFINES      += -D=WITH_TIMESTAMPEVENT
+#DEFINES      += -D=WITH_TIMESTAMPCHANNEL
 DEFINES      += -D=WITH_ZLIB 
 DEFINES      += -D=WITH_PTHREAD 
 #DEFINES      += -D=WITH_CURL
@@ -577,7 +579,7 @@ win32/libgdf.lib: win32/libgdf.a
 win32/libbiosig.lib: win32/libbiosig.a 
 	$(COPY) "$<" "$@"
 
-win32/libbiosig.a: $(MinGWOBJECTS) win32/libcnsfef.a biosig.h biosig-dev.h
+win32/libbiosig.a: $(MinGWOBJECTS) ../win32/libcnsfef.a
 	-$(DELETE) "$@"
 	$(CROSS)-$(AR) "$@" $(MinGWOBJECTS) t240/*.obj
 	-touch ../sigviewer4win32/src/file_context.cpp	# trigger to rebuild sigviewer
@@ -585,11 +587,11 @@ win32/libbiosig.a: $(MinGWOBJECTS) win32/libcnsfef.a biosig.h biosig-dev.h
 win32/libcnsfef.a:
 	$(MAKE) CROSS=$(CROSS) -C t240 ../win32/libcnsfef.a 
 
-win32/libbiosig.dll: $(MinGWOBJECTS) biosig.h biosig-dev.h
+win32/libbiosig.dll: $(MinGWOBJECTS)
 	$(MinGWLINK) -shared -fPIC  $(MinGWOBJECTS) $(MinGWLIBS) -o "$@" -Wl,--output-def,win32/libbiosig.def,--out-implib,win32/libbiosig.dll.a
 	-$(COPY) "$@" $(PathToSigViewerWIN32)/extern/lib/
 
-win32/libbiosig2.a: $(MinGWOBJECTS) win32/biosig2.obj win32/libcnsfef.a biosig.h biosig-dev.h
+win32/libbiosig2.a: $(MinGWOBJECTS) win32/biosig2.obj win32/libcnsfef.a
 	-$(DELETE) "$@"
 	$(CROSS)-$(AR) "$@" $(MinGWOBJECTS) win32/biosig2.obj t240/*.obj
 win32/libbiosig2.dll: $(MinGWOBJECTS) win32/biosig2.obj biosig.h biosig-dev.h
@@ -629,7 +631,7 @@ win64/libgdf.lib: win64/libgdf.a
 win64/libbiosig.lib: win64/libbiosig.a 
 	$(COPY) "$<" "$@"
 
-win64/libbiosig.a: $(MinGW64OBJECTS) win64/libcnsfef.a biosig.h biosig-dev.h
+win64/libbiosig.a: $(MinGW64OBJECTS) win64/libcnsfef.a
 	-$(DELETE) "$@"
 	$(CROSS64)-$(AR) "$@" $(MinGW64OBJECTS) t240/*.o64
 	-touch ../sigviewer4win64/src/file_context.cpp	# trigger to rebuild sigviewer
@@ -637,14 +639,14 @@ win64/libbiosig.a: $(MinGW64OBJECTS) win64/libcnsfef.a biosig.h biosig-dev.h
 win64/libcnsfef.a:
 	$(MAKE) CROSS64=$(CROSS64) -C t240 ../win64/libcnsfef.a 
 
-win64/libbiosig.dll: $(MinGW64OBJECTS) biosig.h biosig-dev.h
+win64/libbiosig.dll: $(MinGW64OBJECTS)
 	$(MinGW64LINK) -shared -fPIC  $(MinGW64OBJECTS) $(MinGW64LIBS) -o "$@" -Wl,--output-def,win64/libbiosig.def,--out-implib,win64/libbiosig.dll.a
 	-$(COPY) "$@" $(PathToSigViewerWIN64)/extern/lib/
 
-win64/libbiosig2.a: $(MinGW64OBJECTS) win64/libcnsfef.a win64/biosig2.obj biosig.h biosig-dev.h
+win64/libbiosig2.a: $(MinGW64OBJECTS) win64/libcnsfef.a win64/biosig2.obj
 	-$(DELETE) "$@"
 	$(CROSS64)-$(AR) "$@" $(MinGW64OBJECTS) win64/biosig2.obj t240/*.o64
-win64/libbiosig2.dll: $(MinGW64OBJECTS) win64/biosig2.obj biosig.h biosig-dev.h
+win64/libbiosig2.dll: $(MinGW64OBJECTS) win64/biosig2.obj
 	$(MinGW64LINK) -shared -fPIC  $(MinGW64OBJECTS) win64/biosig2.obj $(MinGW64LIBS) -o "$@" -Wl,--output-def,win64/libbiosig2.def,--out-implib,win64/libbiosig2.dll.a
 
 win64/save2gdf.exe: save2gdf.c win64/libbiosig.a
@@ -681,6 +683,7 @@ libgdf.so: gdf.o
 	$(CC) -shared -fPIC -Wl,-soname,"$@".${MAJOR_VERSION} $(LDLIBS) \
 		-o "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$<"
 	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$@".${MAJOR_VERSION}
+	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$@".${MAJOR_VERSION}.${MINOR_VERSION}
 	ln -sf "$@".${MAJOR_VERSION} "$@"
 
 
@@ -690,16 +693,17 @@ libbiosig.a: $(OBJECTS) t240/libcnsfef.a biosig.h biosig-dev.h
 	-touch ../sigviewer/src/file_context.cpp	# trigger to rebuild sigviewer
 
 libbiosig.so: $(OBJECTS) t240/libcnsfef.a biosig.h biosig-dev.h
-	$(CXX) -shared -fPIC -Wl,-soname,libbiosig.so.${MAJOR_VERSION} $(LDLIBS) \
-		-o libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(OBJECTS) t240/*.o
-	ln -sf libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} libbiosig.so.${MAJOR_VERSION}
-	ln -sf libbiosig.so.${MAJOR_VERSION} libbiosig.so
+	$(CXX) -shared -fPIC -Wl,-soname,"$@".${MAJOR_VERSION} $(LDLIBS) \
+		-o "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(OBJECTS) t240/*.o
+	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$@".${MAJOR_VERSION}
+	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$@".${MAJOR_VERSION}.${MINOR_VERSION}
+	ln -sf "$@".${MAJOR_VERSION} "$@"
 
-libbiosig2.a: $(OBJECTS) biosig2.o t240/libcnsfef.a biosig.h biosig-dev.h
+libbiosig2.a: $(OBJECTS) biosig2.o t240/libcnsfef.a
 	-$(DELETE) libbiosig2.a
 	$(AR) libbiosig2.a $(OBJECTS) biosig2.o t240/*.o
 
-libbiosig2.so: $(OBJECTS) biosig2.o t240/libcnsfef.a biosig.h biosig-dev.h
+libbiosig2.so: $(OBJECTS) biosig2.o t240/libcnsfef.a
 	$(CXX) -shared -fPIC -Wl,-soname,libbiosig2.so.${MAJOR_VERSION} $(LDLIBS) \
 		-o libbiosig2.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(OBJECTS) biosig2.o t240/*.o
 	ln -sf libbiosig2.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} libbiosig2.so.${MAJOR_VERSION}

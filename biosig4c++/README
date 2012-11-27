@@ -31,6 +31,9 @@ There are some more defines to tweak your version.
  Other flags are used for experimental development 
  -D=WITH_DICOM, -D=WITH_GDCM 	experimental DICOM support 
  -D=WITH_LIBXML2	experimental: tinyxml is replaced by libxml2
+ -D=WITH_TIMESTAMPCHANNEL add an extra channel in HEKA format containing TIMESTAMPS
+ -D=WITH_TIMESTAMPEVENT timestamps of sweep onset in HEKA format stored in EVENT.DUR with EVENT.TYP==0x7ffe 
+ 
 If some libraries are not available on your system, remove the corresponding DEFINES in Makefile. 
 
 
