@@ -152,7 +152,7 @@ endif
 ifneq (,$(findstring WITH_MATIO, $(DEFINES)))
   LDLIBS     += -lmatio
 endif
-LIBS         += -ldl $(LDLIBS)
+LIBS         += $(LDLIBS)
 
 DELETE        = rm
 COPY          = cp -f
@@ -579,7 +579,7 @@ win32/libgdf.lib: win32/libgdf.a
 win32/libbiosig.lib: win32/libbiosig.a 
 	$(COPY) "$<" "$@"
 
-win32/libbiosig.a: $(MinGWOBJECTS) ../win32/libcnsfef.a
+win32/libbiosig.a: $(MinGWOBJECTS) win32/libcnsfef.a
 	-$(DELETE) "$@"
 	$(CROSS)-$(AR) "$@" $(MinGWOBJECTS) t240/*.obj
 	-touch ../sigviewer4win32/src/file_context.cpp	# trigger to rebuild sigviewer
@@ -687,12 +687,12 @@ libgdf.so: gdf.o
 	ln -sf "$@".${MAJOR_VERSION} "$@"
 
 
-libbiosig.a: $(OBJECTS) t240/libcnsfef.a biosig.h biosig-dev.h
+libbiosig.a: $(OBJECTS) t240/libcnsfef.a
 	-$(DELETE) libbiosig.a
 	$(AR) libbiosig.a $(OBJECTS) t240/*.o
 	-touch ../sigviewer/src/file_context.cpp	# trigger to rebuild sigviewer
 
-libbiosig.so: $(OBJECTS) t240/libcnsfef.a biosig.h biosig-dev.h
+libbiosig.so: $(OBJECTS) t240/libcnsfef.a
 	$(CXX) -shared -fPIC -Wl,-soname,"$@".${MAJOR_VERSION} $(LDLIBS) \
 		-o "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(OBJECTS) t240/*.o
 	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$@".${MAJOR_VERSION}
@@ -880,8 +880,9 @@ install_libbiosig: libbiosig.a libbiosig.so libbiosig2.a libbiosig2.so libphysic
 	install biosig.h    		$(DESTDIR)/usr/include
 	install physicalunits.h    	$(DESTDIR)/usr/include
 	install libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)
-	ln -sf libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}
-	ln -sf libbiosig.so.${MAJOR_VERSION} $(LIB)/libbiosig.so
+	ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}
+	ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}
+	ln -sf  libbiosig.so.${MAJOR_VERSION} $(LIB)/libbiosig.so
 	install libbiosig.a		$(LIB)
 	install libphysicalunits.a 	$(LIB)
 	install libphysicalunits.so	$(LIB)
