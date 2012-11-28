@@ -1,11 +1,6 @@
 /*
 
-    sandbox is used for development and under constraction work
-    The functions here are either under construction or experimental.
-    The functions will be either fixed, then they are moved to another place;
-    or the functions are discarded. Do not rely on the interface in this function
-
-    $Id: sandbox.c 3156 2012-11-26 08:58:44Z schloegl $
+    $Id$
     Copyright (C) 2008,2009,2010,2011,2012 Alois Schloegl <alois.schloegl@gmail.com>
     This file is part of the "BioSig for C/C++" repository
     (biosig4c++) at http://biosig.sf.net/
@@ -121,7 +116,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 121 nItems=%i\n",nItems);
 			Sizes.Rec.Group  = 128;
 			Sizes.Rec.Series = 1120;
 			Sizes.Rec.Sweep  = 160;
-			Sizes.Rec.Root   = 296;
+			Sizes.Rec.Trace  = 296;
 		}
 		else if (hdr->VERSION == 2)
 		for (k=0; k < min(12,nItems); k++) {
@@ -225,9 +220,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 997\n");
 
 if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 999 %p\n",hdr->EVENT.CodeDesc);
 
-		/**************************************************************************
+		/*******************************************************************************************************
 			HEKA: read structural information
- 		 **************************************************************************/
+ 		 *******************************************************************************************************/
 
 		pos = StartOfPulse + Sizes.Rec.Root + 4;
 		size_t EventN=0;
@@ -344,7 +339,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L3 @%i= %fHz\t%i/%i %i/%i %i/%i %s\n",
 								It seems that the range is 1.024*(2^15-1)/2^15 nA or V
 								and symetric around zero. i.e. YOffset is zero
 							*/
-							DigMax =  ldexp(1.0,15)-1.0;
+							DigMax =  ldexp(1.0,15) - 1.0;
 							DigMin = -DigMax;
 							break;
 						case 1: gdftyp = 5; 		//int32
@@ -388,8 +383,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L3 @%i= %fHz\t%i/%i %i/%i %i/%i %s\n",
 							"this case is not tested and might result in incorrect scaling of "
 							"the data,\n!!! YOU ARE WARNED !!!\n"); 
 
-						double Cal = DataScaler;
-						double Off = YOffset;
+						// scale to standard units - no prefix 	
+						double Cal = DataScaler * PhysDimScale(pdc);
+						double Off = YOffset * PhysDimScale(pdc);
+						pdc &= 0xffe0; 
 						double Fs = round(1.0 / ( dT  * PhysDimScale(XUnits) ) );
 
 						if (flagSweepSelected) {
@@ -463,9 +460,7 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %g/%g %g/%g \n",(in
 							assert(Cal==Cal2);
 							assert(Off==Off2);
 							assert(Off==Off3);
-
 #endif
-
 
 							/* TODO: fix remaining channel header  */
 							/* LowPass, HighPass, Notch, Impedance, */
@@ -481,13 +476,23 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %g/%g %g/%g \n",(in
 							if (hdr->CHANNEL[ns].PhysMax < PhysMax) hdr->CHANNEL[ns].PhysMax = PhysMax;
 							if (hdr->CHANNEL[ns].PhysMin > PhysMin) hdr->CHANNEL[ns].PhysMin = PhysMin;
 
-							if (fabs(hdr->CHANNEL[ns].Cal - Cal) > 1e-9*Cal) flagModifiedTraceHeaders = 1;
-							if (fabs(hdr->CHANNEL[ns].Off - Off) > 1e-9*Off) flagModifiedTraceHeaders = 1;
 							if (hdr->CHANNEL[ns].GDFTYP < gdftyp) {
-								hdr->CHANNEL[ns].GDFTYP = gdftyp;
-// OBSOLETE 								flagModifiedTraceHeaders = 1;
+								/* when data type changes, use the largest data type */
+								if (4 < gdftyp	&& gdftyp < 9 && 15 < hdr->CHANNEL[ns].GDFTYP)
+									/* (U)INT32, (U)INT64 -> DOUBLE */
+									hdr->CHANNEL[ns].GDFTYP = 17; 	
+								else 
+									hdr->CHANNEL[ns].GDFTYP = gdftyp; 
 							}
 						}
+
+						if (fabs(hdr->CHANNEL[ns].Cal - Cal) > 1e-9*Cal) {
+							/* when scaling changes from sweep to sweep, use floating point numbers internally. */
+							if (hdr->CHANNEL[ns].GDFTYP < 5) // int16 or smaller 
+									hdr->CHANNEL[ns].GDFTYP = 16;
+							else if (hdr->CHANNEL[ns].GDFTYP < 9) // int32, int64 -> double
+									hdr->CHANNEL[ns].GDFTYP = 17;
+						} 
 
 						if (YOffset) {
                                                         biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: Yoffset is not zero");
@@ -642,9 +647,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 
 if (VERBOSE_LEVEL>7) hdr2ascii(hdr,stdout,4);
 
-		/**************************************************************************
+		/*******************************************************************************************************
 			HEKA: read data blocks
- 		 **************************************************************************/
+ 		 *******************************************************************************************************/
 		uint32_t SPR = 0;
 		pos = StartOfPulse + Sizes.Rec.Root + 4;
 		for (k1=0; k1<K1; k1++)	{
@@ -708,12 +713,16 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA+L3 @%i=\t%i/%i %i/%i %i/%i sel=%i\n",(
 						uint32_t ns      = (*(uint32_t*)(hdr->AS.Header+pos+36));
 						uint32_t DataPos = (*(uint32_t*)(hdr->AS.Header+pos+40));
 						spr              = (*(uint32_t*)(hdr->AS.Header+pos+44));
+						double DataScaler= (*(double*)(hdr->AS.Header+pos+72));
 						double Toffset   = (*(double*)(hdr->AS.Header+pos+80));		// time offset of 
-						// uint16_t pdc     = PhysDimCode((char*)(hdr->AS.Header + pos + 96));
+						uint16_t pdc     = PhysDimCode((char*)(hdr->AS.Header + pos + 96));
 						char *physdim    = (char*)(hdr->AS.Header + pos + 96);
 						double dT        = (*(double*)(hdr->AS.Header+pos+104));
+//						double XStart    = (*(double*)(hdr->AS.Header+pos+112));
+//						uint16_t XUnits  = PhysDimCode((char*)(hdr->AS.Header+pos+120));
 						double YRange    = (*(double*)(hdr->AS.Header+pos+128));
 						double YOffset   = (*(double*)(hdr->AS.Header+pos+136));
+//						double Bandwidth = (*(double*)(hdr->AS.Header+pos+144));
 						uint16_t AdcChan = (*(uint16_t*)(hdr->AS.Header+pos+222));
 						double PhysMin   = (*(double*)(hdr->AS.Header+pos+224));
 						double PhysMax   = (*(double*)(hdr->AS.Header+pos+232));
@@ -755,15 +764,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA+L3 @%i=\t%i/%i %i/%i %i/%i sel=%i\n",(
 
 if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA+L4 @%i= #%i,%i,%i/%i %s\t%i/%i %i/%i %i/%i %i/%i DIV=%i,%i,%i\n",(int)(pos+StartOfData),ns,AdcChan,spr,SPR,Label,k1,K1,k2,K2,k3,K3,k4,K4,(int)DIV,gdftyp,hc->GDFTYP);
 
-#ifdef NO_BI
-#define _BI (BI[ns])
-#else
-#define _BI (hc->bi)
-#endif
 						if (itx) {
 							uint32_t k5;
-							double Cal = hdr->CHANNEL[ns].Cal;
-							double Off = hdr->CHANNEL[ns].Off;
+							double Cal = DataScaler;
+
+							assert(hdr->CHANNEL[ns].Off==0.0);
+							double Off = 0.0; 
+
 							fprintf(itx, "\r\nWAVES %s_%i_%i_%i_%i\r\nBEGIN\r\n", WAVENAME,k1+1,k2+1,k3+1,k4+1);
 							switch (hc->GDFTYP) {
 							case 3:  
@@ -787,12 +794,19 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA+L4 @%i= #%i,%i,%i/%i %s\t%i/%i %i/%i %
 							fprintf(itx, "X SetScale y,0,0,\"%s\", %s_%i_%i_%i_%i\n", physdim, WAVENAME, k1+1,k2+1,k3+1,k4+1);
 						}	
 
+#ifdef NO_BI
+#define _BI (BI[ns])
+#else
+#define _BI (hc->bi)
+#endif
 						// no need to check byte order because File.Endian is set and endian conversion is done in sread
 						if ((DIV==1) && (gdftyp == hc->GDFTYP))	{
 							uint16_t sz = GDFTYP_BITS[hc->GDFTYP]>>3;	
 							memcpy(hdr->AS.rawdata + _BI + SPR * sz, hdr->AS.Header + DataPos, spr * sz);
 						}
 						else if (1) {
+							double Cal = DataScaler * PhysDimScale(pdc) / hdr->CHANNEL[ns].Cal;
+							assert(Cal==1.0 || hc->GDFTYP > 15); // when scaling changes, target data type is always float/double -> see above
 							uint32_t k5,k6;
 							switch (gdftyp) {
 							case 3: 
@@ -815,14 +829,14 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA+L4 @%i= #%i,%i,%i/%i %s\t%i/%i %i/%i %
 									for (k5 = 0; k5 < spr; ++k5) {
 										int16_t ival = *(int16_t*)(hdr->AS.Header + DataPos + k5 * 2);
 										for (k6 = 0; k6 < DIV; ++k6) 
-											*(float*)(hdr->AS.rawdata + _BI + (SPR + k5*DIV + k6) * 4) = (float)ival;
+											*(float*)(hdr->AS.rawdata + _BI + (SPR + k5*DIV + k6) * 4) = (float)ival * Cal;
 									}
 									break;
 								case 17: 
 									for (k5 = 0; k5 < spr; ++k5) {
 										int16_t ival = *(int16_t*)(hdr->AS.Header + DataPos + k5 * 2);
 										for (k6 = 0; k6 < DIV; ++k6) 
-											*(double*)(hdr->AS.rawdata + _BI + (SPR + k5*DIV + k6) * 8) = (double)ival;
+											*(double*)(hdr->AS.rawdata + _BI + (SPR + k5*DIV + k6) * 8) = (double)ival * Cal;
 									}
 									break;
 								}
@@ -840,14 +854,14 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA+L4 @%i= #%i,%i,%i/%i %s\t%i/%i %i/%i %
 									for (k5 = 0; k5 < spr; ++k5) {
 										int32_t ival = *(int32_t*)(hdr->AS.Header + DataPos + k5 * 4);
 										for (k6 = 0; k6 < DIV; ++k6) 
-											*(float*)(hdr->AS.rawdata + _BI + (SPR + k5*DIV + k6) * 4) = (float)ival;
+											*(float*)(hdr->AS.rawdata + _BI + (SPR + k5*DIV + k6) * 4) = (float)ival * Cal;
 									}
 									break;
 								case 17: 
 									for (k5 = 0; k5 < spr; ++k5) {
 										int32_t ival = *(int32_t*)(hdr->AS.Header + DataPos + k5 * 4);
 										for (k6 = 0; k6 < DIV; ++k6) 
-											*(double*)(hdr->AS.rawdata + _BI + (SPR + k5*DIV + k6) * 8) = (double)ival;
+											*(double*)(hdr->AS.rawdata + _BI + (SPR + k5*DIV + k6) * 8) = (double)ival * Cal;
 									}
 									break;
 								}
@@ -858,14 +872,14 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA+L4 @%i= #%i,%i,%i/%i %s\t%i/%i %i/%i %
 									for (k5 = 0; k5 < spr; ++k5) {
 										float ival = *(float*)(hdr->AS.Header + DataPos + k5 * 4);
 										for (k6 = 0; k6 < DIV; ++k6) 
-											*(float*)(hdr->AS.rawdata + _BI + (SPR + k5*DIV + k6) * 4) = ival;
+											*(float*)(hdr->AS.rawdata + _BI + (SPR + k5*DIV + k6) * 4) = ival * Cal;
 									}
 									break;
 								case 17: 
 									for (k5 = 0; k5 < spr; ++k5) {
 										float ival = *(float*)(hdr->AS.Header + DataPos + k5 * 4);
 										for (k6 = 0; k6 < DIV; ++k6) 
-											*(double*)(hdr->AS.rawdata + _BI + (SPR + k5*DIV + k6) * 8) = (double)ival;
+											*(double*)(hdr->AS.rawdata + _BI + (SPR + k5*DIV + k6) * 8) = (double)ival * Cal;
 									}
 									break;
 								}
@@ -876,7 +890,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA+L4 @%i= #%i,%i,%i/%i %s\t%i/%i %i/%i %
 									for (k5 = 0; k5 < spr; ++k5) {
 										double ival = *(double*)(hdr->AS.Header + DataPos + k5 * 8);
 										for (k6 = 0; k6 < DIV; ++k6) 
-											*(double*)(hdr->AS.rawdata + _BI + (SPR + k5*DIV + k6) * 8) = ival;
+											*(double*)(hdr->AS.rawdata + _BI + (SPR + k5*DIV + k6) * 8) = ival * Cal;
 									}
 									break;
 								}
