@@ -649,12 +649,24 @@ void mexFunction(
 
 		mxArray *TYP = mxCreateDoubleMatrix(hdr->EVENT.N,1, mxREAL);
 		mxArray *POS = mxCreateDoubleMatrix(hdr->EVENT.N,1, mxREAL);
+
 		for (k=0; k<hdr->EVENT.N; ++k) {
 			*(mxGetPr(TYP)+k) = (double)hdr->EVENT.TYP[k];
 			*(mxGetPr(POS)+k) = (double)hdr->EVENT.POS[k]+1;   // conversion from 0-based to 1-based indexing 
 		} 
 		mxSetField(EVENT,0,"TYP",TYP);
 		mxSetField(EVENT,0,"POS",POS);
+
+#if (BIOSIG_VERSION >= 10500)
+		if (hdr->EVENT.TimeStamp) {
+			mxArray *TimeStamp = mxCreateDoubleMatrix(hdr->EVENT.N,1, mxREAL);
+			for (k=0; k<hdr->EVENT.N; ++k) {
+				*(mxGetPr(TimeStamp)+k) = ldexp(hdr->EVENT.TimeStamp[k],-32);
+			} 
+			mxAddField(EVENT, "TimeStamp");
+			mxSetField(EVENT,0,"TimeStamp",TimeStamp);
+		}	
+#endif
 		mxSetField(EVENT,0,"SampleRate",mxCreateDoubleScalar(hdr->EVENT.SampleRate));
 		mxSetField(HDR,0,"EVENT",EVENT);
 

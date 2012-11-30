@@ -371,6 +371,9 @@ typedef struct HDR_STRUCT {
 		uint32_t 	*POS ATT_ALI;	/* starting position [in samples] using a 0-based indexing */
 		uint32_t 	*DUR ATT_ALI;	/* duration [in samples] */
 		uint16_t 	*CHN ATT_ALI;	/* channel number; 0: all channels  */
+#if (BIOSIG_VERSION >= 10500)
+		gdf_time        *TimeStamp ATT_ALI;  /* store time stamps */
+#endif
 		const char*	*CodeDesc ATT_ALI;	/* describtion of "free text"/"user specific" events (encoded with TYP=0..255 */
 		uint32_t  	N ATT_ALI;	/* number of events */
 		uint16_t	LenCodeDesc ATT_ALI;	/* length of CodeDesc Table */

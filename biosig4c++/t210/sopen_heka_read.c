@@ -29,6 +29,16 @@
 
 #include "../biosig-dev.h"
 
+/*
+TODO: 
+	saturation detection for recordings with varying scaling factors does not work correctly. 
+	
+	need to separate sopen_heka() and sread_heka()
+	
+	
+
+*/
+
 
 /****************************************************************************
    heka2gdftime 
@@ -246,11 +256,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L1 @%i=\t%i/%i \n",(int)(pos+StartOfDa
 				char *SeLabel =  (char*)(hdr->AS.Header+pos+4);		// max 32 bytes
 				strncpy((char*)hdr->AS.auxBUF + 33*k2, (char*)hdr->AS.Header+pos+4, 32); hdr->AS.auxBUF[33*k2+32] = 0;
 				SeLabel = (char*)hdr->AS.auxBUF + 33*k2;
-				double t  = *(double*)(hdr->AS.Header+pos+136);		// time of series. TODO: this time should be taken into account 
+				double tt  = *(double*)(hdr->AS.Header+pos+136);		// time of series. TODO: this time should be taken into account 
 				Delay.u64 = bswap_64(*(uint64_t*)(hdr->AS.Header+pos+472+176));
-	
+
+				gdf_time t = heka2gdftime(tt);
+		
 				struct tm tm;
-				gdf_time2tm_time_r(heka2gdftime(t),&tm); 
+				gdf_time2tm_time_r(t,&tm); 
 if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i     t=%.17g %s\n",(int)(pos+StartOfData),SeLabel,Delay.f64,k1,K1,k2,K2,t,asctime(&tm));
 
 				pos += Sizes.Rec.Series + 4;
@@ -261,9 +273,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i     t=%.17g 
 					EventN = max(max(16,EventN),hdr->EVENT.N+K3+2) * 2;
 					hdr->EVENT.TYP = (typeof(hdr->EVENT.TYP)) realloc(hdr->EVENT.TYP,EventN*sizeof(*hdr->EVENT.TYP));
 					hdr->EVENT.POS = (typeof(hdr->EVENT.POS)) realloc(hdr->EVENT.POS,EventN*sizeof(*hdr->EVENT.POS));
-#if !defined(WITH_TIMESTAMPEVENT)
-					if (hdr->EVENT.CHN != NULL && hdr->EVENT.DUR != NULL) 
+#if (BIOSIG_VERSION >= 10500)
+					hdr->EVENT.TimeStamp = (gdf_time*)realloc(hdr->EVENT.TimeStamp, EventN * sizeof(gdf_time));
 #endif
+					if (hdr->EVENT.CHN != NULL && hdr->EVENT.DUR != NULL) 
 					{
 						hdr->EVENT.CHN = (typeof(hdr->EVENT.CHN)) realloc(hdr->EVENT.CHN,EventN*sizeof(*hdr->EVENT.CHN));
 						hdr->EVENT.DUR = (typeof(hdr->EVENT.DUR)) realloc(hdr->EVENT.DUR,EventN*sizeof(*hdr->EVENT.DUR));
@@ -274,9 +287,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i     t=%.17g 
 					// in case of reading the whole file (no sweep selection), include marker for start of series
 					FreeTextEvent(hdr, hdr->EVENT.N, SeLabel);
 					hdr->EVENT.POS[hdr->EVENT.N] = hdr->SPR;	// within reading the structure, hdr->SPR is used as a intermediate variable counting the number of samples
-#if defined(WITH_TIMESTAMPEVENT)
-					hdr->EVENT.DUR[hdr->EVENT.N] = 0;
-					hdr->EVENT.CHN[hdr->EVENT.N] = 0;
+#if (BIOSIG_VERSION >= 10500)
+					hdr->EVENT.TimeStamp[hdr->EVENT.N] = t;
 #endif
 					hdr->EVENT.N++;
 				}
@@ -299,9 +311,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L3 @%i= %fHz\t%i/%i %i/%i %i/%i %s\n",
 						// marker for start of sweep
 						hdr->EVENT.POS[hdr->EVENT.N] = hdr->SPR;	// within reading the structure, hdr->SPR is used as a intermediate variable counting the number of samples
 						hdr->EVENT.TYP[hdr->EVENT.N] = 0x7ffe;
-#if defined(WITH_TIMESTAMPEVENT)
-						hdr->EVENT.DUR[hdr->EVENT.N] = lround(ldexp(t - hdr->T0, -32) * 24 * 3600 * hdr->SampleRate);
-						hdr->EVENT.CHN[hdr->EVENT.N] = 0;
+#if (BIOSIG_VERSION >= 10500)
+						hdr->EVENT.TimeStamp[hdr->EVENT.N] = t;
 #endif
 						hdr->EVENT.N++;
 					}
@@ -588,8 +599,18 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 #endif
  			return;
 		}
-
 		hdr->ID.Manufacturer.Name = "HEKA/Patchmaster"; 
+
+
+
+/******************************************************************************
+      SREAD_HEKA 
+
+      void sread_heka(HDRTYPE* hdr, FILE *itx, ... ) {
+
+ ******************************************************************************/
+
+
 		void* tmpptr = realloc(hdr->AS.rawdata, hdr->NRec * hdr->AS.bpb);
 		if (tmpptr!=NULL) 
 			hdr->AS.rawdata = (uint8_t*) tmpptr;
