@@ -29,14 +29,9 @@
 
 #include "../biosig-dev.h"
 
-/*
-TODO: 
-	saturation detection for recordings with varying scaling factors does not work correctly. 
-	
-	need to separate sopen_heka() and sread_heka()
-	
-	
-
+/* TODO: 
+	- need to separate sopen_heka() and sread_heka()
+	- data swapping 
 */
 
 
@@ -60,14 +55,6 @@ void sopen_heka(HDRTYPE* hdr, FILE *itx) {
 	size_t count = hdr->HeadLen;
 
 	if (hdr->TYPE==HEKA && hdr->VERSION > 0) {
-
-/* 
-   TODO: HEKA support of eventtable 
-	+ support for resampling (needed by mexSLOAD, SigViewer, save2gdf)
-	+ support for selection of experiment,series,sweep,trace (needed by MMA)
-	+ make event-table aware of Sweep Selection
-	- event-table -> MMA
-*/
 
 		int32_t Levels=0;
 		uint16_t k;
@@ -96,17 +83,25 @@ void sopen_heka(HDRTYPE* hdr, FILE *itx) {
 		ifseek(hdr,0,SEEK_SET);
 		hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header, 1024);
 		count = ifread(hdr->AS.Header, 1, 1024, hdr);
+		hdr->HeadLen = count;
+
+
+		hdr->FILE.LittleEndian = *(uint8_t*)(hdr->AS.Header+52) > 0;
+		char SWAP = ( hdr->FILE.LittleEndian && (__BYTE_ORDER == __BIG_ENDIAN))  \
+			 || (!hdr->FILE.LittleEndian && (__BYTE_ORDER == __LITTLE_ENDIAN));
+
+		if (SWAP) {
+			biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster format requires data swapping - this is not supported yet.");
+			return;
+		}
+		SWAP = 0;  // might be useful for compile time optimization
+
 		while (!ifeof(hdr)) {
 			hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header, 2*count);
 			count += ifread(hdr->AS.Header+count, 1, count, hdr);
 		}
-		hdr->HeadLen = count;
 
 if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 114\n");
-
-		hdr->FILE.LittleEndian = *(uint8_t*)(hdr->AS.Header+52) > 0;
-		char SWAP = (hdr->FILE.LittleEndian && (__BYTE_ORDER == __BIG_ENDIAN)) ||	  \
-			    (!hdr->FILE.LittleEndian && (__BYTE_ORDER == __LITTLE_ENDIAN));
 
 		double oTime;
 		uint32_t nItems;
@@ -179,12 +174,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 989: \n");
 
 		// if (!Sizes) free(Sizes); Sizes=NULL;
 
-/* TODO: HEKA, check channel number and label 
+/* DONE: HEKA, check channel number and label 
 	pass 1:
 		+ get number of sweeps
 		+ get number of channels
 		+ check whether all traces of a single sweep have the same SPR, and Fs
-		- check whether channelnumber (TrAdcChannel), scaling (DataScaler) and Label fit among all sweeps
+		+ check whether channelnumber (TrAdcChannel), scaling (DataScaler) and Label fit among all sweeps
 		+ extract the total number of samples
 		+ physical units
 		+ level 4 may have no children
@@ -199,7 +194,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 989: \n");
 
 		uint32_t k1=0, k2=0, k3=0, k4=0;
 		uint32_t K1=0, K2=0, K3=0, K4=0, K5=0;
-		char flagModifiedTraceHeaders = 0;
 		double t;
 		size_t pos;
 
@@ -263,7 +257,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L1 @%i=\t%i/%i \n",(int)(pos+StartOfDa
 		
 				struct tm tm;
 				gdf_time2tm_time_r(t,&tm); 
-if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i     t=%.17g %s\n",(int)(pos+StartOfData),SeLabel,Delay.f64,k1,K1,k2,K2,t,asctime(&tm));
+if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i     t=%.17g %s\n",(int)(pos+StartOfData),SeLabel,Delay.f64,k1,K1,k2,K2,ldexp(t,-32),asctime(&tm));
 
 				pos += Sizes.Rec.Series + 4;
 				// read number of children
@@ -331,12 +325,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L3 @%i= %fHz\t%i/%i %i/%i %i/%i %s\n",
 						double Toffset   = (*(double*)(hdr->AS.Header+pos+80));		// time offset of 
 						uint16_t pdc     = PhysDimCode((char*)(hdr->AS.Header + pos + 96));
 						double dT        = (*(double*)(hdr->AS.Header+pos+104));
-						double XStart    = (*(double*)(hdr->AS.Header+pos+112));
+						//double XStart    = (*(double*)(hdr->AS.Header+pos+112));
 						uint16_t XUnits  = PhysDimCode((char*)(hdr->AS.Header+pos+120));
 						double YRange    = (*(double*)(hdr->AS.Header+pos+128));
 						double YOffset   = (*(double*)(hdr->AS.Header+pos+136));
 						double Bandwidth = (*(double*)(hdr->AS.Header+pos+144));
-						double PipetteResistance  = (*(double*)(hdr->AS.Header+pos+152));
+						//double PipetteResistance  = (*(double*)(hdr->AS.Header+pos+152));
 						double RsValue   = (*(double*)(hdr->AS.Header+pos+192));
 						
 						uint16_t AdcChan = (*(uint16_t*)(hdr->AS.Header+pos+222));
@@ -715,8 +709,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA+L2 @%i=%s %f\t%i/%i %i/%i \n",(int)(po
 				// read number of children
 				K3 = (*(uint32_t*)(hdr->AS.Header+pos-4));
 				for (k3=0; k3<K3; k3++)	{
-					gdf_time t = heka2gdftime(*(double*)(hdr->AS.Header+pos+48));		// time of sweep. TODO: this should be taken into account 
-
 #if defined(WITH_TIMESTAMPCHANNEL)
 
 #ifdef NO_BI
@@ -724,6 +716,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA+L2 @%i=%s %f\t%i/%i %i/%i \n",(int)(po
 #else
 #define _BI (hdr->CHANNEL[hdr->NS-1].bi)
 #endif
+					gdf_time t = heka2gdftime(*(double*)(hdr->AS.Header+pos+48));		// time of sweep. TODO: this should be taken into account 
 					*(int64_t*)(hdr->AS.rawdata + _BI + SPR * 8) = t;
 #undef _BI
 
@@ -761,9 +754,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA+L3 @%i=\t%i/%i %i/%i %i/%i sel=%i\n",(
 						double YOffset   = (*(double*)(hdr->AS.Header+pos+136));
 //						double Bandwidth = (*(double*)(hdr->AS.Header+pos+144));
 						uint16_t AdcChan = (*(uint16_t*)(hdr->AS.Header+pos+222));
+/*
 						double PhysMin   = (*(double*)(hdr->AS.Header+pos+224));
 						double PhysMax   = (*(double*)(hdr->AS.Header+pos+232));
-
+*/
 						switch (hdr->AS.Header[pos+70]) {
 						case 0: gdftyp = 3;  break;	// int16
 						case 1: gdftyp = 5;  break;	// int32
@@ -786,8 +780,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA+L3 @%i=\t%i/%i %i/%i %i/%i sel=%i\n",(
 							c.f64 = dT;      c.u64 = bswap_64(c.u64); dT      = c.f64;
 							c.f64 = YRange;  c.u64 = bswap_64(c.u64); YRange  = c.f64;
 							c.f64 = YOffset; c.u64 = bswap_64(c.u64); YOffset = c.f64;
+/*
 							c.f64 = PhysMax; c.u64 = bswap_64(c.u64); PhysMax = c.f64;
 							c.f64 = PhysMin; c.u64 = bswap_64(c.u64); PhysMin = c.f64;
+*/
 							c.f64 = Toffset; c.u64 = bswap_64(c.u64); Toffset = c.f64;
  						}
                                                 double Fs  = round(1.0 / dT);
