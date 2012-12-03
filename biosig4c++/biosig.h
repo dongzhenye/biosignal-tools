@@ -38,6 +38,13 @@
 #ifndef __BIOSIG_EXT_H__
 #define __BIOSIG_EXT_H__
 
+#define BIOSIG_VERSION_MAJOR 1
+#define BIOSIG_VERSION_MINOR 4
+#define BIOSIG_PATCHLEVEL 2
+// for backward compatibility 
+#define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
+#define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
+
 #ifdef _VCPP_DEF
 #define __BYTE_ORDER  __LITTLE_ENDIAN
 typedef unsigned __int64	uint64_t;
@@ -159,12 +166,6 @@ enum FileFormat {
 ATT_DEPREC extern int B4C_ERRNUM;
 ATT_DEPREC extern const char *B4C_ERRMSG;
 
-#define BIOSIG_VERSION_MAJOR 1
-#define BIOSIG_VERSION_MINOR 4
-#define BIOSIG_PATCHLEVEL 2
-// for backward compatibility 
-#define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
-#define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
 
 /*
 This part has moved into biosig-dev.h in v1.4.1, because VERBOSE_LEVEL is just 

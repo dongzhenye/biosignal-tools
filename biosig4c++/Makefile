@@ -154,7 +154,7 @@ ifneq (,$(findstring WITH_MATIO, $(DEFINES)))
 endif
 LIBS         += $(LDLIBS)
 
-DELETE        = rm
+DELETE        = rm -f
 COPY          = cp -f
 DATA_DIR      = data/
 DATA_DIR_CFS  = $(HOME)/Q/data/test/CFS/
@@ -680,11 +680,10 @@ libgdf.a: gdf.o
 	$(AR) "$@" "$<"
 
 libgdf.so: gdf.o
-	$(CC) -shared -fPIC -Wl,-soname,"$@".${MAJOR_VERSION} $(LDLIBS) \
+	$(CC) -shared -fPIC -Wl,-soname,"$@".${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
 		-o "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$<"
-	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$@".${MAJOR_VERSION}
 	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$@".${MAJOR_VERSION}.${MINOR_VERSION}
-	ln -sf "$@".${MAJOR_VERSION} "$@"
+	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION} "$@"
 
 
 libbiosig.a: $(OBJECTS) t240/libcnsfef.a
@@ -693,11 +692,10 @@ libbiosig.a: $(OBJECTS) t240/libcnsfef.a
 	-touch ../sigviewer/src/file_context.cpp	# trigger to rebuild sigviewer
 
 libbiosig.so: $(OBJECTS) t240/libcnsfef.a
-	$(CXX) -shared -fPIC -Wl,-soname,"$@".${MAJOR_VERSION} $(LDLIBS) \
+	$(CXX) -shared -fPIC -Wl,-soname,"$@".${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
 		-o "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(OBJECTS) t240/*.o
-	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$@".${MAJOR_VERSION}
 	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$@".${MAJOR_VERSION}.${MINOR_VERSION}
-	ln -sf "$@".${MAJOR_VERSION} "$@"
+	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION} "$@"
 
 libbiosig2.a: $(OBJECTS) biosig2.o t240/libcnsfef.a
 	-$(DELETE) libbiosig2.a
@@ -881,8 +879,7 @@ install_libbiosig: libbiosig.a libbiosig.so libbiosig2.a libbiosig2.so libphysic
 	install physicalunits.h    	$(DESTDIR)/usr/include
 	install libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)
 	ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}
-	ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}
-	ln -sf  libbiosig.so.${MAJOR_VERSION} $(LIB)/libbiosig.so
+	ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION} $(LIB)/libbiosig.so
 	install libbiosig.a		$(LIB)
 	install libphysicalunits.a 	$(LIB)
 	install libphysicalunits.so	$(LIB)
@@ -910,26 +907,26 @@ install: save2gdf libbiosig.a doc/save2gdf.1 install_libbiosig
 	#$(MAKE)  install_octave
 
 uninstall remove:
-	-rm $(BIN)/save2gdf
-	-rm $(BIN)/heka2itx
-	-rm $(BIN)/save2scp
-	-rm $(BIN)/save2aecg
-	-rm $(BIN)/ttl2trig
-	#-rm $(BIN)/rec2bin
-	#-rm $(BIN)/bin2rec
-	-rm $(BIN)/sigviewer
-	-rm $(BIN)/eventcodes.txt
-	-rm $(DESTDIR)/usr/include/biosig.h
-	-rm $(DESTDIR)/usr/include/biosig2.h
-	-rm $(DESTDIR)/usr/include/physicalunits.h
-	-rm $(LIB)/libbiosig.*
-	-rm $(LIB)/libbiosig2.*
-	-rm $(LIB)/libphysicalunits.*
-	-rm $(DESTDIR)/usr/share/man/man1/save2gdf.1
-	-rm $(DESTDIR)/usr/share/man/man1/mexSLOAD.1
-	-rm $(DESTDIR)/usr/share/man/man1/sigviewer.1
-	#-rm $(DESTDIR)/usr/share/man/man1/rec2bin.1
-	#-rm $(DESTDIR)/usr/share/man/man1/bin2rec.1
+	-$(DELETE) $(BIN)/save2gdf
+	-$(DELETE) $(BIN)/heka2itx
+	-$(DELETE) $(BIN)/save2scp
+	-$(DELETE) $(BIN)/save2aecg
+	-$(DELETE) $(BIN)/ttl2trig
+	#-$(DELETE) $(BIN)/rec2bin
+	#-$(DELETE) $(BIN)/bin2rec
+	-$(DELETE) $(BIN)/sigviewer
+	-$(DELETE) $(BIN)/eventcodes.txt
+	-$(DELETE) $(DESTDIR)/usr/include/biosig.h
+	-$(DELETE) $(DESTDIR)/usr/include/biosig2.h
+	-$(DELETE) $(DESTDIR)/usr/include/physicalunits.h
+	-$(DELETE) $(LIB)/libbiosig.*
+	-$(DELETE) $(LIB)/libbiosig2.*
+	-$(DELETE) $(LIB)/libphysicalunits.*
+	-$(DELETE) $(DESTDIR)/usr/share/man/man1/save2gdf.1
+	-$(DELETE) $(DESTDIR)/usr/share/man/man1/mexSLOAD.1
+	-$(DELETE) $(DESTDIR)/usr/share/man/man1/sigviewer.1
+	#-$(DELETE) $(DESTDIR)/usr/share/man/man1/rec2bin.1
+	#-$(DELETE) $(DESTDIR)/usr/share/man/man1/bin2rec.1
 
 
 #############################################################

@@ -82,8 +82,10 @@ char * xgethostname (void);
    Use instead serror2(hdr), hdr->AS.B4C_ERRNUM, hdr->AS.B4C_ERRMSG.   
   ----------------------------------------------------------------------- */
 // do not expose deprecated interface in libgdf	
+#if (BIOSIG_VERSION < 10500)
 ATT_DEPREC int B4C_ERRNUM = 0;
 ATT_DEPREC const char *B4C_ERRMSG;
+#endif
 
 
 #ifdef WITH_CHOLMOD
@@ -294,13 +296,15 @@ const char *MIT_EVENT_DESC[] = {
 /* --------------------------------------------------- *
  *	Predefined Event Code Table                    *
  * --------------------------------------------------- */
-static uint8_t GLOBAL_EVENTCODES_ISLOADED = 0;
+#if (BIOSIG_VERSION < 10500)
+ATT_DEPREC static uint8_t GLOBAL_EVENTCODES_ISLOADED = 0;
 ATT_DEPREC struct global_t {
 	uint16_t LenCodeDesc;
 	uint16_t *CodeIndex;
 	const char **CodeDesc;
 	char  	 *EventCodesTextBuffer;
 } Global;  // deprecated since Oct 2012, v1.4.0
+#endif
 
 // event table desription
 const struct etd_t ETD [] = { 
@@ -1226,9 +1230,11 @@ fprintf(stdout,"write_gdf_eventtable is obsolete - use hdrEVT2rawEVT instead;\n"
 }
 
 
+#if (BIOSIG_VERSION < 10500)
 /* Stubs for deprecated functions */
 ATT_DEPREC void FreeGlobalEventCodeTable() {} // deprecated since Oct 2012, v1.4.0
 ATT_DEPREC void LoadGlobalEventCodeTable() {} // deprecated since Oct 2012, v1.4.0
+#endif
 
 /*------------------------------------------------------------------------
 	adds free text annotation to event table
@@ -12883,14 +12889,17 @@ void biosigERROR(HDRTYPE *hdr, enum B4C_ERROR errnum, const char *errmsg) {
 	sets the local and the (deprecated) global error variables B4C_ERRNUM and B4C_ERRMSG
 	the global error variables are kept for backwards compatibility.
 */
+#if (BIOSIG_VERSION < 10500)
 #ifndef  ONLYGDF
 	B4C_ERRNUM = errnum; 
 	B4C_ERRMSG = errmsg; 
 #endif //ONLYGDF
+#endif
 	hdr->AS.B4C_ERRNUM = errnum; 
 	hdr->AS.B4C_ERRMSG = errmsg; 
 }
 
+#if (BIOSIG_VERSION < 10500)
 #ifndef  ONLYGDF
 // do not expose deprecated interface in libgdf	
 int serror() {
@@ -12903,6 +12912,7 @@ int serror() {
 	return(status);
 }
 #endif //ONLYGDF
+#endif
 
 int serror2(HDRTYPE *hdr) {
 	int status = hdr->AS.B4C_ERRNUM;
@@ -12960,7 +12970,7 @@ int asprintf_hdr2json(char **str, HDRTYPE *hdr)
         size_t k;
 	char tmp[41];
 
-	size_t sz = 25*50 + hdr->NS * 16 * 50 + hdr->EVENT.N * 5 * 50;	// rough estimate of memory needed
+	size_t sz = 25*50 + hdr->NS * 16 * 50 + hdr->EVENT.N * 6 * 50;	// rough estimate of memory needed
 	size_t c  = 0; 
 	*str = (char*) realloc(*str, sz); 
 #define STR ((*str)+c)	
@@ -13080,6 +13090,15 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%i\n", (int)c);
 			if (hdr->EVENT.TYP[k] != 0x7fff)
 	                        c += sprintf(STR, ",\n\t\t\"DUR\"\t: %f", hdr->EVENT.DUR[k]/hdr->EVENT.SampleRate);
                 }
+#if (BIOSIG_VERSION >= 10500)
+		if (hdr->EVENT.TimeStamp != NULL && hdr->EVENT.TimeStamp[k] != 0) {
+			struct tm tm;
+			char buf[255];
+			gdf_time2tm_time_r(hdr->EVENT.TimeStamp[k],&tm);
+			strftime(buf,sizeof(buf), "%Y-%b-%d %H:%M:%S", &tm);
+                        c += sprintf(STR,",\n\t\t\"TimeStamp\"\t: \"%s\"", buf);
+		}
+#endif
 		if (hdr->EVENT.TYP[k] == 0x7fff) {
 			// c += sprintf(STR, ",\n\t\t\"Description\"\t: \"[sparse sample]\"");
 			typeof(hdr->NS) chan = hdr->EVENT.CHN[k] - 1;
@@ -13120,10 +13139,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%i\n", (int)c);
 /**                     HDR2ASCII                                          **/
 /**	displaying header information                                      **/
 /****************************************************************************/
+#if (BIOSIG_VERSION < 10500)
 // for backwards compatibility
 ATT_DEPREC int hdr2json( HDRTYPE *hdr, FILE *fid)  {
 	return fprintf_hdr2json(fid, hdr);
 } // deprecatedd since Oct 2012, v1.4.0
+#endif
 
 int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
 {
@@ -13223,6 +13244,15 @@ int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
 			if (hdr->EVENT.TYP[k] != 0x7fff)
 	                        fprintf(fid,",\n\t\t\"DUR\"\t: %f", hdr->EVENT.DUR[k]/hdr->EVENT.SampleRate);
                 }
+#if (BIOSIG_VERSION >= 10500)
+		if (hdr->EVENT.TimeStamp != NULL && hdr->EVENT.TimeStamp[k] != 0) {
+			struct tm tm;
+			char buf[255];
+			gdf_time2tm_time_r(hdr->EVENT.TimeStamp[k],&tm);
+			strftime(buf,sizeof(buf), "%Y-%b-%d %H:%M:%S", &tm);
+                        fprintf(fid,",\n\t\t\"TimeStamp\"\t: \"%s\"", buf);
+		}
+#endif
 		if ((hdr->EVENT.TYP[k] == 0x7fff) && (hdr->TYPE==GDF)) {
 			//fprintf(fid,"\t\t\"Description\"\t: [neds]\n");        // no comma at the end because its the last element
 
@@ -13401,7 +13431,7 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 				fprintf(fid,"\t%5d\t%d",hdr->EVENT.DUR[k],hdr->EVENT.CHN[k]);
 
 #if (BIOSIG_VERSION >= 10500)
-			if (hdr->EVENT.TimeStamp != NULL) {
+			if (hdr->EVENT.TimeStamp != NULL && hdr->EVENT.TimeStamp[k] != 0) {
 				struct tm tm;
 				char buf[255];
 				gdf_time2tm_time_r(hdr->EVENT.TimeStamp[k],&tm);
