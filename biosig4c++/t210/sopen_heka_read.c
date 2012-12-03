@@ -340,9 +340,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L3 @%i= %fHz\t%i/%i %i/%i %i/%i %s\n",
 						double RsValue   = (*(double*)(hdr->AS.Header+pos+192));
 						
 						uint16_t AdcChan = (*(uint16_t*)(hdr->AS.Header+pos+222));
+						/* obsolete: range is defined by DigMin/DigMax * DataScaler + YOffset
 						double PhysMin   = (*(double*)(hdr->AS.Header+pos+224));
 						double PhysMax   = (*(double*)(hdr->AS.Header+pos+232));
-
+						*/
 
 						switch (hdr->AS.Header[pos+70]) {
 						case 0: gdftyp = 3; 		//int16
@@ -384,8 +385,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L3 @%i= %fHz\t%i/%i %i/%i %i/%i %s\n",
 							c.f64 = dT;      c.u64 = bswap_64(c.u64); dT      = c.f64;
 							c.f64 = YRange;  c.u64 = bswap_64(c.u64); YRange  = c.f64;
 							c.f64 = YOffset; c.u64 = bswap_64(c.u64); YOffset = c.f64;
-							c.f64 = PhysMax; c.u64 = bswap_64(c.u64); PhysMax = c.f64;
-							c.f64 = PhysMin; c.u64 = bswap_64(c.u64); PhysMin = c.f64;
+							//c.f64 = PhysMax; c.u64 = bswap_64(c.u64); PhysMax = c.f64;
+							//c.f64 = PhysMin; c.u64 = bswap_64(c.u64); PhysMin = c.f64;
 							c.f64 = Toffset; c.u64 = bswap_64(c.u64); Toffset = c.f64;
  						}
 
@@ -432,7 +433,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L3 @%i= %fHz\t%i/%i %i/%i %i/%i %s\n",
 						}
 
 if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%i %i/%i %i/%i \n",(int)(pos+StartOfData),ns,AdcChan,Label,hdr->SampleRate,Fs,k1,K1,k2,K2,k3,K3,k4,K4);
-
+		
+						CHANNEL_TYPE *hc;
 						if (ns >= hdr->NS) {
 							hdr->NS = ns + 1;
 #ifdef WITH_TIMESTAMPCHANNEL
@@ -441,7 +443,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 #else
 							hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));  
 #endif
-							CHANNEL_TYPE *hc = hdr->CHANNEL + ns;
+							hc = hdr->CHANNEL + ns;
 							strncpy(hc->Label, Label, max(32, MAX_LENGTH_LABEL));
 							hc->Label[max(32,MAX_LENGTH_LABEL)] = 0;
 							hc->Transducer[0] = 0;
@@ -454,17 +456,17 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 							hc->DigMax  = DigMax;
 
 							// TODO: case of non-zero YOffset is not tested //
-							hc->PhysMax = hc->DigMax * Cal + Off;
-							hc->PhysMin = hc->DigMin * Cal + Off;
+							hc->PhysMax = DigMax * Cal + Off;
+							hc->PhysMin = DigMin * Cal + Off;
 
 							hc->Cal = Cal;
 							hc->Off = Off;
 							hc->TOffset = Toffset;
 
 #ifndef NDEBUG
-							double Cal2 = (hc->PhysMax-hc->PhysMin)/(hc->DigMax-hc->DigMin);
-							double Off2 = hc->PhysMin - Cal2*hc->DigMin;
-							double Off3 = hc->PhysMax - Cal2*hc->DigMax;
+							double Cal2 = (hc->PhysMax - hc->PhysMin) / (hc->DigMax - hc->DigMin);
+							double Off2 = hc->PhysMin - Cal2 * hc->DigMin;
+							double Off3 = hc->PhysMax - Cal2 * hc->DigMax;
 
 if (VERBOSE_LEVEL>6) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %g/%g %g/%g \n",(int)(pos+StartOfData),ns,AdcChan,Label,Cal,Cal2,Off,Off2);
 
@@ -484,26 +486,50 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %g/%g %g/%g \n",(in
 							DT[ns] = dT;
 						}
 						else {
-							if (hdr->CHANNEL[ns].PhysMax < PhysMax) hdr->CHANNEL[ns].PhysMax = PhysMax;
-							if (hdr->CHANNEL[ns].PhysMin > PhysMin) hdr->CHANNEL[ns].PhysMin = PhysMin;
+							/*
+							   channel has been already defined in earlier sweep.
+							   check compatibility and adapt internal format when needed
+							*/
+							hc = hdr->CHANNEL + ns;
+							double PhysMax = DigMax * Cal + Off;
+							double PhysMin = DigMin * Cal + Off;
+							// get max value to avoid false positive saturation detection when scaling changes
+							if (hc->PhysMax < PhysMax) hc->PhysMax = PhysMax;
+							if (hc->PhysMin > PhysMin) hc->PhysMin = PhysMin;
 
-							if (hdr->CHANNEL[ns].GDFTYP < gdftyp) {
+							if (hc->GDFTYP < gdftyp) {
 								/* when data type changes, use the largest data type */
-								if (4 < gdftyp	&& gdftyp < 9 && 15 < hdr->CHANNEL[ns].GDFTYP)
-									/* (U)INT32, (U)INT64 -> DOUBLE */
-									hdr->CHANNEL[ns].GDFTYP = 17; 	
+								if (4 < hc->GDFTYP && hc->GDFTYP < 9 && gdftyp==16)
+									/* (U)INT32, (U)INT64 + FLOAT32 -> DOUBLE */
+									hc->GDFTYP = 17; 	
 								else 
-									hdr->CHANNEL[ns].GDFTYP = gdftyp; 
+									hc->GDFTYP = gdftyp; 
 							}
+							else if (hc->GDFTYP > gdftyp) {
+								/* when data type changes, use the largest data type */
+								if (4 < gdftyp && gdftyp < 9 && hc->GDFTYP==16)
+									/* (U)INT32, (U)INT64 + FLOAT32 -> DOUBLE */
+									hc->GDFTYP = 17; 	
+							}
+
+							if (fabs(hc->Cal - Cal) > 1e-9*Cal) {
+								/* when scaling changes from sweep to sweep, use floating point numbers internally. */
+								if (hc->GDFTYP < 5) // int16 or smaller 
+									hc->GDFTYP = 16;
+								else if (hc->GDFTYP < 9) // int32, int64 -> double
+									hc->GDFTYP = 17;
+							} 
+
+							if ((pdc & 0xFFE0) != (hc->PhysDimCode & 0xFFE0)) {
+	                                                        fprintf(stdout, "Warning: Yunits do not match #%i,%f-%fHz\n",ns, DT[ns],dT);
+	                                                        biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: Yunits do not match");
+							}
+	                                                if ( abs( DT[ns] - dT) > 1e-9 * dT) {
+								fprintf(stdout, "Warning sampling intervals do not match #%i,%f-%fHz\n",ns, DT[ns],dT);
+	                                                        biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: sampling intervals do not match");
+	                                                }
 						}
 
-						if (fabs(hdr->CHANNEL[ns].Cal - Cal) > 1e-9*Cal) {
-							/* when scaling changes from sweep to sweep, use floating point numbers internally. */
-							if (hdr->CHANNEL[ns].GDFTYP < 5) // int16 or smaller 
-									hdr->CHANNEL[ns].GDFTYP = 16;
-							else if (hdr->CHANNEL[ns].GDFTYP < 9) // int32, int64 -> double
-									hdr->CHANNEL[ns].GDFTYP = 17;
-						} 
 
 						if (YOffset) {
                                                         biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: Yoffset is not zero");
@@ -511,19 +537,6 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %g/%g %g/%g \n",(in
 						if (hdr->AS.Header[pos+220] != 1) {
                                                         biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: ValidYRange not set");
 						}
-/* OBSOLETE
-						if (hdr->CHANNEL[ns].GDFTYP != gdftyp) {
-                                                        biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: data types do not match");
-						}
-*/ 
-						if ((pdc & 0xFFE0) != (hdr->CHANNEL[ns].PhysDimCode & 0xFFE0)) {
-                                                        fprintf(stdout, "Warning: Yunits do not match #%i,%f-%fHz\n",ns, DT[ns],dT);
-                                                        biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: Yunits do not match");
-						}
-                                                if ( abs( DT[ns] - dT) > 1e-9 * dT) {
-							fprintf(stdout, "Warning sampling intervals do not match #%i,%f-%fHz\n",ns, DT[ns],dT);
-                                                        biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: sampling intervals do not match");
-                                                }
 
 if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%i %i/%i %i/%i \n",(int)(pos+StartOfData),ns,AdcChan,Label,hdr->SampleRate,Fs,k1,K1,k2,K2,k3,K3,k4,K4);
 
@@ -583,7 +596,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 		hdr->NRec = 1;
 		hdr->AS.bpb = 0;
 		for (k = 0; k < hdr->NS; k++) {
-			CHANNEL_TYPE *hc = hdr->CHANNEL+k;
+			CHANNEL_TYPE *hc = hdr->CHANNEL + k;
+
+			hc->Cal = (hc->PhysMax - hc->PhysMin) / (hc->DigMax - hc->DigMin); 
+			hc->Off = hc->PhysMin - hc->DigMin * hc->Cal;
 #ifndef NO_BI
 			hc->bi = hdr->AS.bpb;
 #else
