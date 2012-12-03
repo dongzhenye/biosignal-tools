@@ -7133,7 +7133,22 @@ elseif strncmp(HDR.TYPE,'MAT',3),
                         HDR.data = tmp.EEGdata*50;
                 HDR.TYPE = 'native'; 
 
-                
+
+        elseif isfield(tmp,'EEGdata') && isfield(tmp,'EEGdatalabel') && isfield(tmp,'configuration_channel');
+        	%% some gtec data 
+                HDR.NS = size(tmp.EEGdata,1);
+                HDR.SPR = size(tmp.EEGdata,2); 
+                HDR.NRec = size(tmp.EEGdata,3); 
+               	HDR.Classlabel = tmp.EEGdatalabel;
+               	HDR.TRIG = [0:HDR.NRec-1]'*HDR.SPR+1;
+                fprintf(HDR.FILE.stderr,'Warning SLOAD: Samplerate not known in %s. Samplingrate is normalized to 1.\n',HDR.FileName);
+               	HDR.SampleRate = 1; 
+              	% values for samplerate, channel label, physical units etc. not supported. 
+		HDR.PhysDim = 'uV';
+                HDR.data = reshape(tmp.EEGdata,HDR.NS,HDR.SPR*HDR.NRec)';
+                HDR.TYPE = 'native'; 
+                                
+
         elseif isfield(tmp,'daten');	% EP Daten von Michael Woertz
                 HDR.NS = size(tmp.daten.raw,2)-1;
                 HDR.NRec = 1; 
