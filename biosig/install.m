@@ -85,10 +85,10 @@ path([BIOSIG_HOME,'/NaN/src'],path);
 
 p = pwd; 
 try
-	if ~exist('OCTAVE_VERSION','builtin') && ~strcmp(computer,'PCWIN'),
+	if ~exist('OCTAVE_VERSION','builtin') && ~ispc,
 		mex -setup
 	end; 
-        if ~strcmp(computer,'PCWIN')
+        if ~ispc
         	cd([BIOSIG_HOME,'/NaN/src']);
 	        make
 	end;         
