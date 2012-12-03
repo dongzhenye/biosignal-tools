@@ -4502,6 +4502,7 @@ elseif strcmp(HDR.TYPE,'Persyst'),
 		HDR.Endianity ='ieee-le';
 		HDR.FLAG.OVERFLOWDETECTION = 0; 		
 		flag_interleaved = 1;
+		flag_nk = 0;
 		status = 0; 
 		line = H1;
 		Desc = {}; 
@@ -4542,6 +4543,7 @@ elseif strcmp(HDR.TYPE,'Persyst'),
 						datfile = val(ix(end)+1:end);
 					case {'FileType'}
 						flag_interleaved = strcmp(val,'Interleaved');
+						flag_NK = strcmp(val,'NihonKohden');
 					case {'SamplingRate'}
 						HDR.SampleRate = str2double(val); 
 						HDR.EVENT.SampleRate = HDR.SampleRate; 
@@ -4626,7 +4628,9 @@ elseif strcmp(HDR.TYPE,'Persyst'),
 			end;
 		end;
 
-		
+		if (flag_nk) 
+			HDR = sopen(fullfile(HDR.FILE.Path,datfile));
+		end; 			
 		HDR.FILE.POS = 0;
 		HDR.FILE.Ext = '.dat'; 
 		fid = fopen(fullfile(HDR.FILE.Path,datfile),'r', HDR.Endianity);
@@ -7112,12 +7116,12 @@ elseif strncmp(HDR.TYPE,'MAT',3),
                         end;        
                         HDR.TYPE = 'native'; 
                 end;
+
                 
-                
-        elseif isfield(tmp,'EEGdata');  % Telemonitoring Daten (Reinhold Scherer)
+        elseif isfield(tmp,'EEGdata') && isfield(tmp,'classlabel');  % Telemonitoring Daten (Reinhold Scherer)
                 HDR.NS = size(tmp.EEGdata,2);
                 HDR.NRec = 1; 
-                HDR.Classlabel = tmp.classlabel;
+               	HDR.Classlabel = tmp.classlabel;
                 if ~isfield(tmp,'SampleRate')
                         fprintf(HDR.FILE.stderr,'Warning SLOAD: Samplerate not known in %s. 125Hz is chosen\n',HDR.FileName);
                         HDR.SampleRate=125;
@@ -7128,6 +7132,7 @@ elseif strncmp(HDR.TYPE,'MAT',3),
                 fprintf(HDR.FILE.stderr,'Sensitivity not known in %s. 50µV is chosen\n',HDR.FileName);
                         HDR.data = tmp.EEGdata*50;
                 HDR.TYPE = 'native'; 
+
                 
         elseif isfield(tmp,'daten');	% EP Daten von Michael Woertz
                 HDR.NS = size(tmp.daten.raw,2)-1;

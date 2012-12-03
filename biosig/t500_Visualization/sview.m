@@ -149,8 +149,15 @@ elseif all((H.LeadIdCode>0) & (H.LeadIdCode<256)) && all(H.PhysDimCode==H.PhysDi
 
 	gender='UMFX'; sex=gender(H.Patient.Sex+1);
 	if isfield(H.Patient,'Age') age=H.Patient.Age;
-	elseif isfield(H.Patient,'Birthday') && (datenum(H.Patient.Birthday)>0) 
-		age = datenum(H.T0-H.Patient.Birthday)/365.25;
+	elseif isfield(H.Patient,'Birthday')
+		age = H.T0 - H.Patient.Birthday; 	 
+		if (numel(H.T0)==6)
+			H.T0 = datenum(H.T0);
+		end; 
+		if (numel(H.Patient.Birthday)>1)
+			H.Patient.Birthday = datenum(H.Patient.Birthday);
+		end; 
+		age = (H.T0 - H.Patient.Birthday)/365.25;
 	else age = -1;
 	end;		
 	id = H.Patient.Id; id(id=='_')=' ';
