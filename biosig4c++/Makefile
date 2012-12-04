@@ -222,6 +222,7 @@ OBJ	      = ./obj
 BIN	      = $(DESTDIR)/usr/bin
 LIB	      = $(DESTDIR)/usr/lib
 
+
 ####### Files
 SOURCES       = biosig.c \
 		t210/sopen_cfs_read.c \
@@ -233,7 +234,7 @@ SOURCES       = biosig.c \
 		t210/scp-decode.cpp \
 		t220/sopen_scp_write.c \
 		t220/crc4scp.c \
-		t230/sopen_hl7aecg.c \
+		t230/sopen_hl7aecg.cpp \
 		t240/sopen_fef_read.c \
 		test0/sandbox.c \
 		xgethostname.c \
@@ -326,33 +327,22 @@ all:   $(TARGET) mex4o biosig4python sigviewer win32 win64 win32/sigviewer.exe w
 #	Compilation: Implicit, default rules
 #############################################################
 
+vpath %.c ./:./t210:./t220:./test0:./src:./mma
+
+vpath %.cpp ./:./t210:./t230:./XMLParser:./mex
+
 .SUFFIXES: .o .c .cpp .cc .cxx .C
 
-.cpp.o:
-	$(CXX) -c $(DEFINES) $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
-.cc.o:
-	$(CXX) -c $(DEFINES) $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
-.cxx.o:
-	$(CXX) -c $(DEFINES) $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
-.C.o:
-	$(CC) -c $(DEFINES) $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
-.c.o:
-	$(CC) -c $(DEFINES) $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
+%.c: %.h biosig.h biosig-dev.h
 
-%.o: %.c biosig.h biosig-dev.h
-	$(CC) -c $(DEFINES) $(CFLAGS) $(INCPATH) -o "$@" "$<"
-%.o: t210/%.c biosig.h biosig-dev.h
-	$(CC) -c $(DEFINES) $(CFLAGS) $(INCPATH) -o "$@" "$<"
-%.o: t220/%.c biosig.h biosig-dev.h
-	$(CC) -c $(DEFINES) $(CFLAGS) $(INCPATH) -o "$@" "$<"
-%.o: t230/%.c biosig.h biosig-dev.h
-	$(CC) -c $(DEFINES) $(CFLAGS) $(INCPATH) -o "$@" "$<"
-%.o: t240/%.c biosig.h biosig-dev.h
-	$(CC) -c $(DEFINES) $(CFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
-%.o: test0/%.c biosig.h biosig-dev.h
-	$(CC) -c $(DEFINES) $(CFLAGS) $(INCPATH) -o "$@" "$<"
-%.o: XMLParser/%.cpp
+%.cpp: %.h  biosig.h biosig-dev.h
+
+%.o: %.c 
+	$(CC) -c $(DEFINES) $(CFLAGS)  $(INCPATH) -o "$@" "$<"
+
+%.o: %.cpp
 	$(CXX) -c $(DEFINES) $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
+
 
 ### exclude declaration of sopen in <io.h>
 win32/io.h: $(IO_H_FILE)
@@ -360,39 +350,25 @@ win32/io.h: $(IO_H_FILE)
 win64/io.h: $(IO_H_FILE64)
 	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE64) > "$@"
 
-win32/%.obj: %.c  biosig-dev.h biosig.h win32/io.h
+
+win32/%.obj: %.c  win32/io.h
 	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -o "$@" "$<"
-win32/%.obj: t210/%.c  biosig-dev.h biosig.h 
-	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -o "$@" "$<"
-win32/%.obj: t220/%.c  biosig-dev.h biosig.h 
-	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -o "$@" "$<"
-win32/%.obj: t230/%.c  biosig-dev.h biosig.h 
-	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -o "$@" "$<"
-win32/%.obj: t240/%.c biosig-dev.h biosig.h 
-	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -I t240 -o "$@" "$<"
-win32/%.obj: test0/%.c  biosig-dev.h biosig.h 
-	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -I t240 -o "$@" "$<"
-win32/%.obj: win32/%.c 
-	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -I win32 -o "$@" "$<"
-win32/%.obj: XMLParser/%.cpp 
+win32/%.obj: %.cpp
 	$(MinGWCXX) -c $(DEFINES) $(MinGWCFLAGS) -o "$@" "$<"
 
-win64/%.obj: %.c biosig-dev.h biosig.h win64/io.h
+win32/%.obj: win32/%.c 
+	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -I win32 -o "$@" "$<"
+
+
+
+win64/%.obj: %.c  win64/io.h
 	$(MinGW64CC) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
-win64/%.obj: t210/%.c  biosig-dev.h biosig.h 
-	$(MinGW64CC) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
-win64/%.obj: t220/%.c  biosig-dev.h biosig.h 
-	$(MinGW64CC) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
-win64/%.obj: t230/%.c  biosig-dev.h biosig.h 
-	$(MinGW64CC) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
-win64/%.obj: t240/%.c  biosig-dev.h biosig.h 
-	$(MinGW64CC) -c $(DEFINES) $(MinGW64CFLAGS) -I t240 -o "$@" "$<"
-win64/%.obj: test0/%.c  biosig-dev.h biosig.h
-	$(MinGW64CC) -c $(DEFINES) $(MinGW64CFLAGS) -I t240 -o "$@" "$<"
+win64/%.obj: %.cpp
+	$(MinGW64CXX) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
+
 win64/%.obj: win32/%.c 
 	$(MinGW64CC) -c $(DEFINES) $(MinGW64CFLAGS) -I win32 -o "$@" "$<"
-win64/%.obj: XMLParser/%.cpp 
-	$(MinGW64CXX) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
+
 
 
 #############################################################
@@ -414,28 +390,6 @@ units.i : extern/units.csv
 #	Compilation: exceptions, explicit rules
 #############################################################
 
-sopen_fef_read.o: t240/sopen_fef_read.c biosig-dev.h biosig.h
-#	cd t240
-#	#asn1c -fcompound-names -pdu=SessionArchiveSection -S /home/schloegl/cvs/asn1c/skeletons fef.asn1
-#	asn1c -fcompound-names -pdu=SessionArchiveSection fef.asn1
-#	#asn1c -fcompound-names iso11073-10471.asn1
-#	#asn1c -fcompound-names iso11073-20601.asn1
-#	cd ..
-#	$(MAKE) -C t240 -f Makefile.am.sample
-	$(CC) -c $(DEFINES) $(CFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
-
-sopen_abf_read.o: t210/sopen_abf_read.c biosig-dev.h biosig.h
-	$(CXX) -c $(DEFINES) $(CFLAGS) $(INCPATH) -o "$@" "$<"
-
-sopen_hl7aecg.o: t230/sopen_hl7aecg.c biosig-dev.h biosig.h
-	$(CXX) -c $(DEFINES) $(CFLAGS) $(INCPATH) -o "$@" "$<"
-
-sopen_scp_read.o: t210/sopen_scp_read.c biosig-dev.h biosig.h biosig.h t210/structures.h
-	$(CC) -c $(DEFINES) $(CFLAGS) $(INCPATH) -o "$@" "$<"
-
-scp-decode.o: t210/scp-decode.cpp biosig-dev.h biosig.h t210/structures.h t210/codes.h
-	$(CC) -c $(DEFINES) $(CFLAGS) $(INCPATH) -o "$@" "$<"
-
 gdf.o: biosig.c biosig-dev.h biosig.h
 	$(CC) -c -D=ONLYGDF $(DEFINES_ALL) $(CFLAGS) $(INCPATH) -o "$@" "$<"
 
@@ -446,21 +400,6 @@ gdf.o: biosig.c biosig-dev.h biosig.h
 
 win32/gdf.obj: biosig.c biosig-dev.h biosig.h
 	$(MinGWCC) -c -D=ONLYGDF $(DEFINES_ALL) $(MinGWCFLAGS) -o "$@" "$<"
-
-win32/sopen_scp_read.obj: t210/sopen_scp_read.c biosig-dev.h biosig.h t210/structures.h
-	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -o "$@" "$<"
-
-win32/scp-decode.obj: t210/scp-decode.cpp biosig-dev.h biosig.h t210/structures.h t210/codes.h
-	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -o "$@" "$<"
-
-win32/sopen_abf_read.obj: t210/sopen_abf_read.c biosig-dev.h biosig.h 
-	$(MinGWCXX) -c $(DEFINES) $(MinGWCFLAGS) -o "$@" "$<"
-
-win32/sopen_hl7aecg.obj: t230/sopen_hl7aecg.c biosig-dev.h biosig.h 
-	$(MinGWCXX) -c $(DEFINES) $(MinGWCFLAGS) -o "$@" "$<"
-
-win32/getlogin_r.obj: win32/getlogin_r.c
-	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -o "$@" "$<"
 
 $(PathToSigViewerWIN32): 
 	svn co https://sigviewer.svn.sourceforge.net/svnroot/sigviewer/trunk ../sigviewer4win32
@@ -484,21 +423,6 @@ win32/sigviewer.exe: win32/libbiosig.a win32/libbiosig.dll
 
 win64/gdf.obj: biosig.c biosig-dev.h biosig.h
 	$(MinGW64CC) -c -D=ONLYGDF $(DEFINES_ALL) $(MinGW64CFLAGS) -o "$@" "$<"
-
-win64/sopen_scp_read.obj: t210/sopen_scp_read.c biosig-dev.h biosig.h t210/structures.h
-	$(MinGW64CC) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
-
-win64/scp-decode.obj: t210/scp-decode.cpp biosig-dev.h biosig.h t210/structures.h t210/codes.h
-	$(MinGW64CC) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
-
-win64/sopen_abf_read.obj: t210/sopen_abf_read.c biosig-dev.h biosig.h 
-	$(MinGW64CXX) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
-
-win64/sopen_hl7aecg.obj: t230/sopen_hl7aecg.c biosig-dev.h biosig.h
-	$(MinGW64CXX) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
-
-win64/getlogin_r.obj: win32/getlogin_r.c
-	$(MinGW64CC) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
 
 $(PathToSigViewerWIN64): 
 	svn co https://sigviewer.svn.sourceforge.net/svnroot/sigviewer/trunk ../sigviewer4win64
