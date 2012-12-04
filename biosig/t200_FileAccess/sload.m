@@ -389,6 +389,9 @@ if exist('mexSLOAD','file')==3,
 			if isfield(H.EVENT,'DUR')
 				H.EVENT.DUR = H.EVENT.DUR(ix);
 			end; 	
+			if isfield(H.EVENT,'TimeStamp')
+				H.EVENT.TimeStamp = H.EVENT.TimeStamp(ix);
+			end; 	
 
 			if (length(H.EVENT.TYP)>0)
                                 ix = (H.EVENT.TYP>hex2dec('0300')) & (H.EVENT.TYP<hex2dec('030d'));
@@ -422,6 +425,9 @@ if exist('mexSLOAD','file')==3,
 				H.EVENT.TYP = H.EVENT.TYP(sel);
 				H.EVENT.DUR = H.EVENT.DUR(sel);	% if EVENT.CHN available, also EVENT.DUR is defined. 
 				H.EVENT.CHN = H.EVENT.CHN(sel);
+				if isfield(H.EVENT,'TimeStamp')
+					H.EVENT.TimeStamp = H.EVENT.TimeStamp(sel);
+				end; 	
 				% assigning new channel number 
 				a = zeros(1,HDR.NS);
 				for k = 1:length(InChanSelect),		% select channel specific elements
