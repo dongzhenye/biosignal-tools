@@ -82,7 +82,7 @@ char * xgethostname (void);
    Use instead serror2(hdr), hdr->AS.B4C_ERRNUM, hdr->AS.B4C_ERRMSG.   
   ----------------------------------------------------------------------- */
 // do not expose deprecated interface in libgdf	
-#if (BIOSIG_VERSION < 10500)
+#ifndef  ONLYGDF
 ATT_DEPREC int B4C_ERRNUM = 0;
 ATT_DEPREC const char *B4C_ERRMSG;
 #endif
@@ -12969,6 +12969,7 @@ int asprintf_hdr2json(char **str, HDRTYPE *hdr)
 {
         size_t k;
 	char tmp[41];
+	char flag_comma = 0; 
 
 	size_t sz = 25*50 + hdr->NS * 16 * 50 + hdr->EVENT.N * 6 * 50;	// rough estimate of memory needed
 	size_t c  = 0; 
@@ -13010,12 +13011,29 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: sz=%i\n", (int)sz);
 	c += sprintf(STR, "\t\t\"Gender\"\t: \"%s\"\n", hdr->Patient.Sex==1 ? "Male" : "Female");        // no comma at the end because its the last element
 	c += sprintf(STR, "\t},\n");   // end-of-Patient
 
-	c += sprintf(STR,"\t\"Manufacturer\"\t: {\n");
-	if (hdr->ID.Manufacturer.Name) c += sprintf(STR,"\t\t\"Name\"\t: \"%s\",\n", hdr->ID.Manufacturer.Name);
-	if (hdr->ID.Manufacturer.Model) c += sprintf(STR,"\t\t\"Model\"\t: \"%s\",\n", hdr->ID.Manufacturer.Model);
-	if (hdr->ID.Manufacturer.Version) c += sprintf(STR,"\t\t\"Version\"\t: \"%s\",\n", hdr->ID.Manufacturer.Version);
-	if (hdr->ID.Manufacturer.SerialNumber) c += sprintf(STR,"\t\t\"SerialNumber\"\t: \"%s\"\n", hdr->ID.Manufacturer.SerialNumber);  // no comma at the end because its the last element
-	c += sprintf(STR,"\t},\n");   // end-of-Manufacturer
+	if (hdr->ID.Manufacturer.Name || hdr->ID.Manufacturer.Model || hdr->ID.Manufacturer.Version || hdr->ID.Manufacturer.SerialNumber) {
+		c += sprintf(STR,"\t\"Manufacturer\"\t: {\n");
+		flag_comma = 0;
+		if (hdr->ID.Manufacturer.Name) {
+			c += sprintf(STR,"\t\t\"Name\"\t: \"%s\"", hdr->ID.Manufacturer.Name);
+			flag_comma = 1; 
+		}
+		if (hdr->ID.Manufacturer.Model) {
+			if (flag_comma) c += sprintf(STR,",\n");
+			c += sprintf(STR,"\t\t\"Model\"\t: \"%s\"", hdr->ID.Manufacturer.Model);
+			flag_comma = 1; 
+		}
+		if (hdr->ID.Manufacturer.Version) {
+			if (flag_comma) c += sprintf(STR,",\n");
+			c += sprintf(STR,"\t\t\"Version\"\t: \"%s\"", hdr->ID.Manufacturer.Version);
+			flag_comma = 1; 
+		}
+		if (hdr->ID.Manufacturer.SerialNumber) {
+			if (flag_comma) c += sprintf(STR,",\n");
+			c += sprintf(STR,"\t\t\"SerialNumber\"\t: \"%s\"", hdr->ID.Manufacturer.SerialNumber); 
+		}
+		c += sprintf(STR,"\n\t},\n");   // end-of-Manufacturer
+	}
 
         c += sprintf(STR,"\t\"CHANNEL\"\t: [");
 
@@ -13049,7 +13067,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%i\n", (int)c);
 			c += sprintf(STR, "\t\t\"Filter\" : {\n");
 			if (flag & 0x01) c += sprintf(STR, "\t\t\t\"Lowpass\"\t: %g%c\n", hc->LowPass, flag & 0x06 ? ',' : ' '); 
 			if (flag & 0x02) c += sprintf(STR, "\t\t\t\"Highpass\"\t: %g%c\n", hc->HighPass, flag & 0x04 ? ',' : ' ' ); 
-			if (flag & 0x03) c += sprintf(STR, "\t\t\t\"Notch\"\t: %g\n", hc->Notch); 
+			if (flag & 0x04) c += sprintf(STR, "\t\t\t\"Notch\"\t: %g\n", hc->Notch); 
 			c += sprintf(STR, "\n\t\t},\n");
 		}
 		switch (hc->PhysDimCode & 0xffe0) {
@@ -13061,7 +13079,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%i\n", (int)c);
 			break;
 		}
                 double fs = hdr->SampleRate * hc->SPR/hdr->SPR;
-		if (!isnan(fs)) c += sprintf(STR, "\t\t\"Samplingrate\"\t: %f", fs);        // no comma at the end because its the last element
+		if (!isnan(fs)) c += sprintf(STR, "\t\t\"Samplingrate\"\t: %f", fs);
 		c += sprintf(STR, "\n\t\t}");   // end-of-CHANNEL
 	}
         c += sprintf(STR, "\n\t]");   // end-of-CHANNELS
@@ -13069,8 +13087,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%i\n", (int)c);
 if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%i\n", (int)c);
 
         if (hdr->EVENT.N>0) {
-            c += sprintf(STR, ",\n\t\"EVENT\"\t: [");
-	    char flag_comma = 0; 
+	    c += sprintf(STR, ",\n\t\"EVENT\"\t: [");
+            flag_comma = 0; 
             for (k = 0; k < hdr->EVENT.N; k++) {
 	    	if ( hdr->EVENT.TYP[k] == 0 ) continue;
 
@@ -13150,6 +13168,7 @@ int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
 {
         size_t k;
 	char tmp[41];
+	char flag_comma = 0; 
 
 	size_t NumberOfSweeps = (hdr->SPR*hdr->NRec > 0); 
         size_t NumberOfUserSpecifiedEvents = 0; 
@@ -13184,12 +13203,29 @@ int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
 	fprintf(fid,"\t\t\"Gender\"\t: \"%s\"\n", hdr->Patient.Sex==1 ? "Male" : "Female");        // no comma at the end because its the last element
 	fprintf(fid,"\t},\n");   // end-of-Patient
 
-	fprintf(fid,"\t\"Manufacturer\"\t: {\n");
-	if (hdr->ID.Manufacturer.Name) fprintf(fid,"\t\t\"Name\"\t: \"%s\",\n", hdr->ID.Manufacturer.Name);
-	if (hdr->ID.Manufacturer.Model) fprintf(fid,"\t\t\"Model\"\t: \"%s\",\n", hdr->ID.Manufacturer.Model);
-	if (hdr->ID.Manufacturer.Version) fprintf(fid,"\t\t\"Version\"\t: \"%s\",\n", hdr->ID.Manufacturer.Version);
-	if (hdr->ID.Manufacturer.SerialNumber) fprintf(fid,"\t\t\"SerialNumber\"\t: \"%s\"\n", hdr->ID.Manufacturer.SerialNumber);        // no comma at the end because its the last element
-	fprintf(fid,"\t},\n");   // end-of-Manufacturer
+	if (hdr->ID.Manufacturer.Name || hdr->ID.Manufacturer.Model || hdr->ID.Manufacturer.Version || hdr->ID.Manufacturer.SerialNumber) {
+		fprintf(fid,"\t\"Manufacturer\"\t: {\n");
+		flag_comma = 0;
+		if (hdr->ID.Manufacturer.Name) {
+			fprintf(fid,"\t\t\"Name\"\t: \"%s\"", hdr->ID.Manufacturer.Name);
+			flag_comma = 1; 
+		}
+		if (hdr->ID.Manufacturer.Model) {
+			if (flag_comma) fprintf(fid,",\n");
+			fprintf(fid,"\t\t\"Model\"\t: \"%s\"", hdr->ID.Manufacturer.Model);
+			flag_comma = 1; 
+		}
+		if (hdr->ID.Manufacturer.Version) {
+			if (flag_comma) fprintf(fid,",\n");
+			fprintf(fid,"\t\t\"Version\"\t: \"%s\"", hdr->ID.Manufacturer.Version);
+			flag_comma = 1; 
+		}
+		if (hdr->ID.Manufacturer.SerialNumber) {
+			if (flag_comma) fprintf(fid,",\n");
+			fprintf(fid,"\t\t\"SerialNumber\"\t: \"%s\"", hdr->ID.Manufacturer.SerialNumber);        // no comma at the end because its the last element
+		}
+		fprintf(fid,"\n\t},\n");   // end-of-Manufacturer
+	}
 
         fprintf(fid,"\t\"CHANNEL\"\t: [");
 	for (k = 0; k < hdr->NS; k++) {
@@ -13212,7 +13248,7 @@ int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
 			fprintf(fid,"\t\t\"Filter\" : {\n");
 			if (flag & 0x01) fprintf(fid,"\t\t\t\"Lowpass\"\t: %g%c\n",hc->LowPass, flag & 0x06 ? ',' : ' '); 
 			if (flag & 0x02) fprintf(fid,"\t\t\t\"Highpass\"\t: %g%c\n",hc->HighPass, flag & 0x04 ? ',' : ' ' ); 
-			if (flag & 0x03) fprintf(fid,"\t\t\t\"Notch\"\t: %g\n",hc->Notch); 
+			if (flag & 0x04) fprintf(fid,"\t\t\t\"Notch\"\t: %g\n",hc->Notch); 
 			fprintf(fid,"\n\t\t},\n");
 		}
 		switch (hc->PhysDimCode & 0xffe0) {
@@ -13230,7 +13266,7 @@ int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
         fprintf(fid,"\n\t]");   // end-of-CHANNELS
 
         if (hdr->EVENT.N>0) {
-            char flag_comma = 0; 
+            flag_comma = 0; 
             fprintf(fid,",\n\t\"EVENT\"\t: [");
             for (k = 0; k < hdr->EVENT.N; k++) {
                 if ( hdr->EVENT.TYP[k] == 0 ) continue;
