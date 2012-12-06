@@ -13100,8 +13100,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%i\n", (int)c);
 
                 if ( flag_comma ) c += sprintf(STR,",");
                 c += sprintf(STR, "\n\t\t{\n");
-                c += sprintf(STR, "\t\t\"TYP\"\t: \"0x%04x\"", hdr->EVENT.TYP[k]);
-                c += sprintf(STR, "\t\t\"POS\"\t: %f,\n", hdr->EVENT.POS[k]/hdr->EVENT.SampleRate);
+                c += sprintf(STR, "\t\t\"TYP\"\t: \"0x%04x\",\n", hdr->EVENT.TYP[k]);
+                c += sprintf(STR, "\t\t\"POS\"\t: %f", hdr->EVENT.POS[k]/hdr->EVENT.SampleRate);
                 if (hdr->EVENT.CHN && hdr->EVENT.DUR) {
 			if (hdr->EVENT.CHN[k])
 	                        c += sprintf(STR, ",\n\t\t\"CHN\"\t: %d", hdr->EVENT.CHN[k]);
