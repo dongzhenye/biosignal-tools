@@ -127,9 +127,11 @@ void sopen_FAMOS_read  (HDRTYPE* hdr);
 int sclose_HL7aECG_write(HDRTYPE* hdr);
 int sopen_trc_read   (HDRTYPE* hdr);
 int sopen_unipro_read   (HDRTYPE* hdr);
+#ifdef WITH_FEF
 int sopen_fef_read(HDRTYPE* hdr);
-void sopen_heka(HDRTYPE* hdr,FILE *fid);
 int sclose_fef_read(HDRTYPE* hdr);
+#endif
+void sopen_heka(HDRTYPE* hdr,FILE *fid);
 int sopen_zzztest(HDRTYPE* hdr);
 #ifdef WITH_HDF
 int sopen_hdf5(HDRTYPE *hdr);
