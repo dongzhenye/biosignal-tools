@@ -95,12 +95,12 @@ DEFINES      += -D=WITH_PTHREAD
 #DEFINES      += -D=WITH_CURL
 DEFINES      += -D=__4HAERTEL__
 DEFINES      += -D=WITH_FAMOS
-DEFINES      += -D=WITH_CHOLMOD
+#DEFINES      += -D=WITH_CHOLMOD
 DEFINES      += -D=WITHOUT_NETWORK
 #DEFINES      += -D=WITH_HDF
 #DEFINES      += -D=WITH_MATIO
 #DEFINES      += -D=WITH_LIBXML2 
-DEFINES      += -D=WITH_FEF 
+#DEFINES      += -D=WITH_FEF 
 #DEFINES      += -D=WITH_PDP
 #DEFINES      += -D=WITH_DICOM
 #DEFINES      += -D=WITH_GDCM
@@ -112,7 +112,7 @@ CFLAGS       += -fstack-protector -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security
 #CXXFLAGS      += -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 CXXFLAGS      = $(CFLAGS)
 AR            = ar crs
-#INCPATH       = -I /usr/include/libxml2/ -I/opt/local/include/
+INCPATH       = -I/opt/local/include/
 #INCPATH       = -I /usr/local/include/gdcm-2.0/
 #		../gdcm-2.0.10/Source/DataStructureAndEncodingDefinition \
 #		../gdcm-2.0.10/Source/InformationObjectDefinition  	\
@@ -120,9 +120,9 @@ AR            = ar crs
 #		../gdcm-2.0.10/Source/DataDictionary 			\
 #		../gdcm-2.0.10/Source/Common
 LINK          = $(CXX)
-LFLAGS_dynamic = -L.
+LFLAGS_dynamic = -L. -L/opt/local/lib
 LIBS_dynamic  = -lbiosig
-LFLAGS_static =
+LFLAGS_static = -L/opt/local/lib
 LIBS_static   = libbiosig.a
 ifeq ($(LIBEXT),so)
   LFLAGS      += $(LFLAGS_dynamic)
