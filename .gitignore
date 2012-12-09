@@ -18,3 +18,7 @@ biosig4c++/mma/sload.exe
 # ignore intermediate files for biosig4python
 biosig4c++/python/biosig.py
 biosig4c++/python/swig_wrap.cxx
+# 
+save2gdf.exe
+libbiosig.dll
+libbiosig.def
