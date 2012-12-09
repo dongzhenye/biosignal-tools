@@ -100,7 +100,7 @@ DEFINES      += -D=WITHOUT_NETWORK
 #DEFINES      += -D=WITH_HDF
 #DEFINES      += -D=WITH_MATIO
 #DEFINES      += -D=WITH_LIBXML2 
-#DEFINES      += -D=WITH_FEF 
+DEFINES      += -D=WITH_FEF 
 #DEFINES      += -D=WITH_PDP
 #DEFINES      += -D=WITH_DICOM
 #DEFINES      += -D=WITH_GDCM
@@ -333,6 +333,10 @@ vpath %.cpp ./:./t210:./t230:./XMLParser:./mex
 
 .SUFFIXES: .o .c .cpp .cc .cxx .C
 
+
+%.o: t240/%.c biosig.h biosig-dev.h
+	$(CC) -c $(DEFINES) $(CFLAGS) -I t240 $(INCPATH) -o "$@" "$<"
+
 %.c: %.h biosig.h biosig-dev.h
 
 %.cpp: %.h  biosig.h biosig-dev.h
@@ -351,7 +355,9 @@ win64/io.h: $(IO_H_FILE64)
 	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE64) > "$@"
 
 
-win32/%.obj: %.c  win32/io.h
+win32/%.obj: t240/%.c  biosig-dev.h biosig.h 
+	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -I t240 -o "$@" "$<"
+win32/%.obj: %.c win32/io.h 
 	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -o "$@" "$<"
 win32/%.obj: %.cpp
 	$(MinGWCXX) -c $(DEFINES) $(MinGWCFLAGS) -o "$@" "$<"
@@ -360,8 +366,9 @@ win32/%.obj: win32/%.c
 	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -I win32 -o "$@" "$<"
 
 
-
-win64/%.obj: %.c  win64/io.h
+win64/%.obj: t240/%.c  biosig-dev.h biosig.h 
+	$(MinGW64CC) -c $(DEFINES) $(MinGW64CFLAGS) -I t240 -o "$@" "$<"
+win64/%.obj: %.c win64/io.h 
 	$(MinGW64CC) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
 win64/%.obj: %.cpp
 	$(MinGW64CXX) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
@@ -743,6 +750,7 @@ distclean:
 	-$(DELETE) *.so.*
 	-$(DELETE) *.mex*
 	-$(DELETE) *.oct
+	-$(DELETE) $(IO_H_FILE64) $(IO_H_FILE)
 	-$(DELETE) t5.scp t6.scp save2gdf gztest test_scp_decode biosig_server biosig_client
 	-$(DELETE) t?.[bge]df* t?.hl7* t?.scp* t?.cfw* t?.gd1* t?.*.gz *.fil $(TEMP_DIR)t1.* $(DATA_DIR)t1.*
 	-$(DELETE) python/swig_wrap.* python/biosig.py* python/_biosig.so
