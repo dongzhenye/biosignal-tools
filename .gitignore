@@ -1,0 +1,20 @@
+# backup files
+*~
+# ignore precompiled files
+*.i
+# ignore object files
+*.o
+*.obj
+*.o64
+# ignore library files
+*.a
+*.so
+# ignore executables
+biosig4c++/save2gdf
+biosig4c++/mma/sload
+biosig4c++/mma/sload.exe
+# ignore mex files
+*.mex*
+# ignore intermediate files for biosig4python
+biosig4c++/python/biosig.py
+biosig4c++/python/swig_wrap.cxx
