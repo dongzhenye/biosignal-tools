@@ -219,8 +219,8 @@ TODAY          := $(shell date +%Y%m%d)
 ####### Output directory
 
 OBJ	      = ./obj
-BIN	      = $(DESTDIR)/usr/bin
-LIB	      = $(DESTDIR)/usr/lib
+BIN	      = $(DESTDIR)/usr/local/bin
+LIB	      = $(DESTDIR)/usr/local/lib
 
 
 ####### Files
@@ -602,20 +602,19 @@ t240/libcnsfef.a:
 libphysicalunits.a: physicalunits.o
 	-$(DELETE) "$@"
 	$(AR) "$@" "$<"
-
 libphysicalunits.so: physicalunits.o
-	$(CC) -shared -fPIC -Wl,-soname,"$@" $(LDLIBS) -o "$@" "$<"
+	$(CC) -shared -fPIC -Wl,-rpath,. -Wl,-soname,"$@" $(LDLIBS) -o "$@" "$<"
 
 libgdf.a: gdf.o
 	-$(DELETE) "$@"
 	$(AR) "$@" "$<"
 
 libgdf.so: gdf.o
-	$(CC) -shared -fPIC -Wl,-soname,"$@".${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
+	$(CC) -shared -fPIC -Wl,-rpath,. -Wl,-soname,"$@".${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
 		-o "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$<"
-	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$@".${MAJOR_VERSION}.${MINOR_VERSION}
+	/sbin/ldconfig -n .
+	#ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$@".${MAJOR_VERSION}.${MINOR_VERSION}
 	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION} "$@"
-
 
 libbiosig.a: $(OBJECTS) t240/libcnsfef.a
 	-$(DELETE) libbiosig.a
@@ -623,9 +622,9 @@ libbiosig.a: $(OBJECTS) t240/libcnsfef.a
 	-touch ../sigviewer/src/file_context.cpp	# trigger to rebuild sigviewer
 
 libbiosig.so: $(OBJECTS) t240/libcnsfef.a
-	$(CXX) -shared -fPIC -Wl,-soname,"$@".${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
+	$(CXX) -shared -fPIC -Wl,-rpath,. -Wl,-soname,"$@".${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
 		-o "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(OBJECTS) t240/*.o
-	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$@".${MAJOR_VERSION}.${MINOR_VERSION}
+	/sbin/ldconfig -n .
 	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION} "$@"
 
 libbiosig2.a: $(OBJECTS) biosig2.o t240/libcnsfef.a
@@ -633,9 +632,9 @@ libbiosig2.a: $(OBJECTS) biosig2.o t240/libcnsfef.a
 	$(AR) libbiosig2.a $(OBJECTS) biosig2.o t240/*.o
 
 libbiosig2.so: $(OBJECTS) biosig2.o t240/libcnsfef.a
-	$(CXX) -shared -fPIC -Wl,-soname,libbiosig2.so.${MAJOR_VERSION} $(LDLIBS) \
+	$(CXX) -shared -fPIC -Wl,-rpath,. -Wl,-soname,libbiosig2.so.${MAJOR_VERSION} $(LDLIBS) \
 		-o libbiosig2.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(OBJECTS) biosig2.o t240/*.o
-	ln -sf libbiosig2.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} libbiosig2.so.${MAJOR_VERSION}
+	/sbin/ldconfig -n .
 	ln -sf libbiosig2.so.${MAJOR_VERSION} libbiosig2.so
 
 save2gdf: save2gdf.o libbiosig.$(LIBEXT)
