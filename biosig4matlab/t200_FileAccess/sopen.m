@@ -942,9 +942,10 @@ end;
                         end;	
                         
                         status = fseek(HDR.FILE.FID,HDR.HeadLen+HDR.AS.bi(HDR.EDF.Annotations)*2,'bof');
-                        t = fread(HDR.FILE.FID,inf,[int2str(HDR.AS.SPR(HDR.EDF.Annotations)*2),'*uchar=>uchar'],HDR.AS.bpb-HDR.AS.SPR(HDR.EDF.Annotations)*2);
-                        HDR.EDFplus.ANNONS = char(t');
-                        
+			sz = HDR.AS.SPR(HDR.EDF.Annotations)*2; 
+                        t = fread(HDR.FILE.FID,inf,[int2str(sz),'*uchar=>uchar'],HDR.AS.bpb-HDR.AS.SPR(HDR.EDF.Annotations)*2);
+			t = reshape(char(t),sz,[]);
+                        HDR.EDFplus.ANNONS = t;
 
                 elseif strcmp(HDR.TYPE,'BDF') && (length(strmatch('BDF Annotations',HDR.Label))==1),
                         % BDF+: 
@@ -956,8 +957,10 @@ end;
                         end;	
                         
                         status = fseek(HDR.FILE.FID,HDR.HeadLen+HDR.AS.bi(HDR.EDF.Annotations)*3,'bof');
-                        t = fread(HDR.FILE.FID,inf,[int2str(HDR.AS.SPR(HDR.EDF.Annotations)*3),'*uchar=>uchar'],HDR.AS.bpb-HDR.AS.SPR(HDR.EDF.Annotations)*3);
-                        HDR.EDFplus.ANNONS = char(t');
+			sz = HDR.AS.SPR(HDR.EDF.Annotations)*3; 
+                        t = fread(HDR.FILE.FID,inf,[int2str(sz),'*uchar=>uchar'],HDR.AS.bpb-HDR.AS.SPR(HDR.EDF.Annotations)*3);
+			t = reshape(char(t),sz,[]);
+                        HDR.EDFplus.ANNONS = t;
 
 
                 elseif strcmp(HDR.TYPE,'EDF') && (length(strmatch('ANNOTATION',HDR.Label))==1),
@@ -969,7 +972,7 @@ end;
                         status = fseek(HDR.FILE.FID,HDR.HeadLen+HDR.AS.bi(HDR.EDF.Annotations)*2,'bof');
                         t = fread(HDR.FILE.FID,inf,[int2str(HDR.AS.SPR(HDR.EDF.Annotations)*2),'*uchar=>uchar'],HDR.AS.bpb-HDR.AS.SPR(HDR.EDF.Annotations)*2);
                         t = reshape(t,HDR.AS.SPR(HDR.EDF.Annotations)*2,HDR.NRec)'; 
-                        t = t(any(t,2),1:max(find(any(t,1))));
+                        t = t(any(t,2),1:max(find(any(t,1))))
                         HDR.EDF.ANNONS = char(t);
 
                         N = 0;
@@ -1029,54 +1032,15 @@ end;
                         fprintf(HDR.FILE.stderr,'Warning SOPEN(BDF): File %s does not contain Status Channel - overflowdetection not supported!\n',HDR.FileName);
                         
                 end;
-                
-		if isfield(HDR,'EDFplus') && isfield(HDR.EDFplus,'ANNONS'),
-			%% decode EDF+/BDF+ annotations
-                        N = 0; 
-                        onset = []; dur=[]; Desc = {};
-			t = HDR.EDFplus.ANNONS;
-    			while ~isempty(t)
-				% remove leading 0
-				t  = t(find(t>0,1):end);
-
-				ix = find(t==20,2); 		
-				if isempty(ix) break; end;
-
-				% next event 
-    				N = N + 1; 
-				[s1,s2] = strtok(t(1:ix(1)-1),21);
-				s3 = t(ix(1)+1:ix(2)-1);
-
-    				tmp = str2double(s1);
-    				onset(N,1) = tmp;
-   				if  ~isempty(s2)
-	   				tmp = str2double(s2(2:end));
-   					dur(N,1) = tmp; 	
-   				else 
-   					dur(N,1) = 0; 	
-   				end;
-				if all(s3(2:2:end)==0) s3 = s3(1:2:end); end; %% unicode to ascii - FIXME 
-    				Desc{N} = s3;
-	                        HDR.EVENT.TYP(N,1) = length(Desc{N});
-				t = t(ix(2)+1:end);
-    			end;		
-                        HDR.EVENT.POS = onset * HDR.SampleRate;
-                        if any(HDR.EVENT.POS - ceil(HDR.EVENT.POS))
-                                warning('HDR.EVENT.POS is not integer')        
-                                %HDR.EVENT.POS = round(HDR.EVENT.POS); 
-                        end
-                        HDR.EVENT.DUR = dur * HDR.SampleRate;
-                        HDR.EVENT.CHN = zeros(N,1); 
-                        %% TODO: use eventcodes.txt for predefined event types e.g. QRS->0x501
-                        [HDR.EVENT.CodeDesc, CodeIndex, HDR.EVENT.TYP] = unique(Desc(1:N)');
-		end
+                HDR.EVENT.SampleRate = HDR.SampleRate;
+		HDR = edfannot2evt(HDR);
 
                 status = fseek(HDR.FILE.FID, HDR.HeadLen, 'bof');
                 HDR.FILE.POS  = 0;
                 HDR.FILE.OPEN = 1;
                 
                 %%% Event file stored in GDF-format
-                if ~any([HDR.NS,HDR.NRec,~length(HDR.EVENT.POS)]);
+                if (HDR.NS==0 && HDR.NRec==0 && length(HDR.EVENT.POS));
                         HDR.TYPE = 'EVENT';
                         HDR = sclose(HDR);
                 end;	

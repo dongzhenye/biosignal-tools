@@ -270,7 +270,7 @@ for k = 1:length(HDR.EVENT.POS);
 	if HDR.EVENT.TYP(k)==hex2dec('7fff'),
 		ch = HDR.EVENT.CHN(k);
 		fprintf(fid,'\t%f %s',[1,HDR.EVENT.DUR(k)]*HDR.Calib([1,ch+1],ch),HDR.PhysDim{ch}); 
-	elseif 1,
+	elseif 0,
 	elseif HDR.EVENT.TYP(k)==0,
 		;
 	elseif HDR.EVENT.TYP(k)==hex2dec('7ffe'),
