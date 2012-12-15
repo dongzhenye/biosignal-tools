@@ -1103,6 +1103,25 @@ void sort_eventtable(HDRTYPE *hdr) {
 }
 
 /*------------------------------------------------------------------------
+	re-allocates memory for Eventtable. 
+	hdr->EVENT.N contains actual number of events
+	EventN determines the size of the allocated memory
+  ------------------------------------------------------------------------*/
+size_t reallocEventTable(HDRTYPE *hdr, size_t EventN)
+{
+			hdr->EVENT.POS = (uint32_t*)realloc(hdr->EVENT.POS, EventN * sizeof(*hdr->EVENT.POS));
+			hdr->EVENT.DUR = (uint32_t*)realloc(hdr->EVENT.DUR, EventN * sizeof(*hdr->EVENT.DUR));
+			hdr->EVENT.TYP = (uint16_t*)realloc(hdr->EVENT.TYP, EventN * sizeof(*hdr->EVENT.TYP));
+			hdr->EVENT.CHN = (uint16_t*)realloc(hdr->EVENT.CHN, EventN * sizeof(*hdr->EVENT.CHN));
+#if (BIOSIG_VERSION >= 10500)
+			hdr->EVENT.TimeStamp = (gdf_time*)realloc(hdr->EVENT.TimeStamp, EventN * sizeof(gdf_time));
+#endif
+			return EventN;
+}
+
+
+
+/*------------------------------------------------------------------------
 	converts event table from {TYP,POS} to [TYP,POS,CHN,DUR} format
   ------------------------------------------------------------------------*/
 void convert2to4_eventtable(HDRTYPE *hdr) {
@@ -4059,94 +4078,68 @@ else if (!strncmp(MODE,"r",1)) {
 			CHANNEL_TYPE *hc = hdr->CHANNEL+AnnotationChannel-1;
 
 			size_t sz   	= GDFTYP_BITS[hc->GDFTYP]>>3;
-			size_t len 	= hc->SPR * hdr->NRec * sz;
+			size_t bpb	= hc->SPR * sz;
+			size_t len 	= bpb * hdr->NRec;
 			uint8_t *Marker = (uint8_t*)malloc(len + 1);
-			size_t skip 	= hdr->AS.bpb - hc->SPR * sz;
+			size_t skip 	= hdr->AS.bpb - bpb;
 			ifseek(hdr, hdr->HeadLen + hc->bi, SEEK_SET);
 			nrec_t k3;
 			for (k3=0; k3<hdr->NRec; k3++) {
-			    	ifread(Marker+k3*hc->SPR * sz, 1, hc->SPR * sz, hdr);
+			    	ifread(Marker+k3*bpb, 1, bpb, hdr);
 				ifseek(hdr, skip, SEEK_CUR);
 			}
-			size_t N_EVENT  = 0;
+			Marker[hdr->NRec*bpb] = 20; // terminating marker
+			size_t N_EVENT = 0;
 			hdr->EVENT.SampleRate = hdr->SampleRate;
 
 			/* convert EDF+/BDF+ annotation channel into event table */
-
-				N_EVENT=0;
-				Marker[len]=20; // stop marker;
-				double Onset,Duration;
-				char FLAG_NONZERO_DURATION = 0;
-//				char Desc[1000]; 
-				char *Desc; 
-
-				for (k=0; k<len; ) {
-
-					while ((Marker[k] == 0) && (k<len)) ++k; // search for start of annotation
-					if (k>=len) break;
-
-					if (N_EVENT+1 >= hdr->EVENT.N) {
-						hdr->EVENT.N  += 2560;
-						hdr->EVENT.POS = (uint32_t*)realloc(hdr->EVENT.POS, hdr->EVENT.N*sizeof(*hdr->EVENT.POS));
-						hdr->EVENT.DUR = (uint32_t*)realloc(hdr->EVENT.DUR, hdr->EVENT.N*sizeof(*hdr->EVENT.DUR));
-						hdr->EVENT.TYP = (uint16_t*)realloc(hdr->EVENT.TYP, hdr->EVENT.N*sizeof(*hdr->EVENT.TYP));
-						hdr->EVENT.CHN = (uint16_t*)realloc(hdr->EVENT.CHN, hdr->EVENT.N*sizeof(*hdr->EVENT.CHN));
-#if (BIOSIG_VERSION >= 10500)
-						hdr->EVENT.TimeStamp = (gdf_time*)realloc(hdr->EVENT.TimeStamp, hdr->EVENT.N*sizeof(gdf_time));
-#endif
-					}
-					
-					unsigned char *s0 = Marker+k; 		// Onset 
-					unsigned char *s2 = NULL; 
-					while (Marker[k] != 20) {
-						if (Marker[k] == 21) s2=Marker+k+1;	// Duration
-						k++;
-					}
-					if (k>=len) break;
-					Marker[k++]=0;
-					unsigned char *s3 = Marker+k;		// annotation
-
-					while (Marker[k] != 20) k++;
-					if (k>=len) break;
-					Marker[k++]=0;
-
-					Desc = s3; 	// \0-terminated event description 
-
-					Onset = atof(s0);
-					if (s2 != NULL) {
-						Duration = atof(s2);
-						FLAG_NONZERO_DURATION = 1;
-					}
-					else
-						Duration = 0;
-
-					hdr->EVENT.POS[N_EVENT] = (uint32_t)round(Onset * hdr->EVENT.SampleRate);	// 0-based indexing
-					hdr->EVENT.DUR[N_EVENT] = (uint32_t)round(Duration * hdr->EVENT.SampleRate);
-					hdr->EVENT.CHN[N_EVENT] = 0;
-#if (BIOSIG_VERSION >= 10500)
-					hdr->EVENT.TimeStamp[N_EVENT] = 0;
-#endif
-
-					/* conversion from free text annotations to biosig event codes */
-					if (!strcmp(Desc,"QRS")) hdr->EVENT.TYP[N_EVENT] = 0x0501;
-					else {
-						FreeTextEvent(hdr,N_EVENT,Desc);
-					}
-			
-					// if (VERBOSE_LEVEL>8)
-					//	fprintf(stdout,"%i,EDF+: %i\t%i\t%03i:\t%f\t%f\t%s\t%s\n",sizeof(char**),len,k,N_EVENT,Onset,Duration,p2+1,p0+1);
-
-					N_EVENT++;
-				}
-				hdr->EVENT.N = N_EVENT;
-				if (!FLAG_NONZERO_DURATION){
-					free(hdr->EVENT.DUR);
-					hdr->EVENT.DUR = NULL;
-					free(hdr->EVENT.CHN);
-					hdr->EVENT.CHN = NULL;
-				}
-				hdr->AS.auxBUF = Marker;	// contains EVENT.CodeDesc strings
+			for (k3 = 0; k3 < hdr->NRec; k3++) {
+				double timeKeeping = 0;	
+			    	char *line = Marker + k3 * bpb;
 				
+				char flag = !strncmp(Header1+193,"DF+D",4); // no time keeping for EDF+C
+				while (line < (Marker + (k3+1) * bpb)) {		
+					// loop through all annotations within a segment	
+										
+if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ line<%s>\n",line);
+
+					char *next = strchr(line,0); // next points to end of annotation	
+
+					char *s1 = strtok(line,"\x14");
+					char *s2 = strtok(NULL,"\x14");
+					char *s3 = strtok(NULL,"\x14");
+					char *tstr   = strtok(s1,"\x14\x15");
+					char *durstr = strtok(NULL,"\x14\x15");
+					double t = atof(tstr);
+					if (flag > 0) {
+						if (N_EVENT <= hdr->EVENT.N+1)
+							N_EVENT = reallocEventTable(hdr, max(6,hdr->EVENT.N*2));
+
+						if (flag==1) {
+							// time keeping: export event only for EDF+D
+							hdr->EVENT.TYP[hdr->EVENT.N] = 0x7ffe;
+							hdr->EVENT.POS[hdr->EVENT.N] = k3 * hdr->SPR;
+							timeKeeping = t; 
+						} else {
+							FreeTextEvent(hdr, hdr->EVENT.N, s2);   // set hdr->EVENT.TYP
+							hdr->EVENT.POS[hdr->EVENT.N] = k3 * hdr->SPR + (t-timeKeeping) * hdr->EVENT.SampleRate;
+						}
+#if (BIOSIG_VERSION >= 10500)
+						hdr->EVENT.TimeStamp[hdr->EVENT.N] = hdr->T0 + ldexp(t/(24*60),32); ; 
+#endif
+						hdr->EVENT.DUR[hdr->EVENT.N] = durstr ? (atof(durstr)*hdr->EVENT.SampleRate) : 0; 
+						hdr->EVENT.CHN[hdr->EVENT.N] = 0; 
+						hdr->EVENT.N++;
+					}
+					flag = 2; 
+
+if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:\t<%s>\n\tsdelay:\t<%s>\n\tdur:\t<%s>\n\t\n",s1,s2,s3,tstr,durstr);
+
+					for (line=next; *line==0; line++) {};  // skip \0's and set line to start of next annotation 
+				}
+			}
+
+			hdr->AS.auxBUF = Marker;	// contains EVENT.CodeDesc strings
 		}	/* End reading if Annotation channel */ 
 			
 		if (StatusChannel) {
