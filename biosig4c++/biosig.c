@@ -5818,31 +5818,7 @@ if (VERBOSE_LEVEL>8)
 	}
 
 	else if (hdr->TYPE==SMR) {
-		hdr->HeadLen = 512; 
-		if (count < hdr->HeadLen) {
-			// read fixed header 
-			hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen+1);
-			count += ifread(hdr->AS.Header+count, 1, hdr->HeadLen-count, hdr);
-			hdr->AS.Header[count]=0;
-		}	
-
-		// get Endianity, Version and Header size
-		hdr->FILE.LittleEndian = (*(uint16_t*)(hdr->AS.Header+38) == 0);   // 0x0000: little endian, 0x0101: big endian
-		if (hdr->FILE.LittleEndian) {
-			hdr->VERSION = leu16p(hdr->AS.Header); 
-			hdr->HeadLen = leu32p(hdr->AS.Header + 26 ); // first data 
-		} else {
-			hdr->VERSION = beu16p(hdr->AS.Header); 
-			hdr->HeadLen = beu32p(hdr->AS.Header + 26); // first data
-		}        
-
-		if (count < hdr->HeadLen) {
-			// read channel header and extra data
-			hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen+1);
-			count += ifread(hdr->AS.Header+count, 1, hdr->HeadLen-count, hdr);
-			hdr->AS.Header[count]=0;
-		}
-
+	        hdr->HeadLen = count;
 		sopen_smr_read(hdr); 
 	}
 

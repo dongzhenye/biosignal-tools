@@ -24,6 +24,8 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 #include "../biosig-dev.h"
 
@@ -431,85 +433,137 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
   #ifdef __MINGW32__
     #include <windows.h>
   #endif 
-  //#include "Son.h"
     #include "sonintl.h"
 #endif 
 
 
 EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {	
         /*TODO: implemnt SON/SMR format */
-        fprintf(stdout,"SOPEN: Support for CED's SMR/SON format is under construction \n");
-#if defined(WITH_SON)
+	fprintf(stdout,"SOPEN: Support for CED's SMR/SON format is under construction \n");
 
-#ifndef NDEBUG
+#ifdef WITH_SON
+	size_t count = hdr->HeadLen;		
+	if (count < 512) {
+			hdr->HeadLen = 512; 
+			// make sure fixed header (first 512 bytes) are read
+			hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen+1);
+			count += ifread(hdr->AS.Header+count, 1, hdr->HeadLen-count, hdr);
+			hdr->AS.Header[count]=0;
+	}	
+		
+	// get Endianity, Version and Header size
+	hdr->FILE.LittleEndian = (*(uint16_t*)(hdr->AS.Header+38) == 0);   // 0x0000: little endian, 0x0101: big endian
+	if (hdr->FILE.LittleEndian) {
+		hdr->VERSION = leu16p(hdr->AS.Header); 
+		hdr->HeadLen = leu32p(hdr->AS.Header + 26 ); // first data 
+	} else {
+		hdr->VERSION = beu16p(hdr->AS.Header); 
+		hdr->HeadLen = beu32p(hdr->AS.Header + 26); // first data
+		// TODO: relax this restriction 
+		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "SON/SMR: big-endian file not supported,yet");
+	}
+	
+	size_t HeadLen = hdr->HeadLen;	
+	size_t size_factor = 1; 
+	if (hdr->VERSION >= 9) {
+		size_factor = 512;
+		HeadLen *= size_factor;
+		if (sizeof(size_t) <= 4) {
+			// TODO: relax that restriction 
+			biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "SON/SMR: version 9 (bigfile) not supported,yet");
+			return;	
+		}
+	}
+		
+	if (count < HeadLen) {
+		// read channel header and extra data (i.e. everything up to firstData)
+		hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,HeadLen+1);
+		count += ifread(hdr->AS.Header+count, 1, HeadLen-count, hdr);
+		hdr->AS.Header[count]=0;
+	}
+
+	TFileHead *tfh = (void*)(hdr->AS.Header); 
+	TChannel  *tc  = (void*)(hdr->AS.Header+512); 
+
+	if (VERBOSE_LEVEL > 6) {
+		// debugging information 
+		fprintf(stdout,"\tsizeof TFileHead %i\n\tsizeof TChannel %i\n\tsizeof TDataBlock %i\n",
+			(int)sizeof(TFileHead),(int)sizeof(TChannel),(int)sizeof(TDataBlock));
+
+		fprintf(stdout,"%i NS=%i %i %i %i\n",
+			(int)sizeof(*tfh),hdr->NS,(int)offsetof(TFileHead,channels),(int)sizeof(TChannel),(int)sizeof(TDataBlock));
+
+		fprintf(stdout,"systemID\t%i %i %i\n",(int)offsetof(TFileHead,systemID),
+			sizeof(tfh->systemID),lei16p(hdr->AS.Header+offsetof(TFileHead,systemID)));
+		fprintf(stdout,"copyright\t%i %i\n",(int)offsetof(TFileHead,copyright),sizeof(tfh->copyright));
+		fprintf(stdout,"creator  \t%i %i <%8s>\n",(int)offsetof(TFileHead,creator),
+			sizeof(tfh->creator),hdr->AS.Header+offsetof(TFileHead,creator));
+		fprintf(stdout,"usPerTime\t%i %i %i\n",(int)offsetof(TFileHead,usPerTime),
+			sizeof(tfh->usPerTime),lei16p(hdr->AS.Header+offsetof(TFileHead,usPerTime)));
+		fprintf(stdout,"timePerADC\t%i %i %i\n",(int)offsetof(TFileHead,timePerADC),
+			sizeof(tfh->timePerADC),lei16p(hdr->AS.Header+offsetof(TFileHead,timePerADC)));
+		fprintf(stdout,"fileState\t%i %i %i\n",(int)offsetof(TFileHead,fileState),
+			sizeof(tfh->fileState),lei16p(hdr->AS.Header+offsetof(TFileHead,fileState)));
+		fprintf(stdout,"firstData\t%i %i %i\n",(int)offsetof(TFileHead,firstData),
+			sizeof(tfh->firstData),lei32p(hdr->AS.Header+offsetof(TFileHead,firstData)));
+		fprintf(stdout,"channels\t%i %i 0x%04x\n",(int)offsetof(TFileHead,channels),
+			sizeof(tfh->channels),lei16p(hdr->AS.Header+offsetof(TFileHead,channels)));
+		fprintf(stdout,"chanSize\t%i %i 0x%04x\n",(int)offsetof(TFileHead,chanSize),
+			sizeof(tfh->chanSize),lei16p(hdr->AS.Header+offsetof(TFileHead,chanSize)));
+		fprintf(stdout,"extraData\t%i %i %i\n",(int)offsetof(TFileHead,extraData),
+			sizeof(tfh->extraData),lei16p(hdr->AS.Header+offsetof(TFileHead,extraData)));
+		fprintf(stdout,"bufferSz\t%i %i %i\n",(int)offsetof(TFileHead,bufferSz),
+			sizeof(tfh->bufferSz),lei16p(hdr->AS.Header+offsetof(TFileHead,bufferSz)));
+		fprintf(stdout,"osFormat\t%i %i %i\n",(int)offsetof(TFileHead,osFormat),
+			sizeof(tfh->osFormat),lei16p(hdr->AS.Header+offsetof(TFileHead,osFormat)));
+		fprintf(stdout,"maxFTime\t%i %i %i\n",(int)offsetof(TFileHead,maxFTime),
+			sizeof(tfh->maxFTime),lei32p(hdr->AS.Header+offsetof(TFileHead,maxFTime)));
+		fprintf(stdout,"dTimeBase\t%i %i %g\n",(int)offsetof(TFileHead,dTimeBase),
+			sizeof(tfh->dTimeBase),lef64p(hdr->AS.Header+offsetof(TFileHead,dTimeBase)));
+		fprintf(stdout,"timeDate\t%i %i\n",(int)offsetof(TFileHead,timeDate),sizeof(tfh->timeDate));
+		fprintf(stdout,"cAlignFlag\t%i %i\n",(int)offsetof(TFileHead,cAlignFlag),sizeof(tfh->cAlignFlag));
+		fprintf(stdout,"pad0     \t%i %i\n",(int)offsetof(TFileHead,pad0),sizeof(tfh->pad0));
+		fprintf(stdout,"LUTable  \t%i %i\n",(int)offsetof(TFileHead,LUTable),sizeof(tfh->LUTable));
+		fprintf(stdout,"pad      \t%i %i\n",(int)offsetof(TFileHead,pad),sizeof(tfh->pad));
+		fprintf(stdout,"fileComment\t%i %i\n",(int)offsetof(TFileHead,fileComment),sizeof(tfh->fileComment));
+        
+		fprintf(stdout,"==CHANNEL==\n");
+		fprintf(stdout,"delSize  \t%i %i\n",(int)offsetof(TChannel,delSize),sizeof(tc->delSize));
+		fprintf(stdout,"nextDelBlock\t%i %i\n",(int)offsetof(TChannel,nextDelBlock),sizeof(tc->nextDelBlock));
+		fprintf(stdout,"firstBlock\t%i %i\n",(int)offsetof(TChannel,firstBlock),sizeof(tc->firstBlock));
+		fprintf(stdout,"lastBlock\t%i %i\n",(int)offsetof(TChannel,lastBlock),sizeof(tc->lastBlock));
+		fprintf(stdout,"blocks   \t%i %i\n",(int)offsetof(TChannel,blocks),sizeof(tc->blocks));
+		fprintf(stdout,"nExtra   \t%i %i\n",(int)offsetof(TChannel,nExtra),sizeof(tc->nExtra));
+		fprintf(stdout,"preTrig  \t%i %i\n",(int)offsetof(TChannel,preTrig),sizeof(tc->preTrig));
+		fprintf(stdout,"blocksMSW\t%i %i\n",(int)offsetof(TChannel,blocksMSW),sizeof(tc->blocksMSW));
+		fprintf(stdout,"phySz    \t%i %i\n",(int)offsetof(TChannel,phySz),sizeof(tc->phySz));
+		fprintf(stdout,"maxData  \t%i %i\n",(int)offsetof(TChannel,maxData),sizeof(tc->maxData));
+		fprintf(stdout,"comment  \t%i %i\n",(int)offsetof(TChannel,comment),sizeof(tc->comment));
+
+		fprintf(stdout,"maxChanTime  \t%i %i\n",(int)offsetof(TChannel,maxChanTime),sizeof(tc->maxChanTime));
+
+		fprintf(stdout,"lChanDvd\t%i %i\n",(int)offsetof(TChannel,lChanDvd),sizeof(tc->lChanDvd));
+		fprintf(stdout,"phyChan  \t%i %i\n",(int)offsetof(TChannel,phyChan),sizeof(tc->phyChan));
+		fprintf(stdout,"title    \t%i %i %s\n",(int)offsetof(TChannel,title),sizeof(tc->title),((char*)&(tc->title))+1);
+		fprintf(stdout,"idealRate\t%i %i\n",(int)offsetof(TChannel,idealRate),sizeof(tc->idealRate));
+		fprintf(stdout,"kind     \t%i %i\n",(int)offsetof(TChannel,kind),sizeof(tc->kind));
+        
+		fprintf(stdout,"v.adc.scale\t%i %i\n",(int)offsetof(TChannel,v.adc.scale),sizeof(tc->v.adc.scale));
+		fprintf(stdout,"v.adc.offset\t%i %i\n",(int)offsetof(TChannel,v.adc.offset),sizeof(tc->v.adc.offset));
+		fprintf(stdout,"v.adc.units\t%i %i\n",(int)offsetof(TChannel,v.adc.units),sizeof(tc->v.adc.units));
+		fprintf(stdout,"v.adc.divide\t%i %i\n",(int)offsetof(TChannel,v.adc.divide),sizeof(tc->v.adc.divide));
+        
+		fprintf(stdout,"v.event.initLow\t%i %i\n",(int)offsetof(TChannel,v.event.initLow),sizeof(tc->v.event.initLow));
+		fprintf(stdout,"v.event.nextLow\t%i %i\n",(int)offsetof(TChannel,v.event.nextLow),sizeof(tc->v.event.nextLow));
+
+		fprintf(stdout,"v.real.min\t%i %i\n",(int)offsetof(TChannel,v.real.min),sizeof(tc->v.real.min));
+		fprintf(stdout,"v.real.max\t%i %i\n",(int)offsetof(TChannel,v.real.max),sizeof(tc->v.real.max));
+		fprintf(stdout,"v.real.units\t%i %i\n",(int)offsetof(TChannel,v.real.units),sizeof(tc->v.real.units));
+	}
+
 	assert(sizeof(TFileHead)==512);         
 	assert(sizeof(TChannel)==140);         
 	assert(sizeof(TDataBlock)==64020);         
-
-        TFileHead *tfh = (void*)hdr->AS.Header; 
-	TChannel  *tc  = (void*)(hdr->AS.Header+512); 
-
-        #define FIELDOFFSET(FIELD) ((int)((size_t)&(tfh->FIELD) - (size_t)tfh))     
-        #define FIELDOFFSET_TC(FIELD) ((int)((size_t)&(tc->FIELD) - (size_t)tc))     
-
-        #define PRINTPROP(FF) fprintf(stdout,"%i %i 0x%08x\n",(size_t)&(tfh->FF) - (size_t)tfh,sizeof(FF),*(uint32_t*)&(tfh->FF))
-
-        fprintf(stdout,"%i NS=%i %i %i %i\n",sizeof(*tfh),hdr->NS,(int)FIELDOFFSET(channels),sizeof(TChannel),sizeof(TDataBlock));
-
-        fprintf(stdout,"systemID\t%i %i %i\n",(int)FIELDOFFSET(systemID),sizeof(tfh->systemID),lei16p(hdr->AS.Header+FIELDOFFSET(systemID)));
-        fprintf(stdout,"copyright\t%i %i\n",(int)FIELDOFFSET(copyright),sizeof(tfh->copyright));
-        fprintf(stdout,"creator  \t%i %i <%8s>\n",(int)FIELDOFFSET(creator),sizeof(tfh->creator),hdr->AS.Header+FIELDOFFSET(creator));
-        fprintf(stdout,"usPerTime\t%i %i %i\n",(int)FIELDOFFSET(usPerTime),sizeof(tfh->usPerTime),lei16p(hdr->AS.Header+FIELDOFFSET(usPerTime)));
-        fprintf(stdout,"timePerADC\t%i %i %i\n",(int)FIELDOFFSET(timePerADC),sizeof(tfh->timePerADC),lei16p(hdr->AS.Header+FIELDOFFSET(timePerADC)));
-        fprintf(stdout,"fileState\t%i %i %i\n",(int)FIELDOFFSET(fileState),sizeof(tfh->fileState),lei16p(hdr->AS.Header+FIELDOFFSET(fileState)));
-        fprintf(stdout,"firstData\t%i %i %i\n",(int)FIELDOFFSET(firstData),sizeof(tfh->firstData),lei32p(hdr->AS.Header+FIELDOFFSET(firstData)));
-        fprintf(stdout,"channels\t%i %i 0x%04x\n",(int)FIELDOFFSET(channels),sizeof(tfh->channels),lei16p(hdr->AS.Header+FIELDOFFSET(channels)));
-        fprintf(stdout,"chanSize\t%i %i 0x%04x\n",(int)FIELDOFFSET(chanSize),sizeof(tfh->chanSize),lei16p(hdr->AS.Header+FIELDOFFSET(chanSize)));
-        fprintf(stdout,"extraData\t%i %i %i\n",(int)FIELDOFFSET(extraData),sizeof(tfh->extraData),lei16p(hdr->AS.Header+FIELDOFFSET(extraData)));
-        fprintf(stdout,"bufferSz\t%i %i %i\n",(int)FIELDOFFSET(bufferSz),sizeof(tfh->bufferSz),lei16p(hdr->AS.Header+FIELDOFFSET(bufferSz)));
-        fprintf(stdout,"osFormat\t%i %i %i\n",(int)FIELDOFFSET(osFormat),sizeof(tfh->osFormat),lei16p(hdr->AS.Header+FIELDOFFSET(osFormat)));
-        fprintf(stdout,"maxFTime\t%i %i %i\n",(int)FIELDOFFSET(maxFTime),sizeof(tfh->maxFTime),lei32p(hdr->AS.Header+FIELDOFFSET(maxFTime)));
-        fprintf(stdout,"dTimeBase\t%i %i %g\n",(int)FIELDOFFSET(dTimeBase),sizeof(tfh->dTimeBase),lef64p(hdr->AS.Header+FIELDOFFSET(dTimeBase)));
-        fprintf(stdout,"timeDate\t%i %i\n",(int)FIELDOFFSET(timeDate),sizeof(tfh->timeDate));
-        fprintf(stdout,"cAlignFlag\t%i %i\n",(int)FIELDOFFSET(cAlignFlag),sizeof(tfh->cAlignFlag));
-        fprintf(stdout,"LUTable  \t%i %i\n",(int)FIELDOFFSET(LUTable),sizeof(tfh->LUTable));
-        fprintf(stdout,"fileComment\t%i %i\n",(int)FIELDOFFSET(timeDate),sizeof(tfh->fileComment));
-        
-        fprintf(stdout,"==CHANNEL==\n");
-        fprintf(stdout,"delSize  \t%i %i\n",(int)FIELDOFFSET_TC(delSize),sizeof(tc->delSize));
-        fprintf(stdout,"nextDelBlock\t%i %i\n",(int)FIELDOFFSET_TC(nextDelBlock),sizeof(tc->nextDelBlock));
-        fprintf(stdout,"firstBlock\t%i %i\n",(int)FIELDOFFSET_TC(firstBlock),sizeof(tc->firstBlock));
-        fprintf(stdout,"lastBlock\t%i %i\n",(int)FIELDOFFSET_TC(lastBlock),sizeof(tc->lastBlock));
-        fprintf(stdout,"blocks   \t%i %i\n",(int)FIELDOFFSET_TC(blocks),sizeof(tc->blocks));
-        fprintf(stdout,"nExtra   \t%i %i\n",(int)FIELDOFFSET_TC(nExtra),sizeof(tc->nExtra));
-        fprintf(stdout,"preTrig  \t%i %i\n",(int)FIELDOFFSET_TC(preTrig),sizeof(tc->preTrig));
-        fprintf(stdout,"blocksMSW\t%i %i\n",(int)FIELDOFFSET_TC(blocksMSW),sizeof(tc->blocksMSW));
-        fprintf(stdout,"phySz    \t%i %i\n",(int)FIELDOFFSET_TC(phySz),sizeof(tc->phySz));
-        fprintf(stdout,"maxData  \t%i %i\n",(int)FIELDOFFSET_TC(maxData),sizeof(tc->maxData));
-        fprintf(stdout,"comment  \t%i %i\n",(int)FIELDOFFSET_TC(comment),sizeof(tc->comment));
-
-        fprintf(stdout,"maxChanTime  \t%i %i\n",(int)FIELDOFFSET_TC(maxChanTime),sizeof(tc->maxChanTime));
-
-        fprintf(stdout,"lChanDvd\t%i %i\n",(int)FIELDOFFSET_TC(lChanDvd),sizeof(tc->lChanDvd));
-        fprintf(stdout,"phyChan  \t%i %i\n",(int)FIELDOFFSET_TC(phyChan),sizeof(tc->phyChan));
-        fprintf(stdout,"title    \t%i %i %s\n",(int)FIELDOFFSET_TC(title),sizeof(tc->title),((char*)&(tc->title))+1);
-        fprintf(stdout,"idealRate\t%i %i\n",(int)FIELDOFFSET_TC(idealRate),sizeof(tc->idealRate));
-        fprintf(stdout,"kind     \t%i %i\n",(int)FIELDOFFSET_TC(kind),sizeof(tc->kind));
-        
-        fprintf(stdout,"v.adc.scale\t%i %i\n",(int)FIELDOFFSET_TC(v.adc.scale),sizeof(tc->v.adc.scale));
-        fprintf(stdout,"v.adc.offset\t%i %i\n",(int)FIELDOFFSET_TC(v.adc.offset),sizeof(tc->v.adc.offset));
-        fprintf(stdout,"v.adc.units\t%i %i\n",(int)FIELDOFFSET_TC(v.adc.units),sizeof(tc->v.adc.units));
-        fprintf(stdout,"v.adc.divide\t%i %i\n",(int)FIELDOFFSET_TC(v.adc.divide),sizeof(tc->v.adc.divide));
-        
-        fprintf(stdout,"v.event.initLow\t%i %i\n",(int)FIELDOFFSET_TC(v.event.initLow),sizeof(tc->v.event.initLow));
-        fprintf(stdout,"v.event.nextLow\t%i %i\n",(int)FIELDOFFSET_TC(v.event.nextLow),sizeof(tc->v.event.nextLow));
-
-        fprintf(stdout,"v.real.min\t%i %i\n",(int)FIELDOFFSET_TC(v.real.min),sizeof(tc->v.real.min));
-        fprintf(stdout,"v.real.max\t%i %i\n",(int)FIELDOFFSET_TC(v.real.max),sizeof(tc->v.real.max));
-        fprintf(stdout,"v.real.units\t%i %i\n",(int)FIELDOFFSET_TC(v.real.units),sizeof(tc->v.real.units));
-        
-        
-#endif 
 
 	uint16_t timePerADC; 
 	uint32_t maxFTime;
@@ -528,12 +582,15 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 		maxFTime 	= beu32p(hdr->AS.Header + 40);
 	}        
 	hdr->SPR = 1; 
+
+
 	/*********************************************
 	  read channel header 
  	 *********************************************/
 	hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
 
 	typeof(hdr->NS) k,ns=0; 
+
 	for (k = 0; k < hdr->NS; k++) {
 		uint32_t off = 512 + k*140;
 		CHANNEL_TYPE *hc    = hdr->CHANNEL+k;
@@ -548,8 +605,8 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 		hc->PhysMin = hc->DigMin * hc->Cal + hc->Off;
 
 		strncpy(hc->Label, hdr->AS.Header+off+108+1, min(9,MAX_LENGTH_LABEL));
-		if ( !strcmp(hdr->AS.Header+off+132,"\x5 Volt")
-		  || !strcmp(hdr->AS.Header+off+132,"\x4Volt")  )
+		if ( !strcmp((char*)(hdr->AS.Header+off+132),"\x5 Volt")
+		  || !strcmp((char*)(hdr->AS.Header+off+132),"\x4Volt")  )
 			hc->PhysDimCode = 4256; 	// Volt
 		else 	
 			hc->PhysDimCode = 0;
@@ -562,54 +619,53 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 			hc->SPR = 0; 
 		}
 			
-#ifndef NDEBUG
-		tc  = (void*)(hdr->AS.Header+off);  
+		if (VERBOSE_LEVEL > 6) {
+			tc  = (void*)(hdr->AS.Header+off);  
 
-		fprintf(stdout,"[%i].delSize\t%i\n",k,lei16p(hdr->AS.Header+off));
+			fprintf(stdout,"[%i].delSize\t%i\n",k,lei16p(hdr->AS.Header+off));
 		
-		fprintf(stdout,"[%i].nextDelBlock\t%i\n",k,leu32p(hdr->AS.Header+off+2));
-		fprintf(stdout,"[%i].firstBlock\t%i\n",k,leu32p(hdr->AS.Header+off+6));
-		fprintf(stdout,"[%i].lastBlock\t%i\n",k,leu32p(hdr->AS.Header+off+10));
+			fprintf(stdout,"[%i].nextDelBlock\t%i\n",k,leu32p(hdr->AS.Header+off+2));
+			fprintf(stdout,"[%i].firstBlock\t%i\n",k,leu32p(hdr->AS.Header+off+6));
+			fprintf(stdout,"[%i].lastBlock\t%i\n",k,leu32p(hdr->AS.Header+off+10));
 
-		fprintf(stdout,"[%i].blocks\t%i\n",k,leu16p(hdr->AS.Header+off+14));
-		fprintf(stdout,"[%i].nExtra\t%i\n",k,leu16p(hdr->AS.Header+off+16));
-		fprintf(stdout,"[%i].preTrig\t%i\n",k,lei16p(hdr->AS.Header+off+18));
-		fprintf(stdout,"[%i].blocksMSW\t%i\n",k,lei16p(hdr->AS.Header+off+20));
-		fprintf(stdout,"[%i].phySz\t%i\n",k,lei16p(hdr->AS.Header+off+22));
-		fprintf(stdout,"[%i].maxData\t%i\n",k,lei16p(hdr->AS.Header+off+24));
+			fprintf(stdout,"[%i].blocks\t%i\n",k,leu16p(hdr->AS.Header+off+14));
+			fprintf(stdout,"[%i].nExtra\t%i\n",k,leu16p(hdr->AS.Header+off+16));
+			fprintf(stdout,"[%i].preTrig\t%i\n",k,lei16p(hdr->AS.Header+off+18));
+			fprintf(stdout,"[%i].blocksMSW\t%i\n",k,lei16p(hdr->AS.Header+off+20));
+			fprintf(stdout,"[%i].phySz\t%i\n",k,lei16p(hdr->AS.Header+off+22));
+			fprintf(stdout,"[%i].maxData\t%i\n",k,lei16p(hdr->AS.Header+off+24));
 
-		fprintf(stdout,"[%i].comment\t<%s>\n",k,hdr->AS.Header+off+26+1);
+			fprintf(stdout,"[%i].comment\t<%s>\n",k,hdr->AS.Header+off+26+1);
 
-		fprintf(stdout,"[%i].maxChanTime\t%i\n",k,lei32p(hdr->AS.Header+off+98));
-		fprintf(stdout,"[%i].lChanDvd\t%i\n",k,lei32p(hdr->AS.Header+off+102));
-		fprintf(stdout,"[%i].phyChan\t%i\n",k,lei16p(hdr->AS.Header+off+106));
-		fprintf(stdout,"[%i].title\t<%s>\n",k,hdr->AS.Header+off+108+1);
-		fprintf(stdout,"[%i].idealRate\t%f\n",k,lef32p(hdr->AS.Header+off+118));
-		fprintf(stdout,"[%i].kind\t%i\n",k,*(hdr->AS.Header+off+122));
-		fprintf(stdout,"[%i].delSizeMSB\t%i\n",k,*(hdr->AS.Header+off+123));
+			fprintf(stdout,"[%i].maxChanTime\t%i\t%i\t%i\n",k,lei32p(hdr->AS.Header+off+98),*(int32_t*)(hdr->AS.Header+off+98));
+			fprintf(stdout,"[%i].lChanDvd\t%i\n",k,lei32p(hdr->AS.Header+off+102));
+			fprintf(stdout,"[%i].phyChan\t%i\n",k,lei16p(hdr->AS.Header+off+106));
+			fprintf(stdout,"[%i].title\t<%s>\n",k,hdr->AS.Header+off+108+1);
+			fprintf(stdout,"[%i].idealRate\t%f\n",k,lef32p(hdr->AS.Header+off+118));
+			fprintf(stdout,"[%i].kind\t%i\n",k,*(hdr->AS.Header+off+122));
+			fprintf(stdout,"[%i].delSizeMSB\t%i\n",k,*(hdr->AS.Header+off+123));
 
 
-		fprintf(stdout,"[%i].v.adc.scale\t%f\n",k,lef32p(hdr->AS.Header+off+124));
-		fprintf(stdout,"[%i].v.adc.offset\t%f\n",k,lef32p(hdr->AS.Header+off+128));
-		char tmp[10]; tmp[6] = 0;	
-		memcpy(tmp, hdr->AS.Header+off+132, 6);
-		fprintf(stdout,"[%i].v.adc.units\t%s\n",  k, tmp+1);
-		fprintf(stdout,"[%i].v.adc.divide\t%i\n", k, lei16p(hdr->AS.Header+off+138));
+			fprintf(stdout,"[%i].v.adc.scale\t%f\n",k,lef32p(hdr->AS.Header+off+124));
+			fprintf(stdout,"[%i].v.adc.offset\t%f\n",k,lef32p(hdr->AS.Header+off+128));
+			char tmp[10]; tmp[6] = 0;	
+			memcpy(tmp, hdr->AS.Header+off+132, 6);
+			fprintf(stdout,"[%i].v.adc.units\t%s\n",  k, tmp+1);
+			fprintf(stdout,"[%i].v.adc.divide\t%i\n", k, lei16p(hdr->AS.Header+off+138));
 
-		fprintf(stdout,"[%i].v.real.min\t%f\n", k, lef32p(hdr->AS.Header+off+124));
-		fprintf(stdout,"[%i].v.real.max\t%f\n", k, lef32p(hdr->AS.Header+off+128));
-
-		fprintf(stdout,"[%i].v.event\t%0x\n", k, lef32p(hdr->AS.Header+off+124));
-#endif 
+			fprintf(stdout,"[%i].v.real.min\t%f\n", k, lef32p(hdr->AS.Header+off+124));
+			fprintf(stdout,"[%i].v.real.max\t%f\n", k, lef32p(hdr->AS.Header+off+128));
+	
+			fprintf(stdout,"[%i].v.event\t%0x\n", k, lef32p(hdr->AS.Header+off+124));
+		}
         }         
 	hdr->AS.bpb = ns*2;	
-	
+
 	/*********************************************
 	  read blocks 
  	 *********************************************/
 
 	size_t H0Len = hdr->HeadLen; 
-	size_t count = hdr->HeadLen; 
 	while (!ifeof(hdr)) {
 		// read channel header and extra data
 		hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen*2);
@@ -641,17 +697,20 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 			k++;
 
 	 		if (VERBOSE_LEVEL>7) 
- 				fprintf(stdout,"#%i\t%i\t%8i\t%8i\t%8i\t%8i\t%8i\t%8i\n",m,k,
+ 				fprintf(stdout,"#%i\t%i\t%8i\t%8i\t%8i\t%8i\t%8i\t%8i\t%i\n",m,k,
 					leu32p(hdr->AS.Header+pos)   , leu32p(hdr->AS.Header+pos+4),
 					leu32p(hdr->AS.Header+pos+8) , leu32p(hdr->AS.Header+pos+12),
-					leu16p(hdr->AS.Header+pos+16), leu16p(hdr->AS.Header+pos+18) );
+					leu16p(hdr->AS.Header+pos+16), leu16p(hdr->AS.Header+pos+18), 
+					lei32p(hdr->AS.Header+pos+98-6) 
+					);
 
-			uint32_t predBlock  = leu32p(hdr->AS.Header+pos);
-			uint32_t succBlock  = leu32p(hdr->AS.Header+pos+4);
+			size_t predBlock  = leu32p(hdr->AS.Header+pos) * size_factor;
+			size_t succBlock  = leu32p(hdr->AS.Header+pos+4) * size_factor;
 			uint32_t startTime  = leu32p(hdr->AS.Header+pos+8);
 			uint32_t endTime    = leu32p(hdr->AS.Header+pos+12);
 			uint16_t chanNumber = leu16p(hdr->AS.Header+pos+16);
 			uint16_t item       = leu16p(hdr->AS.Header+pos+18);
+			 int32_t maxChanTime = lei32p(hdr->AS.Header+pos+98-6);
 
 			assert (chanNumber == m+1);
 
