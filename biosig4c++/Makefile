@@ -670,15 +670,15 @@ win64mma: win64/libbiosig.a  mma/sload.tm mma/sload.c
 #############################################################
 mex mex4m mex4o oct: libbiosig.a
 	$(MAKE) -C mex DEFINES='$(DEFINES)' CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" OCTAVE_VERSION=$(OCTAVE_VERSION) $@
-	-cp mex/*.mex* ../biosig/t200_FileAccess/
+	-cp mex/*.mex* ../biosig4matlab/t200_FileAccess/
 
 mexw32: win32/libbiosig.a
 	$(MAKE) -C mex DEFINES='$(DEFINES)' CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
-	-cp mex/*.mexw32 ../biosig/t200_FileAccess/
+	-cp mex/*.mexw32 ../biosig4matlab/t200_FileAccess/
 	
 mexw64: win64/libbiosig.a
 	$(MAKE) -C mex DEFINES='$(DEFINES)' CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
-	-cp mex/*.mexw64 ../biosig/t200_FileAccess/
+	-cp mex/*.mexw64 ../biosig4matlab/t200_FileAccess/
 
 #############################################################
 #	SigViewer
