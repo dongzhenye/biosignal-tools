@@ -106,40 +106,41 @@ typedef struct CHANNEL_STRUCT {
 	This structure defines the general (fixed) header  
 */
 typedef struct {
-	enum FileFormat TYPE; 		/* type of file format */
 	float 		VERSION;	/* GDF version number */ 
 	const char* 	FileName;
+	enum FileFormat TYPE; 		/* type of file format */
 	
 	struct {
 		size_t 			size[2]; /* size {rows, columns} of data block	 */
 		biosig_data_type* 	block; 	 /* data block */
 	} data;
 
-	uint32_t 	HeadLen;	/* length of header in bytes */
-	uint16_t 	NS;		/* number of channels */
-	uint32_t 	SPR;		/* samples per block (when different sampling rates are used, this is the LCM(CHANNEL[..].SPR) */
-	int64_t  	NRec;		/* number of records/blocks -1 indicates length is unknown. */	
-	double 		SampleRate;	/* Sampling rate */
 	uint8_t 	IPaddr[6]; 	/* IP address of recording device (if applicable) */
-	uint32_t  	LOC[4];		/* location of recording according to RFC1876 */
+	double 		SampleRate;	/* Sampling rate */
+	int64_t  	NRec;		/* number of records/blocks -1 indicates length is unknown. */	
 	gdf_time 	T0; 		/* starttime of recording */
+	uint32_t 	HeadLen;	/* length of header in bytes */
+	uint32_t 	SPR;		/* samples per block (when different sampling rates are used, this is the LCM(CHANNEL[..].SPR) */
+	uint32_t  	LOC[4];		/* location of recording according to RFC1876 */
+	uint16_t 	NS;		/* number of channels */
 	int16_t 	tzmin; 		/* time zone (minutes of difference to UTC */
 
 #ifdef CHOLMOD_H
 	cholmod_sparse  *Calib;                  /* re-referencing matrix */
-	CHANNEL_TYPE 	*rerefCHANNEL;  
 #endif 	
+	CHANNEL_TYPE 	*rerefCHANNEL;  
+
 	/* Patient specific information */
 	struct {
+		gdf_time 	Birthday; 	/* Birthday of Patient */
+		// 		Age;		/* the age is HDR.T0 - HDR.Patient.Birthday, even if T0 and Birthday are not known */ 		
+		uint16_t	Headsize[3]; 	/* circumference, nasion-inion, left-right mastoid in millimeter;  */
 		char		Name[MAX_LENGTH_NAME+1]; /* because for privacy protection it is by default not supported, support is turned on with FLAG.ANONYMOUS */
 //		char*		Name;	/* because for privacy protection it is by default not supported, support is turned on with FLAG.ANONYMOUS */
 		char		Id[MAX_LENGTH_PID+1];	/* patient identification, identification code as used in hospital  */
 		uint8_t		Weight;		/* weight in kilograms [kg] 0:unkown, 255: overflow  */
 		uint8_t		Height;		/* height in centimeter [cm] 0:unkown, 255: overflow  */
 		//		BMI;		/* the body-mass index = weight[kg]/height[m]^2 */
-		gdf_time 	Birthday; 	/* Birthday of Patient */
-		// 		Age;		/* the age is HDR.T0 - HDR.Patient.Birthday, even if T0 and Birthday are not known */ 		
-		uint16_t	Headsize[3]; 	/* circumference, nasion-inion, left-right mastoid in millimeter;  */
 		/* Patient classification */
 		int	 	Sex;		/* 0:Unknown, 1: Male, 2: Female  */
 		int		Handedness;	/* 0:Unknown, 1: Right, 2: Left, 3: Equal */
@@ -151,12 +152,11 @@ typedef struct {
 			int 	Visual;		/* 0:Unknown, 1: NO, 2: YES, 3: Corrected */
 			int 	Heart;		/* 0:Unknown, 1: NO, 2: YES, 3: Pacemaker */
 		} Impairment;
-		
 	} Patient; 
 	
 	struct {
 		char		Recording[MAX_LENGTH_RID+1]; 	/* HL7, EDF, GDF, BDF replaces HDR.AS.RID */
-		char 		Technician[MAX_LENGTH_TECHNICIAN+1];
+		char 		Technician;
 		char* 		Hospital; 	
 		uint64_t 	Equipment; 	/* identifies this software */
 		struct {
@@ -182,12 +182,15 @@ typedef struct {
 	/*	EVENTTABLE */
 	struct {
 		double  	SampleRate;	/* for converting POS and DUR into seconds  */
-		uint32_t  	N;	/* number of events */
-		uint16_t 	*TYP;	/* defined at http://cvs.sourceforge.net/viewcvs.py/biosig/biosig/t200/eventcodes.txt?view=markup */
+		uint16_t 	*TYP;	/* defined at ../biosig4matlab/doc/eventcodes.txt */
 		uint32_t 	*POS;	/* starting position [in samples] */
 		uint32_t 	*DUR;	/* duration [in samples] */
 		uint16_t 	*CHN;	/* channel number; 0: all channels  */
+#if (BIOSIG_VERSION >= 10500)
+		gdf_time        *TimeStamp ATT_ALI;  /* store time stamps */
+#endif
 		char		**CodeDesc;	/* describtion of "free text"/"user specific" events (encoded with TYP=0..255 */
+		uint32_t  	N;	/* number of events */
 		uint16_t	LenCodeDesc;	/* length of CodeDesc Table */
 	} EVENT; 
 
@@ -219,19 +222,23 @@ typedef struct {
 
 	/*	internal variables (not public)  */
 	struct {
+		const char*	B4C_ERRMSG;	/* error message */
 //		char 		PID[MAX_LENGTH_PID+1];	/* use HDR.Patient.Id instead */
 //		char* 		RID;		/* recording identification */ 
-
-		uint32_t 	bpb;  		/* total bytes per block */
-		uint32_t 	bpb8;  		/* total bits per block */
+//		uint32_t 	spb;		/* total samples per block */
+//		uint32_t 	bpb;  		/* total bytes per block */
+//		uint32_t 	bpb8;  		/* total bits per block */
 		uint8_t*	Header; 
-		uint8_t*	rawEventData;
-		uint8_t*	rawdata; 	/* raw data block */
-		char		flag_collapsed_rawdata; /*0 if rawdata contain obsolete channels, too. 	*/
-		nrec_t		first;		/* first block loaded in buffer - this is equivalent to hdr->FILE.POS */
-		nrec_t		length;		/* number of block(s) loaded in buffer */
+//		uint8_t*	rawEventData;
+//		uint8_t*	rawdata; 	/* raw data block */
+//		char		flag_collapsed_rawdata; /*0 if rawdata contain obsolete channels, too. 	*/
+//		nrec_t		first;		/* first block loaded in buffer - this is equivalent to hdr->FILE.POS */
+//		nrec_t		length;		/* number of block(s) loaded in buffer */
 		uint8_t*	auxBUF;		/* auxillary buffer - used for storing EVENT.CodeDesc, MIT FMT infor */
 		char*		bci2000;
+//		uint32_t	SegSel[5];	/* segment selection in a hirachical data formats, e.g. sweeps in HEKA/PatchMaster format */
+		enum B4C_ERROR	B4C_ERRNUM;	/* error code */
+//		char		flag_collapsed_rawdata; /* 0 if rawdata contain obsolete channels, too. 	*/
 	} AS;
 	
 	void *aECG;
@@ -257,11 +264,6 @@ const char* GetFileTypeString(enum FileFormat FMT);
 uint16_t PhysDimCode(char* PhysDim0);
 char* 	PhysDim3(uint16_t PhysDimCode);
 
-void 	sort_eventtable(HDRTYPE *hdr);
-void 	convert2to4_eventtable(HDRTYPE *hdr);
-void 	convert4to2_eventtable(HDRTYPE *hdr);
-
-
 /*
 HDRTYPE* sopen(char *filename);
 %{
@@ -272,8 +274,6 @@ HDRTYPE* sopen(char *filename);
 		return hdr;
         }
 %}
-
-
 
 
 int sclose(HDRTYPE *hdr);
@@ -287,6 +287,13 @@ int sclose(HDRTYPE *hdr);
 %}
 */
 
+void serror();
+%{
+	void _serror() {
+		fprintf(stderr,"Use of SERROR is deprecated - use serror2(HDR) instead"); 	
+		serror();
+	}	
+%}
 
 void hdr2ascii(HDRTYPE* hdr, int verbosity);
 %{
