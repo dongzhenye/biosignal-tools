@@ -436,6 +436,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
     #include "sonintl.h"
 #endif 
 
+/*
+
+
+
+*/
+
 
 EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {	
         /*TODO: implemnt SON/SMR format */
@@ -547,6 +553,7 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 		fprintf(stdout,"title    \t%i %i %s\n",(int)offsetof(TChannel,title),sizeof(tc->title),((char*)&(tc->title))+1);
 		fprintf(stdout,"idealRate\t%i %i\n",(int)offsetof(TChannel,idealRate),sizeof(tc->idealRate));
 		fprintf(stdout,"kind     \t%i %i\n",(int)offsetof(TChannel,kind),sizeof(tc->kind));
+		fprintf(stdout,"delSizeMSB\t%i %i\n",(int)offsetof(TChannel,delSizeMSB),sizeof(tc->delSizeMSB));
         
 		fprintf(stdout,"v.adc.scale\t%i %i\n",(int)offsetof(TChannel,v.adc.scale),sizeof(tc->v.adc.scale));
 		fprintf(stdout,"v.adc.offset\t%i %i\n",(int)offsetof(TChannel,v.adc.offset),sizeof(tc->v.adc.offset));
@@ -567,21 +574,30 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 
 	uint16_t timePerADC; 
 	uint32_t maxFTime;
+	double timebase,dTimeBase;
 	memcpy(&hdr->ID.Equipment, hdr->AS.Header+12, 8);
 	if (hdr->FILE.LittleEndian) {
-		double timebase = hdr->VERSION < 6 ? 1e-6 : lef64p(hdr->AS.Header + 44);    
+		timebase = hdr->VERSION < 6 ? 1e-6 : lef64p(hdr->AS.Header + 44);    
 		hdr->SampleRate = 1.0 / (timebase * leu16p(hdr->AS.Header + 20) ); 
 		hdr->NS         = leu16p(hdr->AS.Header + 30 ); 
 		timePerADC      = lei16p(hdr->AS.Header + 22);
 		maxFTime 	= leu32p(hdr->AS.Header + 40);
+		dTimeBase	= lef64p(hdr->AS.Header + 44);
 	} else {
-		double timebase = hdr->VERSION < 6 ? 1e-6 : bef64p(hdr->AS.Header + 44);     
+		timebase = hdr->VERSION < 6 ? 1e-6 : bef64p(hdr->AS.Header + 44);     
 		hdr->SampleRate = 1.0 / (timebase * beu16p(hdr->AS.Header + 20)); 
 		hdr->NS         = beu16p(hdr->AS.Header + 30); 
 		timePerADC      = bei16p(hdr->AS.Header + 22);
 		maxFTime 	= beu32p(hdr->AS.Header + 40);
+		dTimeBase	= bef64p(hdr->AS.Header + 44);
 	}        
 	hdr->SPR = 1; 
+
+	assert( timebase == 1e-6 || hdr->VERSION >= 6 );
+	if (VERBOSE_LEVEL > 6) {
+		fprintf(stdout,"SMR:\tmaxFTime=%g\n\t timebase=%g\n\t dTimeBase=%g timePerADC=%i\n",maxFTime,timebase,dTimeBase,timePerADC);
+	}
+
 
 
 	/*********************************************
@@ -591,6 +607,7 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 
 	typeof(hdr->NS) k,ns=0; 
 
+	size_t bpb = 0; 
 	for (k = 0; k < hdr->NS; k++) {
 		uint32_t off = 512 + k*140;
 		CHANNEL_TYPE *hc    = hdr->CHANNEL+k;
@@ -611,13 +628,80 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 		else 	
 			hc->PhysDimCode = 0;
 
-		hc->bi = ns*2;
+#if 0
+/*
+** These define the types of data we can store in our file, and a type
+** that will hold one of these values.
+*/
+typedef enum
+{
+		case 0: // 
+} TDataKind;
+#endif
+
+
+		hc->bi = bpb;
+		uint8_t kind = hdr->AS.Header[off+122];	
+		switch (kind) {
+		case 0: // 
+			//    ChanOff=0,          /* the channel is OFF - */
+			hc->OnOff = 0; 
+			break; 
+		case 1: 
+			//    Adc,                /* a 16-bit waveform channel */
+			hc->OnOff = 1; 
+			hc->GDFTYP = 3; 	
+			bpb += 2;
+			break; 
+		case 2: 
+			//    EventFall,          /* Event times (falling edges) */
+			hc->OnOff = 0; 
+			break; 
+		case 3: 
+			//    EventRise,          /* Event times (rising edges) */
+			hc->OnOff = 0; 
+			break; 
+		case 4: 
+			//    EventBoth,          /* Event times (both edges) */
+			hc->OnOff = 0; 
+			break; 
+		case 5: 
+			//    Marker,             /* Event time plus 4 8-bit codes */
+			hc->OnOff = 0; 
+			break; 
+		case 6: 
+			//    AdcMark,            /* Marker plus Adc waveform data */
+			hc->OnOff = 0; 
+			break; 
+		case 7: 
+			//    RealMark,           /* Marker plus float numbers */
+			hc->OnOff = 0; 
+			break; 
+		case 8: 
+			//    TextMark,           /* Marker plus text string */
+			hc->OnOff = 0; 
+			break; 
+		case 9: 
+			//    RealWave            /* waveform of float numbers */
+			hc->OnOff = 0; 
+			hc->GDFTYP = 16; 	
+			bpb += 4;
+			break; 
+		default: 		
+			//    unknown
+			hc->OnOff = 0; 
+#if !defined(NDEBUG)			
+			fprintf(stderr,"SMR/SON: channel %i ignored\n",k); 
+#endif
+		}
+
 		if (hc->OnOff) {
 			hc->SPR = 1; 
 			ns++;
 		} else {
 			hc->SPR = 0; 
 		}
+			
 			
 		if (VERBOSE_LEVEL > 6) {
 			tc  = (void*)(hdr->AS.Header+off);  
@@ -659,7 +743,6 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 			fprintf(stdout,"[%i].v.event\t%0x\n", k, lef32p(hdr->AS.Header+off+124));
 		}
         }         
-	hdr->AS.bpb = ns*2;	
 
 	/*********************************************
 	  read blocks 
@@ -676,27 +759,38 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 		
 	size_t noblocks = (hdr->HeadLen - H0Len) / 64020;
 
-	hdr->SPR        = 1; 
-	hdr->NRec       = maxFTime+1;
-	hdr->AS.rawdata = realloc(hdr->AS.rawdata, hdr->NRec * ns * sizeof(int16_t));
-	memset(hdr->AS.rawdata,-1,hdr->NRec * ns * sizeof(int16_t));
+	hdr->SPR        = maxFTime+10; 
+	hdr->NRec       = 1;
+	// TODO: allow 	
+	hdr->AS.rawdata = realloc(hdr->AS.rawdata, hdr->NRec * hdr->SPR * bpb);
+	memset(hdr->AS.rawdata,-1,hdr->NRec * hdr->NRec * bpb);
+	// Initialize with NaN, 0x8000 in case of INT16 
+
 
 	hdr->FILE.LittleEndian = 1; 
 	hdr->AS.first = 0; 	
 	hdr->AS.length = hdr->NRec; 	
 	hdr->AS.flag_collapsed_rawdata = 1;
-	
+
+	size_t maxTime = 0; 	
 	ns = 0;
 	uint32_t m,i,j;
 	for (m = 0; m < hdr->NS; m++) {
-		if (!hdr->CHANNEL[m].OnOff) continue; 
-		ns++;
-		uint32_t pos = leu32p(hdr->AS.Header + 512 + m * 140 + 6); 	// first block of channel k
+		CHANNEL_TYPE *hc    = hdr->CHANNEL+m;
+		hc->bi *= hdr->SPR*hdr->NRec; 
+#ifdef NDEBUG
+		if (!hc->OnOff) continue; 
+#endif
+		hc->SPR = hdr->SPR;
+		uint32_t firstblock = leu32p(hdr->AS.Header + 512 + m * 140 + 6); 	// first block of channel k
+		uint32_t lastblock  = leu32p(hdr->AS.Header + 512 + m * 140 + 10); 	// last block of channel k
+		
+		uint32_t pos = firstblock;
 		k = 0; 
 		do {
 			k++;
 
-	 		if (VERBOSE_LEVEL>7) 
+	 		if (VERBOSE_LEVEL>8) 
  				fprintf(stdout,"#%i\t%i\t%8i\t%8i\t%8i\t%8i\t%8i\t%8i\t%i\n",m,k,
 					leu32p(hdr->AS.Header+pos)   , leu32p(hdr->AS.Header+pos+4),
 					leu32p(hdr->AS.Header+pos+8) , leu32p(hdr->AS.Header+pos+12),
@@ -704,15 +798,20 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 					lei32p(hdr->AS.Header+pos+98-6) 
 					);
 
-			size_t predBlock  = leu32p(hdr->AS.Header+pos) * size_factor;
-			size_t succBlock  = leu32p(hdr->AS.Header+pos+4) * size_factor;
-			uint32_t startTime  = leu32p(hdr->AS.Header+pos+8);
-			uint32_t endTime    = leu32p(hdr->AS.Header+pos+12);
-			uint16_t chanNumber = leu16p(hdr->AS.Header+pos+16);
-			uint16_t item       = leu16p(hdr->AS.Header+pos+18);
+			size_t predBlock     = leu32p(hdr->AS.Header+pos) * size_factor;
+			size_t succBlock     = leu32p(hdr->AS.Header+pos+4) * size_factor;
+			uint32_t startTime   = leu32p(hdr->AS.Header+pos+8);
+			
+			 int32_t lChanDvD    = lei32p(hdr->AS.Header + 512 + m * 140 + 102); 
+			uint32_t endTime     = leu32p(hdr->AS.Header + pos + 12) + lChanDvD;
+			
+			uint16_t chanNumber  = leu16p(hdr->AS.Header+pos+16);
+			uint16_t item        = leu16p(hdr->AS.Header+pos+18);
 			 int32_t maxChanTime = lei32p(hdr->AS.Header+pos+98-6);
 
 			assert (chanNumber == m+1);
+			
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SMR 333:\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\n",m,k,hc->GDFTYP,(int)predBlock,(int)succBlock,startTime,endTime,chanNumber,item,lChanDvD,startTime+item*lChanDvD-endTime);
 
 			for (i = 0; i < item; i++) {
 				// convert data to little endian 
@@ -720,8 +819,8 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 
 		if (VERBOSE_LEVEL>8) fprintf(stdout,"%i\t%i\t%i\t%i\n",m,k,i,val);
 
-				for (j = 0; j < timePerADC; j++) 
-					*(int16_t*)(hdr->AS.rawdata + hdr->NRec * hdr->SPR * ns + startTime + i*timePerADC*2 + j*2) = val;
+				for (j = 0; j < lChanDvD; j++) 
+					*(int16_t*)(hdr->AS.rawdata + hc->bi + (startTime + i * lChanDvD + j) * (GDFTYP_BITS[hc->GDFTYP]>>3) ) = val;
 
 			}
 
@@ -730,7 +829,7 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 	
 		} while (pos != 0xffffffff);
 	}
-
+//	hdr->NS = ns;
 #else 
 
         biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"Support for CED's SMR/SON format is under construction.");

@@ -87,10 +87,10 @@ mexSLOAD: mexSLOAD.$(MEX_EXT)
 mexSOPEN: mexSOPEN.$(MEX_EXT)
 %.$(MEX_EXT): %.cpp ../libbiosig.$(LIBEXT) Makefile
 	$(MEX) $(MEX_OPTION) $(DEFINES) "$<" $(LFLAGS) $(LIBS)
-	-$(COPY) $@ ../../biosig/t200_FileAccess/
+	-$(COPY) $@ ../../biosig4matlab/t200_FileAccess/
 mexSOPEN.$(MEX_EXT): mexSLOAD.cpp ../libbiosig.$(LIBEXT) Makefile
 	$(MEX) $(MEX_OPTION) -DmexSOPEN $(DEFINES) mexSLOAD.cpp $(LIBS) -output mexSOPEN
-	-$(COPY) mexSOPEN.$(MEX_EXT) ../../biosig/t200_FileAccess/
+	-$(COPY) mexSOPEN.$(MEX_EXT) ../../biosig4matlab/t200_FileAccess/
 endif
 
 
@@ -99,10 +99,10 @@ endif
 mex4o:  mexSLOAD.mex mexSOPEN.mex mexSSAVE.mex
 %.mex:  %.cpp ../libbiosig.$(LIBEXT) Makefile
 	$(OCT)  $(DEFINES) -v -g --mex "$<" $(LIBS)
-	-$(COPY) $@ ../../biosig/t200_FileAccess/
+	-$(COPY) $@ ../../biosig4matlab/t200_FileAccess/
 mexSOPEN.mex:  mexSLOAD.cpp ../libbiosig.$(LIBEXT) Makefile
 	$(OCT) -D=mexSOPEN $(DEFINES) -v -g --mex mexSLOAD.cpp $(LIBS) -o mexSOPEN.mex
-	-$(COPY) mexSOPEN.mex ../../biosig/t200_FileAccess/
+	-$(COPY) mexSOPEN.mex ../../biosig4matlab/t200_FileAccess/
 #physicalunits.mex:  physicalunits.cpp libbiosig.$(LIBEXT)
 #	$(OCT) -v -g --mex physicalunits.cpp $(LFLAGS) $(LIBS)
 
@@ -110,8 +110,8 @@ oct:  mexSLOAD.oct
 mexSLOAD.oct:  mexSLOAD.cpp ../libbiosig.$(LIBEXT) Makefile
 	$(OCT)  $(DEFINES) mexSLOAD.cpp $(LIBS)
 	$(OCT) -D=mexSOPEN $(DEFINES) mexSLOAD.cpp $(LFLAGS) $(LIBS) -o mexSOPEN.oct
-	-$(COPY) mexSOPEN.oct ../../biosig/t200_FileAccess/
-	-$(COPY) mexSOPEN.oct ../../biosig/t200_FileAccess/
+	-$(COPY) mexSOPEN.oct ../../biosig4matlab/t200_FileAccess/
+	-$(COPY) mexSOPEN.oct ../../biosig4matlab/t200_FileAccess/
 
 
 #########################################################
