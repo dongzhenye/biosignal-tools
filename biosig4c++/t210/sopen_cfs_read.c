@@ -429,25 +429,35 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 
 
 
+/*****************************************************************************
+	
+	SOPEN_SMR_READ for reading SON/SMR files
+
+
+	son.h, sonintl.h are used just for understanding the file format. 
+	and are not needed for the core functionality. 
+	
+
+        TODO:
+	Currently waveform data is supported, 
+        events and marker information is ignored	
+
+
+ *****************************************************************************/
+
 #if !defined(NDEBUG) && defined(WITH_SON)
   #ifdef __MINGW32__
     #include <windows.h>
   #endif 
-    #include "sonintl.h"
+  #include "sonintl.h"
+  // defines __SONINTL__	
 #endif 
-
-/*
-
-
-
-*/
 
 
 EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {	
         /*TODO: implemnt SON/SMR format */
 	fprintf(stdout,"SOPEN: Support for CED's SMR/SON format is under construction \n");
 
-#ifdef WITH_SON
 	size_t count = hdr->HeadLen;		
 	if (count < 512) {
 			hdr->HeadLen = 512; 
@@ -488,10 +498,13 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 		hdr->AS.Header[count]=0;
 	}
 
-	TFileHead *tfh = (void*)(hdr->AS.Header); 
-	TChannel  *tc  = (void*)(hdr->AS.Header+512); 
 
+#ifdef __SONINTL__	
 	if (VERBOSE_LEVEL > 6) {
+
+		TFileHead *tfh = (void*)(hdr->AS.Header); 
+		TChannel  *tc  = (void*)(hdr->AS.Header+512); 
+
 		// debugging information 
 		fprintf(stdout,"\tsizeof TFileHead %i\n\tsizeof TChannel %i\n\tsizeof TDataBlock %i\n",
 			(int)sizeof(TFileHead),(int)sizeof(TChannel),(int)sizeof(TDataBlock));
@@ -566,11 +579,12 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 		fprintf(stdout,"v.real.min\t%i %i\n",(int)offsetof(TChannel,v.real.min),sizeof(tc->v.real.min));
 		fprintf(stdout,"v.real.max\t%i %i\n",(int)offsetof(TChannel,v.real.max),sizeof(tc->v.real.max));
 		fprintf(stdout,"v.real.units\t%i %i\n",(int)offsetof(TChannel,v.real.units),sizeof(tc->v.real.units));
-	}
 
-	assert(sizeof(TFileHead)==512);         
-	assert(sizeof(TChannel)==140);         
-	assert(sizeof(TDataBlock)==64020);         
+		assert(sizeof(TFileHead)==512);         
+		assert(sizeof(TChannel)==140);         
+		assert(sizeof(TDataBlock)==64020);         
+	}
+#endif
 
 	uint16_t timePerADC; 
 	uint32_t maxFTime;
@@ -628,18 +642,6 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 		else 	
 			hc->PhysDimCode = 0;
 
-#if 0
-/*
-** These define the types of data we can store in our file, and a type
-** that will hold one of these values.
-*/
-typedef enum
-{
-		case 0: // 
-} TDataKind;
-#endif
-
-
 		hc->bi = bpb;
 		uint8_t kind = hdr->AS.Header[off+122];	
 		switch (kind) {
@@ -690,9 +692,7 @@ typedef enum
 		default: 		
 			//    unknown
 			hc->OnOff = 0; 
-#if !defined(NDEBUG)			
-			fprintf(stderr,"SMR/SON: channel %i ignored\n",k); 
-#endif
+			fprintf(stderr,"SMR/SON: channel %i ignored - unknown type %i\n",k,kind); 
 		}
 
 		if (hc->OnOff) {
@@ -704,8 +704,6 @@ typedef enum
 			
 			
 		if (VERBOSE_LEVEL > 6) {
-			tc  = (void*)(hdr->AS.Header+off);  
-
 			fprintf(stdout,"[%i].delSize\t%i\n",k,lei16p(hdr->AS.Header+off));
 		
 			fprintf(stdout,"[%i].nextDelBlock\t%i\n",k,leu32p(hdr->AS.Header+off+2));
@@ -759,12 +757,12 @@ typedef enum
 		
 	size_t noblocks = (hdr->HeadLen - H0Len) / 64020;
 
-	hdr->SPR        = maxFTime+10; 
+	hdr->SPR        = maxFTime; // TODO: do we really need +10 ? 
 	hdr->NRec       = 1;
-	// TODO: allow 	
+
 	hdr->AS.rawdata = realloc(hdr->AS.rawdata, hdr->NRec * hdr->SPR * bpb);
 	memset(hdr->AS.rawdata,-1,hdr->NRec * hdr->NRec * bpb);
-	// Initialize with NaN, 0x8000 in case of INT16 
+	// TODO: Initialize with NaN, 0x8000 in case of INT16 
 
 
 	hdr->FILE.LittleEndian = 1; 
@@ -776,11 +774,27 @@ typedef enum
 	ns = 0;
 	uint32_t m,i,j;
 	for (m = 0; m < hdr->NS; m++) {
-		CHANNEL_TYPE *hc    = hdr->CHANNEL+m;
-		hc->bi *= hdr->SPR*hdr->NRec; 
-#ifdef NDEBUG
-		if (!hc->OnOff) continue; 
-#endif
+		CHANNEL_TYPE *hc = hdr->CHANNEL + m;
+		hc->bi          *= hdr->SPR*hdr->NRec; 
+
+		uint8_t kind = hdr->AS.Header[512 + m*140 + 122];	
+		// TODO: supporting event and marker channels
+		switch (kind) {
+		case 0: 	//    channel is off, ignore it and get next channel 
+			continue;
+
+		case 1: 	//    Adc,                /* a 16-bit waveform channel */
+		
+		//case 6: 	//    AdcMark,            /* Marker plus Adc waveform data */
+		
+		case 9: 	//    RealWave            /* waveform of float numbers */
+			break; 
+
+		default: 		
+			fprintf(stderr,"SON/SMR: channel %i ignored, kind %i is not supported\n",m+1,kind);
+			continue; 	// ignore this channel and get next one
+		}
+
 		hc->SPR = hdr->SPR;
 		uint32_t firstblock = leu32p(hdr->AS.Header + 512 + m * 140 + 6); 	// first block of channel k
 		uint32_t lastblock  = leu32p(hdr->AS.Header + 512 + m * 140 + 10); 	// last block of channel k
@@ -830,11 +844,6 @@ typedef enum
 		} while (pos != 0xffffffff);
 	}
 //	hdr->NS = ns;
-#else 
-
-        biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"Support for CED's SMR/SON format is under construction.");
-
-#endif // WITH_SON
         
 }
 
