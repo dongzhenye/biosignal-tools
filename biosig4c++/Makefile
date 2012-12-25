@@ -86,7 +86,7 @@ CXX           = g++
 #DEFINES_ALL   = -D=NDEBUG 
 
 DEFINES      += $(DEFINES_ALL)
-DEFINES      += -D=WITH_SON 
+#DEFINES      += -D=WITH_SON 
 #DEFINES      += -D=WITHOUT_SCP_DECODE
 #DEFINES      += -D=WITH_TIMESTAMPEVENT
 #DEFINES      += -D=WITH_TIMESTAMPCHANNEL
@@ -318,10 +318,10 @@ endif
 
 MinGW64OBJECTS  = $(patsubst win32/%.obj, win64/%.obj, $(MinGWOBJECTS))
 
-TARGET = save2gdf libbiosig.a
+TARGET = 
 
-first: $(TARGET)
-all:   $(TARGET) mex4o biosig4python sigviewer win32 win64 win32/sigviewer.exe win64/sigviewer.exe #biosig_client biosig_server mma java tcl perl php ruby #sigviewer 
+first: save2gdf libbiosig.a
+all:   first mex4o biosig4python sigviewer win32 win64 win32/sigviewer.exe win64/sigviewer.exe #biosig_client biosig_server mma java tcl perl php ruby #sigviewer 
 
 #############################################################
 #	Compilation: Implicit, default rules
@@ -616,16 +616,33 @@ libgdf.so: gdf.o
 	#ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$@".${MAJOR_VERSION}.${MINOR_VERSION}
 	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION} "$@"
 
-libbiosig.a: $(OBJECTS) t240/libcnsfef.a
+
+libbiosig.a: $(OBJECTS) t240/libcnsfef.a libbiosig.pc
 	-$(DELETE) libbiosig.a
 	$(AR) libbiosig.a $(OBJECTS) t240/*.o
 	-touch ../sigviewer/src/file_context.cpp	# trigger to rebuild sigviewer
 
-libbiosig.so: $(OBJECTS) t240/libcnsfef.a
+
+libbiosig.so: $(OBJECTS) t240/libcnsfef.a libbiosig.pc
 	$(CXX) -shared -fPIC -Wl,-rpath,. -Wl,-soname,"$@".${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
 		-o "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(OBJECTS) t240/*.o
 	/sbin/ldconfig -n .
 	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION} "$@"
+
+
+libbiosig.pc : .phony
+	echo "# Defines libbiosig.pc"      > libbiosig.pc
+	echo "prefix=$(BIN)"               >>libbiosig.pc
+	echo "exec_prefix=$(BIN)"          >>libbiosig.pc
+	echo "libdir=$(LIB)"               >>libbiosig.pc
+	echo "includedir=$(LIB)/../include\n" >>libbiosig.pc
+	echo "Name: libbiosig"		   >>libbiosig.pc
+	echo "Description: Biosig library" >>libbiosig.pc
+	echo "Version: ${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING}" >>libbiosig.pc
+	echo "URL: http://biosig.sf.net"   >>libbiosig.pc
+	echo "Libs: $(LDLIBS)"             >>libbiosig.pc
+	echo "Cflags: $(DEFINES)"          >>libbiosig.pc
+  	 
 
 libbiosig2.a: $(OBJECTS) biosig2.o t240/libcnsfef.a
 	-$(DELETE) libbiosig2.a
@@ -812,6 +829,7 @@ install_libbiosig: libbiosig.a libbiosig.so libbiosig2.a libbiosig2.so libphysic
 	ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}
 	ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION} $(LIB)/libbiosig.so
 	install libbiosig.a		$(LIB)
+	install libbiosig.pc		$(LIB)/pkgconfig/
 	install libphysicalunits.a 	$(LIB)
 	install libphysicalunits.so	$(LIB)
 	install biosig2.h    		$(DESTDIR)/usr/include
