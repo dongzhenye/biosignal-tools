@@ -751,6 +751,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 
 				if (Annotation.FirstChild("value").Element() == NULL) break;
         		        const char *code = Annotation.FirstChild("value").Element()->Attribute("code");
+				if (code==NULL) break;
 
                                 uint16_t EventTyp1 = 0, EventTyp2 = 0;
 
