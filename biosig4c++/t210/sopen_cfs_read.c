@@ -628,7 +628,7 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 	
 		hc->Cal   = lef32p(hdr->AS.Header + off + 124);	// v.adc.scale
 		hc->Off   = lef32p(hdr->AS.Header + off + 128);	// v.adc.off
-		hc->OnOff = *(int16_t*)(hdr->AS.Header+off+106) != 0;
+		hc->OnOff = *(int16_t*)(hdr->AS.Header + off + 106) != 0;
 		hc->GDFTYP = 3; 
 		hc->DigMax = (double)(int16_t)0x7fff;
 		hc->DigMin = (double)(int16_t)0x8000;
@@ -762,7 +762,26 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 
 	hdr->AS.rawdata = realloc(hdr->AS.rawdata, hdr->NRec * hdr->SPR * bpb);
 	memset(hdr->AS.rawdata,-1,hdr->NRec * hdr->NRec * bpb);
-	// TODO: Initialize with NaN, 0x8000 in case of INT16 
+
+	// Initialize with NaN, 0x8000 in case of INT16 
+	typeof(hdr->NS) m;
+	for (m = 0; m < hdr->NS; m++) {
+		CHANNEL_TYPE *hc = hdr->CHANNEL + m;
+		hc->bi          *= hdr->SPR*hdr->NRec; 
+		
+		if (hc->OnOff)	{
+			if (hc->GDFTYP==3) {	
+				size_t k;
+				for (k = 0; k < hdr->SPR * hdr->NRec; k++) 
+					*(int16_t*)(hdr->AS.rawdata + hc->bi + k*sizeof(int16_t) ) = 0x8000;
+			}
+			else if (hc->GDFTYP==16) {	
+				size_t k;
+				for (k = 0; k < hdr->SPR * hdr->NRec; k++) 
+					*(float*)(hdr->AS.rawdata + hc->bi + k*sizeof(float) ) = (float)NAN;
+			}
+		}
+	}
 
 
 	hdr->FILE.LittleEndian = 1; 
@@ -772,10 +791,9 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 
 	size_t maxTime = 0; 	
 	ns = 0;
-	uint32_t m,i,j;
+	uint32_t i,j;
 	for (m = 0; m < hdr->NS; m++) {
 		CHANNEL_TYPE *hc = hdr->CHANNEL + m;
-		hc->bi          *= hdr->SPR*hdr->NRec; 
 
 		uint8_t kind = hdr->AS.Header[512 + m*140 + 122];	
 		// TODO: supporting event and marker channels
