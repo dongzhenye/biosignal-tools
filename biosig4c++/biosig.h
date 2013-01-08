@@ -1,6 +1,6 @@
 /*
 % $Id$
-% Copyright (C) 2005-2012 Alois Schloegl <alois.schloegl@gmail.com>
+% Copyright (C) 2005-2013 Alois Schloegl <alois.schloegl@gmail.com>
 % This file is part of the "BioSig for C/C++" repository
 % (biosig4c++) at http://biosig.sf.net/
 
@@ -150,7 +150,7 @@ enum FileFormat {
 	TIFF, TMS32, TMSiLOG, TRC, UNIPRO, VRML, VTK,
 	WAV, WG1, WinEEG, WMF, XML, XPM,
 	Z, ZIP, ZIP2,                        
-        TDMS, SMR
+        TDMS, SMR, MX
 };
 
 
