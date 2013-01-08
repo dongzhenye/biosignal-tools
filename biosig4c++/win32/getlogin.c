@@ -17,8 +17,6 @@
 
 /* Written by Bruno Haible, 2010.  */
 
-#include <config.h>
-
 /* Specification.  */
 #include <unistd.h>
 

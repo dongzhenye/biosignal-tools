@@ -50,7 +50,7 @@ LIBEXT        = a
 
 ### User-specified options: its likely you want to change this
 # settings for cross compiler: tested with MXE and mce-w64 with make suitesparse zlib qt ; 
-CROSS   = $(HOME)/src/mce-w64/usr/bin/i686-static-mingw32
+CROSS   = $(HOME)/src/mce-w64/usr/bin/i686-pc-mingw32
 ## local MXE
 ifeq "$(wildcard $(CROSS)-gcc)" ""
 CROSS   = $(HOME)/src/mxe/usr/bin/i686-pc-mingw32
@@ -88,6 +88,8 @@ else
 	CXX     := $(TARGET)-g++
 	AR      := $(TARGET)-ar crs
 	## exclude conflicting definition of sopen from mingw's io.h
+	SOURCES += win32/getlogin.c
+	OBJECTS += getlogin.o
 	CFLAGS += -I.
 	IO_H_FILE2 = io.h
 endif
@@ -233,7 +235,7 @@ LIB	      = $(DESTDIR)/usr/local/lib
 
 
 ####### Files
-SOURCES       = biosig.c \
+SOURCES      += biosig.c \
 		t210/sopen_cfs_read.c \
 		t210/sopen_heka_read.c \
 		t210/sopen_scp_read.c \
@@ -261,7 +263,7 @@ ifeq (,$(findstring WITH_LIBXML2, $(DEFINES)))
 		XMLParser/tinystr.cpp 
 endif
 
-OBJECTS       = \
+OBJECTS      += \
 		crc4scp.o \
 		biosig.o \
 		sopen_cfs_read.o \
@@ -349,6 +351,9 @@ vpath %.cpp ./:./t210:./t230:./XMLParser:./mex
 %.cpp: %.h  biosig.h biosig-dev.h
 
 %.o: %.c 
+	$(CC) -c $(DEFINES) $(CFLAGS)  $(INCPATH) -o "$@" "$<"
+
+getlogin.o : win32/getlogin.c
 	$(CC) -c $(DEFINES) $(CFLAGS)  $(INCPATH) -o "$@" "$<"
 
 %.o: %.cpp
