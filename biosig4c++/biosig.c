@@ -1932,6 +1932,9 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
     	else if (!memcmp(Header1,"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x3E\x00\x03\x00\xFE\xFF\x09\x00\x06",0x21))
 	    	hdr->TYPE = MSI;
 
+    	else if (!strcmp(Header1,"(*This is a Mathematica binary dump file. It can be loaded with Get.*)"))
+	    	hdr->TYPE = MX;
+
     	else if ( (hdr->HeadLen>346) && 
                   (Header1[344]=='n') && (Header1[347]=='\0') && \
     		  ((Header1[345]=='i') || (Header1[345]=='+') ) && \
@@ -2217,6 +2220,7 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ MSI,    	"MSI" },
 	{ MS_LNK,    	".LNK" },
 	{ MSVCLIB,    	"MS VC++ Library" },
+	{ MX,    	"Mathematica serialized package format" },
 	{ native,    	"native" },
 	{ NeuroLoggerHEX, "NeuroLoggerHEX"},
 	{ NetCDF,    	"NetCDF" },
