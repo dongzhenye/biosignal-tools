@@ -325,21 +325,15 @@ libsomething_la_SOURCES=$(ASN_MODULE_SOURCES) $(ASN_MODULE_HEADERS)
 # Remove the lines below to convert it into a pure .am file
 WIN32  = ../win32/libcnsfef.a ../win32/libcnsfef.dll
 WIN64  = ../win64/libcnsfef.a ../win64/libcnsfef.dll
-TARGET = libcnsfef.a $(WIN32)
 CFLAGS += -pipe -fPIC -Wall -O2 -Wextra  -I.
 OBJS=${ASN_MODULE_SOURCES:.c=.o} ${ASN_CONVERTER_SOURCES:.c=.o}
 WINOBJS=${ASN_MODULE_SOURCES:.c=.obj} ${ASN_CONVERTER_SOURCES:.c=.obj}
 W64OBJS=${ASN_MODULE_SOURCES:.c=.o64} ${ASN_CONVERTER_SOURCES:.c=.o64}
 
-CC        = gcc
-AR        = ar crs
 MinGWCC   = $(CROSS)-gcc 
 MinGW64CC = $(CROSS64)-gcc 
 
-all: $(TARGET)
-
-#$(TARGET): ${OBJS}
-#	$(CC) $(CFLAGS) -o $(TARGET) ${OBJS} $(LDFLAGS) $(LIBS)
+all: libcnsfef.a $(WIN32)
 
 libcnsfef.a: $(OBJS) 
 	$(AR) libcnsfef.a $(OBJS) 
@@ -371,7 +365,7 @@ libcnsfef.a: $(OBJS)
 clean:
 #	rm -f $(ASN_MODULE_HEADERS)
 #	rm -f $(ASN_MODULE_SOURCES)
-	rm -f $(TARGET)
+	rm -f libcnsfef.a $(WIN32)
 	rm -f $(OBJS)
 	rm -f $(WINOBJS)
 	rm -f $(W64OBJS)

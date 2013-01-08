@@ -23,7 +23,11 @@
 ## make biosig4ruby - makes ruby interface (experimental)
 ## make biosig4tcl - makes tcl/tk interface (experimental)
 ## make win32      - makes save2gdf.exe, libbiosig.a, libbiosig.dll, for MSWindows, requires MinGW
+##                   eventually this will be replaced by `TARGET=i686-pc-mingw32 make ...`
+##		     `TARGET=i686-pc-mingw32 make libbiosig.a` seems to work already	
 ## make win64      - makes save2gdf.exe, libbiosig.a, libbiosig.dll for 64bit Windows, requires mce-w64 
+##                   eventually this will be replaced by `TARGET=x86_64-static-mingw32 make ...`
+##		     `TARGET=x86_64-static-mingw32 make libbiosig.a` seems to work already	
 ## make sigviewer  - makes sigviewer
 
 ##### Target: Win32
@@ -62,14 +66,8 @@ CROSS64       = $(HOME)/src/mce-w64/usr/bin/x86_64-static-mingw32
 ifeq "$(wildcard $(CROSS64)-gcc)" ""
 CROSS64       = $(shell pwd)/../mce-w64/usr/bin/x86_64-static-mingw32
 endif
-ifeq "$(wildcard $(CROSS64)-gcc)" ""
-CROSS64       = $(shell pwd)/../mce-w64/usr/bin/i686-pc-mingw32
-endif
-ifeq "$(wildcard $(CROSS64)-gcc)" ""
-CROSS64       = /usr/local/src/mce-w64/usr/bin/i686-pc-mingw32
-endif
-IO_H_FILE   := $(subst /usr/bin/,/usr/,$(CROSS))/include/io.h
-IO_H_FILE64 := $(subst /usr/bin/,/usr/,$(CROSS64))/include/io.h
+IO_H_FILE   := $(subst /bin/,/include/,$(CROSS))/io.h
+IO_H_FILE64 := $(subst /bin/,/include/,$(CROSS64))/io.h
 
 
 # settings for mex files
@@ -79,11 +77,23 @@ PathToSigViewer = ../sigviewer
 PathToSigViewerWIN32 = ../sigviewer4win32
 PathToSigViewerWIN64 = ../sigviewer4win64
 
-## default options
-CC            = gcc
-CXX           = g++
+## TARGET dependencies
+ifeq (,$(TARGET))
+	CC      := gcc	
+	CXX     := g++
+	AR      := ar crs
+else 
+	PREFIX  := $(dir $(shell which $(TARGET)-gcc))
+	CC      := $(TARGET)-gcc
+	CXX     := $(TARGET)-g++
+	AR      := $(TARGET)-ar crs
+	## exclude conflicting definition of sopen from mingw's io.h
+	CFLAGS += -I.
+	IO_H_FILE2 = io.h
+endif
 
-#DEFINES_ALL   = -D=NDEBUG 
+
+DEFINES_ALL   = -D=NDEBUG 
 
 DEFINES      += $(DEFINES_ALL)
 #DEFINES      += -D=WITH_SON 
@@ -111,7 +121,6 @@ DEFINES      += -D=MAKE_EDFLIB
 CFLAGS       += -fstack-protector -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wl,-z,relro -Wl,-z,now -pipe -fPIC -Wall -fno-builtin-memcmp -O2 -Wextra
 #CXXFLAGS      += -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 CXXFLAGS      = $(CFLAGS)
-AR            = ar crs
 INCPATH       = -I/opt/local/include/
 #INCPATH       = -I /usr/local/include/gdcm-2.0/
 #		../gdcm-2.0.10/Source/DataStructureAndEncodingDefinition \
@@ -318,9 +327,7 @@ endif
 
 MinGW64OBJECTS  = $(patsubst win32/%.obj, win64/%.obj, $(MinGWOBJECTS))
 
-TARGET = 
-
-first: save2gdf libbiosig.a
+first: $(IO_H_FILE2) save2gdf libbiosig.a
 all:   first mex4o biosig4python sigviewer win32 win64 win32/sigviewer.exe win64/sigviewer.exe #biosig_client biosig_server mma java tcl perl php ruby #sigviewer 
 
 #############################################################
@@ -348,12 +355,13 @@ vpath %.cpp ./:./t210:./t230:./XMLParser:./mex
 	$(CXX) -c $(DEFINES) $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
 
 
-### exclude declaration of sopen in <io.h>
+## exclude conflicting definition of sopen from mingw's io.h
+io.h: 
+	$(SED) '/ sopen/ s#^#//#' $(PREFIX)../$(TARGET)/include/io.h > io.h
 win32/io.h: $(IO_H_FILE)
 	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE) > "$@"
 win64/io.h: $(IO_H_FILE64)
 	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE64) > "$@"
-
 
 win32/%.obj: t240/%.c  biosig-dev.h biosig.h 
 	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -I t240 -o "$@" "$<"
@@ -593,15 +601,17 @@ win64: win64/save2gdf.exe win64/libbiosig.dll win64/libbiosig.a #mexw64 win64mma
 #	GNU/Linux - BUILD
 #############################################################
 
-.phony libbiosig lib: libbiosig.a libbiosig.so libbiosig2.a libbiosig2.so libgdf.a libgdf.so libphysicalunits.a libphysicalunits.so
+.PHONY : io.h libbiosig lib
+libbiosig lib: libbiosig.a libbiosig.so libbiosig2.a libbiosig2.so libgdf.a libgdf.so libphysicalunits.a libphysicalunits.so
 
 t240/libcnsfef.a:
 #	$(MAKE) -C t240 regen		#
-	$(MAKE) -C t240 libcnsfef.a	# generate t240/*.o files
+	$(MAKE) -C t240 libcnsfef.a CC=$(CC) AR='$(AR)'	# generate t240/*.o files
 
 libphysicalunits.a: physicalunits.o
 	-$(DELETE) "$@"
 	$(AR) "$@" "$<"
+
 libphysicalunits.so: physicalunits.o
 	$(CC) -shared -fPIC -Wl,-rpath,. -Wl,-soname,"$@" $(LDLIBS) -o "$@" "$<"
 
@@ -630,7 +640,7 @@ libbiosig.so: $(OBJECTS) t240/libcnsfef.a libbiosig.pc
 	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION} "$@"
 
 
-libbiosig.pc : .phony
+libbiosig.pc :
 	echo "# Defines libbiosig.pc"      > libbiosig.pc
 	echo "prefix=$(BIN)"               >>libbiosig.pc
 	echo "exec_prefix=$(BIN)"          >>libbiosig.pc
@@ -671,7 +681,8 @@ biosig_server: biosig_server.c libbiosig.$(LIBEXT) biosig-network.o
 #############################################################
 #	MathLink interface to Mathematica
 #############################################################
-.phony mma: mma/sload
+mma: mma/sload
+
 mma/sload: libbiosig.$(LIBEXT) mma/sload.tm mma/sload.c
 	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" sload
 
@@ -1103,7 +1114,8 @@ testpybdf : $(DATA_DIR)Newtest17-2048.bdf
 $(DATA_DIR)BDFtestfiles.zip :
 	wget -P$(DATA_DIR) http://www.biosemi.com/download/BDFtestfiles.zip
 
-.phony stat :
+.PHONY: stat 
+stat: 
 	@echo 'TODO/FIXME:  ';
 	@grep -ri '\bTODO\b'  *.c *.h *.i t210/*.c t210/*.h |grep -v '\.svn' |wc -l;
 	@grep -ri '\bFIXME\b' *.c *.h *.i t210/*.c t210/*.h |grep -v '\.svn' |wc -l;

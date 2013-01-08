@@ -56,7 +56,7 @@ int main(int argc, char **argv){
     int		status; 	
     uint16_t	k;
     int		TARGETSEGMENT=1; 	// select segment in multi-segment file format EEG1100 (Nihon Kohden)
-    int 	VERBOSE	= 1; 
+    int 	VERBOSE	= 0; 
     char	FLAG_JSON = 0; 
     char	*argsweep = NULL;
     double	t1=0.0, t2=1.0/0.0;
@@ -213,7 +213,7 @@ int main(int argc, char **argv){
 	tzset();
 	hdr = constructHDR(0,0);
 	// hdr->FLAG.OVERFLOWDETECTION = FlagOverflowDetection; 
-	hdr->FLAG.UCAL = ((TARGET_TYPE==BIN) || (TARGET_TYPE==ASCII));
+	hdr->FLAG.UCAL = ((TARGET_TYPE==BIN) || (TARGET_TYPE==ASCII) || (TARGET_TYPE==SCP_ECG));
 	hdr->FLAG.TARGETSEGMENT = TARGETSEGMENT;
 	// hdr->FLAG.ANONYMOUS = 0; 	// personal names are processed 
 	
@@ -306,7 +306,7 @@ int main(int argc, char **argv){
         int flagREREF = 0;
 #endif
 	hdr->FLAG.OVERFLOWDETECTION = 0;
-	hdr->FLAG.UCAL = hdr->FLAG.UCAL && !flagREREF && (TARGET_TYPE==SCP_ECG);
+	hdr->FLAG.UCAL = hdr->FLAG.UCAL && !flagREREF;
 	hdr->FLAG.ROW_BASED_CHANNELS = flagREREF;
 	
 #ifdef CHOLMOD_H
@@ -446,9 +446,9 @@ int main(int argc, char **argv){
 #endif
 	typeof(hdr->NS) k2=0;
     	for (k=0; k<hdr->NS; k++)
-    	if (hdr->CHANNEL[k].OnOff && hdr->CHANNEL[k].SPR) 
-    	{
-	if (VERBOSE_LEVEL > 7) fprintf(stdout,"[204] #%i\n",k);
+    	if (hdr->CHANNEL[k].OnOff && hdr->CHANNEL[k].SPR) {
+
+		if (VERBOSE_LEVEL > 7) fprintf(stdout,"[204] #%i\n",k);
 	
 		double MaxValue;
 		double MinValue;
