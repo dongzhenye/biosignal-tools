@@ -87,11 +87,14 @@ else
 	CC      := $(TARGET)-gcc
 	CXX     := $(TARGET)-g++
 	AR      := $(TARGET)-ar crs
-	## exclude conflicting definition of sopen from mingw's io.h
-	SOURCES += win32/getlogin.c
-	OBJECTS += getlogin.o
-	CFLAGS += -I.
-	IO_H_FILE2 = io.h
+	ifeq (mingw, $(findstring mingw, $(TARGET)))
+		## add gnulib's getlogin
+		SOURCES += win32/getlogin.c
+		OBJECTS += getlogin.o
+		## exclude conflicting definition of sopen from mingw's io.h
+		CFLAGS  += -I.
+		IO_H_FILE2 = io.h
+	endif
 endif
 
 
@@ -120,7 +123,7 @@ DEFINES      += -D=WITH_FEF
 #DEFINES      += -D=WITH_EEPROBE
 DEFINES      += -D=MAKE_EDFLIB
 
-CFLAGS       += -fstack-protector -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wl,-z,relro -Wl,-z,now -pipe -fPIC -Wall -fno-builtin-memcmp -O2 -Wextra
+CFLAGS       += -fstack-protector -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -pipe -fPIC -Wall -fno-builtin-memcmp -O2 -Wextra
 #CXXFLAGS      += -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 CXXFLAGS      = $(CFLAGS)
 INCPATH       = -I/opt/local/include/
@@ -137,10 +140,10 @@ LFLAGS_static = -L/opt/local/lib
 LIBS_static   = libbiosig.a
 ifeq ($(LIBEXT),so)
   LFLAGS      += $(LFLAGS_dynamic)
-  LIBS        = $(LIBS_dynamic)
+  LIBS        += $(LIBS_dynamic)
 else
   LFLAGS      += $(LFLAGS_static)
-  LIBS        = $(LIBS_static)
+  LIBS        += $(LIBS_static)
 endif
 ifneq (,$(findstring WITH_ZLIB, $(DEFINES)))
   LDLIBS     += -lz
@@ -199,6 +202,12 @@ PYTHONVER     := $(shell $(PYTHON) -c "import sys; print sys.version[:3]")
 NUMPY_INC     := $(shell $(PYTHON) -c 'import numpy.distutils.misc_util as mu; print " -I".join(mu.get_numpy_include_dirs())')
 
 ##########################################################
+
+
+ifeq (mingw, $(findstring mingw, $(TARGET)))
+        LIBS    += -liberty
+endif
+
  
 ##########################################################
 ## set variables for MinGW Crosscompiler: compile on linux binaries for windows
