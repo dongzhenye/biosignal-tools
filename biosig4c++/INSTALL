@@ -21,6 +21,10 @@ If some libraries are not available on your system, remove the corresponding DEF
 
 Prerequisites: 
 --------------
+P0) gnu c compiler (gcc, g++, gnu make, gawk). It will work on unix like systems (Linux, BSD, etc)
+    mingw, cygwin. 
+    and NO, MSVC is not suitable for compiling libbiosig !!!
+
 P1) for building libbiosig, save2gdf, mma (mathematica) and mex (matlab)  
 	sudo apt-get install subversion libz-dev libsuitesparse-dev libcurl-dev gawk g++ gcc 
 	svn co https://biosig.svn.sourceforge.net/svnroot/biosig/trunk/biosig4c++ 
@@ -41,18 +45,17 @@ P3) Cross-compilation on Linux for Win32-target:
                     libxml-parser-perl patch perl \
                     pkg-config scons unzip wget \
                     xz-utils yasm mercurial 
-	git clone https://github.com/mxe/mxe.git
+	git clone https://github.com/schloegl/mxe.git
 	cd mxe
-	make zlib suitesparse libgomp qt 
-	patch -p0 <biosig4c++/patches/patch_mingw_io_h.diff
-
+	make zlib suitesparse libgomp qt libbiosig stimfit
 
 P4) Cross-compilation on GNU/Linux for Win64-target:   
-	hg clone https://bitbucket.org/tonyt/mce-w64
-	cd mce-win64
-	make zlib suitesparse libgomp qt 
-	patch ../mce-w64/usr/x86_64-w64-mingw32/include/io.h biosig4c++/patches/patch_mce-w64_io_h.diff
-
+	cd mxe
+        make sure, Makefile contains the line
+	MXE_TARGETS := x86_64-static-mingw32 ...
+	and run 
+  	   make libbiosig stimfit 
+	
 
 P5) Host=Win32 platform (this solution is currently not maintained): 
 	MinGW32 (with g++)  
@@ -157,15 +160,10 @@ Currently, only the file converter save2gdf is supported.
    make save2gdf 
 
 # MSVC - Microsoft Visual C++
-  MSVC is currently not supported. The main incompatibility is 
-  the use of the typeof() operator. Since typeof() is very convinient, 
-  I'm not planning to change this. However, you can easy replace 
-  any typeof()-operator by the appropriate type, and the code 
-  should compile on MSVC as well. 
+  MSVC is currently not supported. You are on your own.
 
 # Other platforms (Windows+MSVC, MacOSX, Solaris, etc. )
-Not tested (yet). Let me know about successful compilations, 
-or tell me what changes are needed.   
+  some tests on other Unix-like systems have been successful. 
 
 	
 Installation: 
@@ -217,8 +215,7 @@ tests whether the various data formats give the same results
 or whether some conversion error has been included.  
 
 
-    $Id$
-    Copyright (C) 2005,2006,2007,2008,2009,2011,2012, Alois Schloegl <alois.schloegl@gmail.com>
+    Copyright (C) 2005-2013, Alois Schloegl <alois.schloegl@gmail.com>
     This function is part of the "BioSig for C/C++" repository 
     (BioSig4C++) at http://biosig.sf.net/ 
 

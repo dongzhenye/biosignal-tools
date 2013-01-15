@@ -17,6 +17,9 @@ It's interface is the same than for libbiosig, namely biosig.h
 (1c) "libbiosig2" is a level two interface for managing multiple files, 
 it resembles the interface of edflib. It's interface is defined in biosig2.h.
 Currently, this is in an experimental state 
+(1d) "libphysicalunits" provides conversion tools for physical units from 
+ascii text to 16bit integers according to ISO/IEEE 11073-10101:2004 Table A.6.3: Vital signs units of measurements 
+text strings are cached for performance reasons, and can be used in a multi-threaded application. 
 
 The following DEFINES are recommended and require:
  -D=WITH_CHOLMOD        used for re-referencing of data, REQUIREMENT: cholmod from libsuitesparse

@@ -10,8 +10,9 @@
 
 ###########################################
 # user-defined variables 
-########################################### 
-##########################################################
+###########################################
+ 
+###########################################
 ## set Mathematica variables
 MLINKDIR = /usr/local/Wolfram/gridMathematicaServer/7.0/SystemFiles/Links/MathLink/DeveloperKit
 MLINKDIR = /usr/local/Wolfram/Mathematica/8.0/SystemFiles/Links/MathLink/DeveloperKit

@@ -1,7 +1,7 @@
 ####### Makefile for "BioSig for C/C++" #####################
 ###
 ###  $Id$
-###  Copyright (C) 2006,2007,2008,2009,2010,2011,2012 Alois Schloegl <alois.schloegl@ist.ac.at>
+###  Copyright (C) 2006-2013 Alois Schloegl <alois.schloegl@ist.ac.at>
 ###  This file is part of the "BioSig for C/C++" repository
 ###  (biosig4c++) at http://biosig.sf.net/
 ###
@@ -24,10 +24,10 @@
 ## make biosig4tcl - makes tcl/tk interface (experimental)
 ## make win32      - makes save2gdf.exe, libbiosig.a, libbiosig.dll, for MSWindows, requires MinGW
 ##                   eventually this will be replaced by `TARGET=i686-pc-mingw32 make ...`
-##		     `TARGET=i686-pc-mingw32 make libbiosig.a` seems to work already	
+##		     `TARGET=i686-pc-mingw32 make` builds save2gdf.exe and static libs biosig, biosig2, gdf, physicalunits
 ## make win64      - makes save2gdf.exe, libbiosig.a, libbiosig.dll for 64bit Windows, requires mce-w64 
 ##                   eventually this will be replaced by `TARGET=x86_64-static-mingw32 make ...`
-##		     `TARGET=x86_64-static-mingw32 make libbiosig.a` seems to work already	
+##		     `TARGET=x86_64-static-mingw32 make` builds save2gdf.exe and static libs biosig, biosig2, gdf, physicalunits
 ## make sigviewer  - makes sigviewer
 
 ##### Target: Win32
@@ -95,6 +95,7 @@ else
 		CFLAGS  += -I.
 		IO_H_FILE2 = io.h
 	endif
+	CROSS   = $(HOME)/src/mce-w64/usr/bin/$(TARGET)
 endif
 
 
