@@ -22,48 +22,50 @@
 %  you can excluded the path to NaN/*. The BIOSIG tools will still 
 %  work, but does not support the handling of NaN's.
 
-%	$Id$
-%	Copyright (C) 2003-2005,2006,2007,2008,2009,2010 by Alois Schloegl <a.schloegl@ieee.org>
-%	This is part of the BIOSIG-toolbox http://biosig.sf.net/
+% Copyright (C) 2003-2010,2013 by Alois Schloegl <a.schloegl@ieee.org>
+% This is part of the BIOSIG-toolbox http://biosig.sf.net/
 
 BIOSIG_HOME = pwd;	%
 if exist('./t200_FileAccess','dir')
 	% install.m may reside in .../biosig/ or above (...)
         [BIOSIG_HOME,f,e] = fileparts(BIOSIG_HOME);
-elseif exist('biosig','dir')
+elseif exist('biosig','dir') || exist('biosig4matlab','dir')
 else 
         fprintf(2,'Error: biosig subdirectories not found\n');
         return;
 end; 
 
-path([BIOSIG_HOME,'/biosig'],path);			% 
-path([BIOSIG_HOME,'/biosig/demo'],path);		% demos
-path([BIOSIG_HOME,'/biosig/doc'],path);		% docus, Eventtable etc. 
-path([BIOSIG_HOME,'/biosig/t200_FileAccess'],path);		% dataformat
-path([BIOSIG_HOME,'/biosig/t250_ArtifactPreProcessingQualityControl'],path);		% trigger and quality control
-path([BIOSIG_HOME,'/biosig/t300_FeatureExtraction'],path);		% signal processing and feature extraction
-path([BIOSIG_HOME,'/biosig/t400_Classification'],path);		% classification
-path([BIOSIG_HOME,'/biosig/t450_MultipleTestStatistic'],path);		% statistics, false discovery rates
-path([BIOSIG_HOME,'/biosig/t490_EvaluationCriteria'],path);		% evaluation criteria
-path([BIOSIG_HOME,'/biosig/t500_Visualization'],path);		% display and presentation
-path([BIOSIG_HOME,'/biosig/t501_VisualizeCoupling'],path);		% visualization ofcoupling analysis
+if exist([BIOSIG_HOME,'/biosig'],'dir')
+	BIOSIG_DIR = [BIOSIG_HOME,'/biosig'];
+elseif exist([BIOSIG_HOME,'/biosig4matlab'],'dir')
+	BIOSIG_DIR = [BIOSIG_HOME,'/biosig4matlab'];
+end
+path(BIOSIG_DIR,path);			% 
+path([BIOSIG_DIR,'/demo'],path);		% demos
+path([BIOSIG_DIR,'/doc'],path);		% docus, Eventtable etc. 
+path([BIOSIG_DIR,'/t200_FileAccess'],path);		% dataformat
+path([BIOSIG_DIR,'/t250_ArtifactPreProcessingQualityControl'],path);		% trigger and quality control
+path([BIOSIG_DIR,'/t300_FeatureExtraction'],path);		% signal processing and feature extraction
+path([BIOSIG_DIR,'/t400_Classification'],path);		% classification
+path([BIOSIG_DIR,'/t450_MultipleTestStatistic'],path);		% statistics, false discovery rates
+path([BIOSIG_DIR,'/t490_EvaluationCriteria'],path);		% evaluation criteria
+path([BIOSIG_DIR,'/t500_Visualization'],path);		% display and presentation
+path([BIOSIG_DIR,'/t501_VisualizeCoupling'],path);		% visualization ofcoupling analysis
 
 if ~exist('OCTAVE_VERSION','builtin'),	
 	%% Matlab
-	path([BIOSIG_HOME,'/biosig/viewer'],path);		% viewer
-	path([BIOSIG_HOME,'/biosig/viewer/utils'],path);	% viewer
-	path([BIOSIG_HOME,'/biosig/viewer/help'],path);	% viewer
-
-	path(path,[BIOSIG_HOME,'/freetb4matlab/signal']);	% Octave-Forge signal processing toolbox converted with freetb4matlab
-else 
-	%% Octave
-	path(path,[BIOSIG_HOME,'/freetb4matlab/signal']);	% Octave-Forge signal processing toolbox converted with freetb4matlab
+	path([BIOSIG_DIR,'/viewer'],path);		% viewer
+	path([BIOSIG_DIR,'/viewer/utils'],path);	% viewer
+	path([BIOSIG_DIR,'/viewer/help'],path);	% viewer
 end;
 
-path(path,[BIOSIG_HOME,'/freetb4matlab/oct2mat']);	% some basic functions used in Octave but not available in Matlab
-path(path,[BIOSIG_HOME,'/freetb4matlab/general']);	% some basic functions used in Octave but not available in Matlab
-path(path,[BIOSIG_HOME,'/freetb4matlab/statistics/distributions']);	% Octave-Forge statistics toolbox converted with freetb4matlab 
-path(path,[BIOSIG_HOME,'/freetb4matlab/statistics/tests']);	% Octave-Forge statistics toolbox converted with freetb4matlab 
+if exist([BIOSIG_HOME,'/freetb4matlab'],'dir')
+	path(path,[BIOSIG_HOME,'/freetb4matlab/signal']);	% Octave-Forge signal processing toolbox converted with freetb4matlab
+	path(path,[BIOSIG_HOME,'/freetb4matlab/oct2mat']);	% some basic functions used in Octave but not available in Matlab
+	path(path,[BIOSIG_HOME,'/freetb4matlab/general']);	% some basic functions used in Octave but not available in Matlab
+	path(path,[BIOSIG_HOME,'/freetb4matlab/statistics/distributions']);	% Octave-Forge statistics toolbox converted with freetb4matlab 
+	path(path,[BIOSIG_HOME,'/freetb4matlab/statistics/tests']);	% Octave-Forge statistics toolbox converted with freetb4matlab 
+end
 
 path([BIOSIG_HOME,'/tsa'],path);		%  Time Series Analysis
 %path([BIOSIG_HOME,'/tsa/inst'],path);		%  Time Series Analysis
@@ -78,17 +80,22 @@ fprintf(1,'If you do not have NaN, the behaviour is the same; if you have NaNs i
 fprintf(1,'If you do not want this behaviour, remove the directory NaN/inst from your path.\n'); 
 fprintf(1,'Moreover, NaN-provides also a number of other useful functions. Installing NaN-toolbox is recommended.\n\n');
 
-	%% add NaN-toolbox: a toolbox for statistics and machine learning for data with Missing Values
+%% add NaN-toolbox: a toolbox for statistics and machine learning for data with Missing Values
 path([BIOSIG_HOME,'/NaN'],path);
-path([BIOSIG_HOME,'/NaN/inst'],path);
-path([BIOSIG_HOME,'/NaN/src'],path);
+%% support both types of directory structure
+if exist([BIOSIG_HOME,'/NaN/inst'],'dir')
+	path([BIOSIG_HOME,'/NaN/inst'],path);
+end; 	
+if exist([BIOSIG_HOME,'/NaN/src'],'dir')
+	path([BIOSIG_HOME,'/NaN/src'],path);
+end
 
 p = pwd; 
 try
 	if ~exist('OCTAVE_VERSION','builtin') && ~ispc,
 		mex -setup
 	end; 
-        if ~ispc
+        if ~ispc && exist([BIOSIG_HOME,'/NaN/src'],'dir');
         	cd([BIOSIG_HOME,'/NaN/src']);
 	        make
 	end;         
@@ -109,7 +116,7 @@ end;
 fun = {};
 for k = 1:length(fun),
         x = which(fun{k});
-        if isempty(x) | strcmp(x,'undefined'),
+        if isempty(x) || strcmp(x,'undefined'),
                 fprintf(2,'Function %s is missing\n',upper(fun{k}));     
         end;
 end;
@@ -133,3 +140,4 @@ end;
 disp('BIOSIG-toolbox activated');
 disp('	If you want BIOSIG permanently installed, use the command SAVEPATH.')
 disp('	or use PATHTOOL to select and deselect certain components.')
+
