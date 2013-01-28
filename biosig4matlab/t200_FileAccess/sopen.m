@@ -9775,7 +9775,7 @@ elseif strcmp(HDR.TYPE,'EMBLA')
 				Embla.Time = t0; 
 				T0 = t0(2:7);
 				T0(1) = t0(1)+t0(2)*256;	
-				T0(6) = t0(7)+t0(8)/100;
+				T0(6) = t0(7)+t0(8)/100 + (t0(9)*256+t0(10))*1e-6;
 				T0 = datenum(T0); 
 				Embla.T0 = T0; %datevec(T0); 
 				if (k==1)
@@ -9796,7 +9796,7 @@ elseif strcmp(HDR.TYPE,'EMBLA')
 				Embla.SessionCount = fread(fid,[1,siz],'uint8');
 			case 137
 				%Embla.DoubleSampleingRate = fread(fid,[1,siz/8],'double');
-				HDR.AS.SampleRate(1,k) = fread(fid,[1,siz/8],'double');
+				HDR.AS.SampleRate(1,k) = fread(fid,[1,siz/4],'uint32')/1000;
 			case 138
 				Embla.RateCorrection = fread(fid,[1,siz/8],'double');
 			case 139
