@@ -1323,14 +1323,27 @@ elseif strcmp(HDR.TYPE,'SierraECG'),   %% SierraECG  1.03  *.open.xml from PHILI
 
         
 elseif strcmp(HDR.TYPE,'ATF'); 
-        if HDR.FILE.OPEN,
-                fseek(HDR.FILE.FID,HDR.HeadLen,-1);
-                t = fread(HDR.FILE.FID,[1,inf],'uint8');
-                fclose(HDR.FILE.FID);
-                HDR.FILE.OPEN=0; 
-                [HDR.ATF.NUM,status,HDR.ATF.STR] = str2double(char(t));
+	if HDR.FILE.OPEN,
+		fseek(HDR.FILE.FID,HDR.HeadLen,-1);
+		HDR.ATF.string = fread(HDR.FILE.FID,[1,inf],'uint8=>char');
+		%fclose(HDR.FILE.FID);
+		%HDR.FILE.OPEN=0;
+		HDR.ATF.pos = [1, find(HDR.ATF.string==10)+1];
+		HDR.SPR = length(HDR.ATF.pos)-1;
+		d = str2double(HDR.ATF.string(HDR.ATF.pos(1):HDR.ATF.pos(3)-1));
+		HDR.SampleRate = 1000./(d(2,1)-d(1,1));
         end;
-        S = HDR.ATF.NUM;
+	if nargin==3,
+		HDR.FILE.POS = HDR.SampleRate*StartPos;
+	end;
+	nr = min(HDR.SampleRate*NoS, HDR.SPR-HDR.FILE.POS);
+	S  = zeros(nr, HDR.NS);
+	for k = 1:nr,
+		l = HDR.FILE.POS+k;
+		d = str2double( HDR.ATF.string( HDR.ATF.pos(l):HDR.ATF.pos(l+1) - 1 ) );
+		S(k,:) = d;
+	end;
+	HDR.FILE.POS = HDR.FILE.POS + nr;
         
         
 elseif strcmp(HDR.TYPE,'FEPI3'); 

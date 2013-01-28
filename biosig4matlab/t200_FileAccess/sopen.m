@@ -9685,10 +9685,11 @@ HDR.ABF.Unused2048           = fread(HDR.FILE.FID,734,'uint8');     % 5410
 elseif strcmp(HDR.TYPE,'ATF'),  % axon text file 
         if any(HDR.FILE.PERMISSION=='r'),
                 HDR.FILE.FID = fopen(HDR.FileName,[HDR.FILE.PERMISSION,'t'],'ieee-le');
-                t = fgetl(HDR.FILE.FID);
-                t = str2double(fgetl(HDR.FILE.FID));
+                t = fgetl(HDR.FILE.FID)
+                t = str2double(fgetl(HDR.FILE.FID))
                 HDR.ATF.NoptHdr = t(1);
                 HDR.ATF.NS = t(2);
+                HDR.NS = t(2);
                 HDR.ATF.NormalizationFactor = [];
                 t = fgetl(HDR.FILE.FID);
                 while any(t=='=')
@@ -9716,6 +9717,7 @@ elseif strcmp(HDR.TYPE,'ATF'),  % axon text file
                         HDR.T0 = str2double(tmp);
                 end;
                 HDR.FILE.OPEN = 1; 
+                HDR.FILE.POS  = 0;
         end
 
         
