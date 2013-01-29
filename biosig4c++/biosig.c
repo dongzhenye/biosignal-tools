@@ -142,6 +142,10 @@ int sopen_matlab(HDRTYPE *hdr);
 #ifdef WITH_DICOM
 int sopen_dicom_read(HDRTYPE* hdr);
 #endif
+
+void sread_atf(HDRTYPE* hdr);
+
+
 #ifdef __cplusplus
 }
 #endif
@@ -1665,6 +1669,42 @@ void destructHDR(HDRTYPE* hdr) {
 }
 
 
+/****************************************************************************/
+/**           INITIALIZE FIELDS OF A SINGLE CHANNEL TO DEFAULT VALUES      **/
+/****************************************************************************/
+void init_channel(struct CHANNEL_STRUCT *hc) {
+	hc->PhysMin	= -1e9;
+	hc->PhysMax	= +1e9;
+	hc->DigMin	= ldexp(-1,15);
+	hc->DigMax	= ldexp(1,15)-1;
+	hc->Cal		= 1.0;
+	hc->Off		= 0.0;
+
+	hc->Label[0]	= '\0';
+	hc->OnOff	= 1;
+	hc->LeadIdCode	= 0;
+	hc->Transducer[0] = '\0';
+	hc->PhysDimCode	= 0;
+	hc->PhysDim[0]	= '?';
+
+	hc->TOffset	= 0.0;
+	hc->HighPass	= NAN;
+	hc->LowPass	= NAN;
+	hc->Notch	= NAN;
+	hc->XYZ[0]	= 0;
+	hc->XYZ[1]	= 0;
+	hc->XYZ[2]	= 0;
+	hc->Impedance	= NAN;
+
+	hc->bufptr 	= NULL;
+	hc->SPR 	= 1;
+	hc->bi	 	= 0;
+	hc->bi8	 	= 0;
+	hc->GDFTYP 	= 3; // int16
+
+}
+
+
 /*  http://www.ietf.org/rfc/rfc1952.txt   */
 const char *MAGIC_NUMBER_GZIP = "\x1f\x8B\x08";
 
@@ -1897,7 +1937,7 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 		hdr->TYPE = GZIP;
 //		hdr->FILE.COMPRESSION = 1;
 	}
-    	else if (!memcmp(Header1,"\x89HDF",4))
+    	else if (!memcmp(Header1,"\x89HDF\x0d\x0a\x1a\x0a",8))
 	    	hdr->TYPE = HDF;
 	else if (!memcmp(Header1,"DATA\0\0\0\0",8)) {
 		hdr->TYPE = HEKA;
@@ -4224,6 +4264,109 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 		fprintf(stdout,"Warning ABF v%4.2f: implementation is not complete!\n",hdr->VERSION);
 		hdr->HeadLen = count; 
 		sopen_abf_read(hdr);
+	}
+
+	else if (hdr->TYPE==ATF) {
+		fprintf(stdout,"Warning ATF: implementation is not complete!\n");
+		hdr->HeadLen = count;
+		hdr->VERSION = atof((char*)(hdr->AS.Header+4));
+
+		if (hdr->FILE.COMPRESSION) {
+			biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "compressed ATF file format not supported");
+			return;
+		}
+
+		ifseek(hdr,0,SEEK_SET);
+		size_t ll = 512;
+		char *line = malloc(ll+1);
+		ssize_t nc;
+
+		// first line - skip: contains "ATF\t1.0" or alike
+		nc = getline(&line, &ll, hdr->FILE.FID);
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"ATF line <%s>\n",line);
+
+		// 2nd line: number of rows and colums
+		nc = getline(&line, &ll, hdr->FILE.FID);
+		char *str = line;
+		hdr->NRec = strtoul(str,&str,10);
+		hdr->SPR  = 1;
+		hdr->NS   = strtoul(str,&str,10);
+		hdr->SampleRate = 1.0;
+		hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"ATF line <%s>\n",line);
+
+		// 3rd line: channel label
+		nc  = getline(&line, &ll, hdr->FILE.FID);
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"ATF line <%s>\n",line);
+
+		typeof(hdr->NS) TIMECHANNEL = 0;
+
+		str = strtok(line,"\t\n\r");
+		for (k = 0; k < hdr->NS; k++) {
+			CHANNEL_TYPE *hc = hdr->CHANNEL+k;
+			//init_channel(hc);
+			hc->GDFTYP 	= 17; // float64
+			hc->PhysMin	= -1e9;
+			hc->PhysMax	= +1e9;
+			hc->DigMin	= -1e9;
+			hc->DigMax	= +1e9;
+			hc->Cal		= 1.0;
+			hc->Off		= 0.0;
+
+			//hc->Label[0]	= '\0';
+			hc->OnOff	= 1;
+			hc->LeadIdCode	= 0;
+			hc->Transducer[0] = '\0';
+			hc->PhysDimCode	= 0;
+			hc->PhysDim[0]	= '?';
+
+			hc->TOffset	= 0.0;
+			hc->HighPass	= NAN;
+			hc->LowPass	= NAN;
+			hc->Notch	= NAN;
+			hc->XYZ[0]	= 0;
+			hc->XYZ[1]	= 0;
+			hc->XYZ[2]	= 0;
+			hc->Impedance	= NAN;
+
+			hc->bufptr 	= NULL;
+			hc->SPR 	= 1;
+			hc->bi8	 	= k * GDFTYP_BITS[hc->GDFTYP];
+			hc->bi	 	= hc->bi8 / 8;
+			hdr->AS.bpb     = hc->bi;
+
+			if (str != NULL) {
+				size_t len = strlen(str);
+				strncpy(hc->Label, str+1, len-2); // do not copy quotes
+
+				// extract physical units enclosed in parenthesis "Label (units)"
+				str = strchr(str,'(');
+				if (str != NULL) {
+					char *str2 = strchr(str,')');
+					if (str2 != NULL) {
+						*str2 = 0;
+						hc->PhysDimCode = PhysDimCode(str);
+					}
+				}
+				//if (!strnicmp(hc->Label,"time",4)) TIMECHANNEL = k+1;
+			}
+			// extract next label
+			str = strtok(NULL,"\t\n\r");
+
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"ATF label #%i:<%s>\n",k,hc->Label);
+
+		}
+		hdr->HeadLen = iftell(hdr);
+		free(line);
+
+		/*
+			 this marks that no data has been read, and
+			 hdr->SampleRate, hdr->NRec, are not defined
+		 */
+		hdr->AS.rawdata = NULL;
 	}
 
 	else if (hdr->TYPE==ACQ) {
@@ -11757,10 +11900,15 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 	if (VERBOSE_LEVEL>6)
 		fprintf(stdout,"SREAD( %p, %i, %i, %s ) MODE=%i\n",data, (int)start, (int)length, hdr->FileName, hdr->FILE.OPEN);
 
+	if (hdr->TYPE == ATF) {
+		sread_atf(hdr);
+		count = hdr->NRec;
+	}
+
 	if (start >= (size_t)hdr->NRec) return(0);
 
- 	if (hdr->TYPE == SMR) // data is already cached in SMR
- 		count = hdr->NRec; 
+	if (hdr->TYPE == SMR) // data is already cached in SMR
+		count = hdr->NRec;
 	else 
 	 	count = sread_raw(start, length, hdr, 0);
 

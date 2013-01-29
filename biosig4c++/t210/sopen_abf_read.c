@@ -23,11 +23,60 @@
 
 
 #include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "../biosig-dev.h"
 
+/*
+	read data block of ATF file into the cache
+	also HDR.NRec is defined here
+*/
+
+EXTERN_C void sread_atf(HDRTYPE* hdr) {
+
+	if (VERBOSE_LEVEL>6) fprintf(stdout,"SREAD ATF [%i,%i]\n",(unsigned)hdr->NRec, (unsigned)hdr->SPR);
+
+	if (hdr->AS.rawdata != NULL) return;
+	if (hdr->NRec * hdr->SPR > 0)
+		hdr->AS.rawdata = malloc(hdr->NRec * hdr->SPR * hdr->AS.bpb);
+
+	ifseek(hdr, hdr->HeadLen, SEEK_SET);
+
+	size_t ll  = 512;
+	char *line = malloc(ll+1);
+
+	if (VERBOSE_LEVEL>6) fprintf(stdout,"SREAD ATF\n");
+
+	size_t ln = 0;
+	while (~ifeof(hdr)) {
+		ssize_t nc = getline(&line, &ll, hdr->FILE.FID);
+		if (nc < 0) break;
+
+		if (VERBOSE_LEVEL>8) fprintf(stdout,"SREAD ATF  %i\t<%s>\n",(unsigned)ln,line );
+
+		if (hdr->NRec * hdr->SPR <= (ln+1) ) {
+			hdr->NRec = max(1024, ln*2);
+			hdr->AS.rawdata = realloc(hdr->AS.rawdata, hdr->NRec * hdr->SPR * hdr->AS.bpb);
+		}
+
+		char *str = strtok(line,"\t");
+		typeof(hdr->NS) k;
+		for (k = 0; k < hdr->NS; k++) {
+			*(double*)(hdr->AS.rawdata + ln*hdr->AS.bpb + hdr->CHANNEL[k].bi) = strtod(str, &str);
+			// extract next value
+			str = strtok(NULL,"\t");
+		}
+		ln++;
+	}
+	free(line);
+
+	hdr->NRec = ln;
+	hdr->AS.first  = 0;
+	hdr->AS.length = hdr->NRec;
+
+}
 
 EXTERN_C void sopen_abf_read(HDRTYPE* hdr) {	
 /*

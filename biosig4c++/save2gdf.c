@@ -317,11 +317,17 @@ int main(int argc, char **argv){
 	if (VERBOSE_LEVEL>7) 
 		fprintf(stdout,"\n[123] SREAD [%f,%f].\n",t1,t2);
 
-
-	if (t2+t1 > hdr->NRec) t2 = hdr->NRec - t1;
-	if (dest != NULL)
-		count = sread(NULL, t1, t2, hdr);
-
+	if (hdr->NRec <= 0) { 
+		// in case number of samples is not known
+		count = sread(NULL, t1, (size_t)-1, hdr);
+		t2 = count;
+	}	
+ 	else {
+		if (t2+t1 > hdr->NRec) t2 = hdr->NRec - t1;
+		if (dest != NULL)
+			count = sread(NULL, t1, t2, hdr);
+	}
+	
 	biosig_data_type* data = hdr->data.block;
 	if ((VERBOSE_LEVEL>8) && (hdr->data.size[0]*hdr->data.size[1]>500))
 		fprintf(stdout,"[125] UCAL=%i %e %e %e \n",hdr->FLAG.UCAL,data[100],data[110],data[500+hdr->SPR]);

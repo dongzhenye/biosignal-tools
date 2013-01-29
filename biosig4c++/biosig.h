@@ -159,7 +159,7 @@ enum FileFormat {
    otherwise, sopen() etc. is not re-entrant. 
 
    Therefore, use of variables B4C_ERRNUM and B4C_ERRMSG is deprecated; 	
-   Instead, use errorBIOSIG for setting error status, and 
+   Instead, use biosigERROR for setting error status, and 
    serror2(hdr), hdr->AS.B4C_ERRNUM, hdr->AS.B4C_ERRMSG for error handling.   
 
  */
