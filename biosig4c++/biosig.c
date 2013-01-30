@@ -912,7 +912,6 @@ int ifprintf(HDRTYPE* hdr, const char *format, va_list arg) {
 	return(fprintf(hdr->FILE.FID, format, arg));
 }
 
-
 int ifputc(int c, HDRTYPE* hdr) {
 #ifdef ZLIB_H
 	if (hdr->FILE.COMPRESSION)
@@ -1345,6 +1344,28 @@ const char* GetEventDescription(HDRTYPE *hdr, size_t N) {
         fprintf(stderr,"Warning: invalid event type 0x%04x\n",TYP);
         return (NULL);
 }
+
+/*------------------------------------------------------------------------
+	getTimeChannelNumber
+	searches all channels, whether one channel contains the time axis
+
+	Return value:
+	the number of the first channel containing the time axis is returned.
+	if no time channel is found, 0 is returned;
+
+	Note: a 1-based indexing is used, the corresponding time channel is used
+	the header of the time channel is in hdr->CHANNEL[getTimeChannelNumber(hdr)-1]
+  ------------------------------------------------------------------------*/
+int getTimeChannelNumber(HDRTYPE* hdr) {
+	typeof(hdr->NS) k;
+
+	for (k=0; k<hdr->NS; k++)
+		if (hdr->CHANNEL[k].OnOff==2)
+			return (k+1);
+
+	return 0;
+}
+
 
 /****************************************************************************/
 /**                                                                        **/
@@ -4267,7 +4288,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 	}
 
 	else if (hdr->TYPE==ATF) {
-		fprintf(stdout,"Warning ATF: implementation is not complete!\n");
+		// READ ATF
 		hdr->HeadLen = count;
 		hdr->VERSION = atof((char*)(hdr->AS.Header+4));
 
@@ -4351,7 +4372,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 						hc->PhysDimCode = PhysDimCode(str);
 					}
 				}
-				//if (!strnicmp(hc->Label,"time",4)) TIMECHANNEL = k+1;
+				if (!strncmpi(hc->Label,"time",4)) {
+					TIMECHANNEL = k+1;
+					hc->OnOff   = 2;   // mark channel as containing the time axis
+				}
 			}
 			// extract next label
 			str = strtok(NULL,"\t\n\r");
@@ -10901,6 +10925,32 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		fclose(fid);
 		free(fn);
     	}
+	else if (hdr->TYPE==ATF) {
+		// Write ATF
+
+		hdr->HeadLen  = 0;
+		hdr->FILE.POS = 0;
+		hdr->FILE.FID = fopen(hdr->FileName, "w");
+
+		typeof(hdr->NS) k, NS = 1;
+		for (k = 0; k < hdr->NS; k++) {
+			NS += (hdr->CHANNEL[k].OnOff > 0);
+		}
+		hdr->HeadLen += fprintf(hdr->FILE.FID, "ATF\t1.0\n%lu\t%u", max(0,hdr->NRec * hdr->SPR), NS + 1);
+
+		char *sep = "\n";
+		if (getTimeChannelNumber(hdr) == 0) {
+			hdr->HeadLen += fprintf(hdr->FILE.FID, "%s\"Time (s)\"",sep);
+			sep = "\t";
+		}
+
+		for (k = 0; k < hdr->NS; k++) {
+			if (hdr->CHANNEL[k].OnOff) {
+				hdr->HeadLen += fprintf(hdr->FILE.FID, "%s\"%s (%s)\"", sep, hdr->CHANNEL[k].Label, PhysDim3(hdr->CHANNEL[k].PhysDimCode));
+				sep = "\t";
+			}
+		}
+	}
 	else if (hdr->TYPE==BrainVision) {
 
 		if (VERBOSE_LEVEL>8) fprintf(stdout,"BVA-write: [210]\n");
@@ -11554,7 +11604,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		return(NULL);
 	}
 
-	if ((hdr->TYPE != ASCII) && (hdr->TYPE != BIN) && (hdr->TYPE != HL7aECG) && (hdr->TYPE != TMSiLOG)){
+	if ((hdr->TYPE != ASCII) && (hdr->TYPE != ATF) && (hdr->TYPE != BIN) && (hdr->TYPE != HL7aECG) && (hdr->TYPE != TMSiLOG)){
 	    	hdr = ifopen(hdr,"wb");
 
 		if (!hdr->FILE.COMPRESSION && (hdr->FILE.FID == NULL) ) {
@@ -12460,7 +12510,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 	if (VERBOSE_LEVEL>6)
 		fprintf(stdout,"SWRITE( %p, %i, %s ) MODE=%i\n",data, (int)nelem, hdr->FileName, hdr->FILE.OPEN);
 
-	// write data
+		// write data
 
 #define MAX_INT8   ((int8_t)0x7f)
 #define MIN_INT8   ((int8_t)0x80)
@@ -12488,6 +12538,67 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 
 	if (VERBOSE_LEVEL>7)
 		fprintf(stdout,"swrite 307 <%s> sz=%i\n",hdr->FileName,(int)(hdr->NRec*bpb8>>3));
+
+	if (hdr->TYPE==ATF) {
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"ATF swrite\n");
+
+		size_t nr = hdr->data.size[hdr->FLAG.ROW_BASED_CHANNELS];        // if collapsed data, use k2, otherwise use k1
+		assert(nr == hdr->NRec * hdr->SPR);
+
+		typeof(hdr->NS) k,k2;
+		size_t c = 0;
+
+		char tabflag = 0;
+		unsigned timeChan = getTimeChannelNumber(hdr);
+		if ( timeChan == 0) {
+			hdr->HeadLen += fprintf(hdr->FILE.FID, "\"Time (s)\"");
+			tabflag = 1;
+		}
+
+		if (hdr->data.size[1-hdr->FLAG.ROW_BASED_CHANNELS] < hdr->NS) {
+			// if collapsed data, use k2, otherwise use k1
+			for (c = 0; c < nr; c++) {
+				char *sep = "\n";
+				if (timeChan == 0)
+					fprintf(hdr->FILE.FID,"%s%.16g",sep,(++hdr->FILE.POS)/hdr->SampleRate);
+				for (k = 0, k2=0; k < hdr->NS; k++) {
+					if (hdr->CHANNEL[k].OnOff) {
+						size_t idx;
+						if (hdr->FLAG.ROW_BASED_CHANNELS)
+							idx = k2 + c * hdr->data.size[0];
+						else
+							idx = k2 * hdr->data.size[0] + c;
+
+						fprintf(hdr->FILE.FID,"%s%.16g",sep,data[idx]);
+						sep = "\t";
+						k2++;
+					}
+				}
+			}
+		}
+		else {	// if not collapsed data, use k1
+			for (c = 0; c < nr; c++) {
+				char *sep = "\n";
+				if (timeChan == 0)
+					fprintf(hdr->FILE.FID,"%s%.16g",sep,(++hdr->FILE.POS)/hdr->SampleRate);
+				for (k = 0; k < hdr->NS; k++) {
+					if (hdr->CHANNEL[k].OnOff) {
+						size_t idx;
+						if (hdr->FLAG.ROW_BASED_CHANNELS)
+							idx = k + c * hdr->data.size[0];
+						else
+							idx = k * hdr->data.size[0] + c;
+
+						fprintf(hdr->FILE.FID,"%s%.16g", sep, data[idx]);
+						sep = "\t";
+					}
+				}
+			}
+		}
+		return nr;
+		// end write ATF
+	}
+
 
 	if ((hdr->NRec*bpb8>0) && (hdr->TYPE != SCP_ECG)) {
 	// memory allocation for SCP is done in SOPEN_SCP_WRITE Section 6
@@ -12800,7 +12911,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"swrite 319 <%i>\n", (int)count);
 
 	}
-	else { 	// SCP_ECG, HL7aECG#ifdef CHOLMOD_H
+	else { 	// SCP_ECG, HL7aECG
 #ifdef  ONLYGDF
 		assert(0);
 #endif //ONLYGDF
@@ -12964,6 +13075,9 @@ int sclose(HDRTYPE* hdr)
 	}
 
 #ifndef  ONLYGDF
+	else if ((hdr->FILE.OPEN>1) && (hdr->TYPE==ATF)) {
+		fprintf(hdr->FILE.FID, "\n");
+	}
 	else if ((hdr->FILE.OPEN>1) && (hdr->TYPE==SCP_ECG)) {
 		uint16_t 	crc;
 		uint8_t*	ptr; 	// pointer to memory mapping of the file layout

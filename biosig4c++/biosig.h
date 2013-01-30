@@ -259,7 +259,7 @@ typedef struct CHANNEL_STRUCT {
 	double		Off 	ATT_ALI;	/* bias */
 
 	char		Label[MAX_LENGTH_LABEL+1] ATT_ALI; 	/* Label of channel */
-	char		OnOff	ATT_ALI;
+	char		OnOff	ATT_ALI;	/* 0: channel is off, not consider for data output; 1: channel is turned on; 2: channel containing time axis */
 	uint16_t	LeadIdCode ATT_ALI;	/* Lead identification code */
 	char 		Transducer[MAX_LENGTH_TRANSDUCER+1] ATT_ALI;	/* transducer e.g. EEG: Ag-AgCl electrodes */
         char            PhysDim[MAX_LENGTH_PHYSDIM+1] ATT_ALI ATT_DEPREC;       /* DONOT USE - use PhysDim3(PhysDimCode) instead */

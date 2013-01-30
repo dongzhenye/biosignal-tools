@@ -95,8 +95,8 @@ int main(int argc, char **argv){
 #endif
 		fprintf(stdout,"   -f=FMT  \n\tconverts data into format FMT\n");
 		fprintf(stdout,"   -JSON  \n\tshows header, and events in JSON format\n");
-		fprintf(stdout,"\tFMT must represent a valid target file format\n"); 
-		fprintf(stdout,"\tCurrently are supported: HL7aECG, SCP_ECG (EN1064), GDF, EDF, BDF, CFWB, BIN, ASCII, BVA (BrainVision)\n\tas well as HEKA v2 -> ITX\n"); 
+		fprintf(stdout,"\tFMT must represent a valid target file format\n");
+		fprintf(stdout,"\tCurrently are supported: HL7aECG, SCP_ECG (EN1064), GDF, EDF, BDF, CFWB, BIN, ASCII, ATF, BVA (BrainVision)\n\tas well as HEKA v2 -> ITX\n");
 		fprintf(stdout,"   -z=#, -z#\n\t# indicates the compression level (#=0 no compression; #=9 best compression, default #=1)\n");
 		fprintf(stdout,"   -s=#\tselect target segment # (in the multisegment file format EEG1100)\n");
 		fprintf(stdout,"   -SWEEP=ne,ng,ns\n\tsweep selection of HEKA/PM files\n\tne,ng, and ns select the number of experiment, the number of group, and the sweep number, resp.\n");
@@ -134,6 +134,8 @@ int main(int argc, char **argv){
     		if (0) {}
     		else if (!strncmp(argv[k],"-f=ASCII",8))
 			TARGET_TYPE=ASCII;
+		else if (!strcmp(argv[k],"-f=ATF"))
+			TARGET_TYPE=ATF;
     		else if (!strcmp(argv[k],"-f=BDF"))
 			TARGET_TYPE=BDF;
     		else if (!strncmp(argv[k],"-f=BIN",6))
@@ -579,6 +581,7 @@ int main(int argc, char **argv){
 	hdr->FLAG.ANONYMOUS = 1; 	// no personal names are processed 
 
 	hdr = sopen(tmp, "wb", hdr);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"returned from sopen-wb\n");
 	free(tmp); 
 	if ((status=serror2(hdr))) {
 		destructHDR(hdr);
