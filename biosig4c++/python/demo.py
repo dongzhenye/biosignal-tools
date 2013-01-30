@@ -18,16 +18,33 @@
 import biosig
 import numpy as S
 import ctypes
+import datetime
 
 filename = '/scratch/schloegl/R/data/test/CFS/example_6channels.dat'
 filename = '/home/as/data/test/CFS/example_6channels.dat'
 
 filename = '/home/as/data/test/BDF/sample_bdf_plus_file.bdf'
+filename = '/fs/home/schloegl/data/test/gdf/test.clemens.20121220.gdf'
 
 print 'open file ',filename
 
 HDR = biosig.constructHDR(0, 0)
 HDR = biosig.sopen(filename , 'r', HDR)
+
+HDR.Patient.Id
+HDR.Patient.Sex
+HDR.Patient.Handedness
+HDR.Patient.DrugAbuse
+HDR.Patient.Smoking
+
+### convert from gdftime/matlab/octave datetime format to python datetime format
+###   for some unknown reason, the starting point is 366 days off.
+d = datetime.timedelta(days=HDR.T0*(2**-32)-366)
+m, s = divmod(d.seconds, 60)
+h, m = divmod(m, 60)
+starttime = datetime.datetime.combine(datetime.date.fromordinal(d.days), datetime.time(h,m,s))
+print "starting time:",starttime
+
 
 status = biosig.serror2(HDR)	# save and reset error status
 if status:
