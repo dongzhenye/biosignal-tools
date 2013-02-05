@@ -106,7 +106,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n
 
 			uint8_t  dataType  = H2[42 + k*H2LEN];
 			//uint8_t  dataKind  = H2[43 + k*H2LEN];
-			//uint16_t byteSpace = leu16p(H2+44 + k*H2LEN);		// stride 
+			uint16_t byteSpace = leu16p(H2+44 + k*H2LEN);		// stride 
 			//uint16_t next      = leu16p(H2+46 + k*H2LEN);
 			hc->GDFTYP = dataType < 5 ? dataType+1 : dataType+11;
 			if (H2[43 + k * H2LEN] == 1) {
@@ -228,7 +228,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 				
 			}
 
-			if (NumberOfDataSections > 1) {
+			if (1) {
 				/* hack: copy data into a single block (rawdata)
 				   this is used as a data cache, no I/O is needed in sread, at the cost that sopen is slower
 				   sread_raw does not attempt to reload the data
@@ -257,7 +257,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 					uint16_t next      = leu16p(H2+46 + k*H2LEN);
 					hc->GDFTYP = dataType < 5 ? dataType+1 : dataType+11;
 		
-
 if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 412 #%i %i %i %i: %i @%p %i\n", k, hc->SPR, hc->GDFTYP, stride, memoffset, srcaddr, leu32p(hdr->AS.Header+datapos + 4) + leu32p(hdr->AS.Header + datapos + 30 + 24 * k));
 
 					size_t k2;
@@ -313,44 +312,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 412 #%i %i %i %i: %i @%p %i\n", k, hc->
 					ns += hc->OnOff;
 				}
 			}
-			else {
-				hdr->AS.rawdata = (uint8_t*)realloc(hdr->AS.rawdata,sz);
-				memcpy(hdr->AS.rawdata, hdr->AS.Header + leu32p(hdr->AS.Header+datapos + 4), leu32p(hdr->AS.Header+datapos + 8));
-				hdr->AS.bpb = sz;
-			}
 
 			SPR += spr;
 			SZ  += sz;
 
-#if 0
-			// for (k = 0; k < d; k++) {
-			for (k = 0; k < 0; k++) {
-			// read data variables of each block - this currently broken.
-				//size_t pos = leu16p(hdr->AS.Header + datapos + 30 + hdr->NS * 24 + k * 36 + 34);
-				size_t pos = datapos + 30 + hdr->NS * 24;
-				int i; double f;
-				uint16_t typ = leu16p(hdr->AS.Header + pos + 22 + k*36) ;
-				uint16_t off = leu16p(hdr->AS.Header + pos + 34 + k*36);
-				uint32_t p3  = pos + off;
-
-if (VERBOSE_LEVEL>7) fprintf(stdout,"\n[DS#%3i/%3i] @0x%6x+0x%3x: <%s>  %i  [%s] :", m, k, pos, off, hdr->AS.Header+pos+off+1, typ, hdr->AS.Header+pos+off+25);
-
-				switch (typ) {
-				case 0:
-				case 1: i = hdr->AS.Header[p3];        break;
-				case 2: i = lei16p(hdr->AS.Header+p3); break;
-				case 3: i = leu16p(hdr->AS.Header+p3); break;
-				case 4: i = lei32p(hdr->AS.Header+p3); break;
-				case 5: f = lef32p(hdr->AS.Header+p3); break;
-				case 6: f = lef64p(hdr->AS.Header+p3); break;
-				}
-if (VERBOSE_LEVEL>7) {
-				if (typ<5) fprintf(stdout," *0x%x = %d",p3,i);
-				else if (typ<7) fprintf(stdout," *0x%x = %g", p3,f);
-				else if (typ==7) fprintf(stdout," *0x%x = <%s>",p3,hdr->AS.Header+p3);
-}
-			}
-#endif
 			datapos = leu32p(hdr->AS.Header + datapos);
 		}
 		free(DATAPOS);
@@ -362,13 +327,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 419: SPR=%i=%i NRec=%i  @%p\n",(int)SPR
 		hdr->EVENT.SampleRate = hdr->SampleRate;
 		if (NumberOfDataSections < 1) {
 			hdr->SPR = 0; 	
-		}
-		else if (NumberOfDataSections == 1) {
-			// hack: copy data into a single block, only if more than one section
-			hdr->FLAG.UCAL = 0;
-			hdr->SPR  = SPR;
-			hdr->NRec = 1;
-			hdr->AS.length = 1;
 		}
 		else  {
 			hdr->FLAG.UCAL = 1;
