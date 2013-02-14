@@ -122,6 +122,7 @@ void sopen_cfs_read    (HDRTYPE* hdr);
 void sopen_smr_read    (HDRTYPE* hdr);
 void sopen_HL7aECG_write(HDRTYPE* hdr);
 void sopen_abf_read    (HDRTYPE* hdr);
+void sopen_ibw_read    (HDRTYPE* hdr);
 void sopen_alpha_read  (HDRTYPE* hdr);
 void sopen_FAMOS_read  (HDRTYPE* hdr);
 int sclose_HL7aECG_write(HDRTYPE* hdr);
@@ -132,7 +133,6 @@ int sopen_fef_read(HDRTYPE* hdr);
 int sclose_fef_read(HDRTYPE* hdr);
 #endif
 void sopen_heka(HDRTYPE* hdr,FILE *fid);
-int sopen_zzztest(HDRTYPE* hdr);
 #ifdef WITH_HDF
 int sopen_hdf5(HDRTYPE *hdr);
 #endif 
@@ -1112,6 +1112,7 @@ void sort_eventtable(HDRTYPE *hdr) {
   ------------------------------------------------------------------------*/
 size_t reallocEventTable(HDRTYPE *hdr, size_t EventN)
 {
+            size_t n;
 			hdr->EVENT.POS = (uint32_t*)realloc(hdr->EVENT.POS, EventN * sizeof(*hdr->EVENT.POS));
 			hdr->EVENT.DUR = (uint32_t*)realloc(hdr->EVENT.DUR, EventN * sizeof(*hdr->EVENT.DUR));
 			hdr->EVENT.TYP = (uint16_t*)realloc(hdr->EVENT.TYP, EventN * sizeof(*hdr->EVENT.TYP));
@@ -1119,6 +1120,11 @@ size_t reallocEventTable(HDRTYPE *hdr, size_t EventN)
 #if (BIOSIG_VERSION >= 10500)
 			hdr->EVENT.TimeStamp = (gdf_time*)realloc(hdr->EVENT.TimeStamp, EventN * sizeof(gdf_time));
 #endif
+            for (n = hdr->EVENT.N; n< EventN; n++) {
+                    hdr->EVENT.TYP[n] = 0;
+                    hdr->EVENT.CHN[n] = 0;
+                    hdr->EVENT.DUR[n] = 0;
+            }
 			return EventN;
 }
 
@@ -1974,6 +1980,24 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	}
     	else if (!memcmp(Header1,"IGOR",4))
 	    	hdr->TYPE = ITX;
+	else if (*(int16_t*)Header1==0x0001 ||
+		 *(int16_t*)Header1==0x0002 ||
+		 *(int16_t*)Header1==0x0003 ||
+		 *(int16_t*)Header1==0x0005 ) {
+		 /* no swapping */
+		hdr->TYPE = IBW;
+		hdr->FILE.LittleEndian = (__BYTE_ORDER == __LITTLE_ENDIAN);
+		hdr->VERSION = *(int16_t*)Header1;
+	}
+	else if (*(int16_t*)Header1==0x0100 ||
+		 *(int16_t*)Header1==0x0200 ||
+		 *(int16_t*)Header1==0x0300 ||
+		 *(int16_t*)Header1==0x0500 ) {
+		 /* data need to be swapped */
+		hdr->TYPE = IBW;
+		hdr->FILE.LittleEndian = (__BYTE_ORDER == __BIG_ENDIAN);
+		hdr->VERSION = bswap_16(*(int16_t*)Header1);
+	}
     	else if (!memcmp(Header1,"ISHNE1.0",8))
 	    	hdr->TYPE = ISHNE;
     	else if (!memcmp(Header1,"@  MFER ",8))
@@ -2269,6 +2293,7 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ HDF,    	"HDF" },
 	{ HEKA,    	"HEKA" },
 	{ HL7aECG,    	"HL7aECG" },
+	{ IBW,    	"IBW" },
 	{ ITX,    	"ITX" },
 	{ ISHNE,    	"ISHNE" },
 	{ JPEG,    	"JPEG" },
@@ -7872,6 +7897,11 @@ if (VERBOSE_LEVEL>8)
 
 		if (itx) fclose(itx);
 
+	}
+
+	else if (hdr->TYPE==IBW) {
+		biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"Support for reading Igor Binary Waveform format is under construction");
+		sopen_ibw_read(hdr);
 	}
 
     	else if (hdr->TYPE==ITX) {

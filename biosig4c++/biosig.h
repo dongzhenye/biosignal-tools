@@ -40,7 +40,7 @@
 
 #define BIOSIG_VERSION_MAJOR 1
 #define BIOSIG_VERSION_MINOR 4
-#define BIOSIG_PATCHLEVEL 3
+#define BIOSIG_PATCHLEVEL 4
 // for backward compatibility 
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
@@ -149,8 +149,8 @@ enum FileFormat {
 	SPSS, STATA, SVG, SXI, SYNERGY,
 	TIFF, TMS32, TMSiLOG, TRC, UNIPRO, VRML, VTK,
 	WAV, WG1, WinEEG, WMF, XML, XPM,
-	Z, ZIP, ZIP2,                        
-        TDMS, SMR, MX
+	Z, ZIP, ZIP2,
+	TDMS, SMR, MX, IBW
 };
 
 
@@ -684,15 +684,13 @@ const char* GetEventDescription(HDRTYPE *hdr, size_t n);
   -------------------------------------------------------------- */
 
 void FreeTextEvent(HDRTYPE* hdr, size_t N, const char* annotation);
-/*------------------------------------------------------------------------
-	adds free text annotation to event table for the N-th event.   
+/*  adds free text annotation to event table for the N-th event.
 	the EVENT.TYP[N] is identified from the table EVENT.CodeDesc
 	if annotations is not listed in CodeDesc, it is added to CodeDesc
 	The table is limited to 256 entries, because the table EventCodes
 	allows only codes 0-255 as user specific entry. If the description
 	table contains more than 255 entries, an error is set. 
   ------------------------------------------------------------------------*/
-
 
 /* =============================================================
 	utility functions for handling of physical dimensons

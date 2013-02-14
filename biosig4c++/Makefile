@@ -89,8 +89,8 @@ else
 	AR      := $(TARGET)-ar crs
 	ifeq (mingw, $(findstring mingw, $(TARGET)))
 		## add gnulib's getlogin
-		SOURCES += win32/getlogin.c
-		OBJECTS += getlogin.o
+		SOURCES += win32/getlogin.c win32/getline.c win32/getdelim.c
+		OBJECTS += getlogin.o getline.o getdelim.o
 		## exclude conflicting definition of sopen from mingw's io.h
 		CFLAGS  += -I.
 		IO_H_FILE2 = io.h
@@ -99,7 +99,7 @@ else
 endif
 
 
-DEFINES_ALL   = -D=NDEBUG 
+#DEFINES_ALL   = -D=NDEBUG 
 
 DEFINES      += $(DEFINES_ALL)
 #DEFINES      += -D=WITH_SON 
@@ -240,6 +240,7 @@ TODAY          := $(shell date +%Y%m%d)
 ####### Output directory
 
 OBJ	      = ./obj
+INC	      = $(DESTDIR)/usr/local/include
 BIN	      = $(DESTDIR)/usr/local/bin
 LIB	      = $(DESTDIR)/usr/local/lib
 
@@ -248,6 +249,7 @@ LIB	      = $(DESTDIR)/usr/local/lib
 SOURCES      += biosig.c \
 		t210/sopen_cfs_read.c \
 		t210/sopen_heka_read.c \
+		t210/sopen_igor.c \
 		t210/sopen_scp_read.c \
 		t210/sopen_famos_read.c \
 		t210/sopen_abf_read.c \
@@ -278,6 +280,7 @@ OBJECTS      += \
 		biosig.o \
 		sopen_cfs_read.o \
 		sopen_heka_read.o \
+		sopen_igor.o \
 		sopen_scp_read.o \
 		sopen_alpha_read.o \
 		sopen_abf_read.o \
@@ -296,6 +299,7 @@ MinGWOBJECTS  = \
 		win32/strnlen.obj \
 		win32/sopen_cfs_read.obj \
 		win32/sopen_heka_read.obj \
+		win32/sopen_igor.obj \
 		win32/sopen_scp_read.obj \
 		win32/sopen_abf_read.obj \
 		win32/sopen_alpha_read.obj \
@@ -363,7 +367,7 @@ vpath %.cpp ./:./t210:./t230:./XMLParser:./mex
 %.o: %.c 
 	$(CC) -c $(DEFINES) $(CFLAGS)  $(INCPATH) -o "$@" "$<"
 
-getlogin.o : win32/getlogin.c
+%.o : win32/%.c
 	$(CC) -c $(DEFINES) $(CFLAGS)  $(INCPATH) -o "$@" "$<"
 
 %.o: %.cpp
@@ -849,8 +853,9 @@ install_octave: mexSLOAD.mex
 	install mex/mexSOPEN.mex* 	$(DESTDIR)/usr/share/octave/site-m/
 
 install_libbiosig: libbiosig.a libbiosig.so libbiosig2.a libbiosig2.so libphysicalunits.a libphysicalunits.so
-	install biosig.h    		$(DESTDIR)/usr/include
-	install physicalunits.h    	$(DESTDIR)/usr/include
+	install biosig.h    		$(INC)
+	install biosig-dev.h    	$(INC)
+	install physicalunits.h    	$(INC)
 	install libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)
 	ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}
 	ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION} $(LIB)/libbiosig.so
@@ -858,7 +863,7 @@ install_libbiosig: libbiosig.a libbiosig.so libbiosig2.a libbiosig2.so libphysic
 	install libbiosig.pc		$(LIB)/pkgconfig/
 	install libphysicalunits.a 	$(LIB)
 	install libphysicalunits.so	$(LIB)
-	install biosig2.h    		$(DESTDIR)/usr/include
+	install biosig2.h    		$(INC)
 	install libbiosig2.a		$(LIB)
 	install libbiosig2.so		$(LIB)
 
@@ -871,9 +876,9 @@ install: save2gdf libbiosig.a doc/save2gdf.1 install_libbiosig
 	-install bin/tt2trig  		$(BIN)
 	#install rec2bin  		$(BIN)
 	#install bin2rec  		$(BIN)
-	install -d			$(LIB) $(DESTDIR)/usr/include
-	install biosig.h    		$(DESTDIR)/usr/include
-	install physicalunits.h    	$(DESTDIR)/usr/include
+	install -d			$(LIB) $(INC)
+	install biosig.h    		$(INC)
+	install physicalunits.h    	$(INC)
 	install libbiosig.a libphysicalunits.a	$(LIB)
 	mkdir -p  			$(DESTDIR)/usr/share/man/man1
 	install doc/*.1  		$(DESTDIR)/usr/share/man/man1
@@ -891,9 +896,10 @@ uninstall remove:
 	#-$(DELETE) $(BIN)/bin2rec
 	-$(DELETE) $(BIN)/sigviewer
 	-$(DELETE) $(BIN)/eventcodes.txt
-	-$(DELETE) $(DESTDIR)/usr/include/biosig.h
-	-$(DELETE) $(DESTDIR)/usr/include/biosig2.h
-	-$(DELETE) $(DESTDIR)/usr/include/physicalunits.h
+	-$(DELETE) $(INC)/biosig.h
+	-$(DELETE) $(INC)/biosig-dev.h
+	-$(DELETE) $(INC)/biosig2.h
+	-$(DELETE) $(INC)/physicalunits.h
 	-$(DELETE) $(LIB)/libbiosig.*
 	-$(DELETE) $(LIB)/libbiosig2.*
 	-$(DELETE) $(LIB)/libphysicalunits.*
