@@ -1145,6 +1145,8 @@ bool TiXmlDocument::LoadFile( FILE* file, TiXmlEncoding encoding )
 			fprintf(stderr,"SOPEN_HL7aECG: attempt to convert UTF-16 to UTF-8 failed\n");
 		}
 	}
+#else
+	fprintf(stderr,"SOPEN_HL7aECG: conversion of UTF-16 to UTF-8 is not supported\n");
 #endif 
 
 
