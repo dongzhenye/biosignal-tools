@@ -7900,7 +7900,6 @@ if (VERBOSE_LEVEL>8)
 	}
 
 	else if (hdr->TYPE==IBW) {
-		biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"Support for reading Igor Binary Waveform format is under construction");
 		sopen_ibw_read(hdr);
 	}
 
