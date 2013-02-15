@@ -349,47 +349,12 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 	}
 	
 	// Read some of the BinHeader fields.
-	int32_t wfmSize;
 	uint32_t modDate;
 	int16_t type = 0;			// See types (e.g. NT_FP64) above. Zero for text waves.
 
 	hdr->NS = 1; 
+	hdr->SampleRate = 1;
 	hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
-
-		
-	switch(version) {
-		case 1:
-			{
-				BinHeader1* b1;
-				b1 = (BinHeader1*)buffer;
-				wfmSize = b1->wfmSize;
-			}
-			break;
-			
-		case 2:
-			{
-				BinHeader2* b2;
-				b2 = (BinHeader2*)buffer;
-				wfmSize = b2->wfmSize;
-			}
-			break;
-			
-		case 3:
-			{
-				BinHeader3* b3;
-				b3 = (BinHeader3*)buffer;
-				wfmSize = b3->wfmSize;
-			}
-			break;
-			
-		case 5:
-			{
-				BinHeader5* b5;
-				b5 = (BinHeader5*)buffer;
-				wfmSize = b5->wfmSize;
-			}
-			break;
-	}
 
 	// Read some of the WaveHeader fields.
 	switch(version) {
@@ -414,6 +379,8 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 				hdr->CHANNEL[0].DigMin = (w2->botFullScale-w2->hsB)/w2->hsA;
 */
 				hdr->FLAG.OVERFLOWDETECTION = !w2->fsValid;	
+
+				hdr->HeadLen = binHeaderSize+waveHeaderSize-16;    // 16 = size of wData field in WaveHeader2 structure.
 			}
 			break;
 			
@@ -423,31 +390,67 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 				w5 = (WaveHeader5*)(buffer+binHeaderSize);
 				modDate = w5->modDate;
 				type = w5->type;
+
+				int k;
+				size_t nTraces=1; 
+				for (k=1; (w5->nDim[k]!=0) && (k<4); k++) {
+					// count number of traces
+					nTraces *= w5->nDim[k];
+				}
+				if (nTraces > 1) {
+					// set break marker between traces
+					hdr->EVENT.N = nTraces-1;
+					reallocEventTable(hdr, hdr->EVENT.N);
+					size_t n;
+					hdr->EVENT.POS = (uint32_t*)realloc(hdr->EVENT.POS, hdr->EVENT.N * sizeof(*hdr->EVENT.POS));
+					hdr->EVENT.TYP = (uint16_t*)realloc(hdr->EVENT.TYP, hdr->EVENT.N * sizeof(*hdr->EVENT.TYP));
+					for (n = 0; n < hdr->EVENT.N;) {
+						hdr->EVENT.TYP[n] = 0x7ffe;
+						hdr->EVENT.POS[n] = (++n)*w5->nDim[0];
+					}
+				}
+
+				if (VERBOSE_LEVEL>7) {
+					for (k=0; k<4; k++)
+						fprintf(stdout,"%i\t%f\t%f\n",w5->nDim[k],w5->sfA[k],w5->sfB[k]);
+				}
+
 				strncpy(hdr->CHANNEL[0].Label, w5->bname, MAX_LENGTH_LABEL);
 				hdr->CHANNEL[0].PhysDimCode = PhysDimCode(w5->dataUnits);
 				hdr->CHANNEL[0].SPR = hdr->SPR = 1;
 				hdr->NRec = w5->npnts;
-/*
-				hdr->CHANNEL[0].Cal = w5->hsA;
-				hdr->CHANNEL[0].Off = w5->hsB;
-*/
+
+				hdr->CHANNEL[0].Cal = 1.0;
+				hdr->CHANNEL[0].Off = 0.0;
+
 /*				hdr->CHANNEL[0].PhysMax = w5->topFullScale;
 				hdr->CHANNEL[0].PhysMin = w5->botFullScale;
 */
 				hdr->FLAG.OVERFLOWDETECTION = !w5->fsValid;	
+
+				hdr->HeadLen = binHeaderSize+waveHeaderSize-4;    // 4 = size of wData field in WaveHeader5 structure.
 			}
 			break;
 	}
 
-	if (VERBOSE_LEVEL > 7) fprintf(stdout, "Wave name=%s, npnts=%d, type=0x%x, wfmSize=%d.\n", hdr->CHANNEL[0].Label, hdr->SPR, type, wfmSize);
+	if (VERBOSE_LEVEL > 7) fprintf(stdout, "Wave name=%s, npnts=%d, type=0x%x.\n", hdr->CHANNEL[0].Label, hdr->NRec, type);
 	
 	uint16_t gdftyp; 
 	double digmin,digmax; 
 	// Consider the number type, not including the complex bit or the unsigned bit.
 	switch(type & ~(NT_CMPLX | NT_UNSIGNED)) {
 		case NT_I8:
-			gdftyp = 0; 
+			gdftyp = 1;
 			hdr->AS.bpb = 1;		// char
+			break;
+			if (type & NT_UNSIGNED) {
+				gdftyp++;
+				digmin = ldexp(-1,7);
+				digmax = ldexp( 1,7)-1;
+			} else {
+				digmin = 0;
+				digmax = ldexp( 1,8)-1;
+			}
 			break;
 		case NT_I16:
 			gdftyp = 3; 
@@ -485,9 +488,12 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 			digmin = -__DBL_MAX__;
 			digmax = __DBL_MAX__;
 			break;
+		case 0: 				// text waves
+			biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Igor/IBW: text waves not supported");
+			return;
 		default:
 			if (VERBOSE_LEVEL>7) fprintf(stderr,"type=%x \n",version);
-			biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Igor/IBW: unknonw data type");
+			biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Igor/IBW: unsupported or unknown data type");
 			return;
 			break;
 	}
@@ -497,53 +503,40 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 		hdr->NS     *= 2; 	
 		hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
 		strcpy(hdr->CHANNEL[2].Label,"imag part");
+		hdr->CHANNEL[1].Cal = 1.0;
+		hdr->CHANNEL[1].Off = 0.0;
+		hdr->CHANNEL[1].SPR = hdr->SPR;
 	}
 	
 	typeof (hdr->NS) k; 
+	size_t bpb=0;
 	for (k = 0; k < hdr->NS; k++) {
 		CHANNEL_TYPE *hc = hdr->CHANNEL+k; 
-		hc->GDFTYP = gdftyp; 
+		hc->GDFTYP = gdftyp;
 		hc->OnOff  = 1;
-		hc->DigMin = digmin; 
-		hc->DigMax = digmax; 
-		hc->PhysMax = digmax*hc->Cal+hc->Off; 
-		hc->PhysMin = digmin*hc->Cal+hc->Off; 
+		hc->DigMin = digmin;
+		hc->DigMax = digmax;
+		hc->PhysMax = digmax*hc->Cal+hc->Off;
+		hc->PhysMin = digmin*hc->Cal+hc->Off;
+		hc->LeadIdCode = 0;
+		hc->bi = bpb;
+		hc->Transducer[0] = 0;
+		hc->TOffset = 0;
+		hc->LowPass = NAN;
+		hc->HighPass = NAN;
+		hc->Notch = NAN;
+		hc->Impedance = NAN;
+		hc->XYZ[0] = 0;
+		hc->XYZ[1] = 0;
+		hc->XYZ[2] = 0;
+		bpb += GDFTYP_BITS[gdftyp]/8;
 	}
 
-/*
-	// Return information to the calling routine.
-	*typePtr = type;
-	*npntsPtr = npnts;
-
-	// Determine the number of bytes of wave data in the file.
-	switch(version) {
-		case 1:
-		case 2:
-		case 3:
-			waveDataSize = wfmSize - offsetof(WaveHeader2, wData) - 16;
-			hdr->HeadLen = binHeaderSize+waveHeaderSize-16;    // 16 = size of wData field in WaveHeader2 structure.
-			break;
-		case 5:
-			waveDataSize = wfmSize - offsetof(WaveHeader5, wData);
-			hdr->HeadLen = binHeaderSize+waveHeaderSize-4;    // 4 = size of wData field in WaveHeader5 structure.
-			break;
-	}
-*/
-	
-	ifseek(hdr,hdr->HeadLen,'SEEK_SET');
 	hdr->FILE.POS = 0; 
 	hdr->AS.first = 0; 
-	hdr->AS.length= hdr->NRec; 
+	hdr->AS.length= 0;
 	hdr->data.block = NULL; 
 	hdr->AS.rawdata = NULL;
-	
-	if (type == 0) {
-		// For simplicity, we don't load text wave data in this example program.
-		printf("This is a text wave.\n");
-		return;
-	}
-
-
 	
 }
 

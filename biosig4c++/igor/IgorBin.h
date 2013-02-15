@@ -35,10 +35,10 @@ extern "C" {
 // All structures written to disk are 2-byte-aligned.
 #if GENERATINGPOWERPC
 	#pragma options align=mac68k
-#else 
+#endif
+#if __GNUC__
 	#pragma pack(2)
 #endif
-
 
 /*
  	igor uses a 32bit memory model, all pointers are 32 bit. 
@@ -219,9 +219,11 @@ typedef WavePtr5 *WaveHandle5;
 
 #if GENERATINGPOWERPC
 	#pragma options align=reset
-#else
+#endif
+#if __GNUC__
 	#pragma pack()
 #endif
+
 // All structures written to disk are 2-byte-aligned.
 
 #ifdef __cplusplus
