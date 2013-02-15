@@ -105,7 +105,7 @@ elseif ischar(arg2) && (strcmp(H.TYPE,'ELPOS') || (isfield(H,'ELEC') && strncmpi
         return;
 
         
-elseif all((H.LeadIdCode>0) & (H.LeadIdCode<256)) && all(H.PhysDimCode==H.PhysDimCode(1)) 
+elseif isfield(H,'LeadIdCode') && all((H.LeadIdCode>0) & (H.LeadIdCode<256)) && all(H.PhysDimCode==H.PhysDimCode(1)) 
 	% 12-lead, 10s ECG 
 	xlen = 5; 
 	if (H.TYPE == 'SCP') 
@@ -121,7 +121,7 @@ elseif all((H.LeadIdCode>0) & (H.LeadIdCode<256)) && all(H.PhysDimCode==H.PhysDi
 		if ~isempty(ch)
 			CH(ch) = k;
 			d(1:xlen*H.SampleRate-1,k)=s(1:xlen*H.SampleRate-1,ch);
-		else 	
+		else
 			switch k
 			case 3
 				d(:,3)=d(:,1:2)*[-1;1];
