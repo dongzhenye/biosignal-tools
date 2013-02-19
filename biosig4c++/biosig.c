@@ -10953,6 +10953,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		}
 		fclose(fid);
 		free(fn);
+		hdr->FILE.POS  = 0;
     	}
 	else if (hdr->TYPE==ATF) {
 		// Write ATF
@@ -11687,11 +11688,12 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 
 
 #ifndef ANDROID
+    if (VERBOSE_LEVEL > 7) {
 	 //There is a way to send messages in Android to log, but I dont know it yet. Stoyan
  	//There is problem with some files printing deubg info.
  	//And debug in NDK is bad idea in Android
 	if (hdr->FILE.POS != 0)
-		fprintf(stdout,"Debugging Information: (Format=%d) FILE.POS=%d is not zero.\n",hdr->TYPE,(int)hdr->FILE.POS);
+		fprintf(stdout,"Debugging Information: (Format=%d) %s FILE.POS=%d is not zero.\n",hdr->TYPE,hdr->FileName,(int)hdr->FILE.POS);
 
 	typeof(hdr->NS) k;
 	for (k=0; k<hdr->NS; k++)
@@ -11708,7 +11710,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 	else if  ((__BYTE_ORDER == __BIG_ENDIAN) && !hdr->FILE.LittleEndian)
 			fprintf(stdout,"GDFTYP=%i [12bit BE/BE] not well tested\n",hdr->CHANNEL[k].GDFTYP);
 	}
-
+    }
 	if (VERBOSE_LEVEL>7)
 		fprintf(stdout,"sopen{return} %i %s\n", hdr->AS.B4C_ERRNUM,GetFileTypeString(hdr->TYPE) );
 #endif
@@ -12874,7 +12876,11 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 		e+=2;
 		
 		for (k1=0; k1<hdr->NS; k1++)
-    		if (hdr->CHANNEL[k1].OnOff) {
+		if (hdr->CHANNEL[k1].OnOff && hdr->CHANNEL[k1].SPR) {
+			/* Off channels and sparse channels (SPR) are not exported; 
+				sparse samples are available throught the header file 
+				containing the event table. 
+			*/
 			CHptr 	= hdr->CHANNEL+k1;
     			if (hdr->FILE.COMPRESSION) sprintf(e,"%02i_gz",(int)k1+1);
     			else sprintf(e,"%02i",(int)k1+1);
