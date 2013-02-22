@@ -1815,6 +1815,12 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    	hdr->TYPE = ATES;
     	else if (!memcmp(Header1,"ATF\x09",4))
     	        hdr->TYPE = ATF;
+	else if (!memcmp(Header1,"AxGr\1\0",6) || !memcmp(Header1,"AxGr\2\0",6)) {
+		hdr->TYPE = AXG;
+	}
+	else if (!memcmp(Header1,"axgx",4) || !memcmp(Header1,"axgx",4)) {
+		hdr->TYPE = AXG;
+	}
     	else if (!memcmp(Header1,"ADU1",4) || !memcmp(Header1,"ADU2",4)  )
     	        hdr->TYPE = Axona;
 
@@ -2248,6 +2254,7 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ ATES,    	"ATES" },
 	{ ATF,    	"ATF" },
 	{ AU,    	"AU" },
+	{ AXG,    	"AXG" },
 	{ Axona,    	"Axona" },
 	{ BCI2000,    	"BCI2000" },
 	{ BDF,    	"BDF" },
@@ -4675,6 +4682,25 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
     	else if (hdr->TYPE==alpha) {
 		ifclose(hdr); 	// close already opened file (typically its .../alpha.alp)
 		sopen_alpha_read(hdr);
+	}
+
+	else if (hdr->TYPE==AXG) {
+		if (!memcmp(Header1,"AxGr\1\0",6) || !memcmp(Header1,"AxGr\2\0",6)) {
+			hdr->TYPE = AXG;
+			hdr->VERSION = lei16p(Header1+4);
+			hdr->NS      = lei32p(Header1+6);
+		}
+		else if (!memcmp(Header1,"axgx",4) || !memcmp(Header1,"axgx",4)) {
+			hdr->TYPE = AXG;
+			hdr->VERSION = lei32p(Header1+4);
+			int32_t NS   =  lei32p(Header1+8);
+			if (NS >= (1<<sizeof(hdr->NS)*8)) {
+				biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG with more the 65535 channels are not supported");
+				return;
+			}
+			hdr->NS = NS;
+		}
+		biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG format not supported, yet.");
 	}
 
     	else if (hdr->TYPE==Axona) {
