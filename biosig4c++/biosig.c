@@ -1112,20 +1112,20 @@ void sort_eventtable(HDRTYPE *hdr) {
   ------------------------------------------------------------------------*/
 size_t reallocEventTable(HDRTYPE *hdr, size_t EventN)
 {
-            size_t n;
-			hdr->EVENT.POS = (uint32_t*)realloc(hdr->EVENT.POS, EventN * sizeof(*hdr->EVENT.POS));
-			hdr->EVENT.DUR = (uint32_t*)realloc(hdr->EVENT.DUR, EventN * sizeof(*hdr->EVENT.DUR));
-			hdr->EVENT.TYP = (uint16_t*)realloc(hdr->EVENT.TYP, EventN * sizeof(*hdr->EVENT.TYP));
-			hdr->EVENT.CHN = (uint16_t*)realloc(hdr->EVENT.CHN, EventN * sizeof(*hdr->EVENT.CHN));
+	size_t n;
+	hdr->EVENT.POS = (uint32_t*)realloc(hdr->EVENT.POS, EventN * sizeof(*hdr->EVENT.POS));
+	hdr->EVENT.DUR = (uint32_t*)realloc(hdr->EVENT.DUR, EventN * sizeof(*hdr->EVENT.DUR));
+	hdr->EVENT.TYP = (uint16_t*)realloc(hdr->EVENT.TYP, EventN * sizeof(*hdr->EVENT.TYP));
+	hdr->EVENT.CHN = (uint16_t*)realloc(hdr->EVENT.CHN, EventN * sizeof(*hdr->EVENT.CHN));
 #if (BIOSIG_VERSION >= 10500)
-			hdr->EVENT.TimeStamp = (gdf_time*)realloc(hdr->EVENT.TimeStamp, EventN * sizeof(gdf_time));
+	hdr->EVENT.TimeStamp = (gdf_time*)realloc(hdr->EVENT.TimeStamp, EventN * sizeof(gdf_time));
 #endif
-            for (n = hdr->EVENT.N; n< EventN; n++) {
-                    hdr->EVENT.TYP[n] = 0;
-                    hdr->EVENT.CHN[n] = 0;
-                    hdr->EVENT.DUR[n] = 0;
-            }
-			return EventN;
+	for (n = hdr->EVENT.N; n< EventN; n++) {
+		hdr->EVENT.TYP[n] = 0;
+		hdr->EVENT.CHN[n] = 0;
+		hdr->EVENT.DUR[n] = 0;
+	}
+	return EventN;
 }
 
 
@@ -2477,7 +2477,12 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     	/* end */
 
 		if (hdr->TYPE==GDF) {
+#if BIOSIG_VERSION >= 10500
+			hdr->VERSION = 2.50;
+#else
 			hdr->VERSION = 2.22;
+#endif
+
 			if (hdr->HeadLen & 0x00ff)	// in case of GDF v2, make HeadLen a multiple of 256.
 			hdr->HeadLen = (hdr->HeadLen & 0xff00) + 256;
 		}
@@ -3162,17 +3167,28 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"user-specific events defined\n");
 size_t hdrEVT2rawEVT(HDRTYPE *hdr) {
 
 	size_t k32u;
-	char flag = (hdr->EVENT.DUR != NULL) && (hdr->EVENT.CHN != NULL);
-	if (flag)   // any DUR or CHN is larger than 0
-		for (k32u=0, flag=0; (k32u<hdr->EVENT.N) && !flag; k32u++)
-			flag |= hdr->EVENT.CHN[k32u] || hdr->EVENT.DUR[k32u];
+	char flag = (hdr->EVENT.DUR != NULL) && (hdr->EVENT.CHN != NULL) ? 3 : 1;
+	if (flag==3)   // any DUR or CHN is larger than 0
+		for (k32u=0, flag=1; k32u < hdr->EVENT.N; k32u++)
+			if (hdr->EVENT.CHN[k32u] || hdr->EVENT.DUR[k32u]) {
+				flag = 3;
+				break;
+			}
 
-	int sze = flag ? 12 : 6;
+#if BIOSIG_VERSION >= 10500
+	if (hdr->EVENT.TimeStamp != NULL) {
+		flag = flag | 0x04;
+	}
+#endif
+
+	int sze;
+	sze  = (flag & 2) ? 12 : 6;
+	sze += (flag & 4) ?  8 : 0;
 	size_t len = 8+hdr->EVENT.N*sze;
 	hdr->AS.rawEventData = (uint8_t*) realloc(hdr->AS.rawEventData,len);
 	uint8_t *buf = hdr->AS.rawEventData;
 
-	buf[0] = (flag ? 3 : 1);
+	buf[0] = flag;
 	if (hdr->VERSION < 1.94) {
 		k32u   = lround(hdr->EVENT.SampleRate);
 		buf[1] =  k32u      & 0x000000FF;
@@ -3193,7 +3209,7 @@ size_t hdrEVT2rawEVT(HDRTYPE *hdr) {
 		*(uint32_t*)(buf1+k32u*4) = l_endian_u32(hdr->EVENT.POS[k32u]+1); // convert from 0-based (biosig4c++) to 1-based (GDF) indexing
 		*(uint16_t*)(buf2+k32u*2) = l_endian_u16(hdr->EVENT.TYP[k32u]);
 	}
-	if (flag) {
+	if (flag & 2) {
 		buf1 = hdr->AS.rawEventData+8+hdr->EVENT.N*6;
 		buf2 = hdr->AS.rawEventData+8+hdr->EVENT.N*8;
 		for (k32u=0; k32u<hdr->EVENT.N; k32u++) {
@@ -3201,6 +3217,14 @@ size_t hdrEVT2rawEVT(HDRTYPE *hdr) {
 			*(uint32_t*)(buf2+k32u*4) = l_endian_u32(hdr->EVENT.DUR[k32u]);
 		}
 	}
+#if BIOSIG_VERSION >= 10500
+	if (flag & 4) {
+		buf1 = hdr->AS.rawEventData+8+hdr->EVENT.N*(sze-8);
+		for (k32u=0; k32u<hdr->EVENT.N; k32u++) {
+			*(uint16_t*)(buf1+k32u*8) = l_endian_u64(hdr->EVENT.TimeStamp[k32u]);
+		}
+	}
+#endif
 	return(len);
 }
 
@@ -3232,8 +3256,11 @@ void rawEVT2hdrEVT(HDRTYPE *hdr) {
 				hdr->EVENT.N = buf[1] + (buf[2] + buf[3]*256)*256;
 				hdr->EVENT.SampleRate = lef32p(buf + 4);
 			}
-//			int sze = (buf[0]>1) ? 12 : 6;
-			
+
+			char flag = buf[0];
+			int sze = (flag & 2) ? 12 : 6;
+			if (flag & 4) sze+=8;
+
 			if (hdr->NS==0 && !isfinite(hdr->SampleRate)) hdr->SampleRate = hdr->EVENT.SampleRate; 
 
 	 		hdr->EVENT.POS = (uint32_t*) realloc(hdr->EVENT.POS, hdr->EVENT.N*sizeof(*hdr->EVENT.POS) );
@@ -3242,10 +3269,12 @@ void rawEVT2hdrEVT(HDRTYPE *hdr) {
 			uint8_t *buf1 = hdr->AS.rawEventData+8;
 			uint8_t *buf2 = hdr->AS.rawEventData+8+4*hdr->EVENT.N;
 			for (k=0; k < hdr->EVENT.N; k++) {
+				// POS & TYP
 				hdr->EVENT.POS[k] = leu32p(buf1 + k*4)-1;  // convert from 1-based (GDF) to 0-based (biosig4c++) indexing
 				hdr->EVENT.TYP[k] = leu16p(buf2 + k*2);
 			}
-			if (buf[0]>1) {
+			if (flag & 2) {
+				// DUR & CHN
 				hdr->EVENT.DUR = (uint32_t*) realloc(hdr->EVENT.DUR,hdr->EVENT.N*sizeof(*hdr->EVENT.DUR));
 				hdr->EVENT.CHN = (uint16_t*) realloc(hdr->EVENT.CHN,hdr->EVENT.N*sizeof(*hdr->EVENT.CHN));
 
@@ -3260,6 +3289,18 @@ void rawEVT2hdrEVT(HDRTYPE *hdr) {
 				hdr->EVENT.DUR = NULL;
 				hdr->EVENT.CHN = NULL;
 			}
+#if BIOSIG_VERSION >= 10500
+			if (flag & 4) {
+				// TimeStamp
+				hdr->EVENT.TimeStamp = (uint64_t*) realloc(hdr->EVENT.DUR,hdr->EVENT.N*sizeof(*hdr->EVENT.TimeStamp));
+				buf1 = hdr->AS.rawEventData+8+hdr->EVENT.N*(sze-8);
+				for (k=0; k < hdr->EVENT.N; k++) {
+					hdr->EVENT.TimeStamp[k] = leu64p(buf1 + k*8);
+				}
+			} else {
+				hdr->EVENT.TimeStamp = NULL;
+			}
+#endif
 }
 
 int NumberOfChannels(HDRTYPE *hdr)
@@ -11910,7 +11951,7 @@ size_t sread_raw(size_t start, size_t length, HDRTYPE* hdr, char flag) {
 		hdr->AS.flag_collapsed_rawdata = 0;	// is rawdata not collapsed
 //		if ((count<nelem) && ((hdr->NRec < 0) || (hdr->NRec > start+count))) hdr->NRec = start+count; // get NRec if NRec undefined, not tested yet.
 		if (count < nelem) {
-			fprintf(stderr,"warning: less then requested blocks read (%i/%i) from file %s - something went wrong\n",(int)count,(int)nelem,hdr->FileName);
+			fprintf(stderr,"warning: less than the number of requested blocks read (%i/%i) from file %s - something went wrong\n",(int)count,(int)nelem,hdr->FileName);
 			if (VERBOSE_LEVEL>7)
 				fprintf(stderr,"warning: only %i instead of %i blocks read - something went wrong (bpb=%i,pos=%li)\n",(int)count,(int)nelem,hdr->AS.bpb,iftell(hdr));
 		}
