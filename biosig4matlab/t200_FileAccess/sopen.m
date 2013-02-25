@@ -870,12 +870,11 @@ end;
                         [HDR.EVENT.POS,c1] = fread(HDR.FILE.FID,[EVENT.N,1],'uint32');
                         [HDR.EVENT.TYP,c2] = fread(HDR.FILE.FID,[EVENT.N,1],'uint16');
 
-                        if (EVENT.Version & 3)==1,
+                        if bitand(EVENT.Version, 3)==1,
                                 if any([c1,c2]~=EVENT.N)
                                         fprintf(2,'\nERROR SOPEN (GDF): Eventtable corrupted in file %s\n',HDR.FileName);
                                 end
-                                
-                        if (EVENT.Version & 3)==3,
+                        elseif bitand(EVENT.Version, 3)==3,
                                 [HDR.EVENT.CHN,c3] = fread(HDR.FILE.FID,[EVENT.N,1],'uint16');
                                 [HDR.EVENT.DUR,c4] = fread(HDR.FILE.FID,[EVENT.N,1],'uint32');
                         	%[EVENT.N,HDR.FILE.size,HDR.AS.EVENTTABLEPOS+8+EVENT.N*12]
@@ -885,8 +884,8 @@ end;
                         else
                                 fprintf(2,'\nWarning SOPEN (GDF): File %s corrupted (Eventtable version %i ).\n',HDR.FileName,EVENT.Version);
                         end;
-                        if (EVENT.Version & 4),
-                                [HDR.EVENT.TimeStamp,c3] = fread(HDR.FILE.FID,[EVENT.N,1],'uint64');
+                        if bitand(EVENT.Version, 4),
+                                [HDR.EVENT.TimeStamp,c5] = fread(HDR.FILE.FID,[EVENT.N,1],'uint64');
                                 HDR.EVENT.TimeStamp = HDR.EVENT.TimeStamp * (2^-32);
                                 if (HDR.VERSION < 2.50)
 					fprintf(stdout,'Warning: GDF version smaller than 2.50 has timestamp data');

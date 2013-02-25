@@ -151,7 +151,7 @@ if HDR.FILE.OPEN >= 2,          % write-open of files
                                 end;
                         end;
                         if isfield(HDR.EVENT,'TimeStamp')
-				EVENT.Version = EVENT.Version + 4;
+				EVENT.Version = bitor(EVENT.Version,4);
                         end;
 
                         if any(len~=len(1))
@@ -184,12 +184,12 @@ if HDR.FILE.OPEN >= 2,          % write-open of files
                                 c1 = fwrite(HDR.FILE.FID,HDR.EVENT.POS,'uint32');
                                 c2 = fwrite(HDR.FILE.FID,HDR.EVENT.TYP,'uint16');
                                 c3 = length(HDR.EVENT.POS); c4 = c3; c5=c3;
-                                if (EVENT.Version & 3)==3;
+                                if bitand(EVENT.Version, 3)==3;
                                         c3 = fwrite(HDR.FILE.FID,HDR.EVENT.CHN,'uint16');
                                         c4 = fwrite(HDR.FILE.FID,HDR.EVENT.DUR,'uint32');
                                 end;
                                 if (HDR.VERSION > 2.4)
-                                if (EVENT.Version & 4)==4;
+                                if bitand(EVENT.Version, 4)==4;
                                         c5 = fwrite(HDR.FILE.FID,HDR.EVENT.TimeStamp*(2^32),'uint64');
                                 end;
                                 end;
