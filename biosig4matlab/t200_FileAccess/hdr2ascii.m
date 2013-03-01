@@ -259,10 +259,11 @@ for k = 1:length(HDR.EVENT.POS);
 		t = datevec(HDR.EVENT.POS(k)/(24*3600*HDR.SampleRate)+T0);
 	end
 	fprintf(fid,'0x%04x\t%9i\t%04i-%02i-%02i %02i:%02i:%07.4f',[HDR.EVENT.TYP(k),HDR.EVENT.POS(k),t(1:6)]); 
-%%	fprintf(fid,'0x%04x\t%9i',[HDR.EVENT.TYP(k),HDR.EVENT.POS(k)]'); 
 	if isfield(HDR.EVENT,'CHN')
 		if ~isempty(HDR.EVENT.CHN)
-			fprintf(fid,'\t%i\t%i',HDR.EVENT.CHN(k),HDR.EVENT.DUR(k)); 
+			DUR = HDR.EVENT.DUR(k);
+			if (HDR.EVENT.TYP(k)==hex2dec('7fff')) DUR=0; end;
+			fprintf(fid,'\t%i\t%i', HDR.EVENT.CHN(k), DUR);
 		end;
 	else 
 		fprintf(fid,'\t-\t-');	
