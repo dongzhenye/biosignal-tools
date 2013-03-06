@@ -1560,6 +1560,11 @@ end;
 	                TagLenValue{tag} = char([HDR.Manufacturer.Name,0,HDR.Manufacturer.Model,0,HDR.Manufacturer.Version,0,HDR.Manufacturer.SerialNumber]);
 	                TagLen(tag) = length(TagLenValue{tag}); 
 		end;
+		if isfield(HDR,'REC') && isfield(HDR.REC,'Technician')
+			tag = 6;
+	                TagLenValue{tag} = HDR.REC.Technician;
+	                TagLen(tag) = length(TagLenValue{tag});
+		end;
 
                 if 0, isfield(HDR,'ELEC') && isfield(HDR.ELEC,'Orientation') && all(size(HDR.ELEC.Orientation)==[HDR.NS,3]) 
                 	%% OBSOLETE 
@@ -1864,7 +1869,7 @@ end;
         	        for tag=find(TagLen>0)
        	        		fwrite(HDR.FILE.FID, tag+TagLen(tag)*256, 'uint32');
         	        	switch tag 
-	       	        	case 3 
+				case {3,6}
         	       			fwrite(HDR.FILE.FID, TagLenValue{tag}, 'uint8');
        	        		case 4 	%% OBSOLETE 
                				%  c=fwrite(HDR.FILE.FID, HDR.ELEC.Orientation, 'float32');
