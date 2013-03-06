@@ -1560,6 +1560,12 @@ end;
 	                TagLenValue{tag} = char([HDR.Manufacturer.Name,0,HDR.Manufacturer.Model,0,HDR.Manufacturer.Version,0,HDR.Manufacturer.SerialNumber]);
 	                TagLen(tag) = length(TagLenValue{tag}); 
 		end;
+		if ~isfield(HDR,'REC') || ~isfield(HDR.REC,'Technician') || isempty(HDR.REC.Technician)
+			if exist('OCTAVE_VERSION','builtin')
+				tmp = getpwuid(getuid());
+				HDR.REC.Technician = strtok(tmp.gecos,',');
+			end;
+		end;
 		if isfield(HDR,'REC') && isfield(HDR.REC,'Technician')
 			tag = 6;
 	                TagLenValue{tag} = HDR.REC.Technician;
