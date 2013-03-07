@@ -8369,7 +8369,7 @@ if (VERBOSE_LEVEL>8)
     		/* ###  FIXME: some units are not encoded */
     		const uint16_t MFER_PhysDimCodeTable[30] = {
     			4256, 3872, 3840, 3904,65330,	// Volt, mmHg, Pa, mmH2O, mmHg/s
-    			3808, 3776,  544, 6048, 2528,	// dyne, N, %, °C, 1/min
+			3808, 3776,  544, 6048, 2528,	// dyne, N, %, Â°C, 1/min
     			4264, 4288, 4160,65376, 4032,	// 1/s, Ohm, A, rpm, W
     			6448, 1731, 3968, 6016, 1600,	// dB, kg, J, dyne s m-2 cm-5, l
     			3040, 3072, 4480,    0,    0,	// l/s, l/min, cd
@@ -11000,18 +11000,29 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		for (k=0; k<hdr->EVENT.N; k++) {
 
 			fprintf(fid,"\n0x%04x\t%f\t",hdr->EVENT.TYP[k],hdr->EVENT.POS[k]/hdr->EVENT.SampleRate);   // EVENT.POS uses 0-based indexing
-			if (hdr->EVENT.DUR != NULL)
-				fprintf(fid,"%f\t%d\t",hdr->EVENT.DUR[k]/hdr->EVENT.SampleRate,hdr->EVENT.CHN[k]);
+			if (hdr->EVENT.DUR != NULL) {
+				typeof(*hdr->EVENT.DUR) DUR;
+				DUR = (hdr->EVENT.TYP[k]==0x7fff) ? 0 : hdr->EVENT.DUR[k];
+				fprintf(fid,"%f\t%d\t", DUR/hdr->EVENT.SampleRate, hdr->EVENT.CHN[k]);
+			}
 			else
 				fprintf(fid,"\t\t");
 
-			if ((hdr->EVENT.TYP[k] == 0x7fff) && (hdr->TYPE==GDF)) {
+			if (hdr->EVENT.TYP[k] == 0x7fff) {
 				typeof(hdr->NS) chan = hdr->EVENT.CHN[k] - 1; 	
 				uint16_t gdftyp = hdr->CHANNEL[chan].GDFTYP;
+				double sample_value;
 				if (gdftyp==16)
-					fprintf(fid,"%g\t# sparse sample ",*(float*)(hdr->EVENT.DUR+k));	// value of sparse samples
+					sample_value = *(float*)(hdr->EVENT.DUR+k);
+				else if (gdftyp & 0x0001)
+					sample_value =  (int32_t)hdr->EVENT.DUR[k];
 				else
-					fprintf(fid,"%i\t# sparse sample ",hdr->EVENT.DUR[k]);	// value of sparse samples
+					sample_value =  (uint32_t)hdr->EVENT.DUR[k];
+
+				// Scaling here does not depend on hdr->FLAG.UCAL because both scaled and unscaled
+				// values are presented in the ASCII display
+				sample_value = sample_value * hdr->CHANNEL[chan].Cal + hdr->CHANNEL[chan].Off;
+				fprintf(fid,"%g\t# sparse sample ", sample_value);	// value of sparse samples
 			}
 			else {
 				const char *str = GetEventDescription(hdr,k); 
@@ -11128,9 +11139,9 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		fprintf(fid,"============================\r\n");
 		fprintf(fid,"Number of channels: %i\r\n",hdr->NS);
 		fprintf(fid,"Sampling Rate [Hz]: %f\r\n",hdr->SampleRate);
-		fprintf(fid,"Sampling Interval [µS]: %f\r\n",1e6/hdr->SampleRate);
+		fprintf(fid,"Sampling Interval [ÂµS]: %f\r\n",1e6/hdr->SampleRate);
 		fprintf(fid,"Channels\r\n--------\r\n");
-		fprintf(fid,"#     Name      Phys. Chn.    Resolution [µV]  Low Cutoff [s]   High Cutoff [Hz]   Notch [Hz]\n\r");
+		fprintf(fid,"#     Name      Phys. Chn.    Resolution [ÂµV]  Low Cutoff [s]   High Cutoff [Hz]   Notch [Hz]\n\r");
     		for (k=0; k<hdr->NS; k++) {
 			fprintf(fid,"\r\n%6i %13s %17i %18f",k+1,hdr->CHANNEL[k].Label,k+1,hdr->CHANNEL[k].Cal);
 
