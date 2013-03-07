@@ -1122,10 +1122,14 @@ size_t reallocEventTable(HDRTYPE *hdr, size_t EventN)
 #if (BIOSIG_VERSION >= 10500)
 	hdr->EVENT.TimeStamp = (gdf_time*)realloc(hdr->EVENT.TimeStamp, EventN * sizeof(gdf_time));
 #endif
+
 	for (n = hdr->EVENT.N; n< EventN; n++) {
 		hdr->EVENT.TYP[n] = 0;
 		hdr->EVENT.CHN[n] = 0;
 		hdr->EVENT.DUR[n] = 0;
+#if (BIOSIG_VERSION >= 10500)
+		hdr->EVENT.TimeStamp[n] = 0;
+#endif
 	}
 	return EventN;
 }
@@ -1163,7 +1167,8 @@ void convert2to4_eventtable(HDRTYPE *hdr) {
 			hdr->EVENT.DUR[k2]=hdr->EVENT.DUR[k1];
 			hdr->EVENT.CHN[k2]=hdr->EVENT.CHN[k1];
 #if (BIOSIG_VERSION >= 10500)
-			hdr->EVENT.TimeStamp[k2] = hdr->EVENT.TimeStamp[k1];
+			if (hdr->EVENT.TimeStamp != NULL)
+				hdr->EVENT.TimeStamp[k2] = hdr->EVENT.TimeStamp[k1];
 #endif
 		}
 		if (hdr->EVENT.TYP[k1]) k2++;
