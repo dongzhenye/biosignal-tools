@@ -1064,44 +1064,46 @@ void sort_eventtable(HDRTYPE *hdr) {
 	size_t k;
 	struct event *entry = (struct event*) calloc(hdr->EVENT.N, sizeof(struct event));
 	if ((hdr->EVENT.DUR != NULL) && (hdr->EVENT.CHN != NULL))
-	for (k=0; k<hdr->EVENT.N;k++) {
+	for (k=0; k < hdr->EVENT.N; k++) {
 		entry[k].TYP = hdr->EVENT.TYP[k];
 		entry[k].POS = hdr->EVENT.POS[k];
 		entry[k].CHN = hdr->EVENT.CHN[k];
 		entry[k].DUR = hdr->EVENT.DUR[k];
-#if (BIOSIG_VERSION >= 10500)
-		entry[k].TimeStamp = hdr->EVENT.TimeStamp[k];
-#endif
 	}
 	else
-	for (k=0; k<hdr->EVENT.N;k++) {
+	for (k=0; k < hdr->EVENT.N; k++) {
 		entry[k].TYP = hdr->EVENT.TYP[k];
 		entry[k].POS = hdr->EVENT.POS[k];
-#if (BIOSIG_VERSION >= 10500)
-		entry[k].TimeStamp = hdr->EVENT.TimeStamp[k];
-#endif
 	}
+#if (BIOSIG_VERSION >= 10500)
+	if (hdr->EVENT.TimeStamp != NULL)
+	for (k=0; k < hdr->EVENT.N; k++) {
+		entry[k].TimeStamp = hdr->EVENT.TimeStamp[k];
+	}
+#endif
 
 	qsort(entry, hdr->EVENT.N, sizeof(struct event), &compare_eventpos);
 
 	if ((hdr->EVENT.DUR != NULL) && (hdr->EVENT.CHN != NULL))
-	for (k=0; k<hdr->EVENT.N;k++) {
+	for (k=0; k < hdr->EVENT.N; k++) {
 		hdr->EVENT.TYP[k] = entry[k].TYP;
 		hdr->EVENT.POS[k] = entry[k].POS;
 		hdr->EVENT.CHN[k] = entry[k].CHN;
 		hdr->EVENT.DUR[k] = entry[k].DUR;
-#if (BIOSIG_VERSION >= 10500)
-		hdr->EVENT.TimeStamp[k] = entry[k].TimeStamp;
-#endif
 	}
 	else
-	for (k=0; k<hdr->EVENT.N;k++) {
+	for (k=0; k < hdr->EVENT.N; k++) {
 		hdr->EVENT.TYP[k] = entry[k].TYP;
 		hdr->EVENT.POS[k] = entry[k].POS;
-#if (BIOSIG_VERSION >= 10500)
-		hdr->EVENT.TimeStamp[k] = entry[k].TimeStamp;
-#endif
 	}
+
+#if (BIOSIG_VERSION >= 10500)
+	if (hdr->EVENT.TimeStamp != NULL)
+	for (k=0; k < hdr->EVENT.N; k++) {
+		hdr->EVENT.TimeStamp[k] = entry[k].TimeStamp;
+	}
+#endif
+
 	free(entry);
 }
 
