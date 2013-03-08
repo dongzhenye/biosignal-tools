@@ -1938,7 +1938,7 @@ elseif strmatch(HDR.TYPE,{'CNT';'AVG';'EEG'},'exact')
                 if ~isfield(HDR,'THRESHOLD'),
                 	if HDR.FLAG.OVERFLOWDETECTION,
 	                       fprintf(2,'WARNING SOPEN(CNT): OVERFLOWDETECTION might not work correctly. See also EEG2HIST and read \n'); 
-        	               fprintf(2,'   http://dx.doi.org/10.1016/S1388-2457(99)00172-8 (A. Schlögl et al. Quality Control ... Clin. Neurophysiol. 1999, Dec; 110(12): 2165 - 2170).\n'); 
+        	               fprintf(2,'   http://dx.doi.org/10.1016/S1388-2457(99)00172-8 (A. SchlÃ¶gl et al. Quality Control ... Clin. Neurophysiol. 1999, Dec; 110(12): 2165 - 2170).\n'); 
         	               fprintf(2,'   A copy is available here, too: http://pub.ist.ac.at/~schloegl/publications/neurophys1999_2165.pdf \n'); 
         	        end;        
 			[datatyp,limits,datatypes,numbits,GDFTYP]=gdfdatatype(HDR.GDFTYP);
@@ -6350,7 +6350,7 @@ elseif strcmp(HDR.TYPE,'BCI2003_Ia+b');
         
         HDR.NRec = length(HDR.Classlabel);
         HDR.FLAG.TRIGGERED = HDR.NRec>1; 
-        HDR.PhysDim = 'µV';
+        HDR.PhysDim = 'ÂµV';
         HDR.SampleRate = 256; 
         
         if strfind(HDR.FILE.Path,'a34lkt') 
@@ -7111,8 +7111,8 @@ elseif strncmp(HDR.TYPE,'MAT',3),
                 else
                         HDR.SampleRate=tmp.SampleRate;
                 end;
-                HDR.PhysDim = 'µV';
-                fprintf(HDR.FILE.stderr,'Sensitivity not known in %s. 50µV is chosen\n',HDR.FileName);
+                HDR.PhysDim = 'ÂµV';
+                fprintf(HDR.FILE.stderr,'Sensitivity not known in %s. 50ÂµV is chosen\n',HDR.FileName);
                         HDR.data = tmp.EEGdata*50;
                 HDR.TYPE = 'native'; 
 
@@ -7141,8 +7141,8 @@ elseif strncmp(HDR.TYPE,'MAT',3),
                 else
                         HDR.SampleRate=tmp.SampleRate;
                 end;
-                HDR.PhysDim = 'µV';
-                fprintf(HDR.FILE.stderr,'Sensitivity not known in %s. 100µV is chosen\n',HDR.FileName);
+                HDR.PhysDim = 'ÂµV';
+                fprintf(HDR.FILE.stderr,'Sensitivity not known in %s. 100ÂµV is chosen\n',HDR.FileName);
                 %signal=tmp.daten.raw(:,1:HDR.NS)*100;
                 HDR.data = tmp.daten.raw*100;
                 HDR.TYPE = 'native'; 
@@ -7509,8 +7509,8 @@ elseif strncmp(HDR.TYPE,'BCI2000',7),
 			[tline,rr] = strtok(rr,[10,13]);
 		end;
 
-                %HDR.PhysDim = 'µV';
-                HDR.PhysDimCode = repmat(4275,HDR.NS,1); % 'µV';
+                %HDR.PhysDim = 'ÂµV';
+                HDR.PhysDimCode = repmat(4275,HDR.NS,1); % 'ÂµV';
                 HDR.Calib = [HDR.Off(1)*ones(1,HDR.NS);eye(HDR.NS)]*HDR.Cal(1);
 
 		% decode State Vector Definition 
@@ -8684,10 +8684,10 @@ elseif strncmp(HDR.TYPE,'BrainVision',11),
                                 HDR.Cal(chan) = 1;
                         end;
                         tmp = t2(ix(3)+1:end);
-                        if isequal(tmp,char([194,'µV'])), 
+                        if isequal(tmp,char([194,'ÂµV'])), 
                                 tmp = tmp(2:3); 
                         elseif isempty(tmp),
-                                tmp = 'µV';
+                                tmp = 'ÂµV';
                         end; 
                         HDR.PhysDim{chan,1} = tmp; 
                         
@@ -9433,7 +9433,7 @@ elseif strncmp(HDR.TYPE,'ABF',3),
                 t = fread(HDR.FILE.FID,3,'uint16');
 
 % this part is from IMPORT_ABF.M from 
-%     © 2002 - Michele Giugliano, PhD (http://www.giugliano.info) (Bern, Friday March 8th, 2002 - 20:09)
+%     Â© 2002 - Michele Giugliano, PhD (http://www.giugliano.info) (Bern, Friday March 8th, 2002 - 20:09)
 
 HDR.ABF.ScopeOutputInterval  = fread(HDR.FILE.FID,1,'float'); % 174
 HDR.ABF.EpisodeStartToStart  = fread(HDR.FILE.FID,1,'float'); % 178
