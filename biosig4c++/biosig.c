@@ -3975,11 +3975,11 @@ else if (!strncmp(MODE,"r",1)) {
 		memset(tmp,0,9);
 	    	hdr->NS		= atoi(memcpy(tmp,Header1+252,4));
 	    	hdr->HeadLen	= atoi(memcpy(tmp,Header1+184,8));
-	    	if (hdr->HeadLen != ((hdr->NS+1u)<<8)) {
-	    		biosigERROR(hdr, B4C_UNSPECIFIC_ERROR, "EDF/BDF corrupted: HDR.NS and HDR.HeadLen do not fit");
-	    		if (VERBOSE_LEVEL > 7)
-	    		fprintf(stdout,"HeadLen=%i,%i\n",hdr->HeadLen ,(hdr->NS+1)<<8);
-	    	};
+		if (hdr->HeadLen < ((hdr->NS+1u)*256)) {
+			biosigERROR(hdr, B4C_UNSPECIFIC_ERROR, "EDF/BDF corrupted: HDR.NS and HDR.HeadLen do not fit");
+			if (VERBOSE_LEVEL > 7)
+				fprintf(stdout,"HeadLen=%i,%i\n",hdr->HeadLen ,(hdr->NS+1)<<8);
+		};
 
 	    	hdr->NRec	= atoi(strncpy(tmp,Header1+236,8));
 	    	//Dur		= atof(strncpy(tmp,Header1+244,8));

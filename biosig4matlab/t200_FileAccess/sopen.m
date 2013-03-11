@@ -496,10 +496,12 @@ end;
                         HDR.ErrNum=[1088,HDR.ErrNum];
                         HDR.Dur=30;
                 end;
-                
-                if  any(HDR.T0>[2084 12 31 24 59 59]) || any(HDR.T0<[1985 1 1 0 0 0])
-                        HDR.ErrNum = [4, HDR.ErrNum];
-                end;
+
+		if ~any(HDR.ErrNum ==1032)
+			if  any(HDR.T0>[2084 12 31 24 59 59]) || any(HDR.T0<[1985 1 1 0 0 0])
+				HDR.ErrNum = [4, HDR.ErrNum];
+			end;
+		end;
 
                 %%% Read variable Header %%%
                 %if ~strcmp(HDR.VERSION(1:3),'GDF'),
