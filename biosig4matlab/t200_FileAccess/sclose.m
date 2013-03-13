@@ -150,6 +150,9 @@ if HDR.FILE.OPEN >= 2,          % write-open of files
 					len = [len,length(HDR.EVENT.CHN),length(HDR.EVENT.DUR)];
                                 end;
                         end;
+                        if isfield(HDR.EVENT,'TimeStamp')
+				EVENT.Version = bitor(EVENT.Version,4);
+                        end;
 
                         if any(len~=len(1))
                                 fprintf(HDR.FILE.stderr,'Error SCLOSE-GDF: cannot write Event table, file %s not closed.\n',HDR.FileName);
@@ -180,12 +183,17 @@ if HDR.FILE.OPEN >= 2,          % write-open of files
 				% write table 
                                 c1 = fwrite(HDR.FILE.FID,HDR.EVENT.POS,'uint32');
                                 c2 = fwrite(HDR.FILE.FID,HDR.EVENT.TYP,'uint16');
-                                c3 = length(HDR.EVENT.POS); c4 = c3; 
-                                if EVENT.Version==3;
+                                c3 = length(HDR.EVENT.POS); c4 = c3; c5=c3;
+                                if bitand(EVENT.Version, 3)==3;
                                         c3 = fwrite(HDR.FILE.FID,HDR.EVENT.CHN,'uint16');
                                         c4 = fwrite(HDR.FILE.FID,HDR.EVENT.DUR,'uint32');
                                 end;
-                                if any([c1,c2,c3,c4]~=length(HDR.EVENT.POS))
+                                if (HDR.VERSION > 2.4)
+                                if bitand(EVENT.Version, 4)==4;
+                                        c5 = fwrite(HDR.FILE.FID,HDR.EVENT.TimeStamp*(2^32),'uint64');
+                                end;
+                                end;
+                                if any([c1,c2,c3,c4,c5]~=length(HDR.EVENT.POS))
                                         fprintf(2,'\nError SCLOSE: writing of EVENTTABLE failed. File %s not closed.\n', HDR.FileName);
                                         return;
                                 end

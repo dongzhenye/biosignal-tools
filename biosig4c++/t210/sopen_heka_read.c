@@ -217,7 +217,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 995 %i %i \n",StartOfPulse, Sizes.Rec.
 
 if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 997\n");
 		
-		hdr->T0 = heka2gdftime(t);
+		hdr->T0 = heka2gdftime(t);	// this is when when heka was started, data is recorded later.
 		hdr->SampleRate = 0.0;
 		double *DT = NULL; 	// list of sampling intervals per channel
 		hdr->SPR = 0;
@@ -301,7 +301,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L3 @%i= %fHz\t%i/%i %i/%i %i/%i %s\n",
 						              && (hdr->AS.SegSel[1]==0 || k2+1==hdr->AS.SegSel[1])
 							      && (hdr->AS.SegSel[2]==0 || k3+1==hdr->AS.SegSel[2]);
 
-					if (flagSweepSelected && hdr->SPR > 0) {
+					// hdr->SPR
+					if (hdr->SPR==0)
+						hdr->T0 = t; 		// start time of first recording determines the start time of the recording
+					else if (flagSweepSelected && hdr->SPR > 0) {
 						// marker for start of sweep
 						hdr->EVENT.POS[hdr->EVENT.N] = hdr->SPR;	// within reading the structure, hdr->SPR is used as a intermediate variable counting the number of samples
 						hdr->EVENT.TYP[hdr->EVENT.N] = 0x7ffe;

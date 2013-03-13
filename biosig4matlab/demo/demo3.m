@@ -72,12 +72,12 @@ HDR.T0 = clock;
 HDR.NS = size(x,2);
 
 % Duration of one block in seconds
-HDR.SampleRate = 1000
-HDR.SPR = 3000;   
-HDR.Dur = 3; HDR.SPR/HDR.SampleRate;
+HDR.SampleRate = 1000;
+HDR.SPR = 10000;
+HDR.Dur = HDR.SPR/HDR.SampleRate;
 
 % Samples within 1 block
-HDR.AS.SPR = 3*[1000;100;200;100;20;0];	% samples per block; 0 indicates a channel with sparse sampling 
+HDR.AS.SPR = [1000;100;200;100;20;0];	% samples per block; 0 indicates a channel with sparse sampling 
 %HDR.AS.SampleRate = [1000;100;200;100;20;0];	% samplerate of each channel
 
 % channel identification, max 80 char. per channel

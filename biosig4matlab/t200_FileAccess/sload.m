@@ -214,6 +214,16 @@ if ((iscell(FILENAME) || isstruct(FILENAME))),
                                 if isfield(H.EVENT,'DUR');
       					H.EVENT.DUR = [H.EVENT.DUR; size(s,1); h.EVENT.DUR];
                                 end;
+				if isfield(H.EVENT,'TimeStamp');
+					T0 = datenum(h.T0);
+					if ~isfield(h.EVENT,'TimeStamp') || isempty(h.EVENT.TimeStamp)
+						H.EVENT.TimeStamp = [H.EVENT.TimeStamp; T0; T0 + h.EVENT.POS/(24*3600*h.EVENT.SampleRate)];
+					elseif all(size(h.EVENT.POS)==size(h.EVENT.TimeStamp))
+						H.EVENT.TimeStamp = [H.EVENT.TimeStamp; T0; h.EVENT.TimeStamp];
+					else
+						warning('size of EVENT.TimeStamp and size of EVENT.POS differ!\n');
+					end;
+				end;
                                 if isfield(H.EVENT,'Desc');	% TFM-Excel-Beat-to-Beat
                                         H.EVENT.Desc = [H.EVENT.Desc; {'New Segment'}; h.EVENT.Desc];
                                 end;
