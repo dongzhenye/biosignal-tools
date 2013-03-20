@@ -90,22 +90,26 @@ if HDR.FILE.OPEN >= 2,          % write-open of files
                 	else
 	                        HDR.AS.EVENTTABLEPOS = HDR.HeadLen+HDR.AS.bpb*HDR.NRec;
 	                end; 
+
+                        len = [length(HDR.EVENT.POS),length(HDR.EVENT.TYP)];
+                        EVENT.Version = 1;
+                        if isfield(HDR.EVENT,'CHN') && isfield(HDR.EVENT,'DUR'),
+                                if any(HDR.EVENT.CHN) || any(HDR.EVENT.DUR),
+                                        EVENT.Version = 3;
+					len = [len,length(HDR.EVENT.CHN),length(HDR.EVENT.DUR)];
+                                end;
+                                DUR = HDR.EVENT.DUR;
+                        end;
+
                         if isfield(HDR.EVENT,'VAL')
                                 % handling of sparse (non-equidistant) sampling values
                                 if isempty(HDR.EVENT.DUR)
-                                        HDR.EVENT.DUR = zeros(size(HDR.EVENT.TYP));
+                                        DUR = zeros(size(HDR.EVENT.TYP));
                                 end;
                                 if (HDR.VERSION<1.90)
                                         fprintf(2,'Warning SCLOSE: GDF v2.0 or higher required for storing sparse samples but version is only %4.2f.\n',HDR.VERSION); 
-                                        %ix0 = ~isnan(HDR.EVENT.VAL);
-                                        %HDR.EVENT.POS = HDR.EVENT.POS(~ix0); 
-                                        %HDR.EVENT.TYP = HDR.EVENT.TYP(~ix0); 
-                                        %HDR.EVENT.CHN = HDR.EVENT.CHN(~ix0); 
-                                        %HDR.EVENT.DUR = HDR.EVENT.DUR(~ix0); 
-                                        %HDR.EVENT = rmfield(HDR.EVENT,'VAL'); 
                                 end;
-	                end; 
-                        if isfield(HDR.EVENT,'VAL')
+
                                 ix  = find(~isnan(HDR.EVENT.VAL));
                                 tmp = unique(HDR.EVENT.CHN(ix));
                                 
@@ -129,34 +133,29 @@ if HDR.FILE.OPEN >= 2,          % write-open of files
                                                         ix0 = ix0 | (HDR.EVENT.CHN==tmp(k));
                                                 end;
                                         end;
-                                        HDR.EVENT.POS = HDR.EVENT.POS(~ix0); 
-                                        HDR.EVENT.TYP = HDR.EVENT.TYP(~ix0); 
-                                        HDR.EVENT.CHN = HDR.EVENT.CHN(~ix0); 
-                                        HDR.EVENT.DUR = HDR.EVENT.DUR(~ix0); 
-                                        HDR.EVENT.VAL = HDR.EVENT.VAL(~ix0); 
+                                        HDR.EVENT.POS = HDR.EVENT.POS(~ix0);
+                                        HDR.EVENT.TYP = HDR.EVENT.TYP(~ix0);
+                                        HDR.EVENT.CHN = HDR.EVENT.CHN(~ix0);
+                                        HDR.EVENT.DUR = HDR.EVENT.DUR(~ix0);
+                                        DUR = DUR(~ix0);
+                                        HDR.EVENT.VAL = HDR.EVENT.VAL(~ix0);
                                         ix = ~isnan(HDR.EVENT.VAL);
                                 end;
 
                                 % prepare for storing 
+                                % DUR is used as a local copy of HDR.EVENT.DUR or HDR.EVENT.VAL for writting to GDF file
                                 HDR.EVENT.TYP(ix) = hex2dec('7fff');
                                 if (HDR.FLAG.UCAL)
-	                                HDR.EVENT.DUR(ix) = HDR.EVENT.VAL(ix);
+	                                DUR(ix) = HDR.EVENT.VAL(ix);
 	                        else
 					ch = HDR.EVENT.CHN(ix);
-	                                HDR.EVENT.DUR(ix) = (HDR.EVENT.VAL(ix)-HDR.PhysMin(ch)).*(HDR.DigMax(ch)-HDR.DigMin(ch))./(HDR.PhysMax(ch)-HDR.PhysMin(ch))+HDR.DigMin(ch);
+	                                DUR(ix) = (HDR.EVENT.VAL(ix)-HDR.PhysMin(ch)).*(HDR.DigMax(ch)-HDR.DigMin(ch))./(HDR.PhysMax(ch)-HDR.PhysMin(ch))+HDR.DigMin(ch);
 	                                ix = find(HDR.EVENT.DUR<0);
-	                                HDR.EVENT.DUR(ix)=HDR.EVENT.DUR(ix)+(2^32);	%% convert negative numbers to uint32 encoding
+	                                DUR(ix)=HDR.EVENT.DUR(ix)+(2^32);	%% convert negative numbers to uint32 encoding
+	                                ## FIXME: conversion to float32
 	                        end;
                         end;
 
-                        len = [length(HDR.EVENT.POS),length(HDR.EVENT.TYP)]; 
-                        EVENT.Version = 1;
-                        if isfield(HDR.EVENT,'CHN') && isfield(HDR.EVENT,'DUR'), 
-                                if any(HDR.EVENT.CHN) || any(HDR.EVENT.DUR),
-                                        EVENT.Version = 3;
-					len = [len,length(HDR.EVENT.CHN),length(HDR.EVENT.DUR)];
-                                end;
-                        end;
                         if isfield(HDR.EVENT,'TimeStamp')
 				EVENT.Version = bitor(EVENT.Version,4);
                         end;
@@ -193,7 +192,7 @@ if HDR.FILE.OPEN >= 2,          % write-open of files
                                 c3 = length(HDR.EVENT.POS); c4 = c3; c5=c3;
                                 if bitand(EVENT.Version, 3)==3;
                                         c3 = fwrite(HDR.FILE.FID,HDR.EVENT.CHN,'uint16');
-                                        c4 = fwrite(HDR.FILE.FID,HDR.EVENT.DUR,'uint32');
+                                        c4 = fwrite(HDR.FILE.FID,DUR,'uint32');
                                 end;
                                 if (HDR.VERSION > 2.4)
                                 if bitand(EVENT.Version, 4)==4;
