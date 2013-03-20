@@ -242,9 +242,9 @@ TODAY          := $(shell date +%Y%m%d)
 ####### Output directory
 
 OBJ	      = ./obj
-INC	      = $(DESTDIR)/usr/local/include
-BIN	      = $(DESTDIR)/usr/local/bin
-LIB	      = $(DESTDIR)/usr/local/lib
+INC	      = $(DESTDIR)/usr/include
+BIN	      = $(DESTDIR)/usr/bin
+LIB	      = $(DESTDIR)/usr/lib
 
 
 ####### Files
@@ -854,19 +854,21 @@ install_octave: mexSLOAD.mex
 	install mex/mexSLOAD.mex* 	$(DESTDIR)/usr/share/octave/site-m/
 	install mex/mexSOPEN.mex* 	$(DESTDIR)/usr/share/octave/site-m/
 
-install_libbiosig: libbiosig.a libbiosig.so libbiosig2.a libbiosig2.so libphysicalunits.a libphysicalunits.so
+install_libbiosig.a: libbiosig.a libbiosig2.a libphysicalunits.a
 	install biosig.h    		$(INC)
 	install biosig-dev.h    	$(INC)
 	install physicalunits.h    	$(INC)
-	install libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)
-	ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}
-	ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION} $(LIB)/libbiosig.so
 	install libbiosig.a		$(LIB)
 	install libbiosig.pc		$(LIB)/pkgconfig/
 	install libphysicalunits.a 	$(LIB)
-	install libphysicalunits.so	$(LIB)
 	install biosig2.h    		$(INC)
 	install libbiosig2.a		$(LIB)
+
+install_libbiosig: libbiosig.so libbiosig2.so libphysicalunits.so  install_libbiosig.a
+	install libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)
+	ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}
+	ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION} $(LIB)/libbiosig.so
+	install libphysicalunits.so	$(LIB)
 	install libbiosig2.so		$(LIB)
 
 install: save2gdf libbiosig.a doc/save2gdf.1 install_libbiosig
