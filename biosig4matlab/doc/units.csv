@@ -117,7 +117,7 @@
 2816,"m s-1",,"<magnitude> metre(s) per second"
 ,,"LT-1  (areic volume rate)",
 2848,"l min-1 m-2",,"<magnitude> litre(s) per minute per square meter"
-2848,"l/(min*m²)",,"<magnitude> litre(s) per minute per square meter"
+2848,"l/(min*mÂ²)",,"<magnitude> litre(s) per minute per square meter"
 2880,"m2 s-1 [cm2 s-1]",,"square <magnitude>  metre(s) per second"
 ,,"L3T-1  (volume flow rate)",
 2912,"m3 s-1",,"cubic <magnitude> metre(s) per second"
@@ -198,8 +198,8 @@
 4352,"F",,"<magnitude> farad(s)"
 ,,"Q(temperature)",
 4384,"K",,"Kelvin"
-6048,"°C",,"degree Celcius"
-4416,"°F",,"degree Fahrenheit"
+6048,"Â°C",,"degree Celcius"
+4416,"Â°F",,"degree Fahrenheit"
 ,,"QT3M-1L-2 (thermal resistance)",
 4448,"K W-1",,"kelvin(s) per <magnitude> watt"
 ,,"J (luminous intensity)",
@@ -262,7 +262,7 @@
 6208,"Pa %-1","- ratio of paO2 to FIO2","<magnitude> pascal per percent"
 6432,"B", "Bel", "relative power decibel"	
 6624,"m s-2", "meter per second squared", "acceleration"
-6624,"m/s²", "meter per second squared", "acceleration"
+6624,"m/sÂ²", "meter per second squared", "acceleration"
 6656,"rad s2-2", "radians per second squared", "(angular) acceleration" 
 6688,"ft min-1",,"Foot per minute"
 6720,"in min-1",,"Inch per minute"
@@ -282,9 +282,9 @@
 65376,"r.p.m",,"rotations per minute"
 65408,"B", "Bel", "relative power decibel"
 65440,"dyne s m2 cm-5","Vascular Resistance Index","dyne seconds square meter per centimetre to the power of 5"
-65440,"dyne*s*m²/cm^5","Vascular Resistance Index","dyne seconds square meter per centimetre to the power of 5"
+65440,"dyne*s*mÂ²/cm^5","Vascular Resistance Index","dyne seconds square meter per centimetre to the power of 5"
 65472,"l m-2","stroke index","litres per square meter"
-65472,"l/m²","stroke index","litres per square meter"
+65472,"l/mÂ²","stroke index","litres per square meter"
 65504,"T",,"<magnitude> Tesla" 
 #
 #
