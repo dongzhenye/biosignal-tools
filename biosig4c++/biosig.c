@@ -1359,6 +1359,44 @@ const char* GetEventDescription(HDRTYPE *hdr, size_t N) {
 }
 
 /*------------------------------------------------------------------------
+	DUR2VAL converts sparse sample values in the event table 
+	from the DUR format (uint32) to the sample value.
+	Endianity of the platform is considered.
+  ------------------------------------------------------------------------*/
+double dur2val(uint32_t DUR, uint16_t gdftyp) {
+
+	if (gdftyp==5)
+		return (double)(int32_t)DUR;
+	if (gdftyp==6)
+		return (double)(uint32_t)DUR;
+	if (gdftyp==16)
+		return (double)*(float*)(&DUR);
+
+	union {
+		uint32_t t32;
+		uint16_t t16[2];
+		uint8_t  t8[4];
+	} u;
+	/*
+		make sure u32 is always little endian like in the GDF file
+		and only then extract the sample value
+	*/
+	u.t32 = l_endian_u32(DUR);
+
+	if (gdftyp==1)
+		return (double)(int8_t)(u.t8[0]);
+	if (gdftyp==2)
+		return (double)(uint8_t)(u.t8[0]);
+	if (gdftyp==3)
+		return (double)(int16_t)l_endian_u16(u.t16[0]);
+	if (gdftyp==4)
+		return (double)(uint16_t)l_endian_u16(u.t16[0]);
+
+	return NAN;
+}
+
+
+/*------------------------------------------------------------------------
 	getTimeChannelNumber
 	searches all channels, whether one channel contains the time axis
 
@@ -2491,7 +2529,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     	/* end */
 
 		if (hdr->TYPE==GDF) {
-#if BIOSIG_VERSION >= 10500
+#if (BIOSIG_VERSION >= 10500)
 			hdr->VERSION = 2.50;
 #else
 			hdr->VERSION = 2.22;
@@ -3189,7 +3227,7 @@ size_t hdrEVT2rawEVT(HDRTYPE *hdr) {
 				break;
 			}
 
-#if BIOSIG_VERSION >= 10500
+#if (BIOSIG_VERSION >= 10500)
 	if (hdr->EVENT.TimeStamp != NULL) {
 		flag = flag | 0x04;
 	}
@@ -3231,7 +3269,7 @@ size_t hdrEVT2rawEVT(HDRTYPE *hdr) {
 			*(uint32_t*)(buf2+k32u*4) = l_endian_u32(hdr->EVENT.DUR[k32u]);
 		}
 	}
-#if BIOSIG_VERSION >= 10500
+#if (BIOSIG_VERSION >= 10500)
 	if (flag & 4) {
 		buf1 = hdr->AS.rawEventData+8+hdr->EVENT.N*(sze-8);
 		for (k32u=0; k32u<hdr->EVENT.N; k32u++) {
@@ -3303,7 +3341,7 @@ void rawEVT2hdrEVT(HDRTYPE *hdr) {
 				hdr->EVENT.DUR = NULL;
 				hdr->EVENT.CHN = NULL;
 			}
-#if BIOSIG_VERSION >= 10500
+#if (BIOSIG_VERSION >= 10500)
 			if (flag & 4) {
 				// TimeStamp
 				hdr->EVENT.TimeStamp = (uint64_t*) realloc(hdr->EVENT.DUR,hdr->EVENT.N*sizeof(*hdr->EVENT.TimeStamp));
@@ -11017,19 +11055,12 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 
 			if (hdr->EVENT.TYP[k] == 0x7fff) {
 				typeof(hdr->NS) chan = hdr->EVENT.CHN[k] - 1; 	
-				uint16_t gdftyp = hdr->CHANNEL[chan].GDFTYP;
-				double sample_value;
-				if (gdftyp==16)
-					sample_value = *(float*)(hdr->EVENT.DUR+k);
-				else if (gdftyp & 0x0001)
-					sample_value =  (int32_t)hdr->EVENT.DUR[k];
-				else
-					sample_value =  (uint32_t)hdr->EVENT.DUR[k];
+				double val = dur2val(hdr->EVENT.DUR[k], hdr->CHANNEL[chan].GDFTYP);
 
-				// Scaling here does not depend on hdr->FLAG.UCAL because both scaled and unscaled
-				// values are presented in the ASCII display
-				sample_value = sample_value * hdr->CHANNEL[chan].Cal + hdr->CHANNEL[chan].Off;
-				fprintf(fid,"%g\t# sparse sample ", sample_value);	// value of sparse samples
+				val *= hdr->CHANNEL[chan].Cal;
+				val += hdr->CHANNEL[chan].Off;
+
+				fprintf(fid,"%g\t# sparse sample ", val);	// value of sparse samples
 			}
 			else {
 				const char *str = GetEventDescription(hdr,k); 
@@ -13477,13 +13508,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%i\n", (int)c);
 		if (hdr->EVENT.TYP[k] == 0x7fff) {
 			// c += sprintf(STR, ",\n\t\t\"Description\"\t: \"[sparse sample]\"");
 			typeof(hdr->NS) chan = hdr->EVENT.CHN[k] - 1;
-			uint16_t gdftyp = hdr->CHANNEL[chan].GDFTYP;
-			double val; 
-			if (gdftyp==16)
-				val = (double)*(float*)(hdr->EVENT.DUR+k); 
-			else 
-				val = (double)(hdr->EVENT.DUR[k]); 
-				
+
+			double val = dur2val(hdr->EVENT.DUR[k], hdr->CHANNEL[chan].GDFTYP);
+
 			val *= hdr->CHANNEL[chan].Cal; 
 			val += hdr->CHANNEL[chan].Off; 
 
@@ -13651,12 +13678,8 @@ int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
 
 			//fprintf(fid,",\n\t\t\"Description\"\t: \"[sparse sample]\"");
 			typeof(hdr->NS) chan = hdr->EVENT.CHN[k] - 1;
-			uint16_t gdftyp = hdr->CHANNEL[chan].GDFTYP;
-			double val; 
-			if (gdftyp==16)
-				val = (double)*(float*)(hdr->EVENT.DUR+k); 
-			else 
-				val = (double)(hdr->EVENT.DUR[k]); 
+
+			double val = dur2val(hdr->EVENT.DUR[k], hdr->CHANNEL[chan].GDFTYP);
 				
 			val *= hdr->CHANNEL[chan].Cal; 
 			val += hdr->CHANNEL[chan].Off; 
@@ -13813,15 +13836,11 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 	if (VERBOSE>3) {
 		/* channel settings */
 		fprintf(fid,"\n\n[EVENT TABLE] N=%i Fs=%f",hdr->EVENT.N,hdr->EVENT.SampleRate);
-		fprintf(fid,"\nNo\tTYP\tPOS\tDUR\tCHN\tVAL\tDesc");
+		fprintf(fid,"\nNo\tTYP\tPOS\tCHN\tDUR/VAL\tDesc");
 
 		size_t k;
 		for (k=0; k<hdr->EVENT.N; k++) {
 			fprintf(fid,"\n%5i\t0x%04x\t%d",(int)(k+1),hdr->EVENT.TYP[k],hdr->EVENT.POS[k]);
-			if (hdr->EVENT.TYP[k] == 0x7fff)
-				fprintf(fid,"\t%5d\t%d",0,hdr->EVENT.CHN[k]);
-			else if (hdr->EVENT.DUR != NULL)
-				fprintf(fid,"\t%5d\t%d",hdr->EVENT.DUR[k],hdr->EVENT.CHN[k]);
 
 #if (BIOSIG_VERSION >= 10500)
 			if (hdr->EVENT.TimeStamp != NULL && hdr->EVENT.TimeStamp[k] != 0) {
@@ -13832,16 +13851,16 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 				fprintf(fid,"\t%s",buf);
 			}
 #endif
+			if (hdr->EVENT.TYP[k] == 0x7fff)
+				fprintf(fid,"\t%d",hdr->EVENT.CHN[k]);
+			else if (hdr->EVENT.DUR != NULL)
+				fprintf(fid,"\t%d\t%5d",hdr->EVENT.CHN[k],hdr->EVENT.DUR[k]);
 
 			if ((hdr->EVENT.TYP[k] == 0x7fff) && (hdr->TYPE==GDF)) {
 				typeof(hdr->NS) chan = hdr->EVENT.CHN[k]-1;
-				uint16_t gdftyp = hdr->CHANNEL[chan].GDFTYP;
-				double val; 
-				if (gdftyp==16)
-					val = (double)*(float*)(hdr->EVENT.DUR+k); 
-				else 
-					val = hdr->EVENT.DUR[k]; 
-					
+
+				double val = dur2val(hdr->EVENT.DUR[k], hdr->CHANNEL[chan].GDFTYP);
+
 				val *= hdr->CHANNEL[chan].Cal; 
 				val += hdr->CHANNEL[chan].Off; 
 
