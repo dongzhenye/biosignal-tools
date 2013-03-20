@@ -3,8 +3,7 @@
 %    and it tests also Matlab/Octave for its correctness. 
 % 
 
-%	$Id$
-%	Copyright (C) 2000-2005,2006,2007,2008,2011 by Alois Schloegl <a.schloegl@ieee.org>	
+%	Copyright (C) 2000-2005,2006,2007,2008,2011,2013 by Alois Schloegl <alois.schloegl@gmail.com>
 %    	This is part of the BIOSIG-toolbox http://biosig.sf.net/
 %
 %    BioSig is free software: you can redistribute it and/or modify
@@ -40,15 +39,20 @@ HDR.TYPE='GDF';
 HDR.FileName = ['TEST_',VER([1,3]),cname(1:3),'_e1.',HDR.TYPE];
 
 % description of recording device 
-HDR.Manufacturer.Name = 'BioSig'; 
-HDR.Manufacturer.Model = 'demo3.m'; 
-HDR.Manufacturer.Version = '$Revision$'; 
+HDR.Manufacturer.Name = 'BioSig';
+HDR.Manufacturer.Model = 'demo3.m';
+HDR.Manufacturer.Version = '2.84';
 HDR.Manufacturer.SerialNumber = '00000000';
 
 % recording identification, max 80 char.
 HDR.RID = 'TestFile 001'; %StudyID/Investigation [consecutive number];
 HDR.REC.Hospital   = 'BioSig Test Lab'; 
-HDR.REC.Techician  = 'Mister Muster';
+if exist('OCTAVE_VERSION','builtin')
+	t = getpwuid(getuid);
+	HDR.REC.Techician = strtok(t.gecos,',')
+else
+	HDR.REC.Techician = 'Mister Muster';
+end;
 HDR.REC.Equipment  = 'biosig';
 HDR.REC.IPaddr	   = [127,0,0,1];	% IP address of recording system 	
 HDR.Patient.Name   = 'anonymous';  
@@ -86,14 +90,14 @@ HDR.Label={'chan 1  ';'chan 2  ';'chan 3  ';'chan 4  ';'chan 5  ';'NEQS    '};
 % Transducer, mx 80 char per channel
 HDR.Transducer = {'Ag-AgCl ';'Airflow ';'xyz     ';'        ';'        ';'Thermome'};
 
-% define datatypes (GDF only, see GDFDATATYPE.M for more details)
+	% define datatypes (GDF only, see GDFDATATYPE.M for more details)
 HDR.GDFTYP = 3*ones(1,HDR.NS);
 
 % define scaling factors 
 HDR.PhysMax = [100;100;100;100;100;100];
 HDR.PhysMin = [0;0;0;0;0;0];
 HDR.DigMax  = repmat(2^15-1,size(HDR.PhysMax));
-HDR.DigMin  = repmat(-2^15,size(HDR.PhysMax));
+HDR.DigMin  = repmat(-2^15-1,size(HDR.PhysMax));
 HDR.FLAG.UCAL = 1; 	% data x is already converted to internal (usually integer) values (no rescaling within swrite);
 HDR.FLAG.UCAL = 0; 	% data x will be converted from physical to digital values within swrite. 
 % define filter settings 
@@ -105,7 +109,7 @@ HDR.TOffset = [0:5]*1e-6;
 
 
 % define physical dimension
-HDR.PhysDim = {'uV';'mV';'%';'Ohm';'-';'°C'};
+HDR.PhysDim = {'uV';'mV';'%';'Ohm';'-';'Â°C'};	%% must be encoded in unicode (UTF8)
 HDR.Impedance = [5000,50000,NaN,NaN,NaN,NaN];         % electrode impedance (in Ohm) for voltage channels 
 HDR.fZ = [NaN,NaN,NaN,400000,NaN,NaN];                % probe frequency in Hz for Impedance channel
 
@@ -123,11 +127,12 @@ HDR.EVENT.VAL = repmat(NaN,size(t));
 %% This defines the sparse samples in channel 6
 ix = 6:5:60; 
 HDR.EVENT.CHN(ix) = 6; 
-HDR.EVENT.VAL(ix) = 373+round(100*rand(size(ix))); % HDR.EVENT.TYP(ix) becomes 0x7fff
+HDR.EVENT.VAL(ix) = 37.3+ix; %round(100*rand(size(ix))); % HDR.EVENT.TYP(ix) becomes 0x7fff
 ix = 8; 
 %% The following sparse samples are not valid because channel 5 is not defined as sparse (see HDR.AS.SPR)
 HDR.EVENT.CHN(ix) = 5; % not valid because #5 is not sparse sampleing
-HDR.EVENT.VAL(ix) = 374; 
+HDR.EVENT.VAL(ix) = 37.4;
+HDR.EVENT.TYP(~isnan(HDR.EVENT.VAL)) = hex2dec('7fff');
 end; 
 
 if 0, %try,
