@@ -215,7 +215,7 @@ int main(int argc, char **argv){
 	tzset();
 	hdr = constructHDR(0,0);
 	// hdr->FLAG.OVERFLOWDETECTION = FlagOverflowDetection; 
-	hdr->FLAG.UCAL = ((TARGET_TYPE==BIN) || (TARGET_TYPE==ASCII) || (TARGET_TYPE==SCP_ECG));
+	hdr->FLAG.UCAL = ((TARGET_TYPE==BIN) || (TARGET_TYPE==SCP_ECG));
 	hdr->FLAG.TARGETSEGMENT = TARGETSEGMENT;
 	// hdr->FLAG.ANONYMOUS = 0; 	// personal names are processed 
 	
@@ -285,7 +285,7 @@ int main(int argc, char **argv){
 	
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[113] SOPEN-R finished\n");
 
-
+	sort_eventtable(hdr);
 	if (FLAG_JSON) {
 		fprintf_hdr2json(stdout, hdr);
 	}
