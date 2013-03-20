@@ -878,10 +878,27 @@ end;
                                 end
                         elseif bitand(EVENT.Version, 3)==3,
                                 [HDR.EVENT.CHN,c3] = fread(HDR.FILE.FID,[EVENT.N,1],'uint16');
+                                fidpos = ftell(HDR.FILE.FID);
                                 [HDR.EVENT.DUR,c4] = fread(HDR.FILE.FID,[EVENT.N,1],'uint32');
                         	%[EVENT.N,HDR.FILE.size,HDR.AS.EVENTTABLEPOS+8+EVENT.N*12]
                                 if any([c1,c2,c3,c4]~=EVENT.N),
                                         fprintf(2,'\nERROR SOPEN (GDF): Eventtable corrupted in file %s\n',HDR.FileName);
+                                end;
+                                % read non-equidistant sampling
+                                ix = HDR.EVENT.TYP==hex2dec('7fff');
+                                if any(ix)
+					HDR.EVENT.VAL = repmat(NaN,size(HDR.EVENT.TYP));
+                                end;
+                                for k = find(ix(:)')
+					ch = HDR.EVENT.CHN(k);
+					fseek(HDR.FILE.FID, fidpos+(k-1)*4, -1);
+	                                gdftyp = HDR.GDFTYP(ch);
+	                                val = fread(HDR.FILE.FID,1,gdfdatatype(gdftyp));
+	                                if (HDR.FLAG.UCAL)
+						HDR.EVENT.VAL(k) = val;
+					else
+						HDR.EVENT.VAL(k) = val * HDR.Cal(ch) + HDR.Off(ch);
+					end
                                 end;
                         else
                                 fprintf(2,'\nWarning SOPEN (GDF): File %s corrupted (Eventtable version %i ).\n',HDR.FileName,EVENT.Version);
@@ -930,16 +947,6 @@ end;
                         end;
                         if any(ArtifactSelection), % define only if necessary
                                 HDR.ArtifactSelection = ArtifactSelection; 
-                        end;
-                        % decode non-equidistant sampling
-                        ix = find(HDR.EVENT.TYP==hex2dec('7fff'));
-                        if ~isempty(ix),
-                                if (HDR.VERSION<1.90), 
-                                        warning('non-equidistant sampling not definded for GDF v1.x')
-                                end;
-		        	% the following is redundant information %
-                                HDR.EVENT.VAL = repmat(NaN,size(HDR.EVENT.TYP));
-                                HDR.EVENT.VAL(ix) = HDR.EVENT.DUR(ix);
                         end;
 
                 elseif strcmp(HDR.TYPE,'EDF') && (length(strmatch('EDF Annotations',HDR.Label))==1),

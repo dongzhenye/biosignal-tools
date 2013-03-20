@@ -136,10 +136,17 @@ if HDR.FILE.OPEN >= 2,          % write-open of files
                                         HDR.EVENT.VAL = HDR.EVENT.VAL(~ix0); 
                                         ix = ~isnan(HDR.EVENT.VAL);
                                 end;
-                                
+
                                 % prepare for storing 
                                 HDR.EVENT.TYP(ix) = hex2dec('7fff');
-                                HDR.EVENT.DUR(ix) = HDR.EVENT.VAL(ix);
+                                if (HDR.FLAG.UCAL)
+	                                HDR.EVENT.DUR(ix) = HDR.EVENT.VAL(ix);
+	                        else
+					ch = HDR.EVENT.CHN(ix);
+	                                HDR.EVENT.DUR(ix) = (HDR.EVENT.VAL(ix)-HDR.PhysMin(ch)).*(HDR.DigMax(ch)-HDR.DigMin(ch))./(HDR.PhysMax(ch)-HDR.PhysMin(ch))+HDR.DigMin(ch);
+	                                ix = find(HDR.EVENT.DUR<0);
+	                                HDR.EVENT.DUR(ix)=HDR.EVENT.DUR(ix)+(2^32);	%% convert negative numbers to uint32 encoding
+	                        end;
                         end;
 
                         len = [length(HDR.EVENT.POS),length(HDR.EVENT.TYP)]; 
