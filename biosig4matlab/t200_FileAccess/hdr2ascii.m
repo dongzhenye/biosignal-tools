@@ -82,7 +82,7 @@ if isfield(HDR,'FileName')
 	fprintf(fid,'Filename\t= %s\n',HDR.FileName); 
 end; 	
 fprintf(fid,'Format  \t= %s\n',HDR.TYPE); 
-if isfield(HDR.FILE,'size'), fprintf(fid,'SizeOfFile\t= %i\n',HDR.FILE.size); end;
+if isfield(HDR,'FILE') && isfield(HDR.FILE,'size'), fprintf(fid,'SizeOfFile\t= %i\n',HDR.FILE.size); end;
 if ~isfield(HDR,'NS')
 	HDR.NS = 0; 	
 end;	 
@@ -182,20 +182,18 @@ if ~isfield(HDR,'InChanSelect')
 else	
 	InChanSelect = HDR.InChanSelect;
 end
-if ~isfield(HDR,'Off')
-	HDR.Off = zeros(HDR.NS,1); 
-	HDR.Cal(InChanSelect) = diag(HDR.Calib(2:end,:));
+if ~isfield(HDR,'Filter') || ~isfield(HDR.Filter,'HighPass');
+	HDR.Filter.HighPass = repmat(NaN,1,HDR.NS);
 end;
-if ~isfield(HDR,'Cal') && isfield(HDR,'Calib')
-	HDR.Cal = ones(HDR.NS,1); 
-	HDR.Cal(InChanSelect) = diag(HDR.Calib(2:end,:));
+if ~isfield(HDR.Filter,'LowPass');
+	HDR.Filter.LowPass = repmat(NaN,1,HDR.NS);
 end;
-if HDR.NS,
+if ~isfield(HDR.Filter,'Notch');
+	HDR.Filter.Notch = repmat(NaN,1,HDR.NS);
+end;
+if (HDR.NS>0);
 if length(HDR.Filter.HighPass)==1,
 	HDR.Filter.HighPass = repmat(HDR.Filter.HighPass,HDR.NS,1); 
-end;
-if length(HDR.Cal)==1,
-	HDR.Cal = repmat(HDR.Cal,HDR.NS,1); 
 end;
 if length(HDR.Filter.LowPass)==1,
 	HDR.Filter.LowPass = repmat(HDR.Filter.LowPass,HDR.NS,1); 
@@ -206,6 +204,37 @@ end;
 end; 
 
 
+if ~isfield(HDR,'Cal') && isfield(HDR,'Calib')
+	Cal = ones(HDR.NS,1);
+	Cal(InChanSelect) = diag(HDR.Calib(2:end,:));
+elseif isfield(HDR,'Cal')
+	if length(HDR.Cal)==1,
+		Cal = repmat(HDR.Cal,HDR.NS,1);
+	else
+		Cal = HDR.Off;
+	end;
+elseif isfield(HDR,'DigMin') && isfield(HDR,'DigMax') && isfield(HDR,'PhysMin') && isfield(HDR,'PhysMax')
+	Cal = (HDR.PhysMax-HDR.PhysMin)./(HDR.DigMax-HDR.DigMin);
+else
+	Cal = repmat(NaN,1,HDR.NS);
+end;
+
+if ~isfield(HDR,'Off') && isfield(HDR,'Calib')
+	Off = zeros(HDR.NS,1);
+	Cal(InChanSelect) = diag(HDR.Calib(2:end,:));
+elseif isfield(HDR,'Off')
+	if length(HDR.Off)==1,
+		Off = repmat(HDR.Off,HDR.NS,1);
+	else
+		Off = HDR.Off;
+	end;
+elseif isfield(HDR,'DigMin') && isfield(HDR,'DigMax') && isfield(HDR,'PhysMin') && isfield(HDR,'PhysMax')
+	Off = HDR.PhysMin - Cal.*HDR.DigMin;
+else
+	Off = repmat(NaN,1,HDR.NS);
+end;
+
+Cal,Off,
 PhysDim = physicalunits(HDR.PhysDimCode); 
 fprintf(fid,'\n[Channel Header]\n#No  LeadId  Label\tfs [Hz]\tGDFTYP\tTH-  TH+  Offset  Calib  PhysDim  HP[Hz]  LP[Hz]  Notch  R[kOhm]  x  y  z\n'); 
 for k = 1:HDR.NS,
@@ -222,7 +251,7 @@ for k = 1:HDR.NS,
 	else
 		Fs = HDR.SampleRate;
 	end;	
-	fprintf(fid,'%3i  %i\t%-9s\t%6.1f %2i  %i\t%i\t%6e\t%6e %5s  %6.4f %5.1f  %i  %5.1f  %f %f %f\n',k,HDR.LeadIdCode(k),Label,Fs,gdftyp,HDR.THRESHOLD(k,1:2),HDR.Off(k),HDR.Cal(k),physdim{1},HP,LP,Notch,Z,HDR.ELEC.XYZ(k,:)); 
+	fprintf(fid,'%3i  %i\t%-9s\t%6.1f %2i  %i\t%i\t%6e\t%6e %5s  %6.4f %5.1f  %i  %5.1f  %f %f %f\n',k,HDR.LeadIdCode(k),Label,Fs,gdftyp,HDR.THRESHOLD(k,1:2),Off(k),Cal(k),physdim{1},HP,LP,Notch,Z,HDR.ELEC.XYZ(k,:)); 
 end;
 
 if ~isfield(HDR.EVENT,'SampleRate');
@@ -245,8 +274,6 @@ if ~BIOSIG_GLOBAL.ISLOADED_EVENTCODES,
 	H=sopen('eventcodes.txt'); sclose(H); 
 end;
 
-if ~isfield(HDR,'Calib'); HDR.Calib = sparse(2:HDR.NS+1,1:HDR.NS,HDR.Cal); end 
-
 for k = 1:length(HDR.EVENT.POS);
 	if length(HDR.T0)==1,
 		T0 = HDR.T0;
@@ -261,16 +288,20 @@ for k = 1:length(HDR.EVENT.POS);
 	fprintf(fid,'0x%04x\t%9i\t%04i-%02i-%02i %02i:%02i:%07.4f',[HDR.EVENT.TYP(k),HDR.EVENT.POS(k),t(1:6)]); 
 	if isfield(HDR.EVENT,'CHN')
 		if ~isempty(HDR.EVENT.CHN)
+			fprintf(fid,'\t%i', HDR.EVENT.CHN(k));
 			DUR = HDR.EVENT.DUR(k);
-			if (HDR.EVENT.TYP(k)==hex2dec('7fff')) DUR=0; end;
-			fprintf(fid,'\t%i\t%i', HDR.EVENT.CHN(k), DUR);
+			if (HDR.EVENT.TYP(k)~=hex2dec('7fff'))
+				fprintf(fid,'\t%i', DUR);
+			end;
 		end;
 	else 
 		fprintf(fid,'\t-\t-');	
 	end; 
+
 	if HDR.EVENT.TYP(k)==hex2dec('7fff'),
 		ch = HDR.EVENT.CHN(k);
-		fprintf(fid,'\t%f %s',[1,HDR.EVENT.DUR(k)]*HDR.Calib([1,ch+1],ch),HDR.PhysDim{ch}); 
+		pu = physicalunits(HDR.PhysDimCode(ch));
+		fprintf(fid,'\t%f %s', HDR.EVENT.VAL(k), pu{1});
 	elseif 0,
 	elseif HDR.EVENT.TYP(k)==0,
 		;
