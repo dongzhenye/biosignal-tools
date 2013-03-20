@@ -27,7 +27,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 */
-#include <endian.h>
 #include <string.h>
 #include "../biosig-dev.h"
 #include "../igor/IgorBin.h"
