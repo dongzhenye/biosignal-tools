@@ -162,7 +162,8 @@ HDR.Filter.LowPass	float		[Hz]
 HDR.Filter.HighPass	float		[Hz]
 HDR.Filter.Notch 	int8		0=Off, 1=On
 
-HDR.T0			float[1..6]	[yyyy mm dd hh MM ss.cc] see HELP CLOCK  
+HDR.T0			float[1..6]	[yyyy mm dd hh MM ss.cc] see HELP CLOCK (localtime)
+HDR.tzmin		int16		timezone information, number of minutes east of UTC 
 HDR.NS			Integer		number of channels
 HDR.SampleRate		Integer		sampling frequency in [Hz]
 

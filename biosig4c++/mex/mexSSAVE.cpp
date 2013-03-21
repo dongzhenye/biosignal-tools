@@ -17,6 +17,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "../biosig-dev.h"
 #ifdef tmwtypes_h
@@ -195,6 +196,10 @@ void mexFunction(
 		hdr->VERSION 	= atof(tmpstr);
 	}
 	if ( (p = mxGetField(prhs[0], 0, "T0") ) != NULL ) 		hdr->T0 	= (gdf_time)getDouble(p, 0);
+	if ( (p = mxGetField(prhs[0], 0, "tzmin") ) != NULL )
+		hdr->tzmin 	= (int16_t)getDouble(p, 0);
+	else
+		hdr->tzmin	= -timezone/60;
 	if ( (p = mxGetField(prhs[0], 0, "FileName") ) != NULL ) 	FileName 	= mxArrayToString(p);
 	if ( (p = mxGetField(prhs[0], 0, "SampleRate") ) != NULL ) 	hdr->SampleRate = getDouble(p, 0);
 	if ( (p = mxGetField(prhs[0], 0, "NS") ) != NULL )	 	hdr->NS         = getDouble(p, 0);
