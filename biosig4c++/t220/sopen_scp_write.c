@@ -421,15 +421,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			// Tag 34 (len = 5)
 			*(ptr+sectionStart+curSectLen) = 34;	// tag
 			leu16a(5, ptr+sectionStart+curSectLen+1);	// length
-			// FIXME: compensation for daylight saving time not included
-#ifdef __APPLE__
-			// ### FIXME: for some (unknown) reason, timezone does not work on MacOSX
-			lei16a(0x7fff, ptr+sectionStart+curSectLen+3); 
-			printf("Warning SOPEN(SCP,write): timezone not supported\n");
-#else
-			lei16a((int16_t)lrint(-timezone/60.0), ptr+sectionStart+curSectLen+3);
-#endif
-			//lei16a((int16_t)round(T0_tm->tm_gmtoff/60), ptr+sectionStart+curSectLen+3);
+			lei16a(hdr->tzmin, ptr+sectionStart+curSectLen+3);
 			lei16a(0, ptr+sectionStart+curSectLen+5); 
 			curSectLen += 8; 
 

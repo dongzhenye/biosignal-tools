@@ -738,7 +738,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					int16_t tzmin = lei16p(PtrCurSect+curSectPos);
 					if (tzmin != 0x7fff) {
 						if (abs(tzmin)<=780) 
-							t0.tm_min += tzmin;
+							hdr->tzmin = tzmin;
 						else 
 							fprintf(stderr,"Warning SOPEN(SCP-READ): invalid time zone (Section 1, Tag34)\n");
 					}
@@ -748,8 +748,6 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				}
 				curSectPos += len1;
 			}
-//			t0.tm_gmtoff = 60*tzminutes;
-//			t0.tm_isdst = -1;
 			hdr->T0     = tm_time2gdf_time(&t0);
 		}
 

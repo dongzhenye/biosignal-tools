@@ -1,7 +1,6 @@
 /*
 
-    $Id$
-    Copyright (C) 2005,2006,2007,2008,2009,2010,2011,2012 Alois Schloegl <alois.schloegl@gmail.com>
+    Copyright (C) 2005,2006,2007,2008,2009,2010,2011,2012,2013 Alois Schloegl <alois.schloegl@gmail.com>
     Copyright (C) 2011 Stoyan Mihaylov
     This file is part of the "BioSig for C/C++" repository
     (biosig4c++) at http://biosig.sf.net/
@@ -31,6 +30,8 @@
 	Features:
 	- reading and writing of EDF, BDF, GDF1, GDF2, CWFB, HL7aECG, SCP files
 	- reading of ACQ, AINF, BKR, BrainVision, CNT, DEMG, EGI, ETG4000, MFER files
+	The full list of supported formats is shown at
+	http://pub.ist.ac.at/~schloegl/biosig/TESTED
 
 	implemented functions:
 	- SOPEN, SREAD, SWRITE, SCLOSE, SEOF, SSEEK, STELL, SREWIND
@@ -1492,8 +1493,13 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->data.size[0] = 0; 	// rows
 	hdr->data.size[1] = 0;  // columns
 	hdr->data.block = NULL;
-	hdr->T0 = (gdf_time)0;
-	hdr->tzmin = 0;
+	hdr->T0    = t_time2gdf_time(time(NULL)-timezone); // localtime
+	hdr->tzmin = -timezone/60;      // convert from seconds west of UTC to minutes east;
+	if (BIOSIG_VERSION <= 10500)
+		hdr->ID.Equipment = *(uint64_t*) & "b4c_1.4 ";
+	else
+		hdr->ID.Equipment = *(uint64_t*) & "b4c_1.5 ";
+
 	hdr->ID.Equipment = *(uint64_t*) & "b4c_1.4 ";
 	hdr->ID.Manufacturer._field[0]    = 0;
 	hdr->ID.Manufacturer.Name         = NULL;
@@ -2668,7 +2674,10 @@ void struct2gdfbin(HDRTYPE *hdr)
 		else
 			lef64a(fDur, hdr->AS.Header+244);
 
-		leu16a(NS, hdr->AS.Header+252);
+		leu16a(NS, hdr->AS.Header + 252);
+		if (hdr->VERSION > 2.4) {
+			lei16a(hdr->tzmin, hdr->AS.Header+254);
+		}
 
 	     	/* define HDR.Header2
 	     	this requires checking the arguments in the fields of the struct HDR.CHANNEL
@@ -2872,6 +2881,8 @@ int gdfbin2struct(HDRTYPE *hdr)
 
 	    	hdr->NRec 	= lei64p(hdr->AS.Header+236);
 	    	hdr->NS   	= leu16p(hdr->AS.Header+252);
+
+		hdr->tzmin = (hdr->VERSION > 2.4) ? lei16p(hdr->AS.Header+254) : 0;
 
 		if (hdr->VERSION < 2.21)
 			Dur = (double)leu32p(hdr->AS.Header+244)/(double)leu32p(hdr->AS.Header+248);
