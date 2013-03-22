@@ -5005,6 +5005,11 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 					t.tm_isdst = -1;
 					hdr->T0 = tm_time2gdf_time(&t);
 				}
+				else if (!strcmp(line,"Timezone")) {
+					int m;
+					if (sscanf(val,"%+i min", &m) > 0)
+						hdr->tzmin = m;
+				}
 				else if (!strcmp(line,"Recording.IPaddress")) {
 					/* ###FIXME: IPv6 are currently not supported.
 					 	gethostbyaddr will become obsolete,
@@ -10950,6 +10955,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
     		fprintf(fid,"Duration         \t= %f\t# in seconds\n",hdr->SPR*hdr->NRec/hdr->SampleRate);
     		struct tm *t = gdf_time2tm_time(hdr->T0);
     		fprintf(fid,"Recording.Time    \t= %04i-%02i-%02i %02i:%02i:%02i\t# YYYY-MM-DD hh:mm:ss\n",t->tm_year+1900,t->tm_mon+1,t->tm_mday,t->tm_hour,t->tm_min,t->tm_sec);
+		fprintf(fid,"Timezone          \t= +%i min\n",hdr->tzmin);
 
     		fprintf(fid,"Patient.Id        \t= %s\n",hdr->Patient.Id);
     		t = gdf_time2tm_time(hdr->Patient.Birthday);
@@ -13003,7 +13009,8 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 		e+=2;
 		
 		for (k1=0; k1<hdr->NS; k1++)
-		if (hdr->CHANNEL[k1].OnOff && hdr->CHANNEL[k1].SPR) {
+		if (hdr->CHANNEL[k1].OnOff) {
+		//if (hdr->CHANNEL[k1].OnOff && hdr->CHANNEL[k1].SPR) {
 			/* Off channels and sparse channels (SPR) are not exported; 
 				sparse samples are available throught the header file 
 				containing the event table. 
@@ -13019,9 +13026,17 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 			ifopen(&H1,"wb");
 
 			if (hdr->TYPE == ASCII) {
-				DIV = hdr->SPR/CHptr->SPR;
+				typeof(hdr->SPR) SPR;
+				if (CHptr->SPR>0) {
+					DIV = hdr->SPR/CHptr->SPR;
+					SPR = CHptr->SPR;
+				}
+				else {
+					DIV = 1;
+					SPR = hdr->SPR;
+				}
 				size_t k2;
-				for (k2=0; k2 < CHptr->SPR*(size_t)hdr->NRec; k2++) {
+				for (k2=0; k2 < SPR*(size_t)hdr->NRec; k2++) {
 					biosig_data_type i = 0.0;
 					size_t k3;
 						// TODO: row channels
@@ -13398,7 +13413,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: sz=%i\n", (int)sz);
 	if (!isnan(hdr->SampleRate)) c += sprintf(STR, "\t\"Samplingrate\"\t: %f,\n",hdr->SampleRate);
 	strftime(tmp,40,"%Y-%m-%d %H:%M:%S",gdf_time2tm_time(hdr->T0));
 	c += sprintf(STR, "\t\"StartOfRecording\"\t: \"%s\",\n",tmp);
-	c += sprintf(STR, "\t\"Timezone\"\t: \"%+ih%02i\",\n", hdr->tzmin/60, hdr->tzmin%60);
+	c += sprintf(STR, "\t\"Timezone\"\t: %+i,\n", hdr->tzmin);
 	c += sprintf(STR, "\t\"NumberOfSweeps\"\t: %d,\n",(unsigned)NumberOfSweeps);
 	c += sprintf(STR, "\t\"NumberOfGroupsOrUserSpecifiedEvents\"\t: %d,\n", (unsigned)NumberOfUserSpecifiedEvents);
 
@@ -13587,7 +13602,7 @@ int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
 	if (!isnan(hdr->SampleRate)) fprintf(fid,"\t\"Samplingrate\"\t: %f,\n",hdr->SampleRate);
 	strftime(tmp,40,"%Y-%m-%d %H:%M:%S",gdf_time2tm_time(hdr->T0));
 	fprintf(fid,"\t\"StartOfRecording\"\t: \"%s\",\n",tmp);
-	fprintf(fid,"\t\"Timezone\"\t: \"%+ih%02i\",\n", hdr->tzmin/60 , hdr->tzmin%60 );
+	fprintf(fid,"\t\"Timezone\"\t: %+i,\n", hdr->tzmin);
 	fprintf(fid,"\t\"NumberOfSweeps\"\t: %d,\n",(unsigned)NumberOfSweeps);
 	fprintf(fid,"\t\"NumberOfGroupsOrUserSpecifiedEvents\"\t: %d,\n",(unsigned)NumberOfUserSpecifiedEvents);
 
@@ -13790,7 +13805,7 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 		T0 = gdf_time2tm_time(hdr->T0);
 		strftime(tmp, 59, "%x %X %Z", T0);
 		fprintf(fid,"\tStartOfRecording: (%.6f) %s",ldexp(hdr->T0,-32),asctime(T0));
-		fprintf(fid,"\tTimezone        : %+02ih%02i\n\n", hdr->tzmin/60, hdr->tzmin%60);
+		fprintf(fid,"\tTimezone        : %+i min\n\n", hdr->tzmin);
 		if (hdr->AS.bci2000 != NULL) {
 			size_t c = min(39,strcspn(hdr->AS.bci2000,"\xa\xd"));
 			strncpy(tmp, hdr->AS.bci2000, c); tmp[c]=0;
