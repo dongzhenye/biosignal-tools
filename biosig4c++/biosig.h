@@ -308,7 +308,7 @@ typedef struct HDR_STRUCT {
 	uint32_t 	SPR 	ATT_ALI;	/* samples per block (when different sampling rates are used, this is the LCM(CHANNEL[..].SPR) */
 	uint32_t  	LOC[4] 	ATT_ALI;	/* location of recording according to RFC1876 */
 	uint16_t 	NS 	ATT_ALI;	/* number of channels */
-	int16_t 	tzmin 	ATT_ALI;	/* time zone (minutes of difference to UTC */
+	int16_t 	tzmin 	ATT_ALI;	/* time zone : minutes east of UTC */
 
 #ifdef CHOLMOD_H
 	cholmod_sparse  *Calib ATT_ALI;                  /* re-referencing matrix */
@@ -434,6 +434,30 @@ typedef struct HDR_STRUCT {
 
 	void *aECG;				/* used as an pointer to (non-standard) auxilary information - mostly used for hacks */
 	uint64_t viewtime; 			/* used by edfbrowser */
+
+#if (BIOSIG_VERSION >= 10500)
+	struct {
+		/*
+			This part contains Section 7-11 of the SCP-ECG format
+			without its 16 byte "Section ID header".
+			These sections are also stored in GDF Header 3 (tag 9-13)
+			It is mostly used for SCP<->GDF conversion.
+
+			The pointers points into hdr->AS.Header, 
+			so do not dynamically re-allocate the pointers.  
+		*/
+		const uint8_t* Section7;
+		uint32_t Section7Length;
+		const uint8_t* Section8;
+		uint32_t Section8Length;
+		const uint8_t* Section9;
+		uint32_t Section9Length;
+		const uint8_t* Section10;
+		uint32_t Section10Length;
+		const uint8_t* Section11;
+		uint32_t Section11Length;
+	} SCP;
+#endif
 
 } HDRTYPE;
 

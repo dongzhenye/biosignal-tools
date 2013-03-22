@@ -580,6 +580,14 @@ int main(int argc, char **argv){
 
 	hdr->FLAG.ANONYMOUS = 1; 	// no personal names are processed 
 
+	/*
+	  keep header data from previous file, in might contain optional data
+	  (GDF Header3, EventDescription, hdr->SCP.SectionX, etc. )
+	  and might still be referenced and needed.
+	*/
+	void *tmpmem = hdr->AS.Header;
+	hdr->AS.Header = NULL;
+
 	hdr = sopen(tmp, "wb", hdr);
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"returned from sopen-wb\n");
 	free(tmp); 
@@ -610,6 +618,7 @@ int main(int argc, char **argv){
 
 	status = serror2(hdr);
 	destructHDR(hdr);
+	if (tmpmem != NULL) free(tmpmem);
 	exit(status); 
 }
 

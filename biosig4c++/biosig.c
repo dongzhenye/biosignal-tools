@@ -1630,12 +1630,12 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->EVENT.CodeDesc = NULL;
 	hdr->EVENT.LenCodeDesc = 0;
 	if (hdr->EVENT.N) {
-		hdr->EVENT.POS = (uint32_t*) calloc(hdr->EVENT.N,sizeof(*hdr->EVENT.POS));
-		hdr->EVENT.TYP = (uint16_t*) calloc(hdr->EVENT.N,sizeof(*hdr->EVENT.TYP));
-		hdr->EVENT.DUR = (uint32_t*) calloc(hdr->EVENT.N,sizeof(*hdr->EVENT.DUR));
-		hdr->EVENT.CHN = (uint16_t*) calloc(hdr->EVENT.N,sizeof(*hdr->EVENT.CHN));
+		hdr->EVENT.POS = (uint32_t*) calloc(hdr->EVENT.N, sizeof(*hdr->EVENT.POS));
+		hdr->EVENT.TYP = (uint16_t*) calloc(hdr->EVENT.N, sizeof(*hdr->EVENT.TYP));
+		hdr->EVENT.DUR = (uint32_t*) calloc(hdr->EVENT.N, sizeof(*hdr->EVENT.DUR));
+		hdr->EVENT.CHN = (uint16_t*) calloc(hdr->EVENT.N, sizeof(*hdr->EVENT.CHN));
 #if (BIOSIG_VERSION >= 10500)
-		hdr->EVENT.TimeStamp = (gdf_time*) calloc(hdr->EVENT.N,sizeof(gdf_time));
+		hdr->EVENT.TimeStamp = (gdf_time*) calloc(hdr->EVENT.N, sizeof(gdf_time));
 #endif
 	} else {
 		hdr->EVENT.POS = NULL;
@@ -1650,6 +1650,19 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	// initialize specialized fields
 	hdr->aECG = NULL;
 	hdr->AS.bci2000 = NULL;
+
+#if (BIOSIG_VERSION >= 10500)
+	hdr->SCP.Section7  = NULL;
+	hdr->SCP.Section8  = NULL;
+	hdr->SCP.Section9  = NULL;
+	hdr->SCP.Section10 = NULL;
+	hdr->SCP.Section11 = NULL;
+	hdr->SCP.Section7Length  = 0;
+	hdr->SCP.Section8Length  = 0;
+	hdr->SCP.Section9Length  = 0;
+	hdr->SCP.Section10Length = 0;
+	hdr->SCP.Section11Length = 0;
+#endif
 
 	return(hdr);
 }
@@ -1741,6 +1754,18 @@ void destructHDR(HDRTYPE* hdr) {
 	if (VERBOSE_LEVEL>7)  fprintf(stdout,"destructHDR: free HDR\n");
 
 	if (hdr->FileName != NULL) free(hdr->FileName);
+
+#if (BIOSIG_VERSION >= 10500)
+/*
+	memory management of hdr->SCP is done somewhere else, 
+        points into hdr->AS.Header area
+	if (hdr->SCP.Section7  != NULL) free(hdr->SCP.Section7);
+	if (hdr->SCP.Section8  != NULL) free(hdr->SCP.Section8);
+	if (hdr->SCP.Section9  != NULL) free(hdr->SCP.Section9);
+	if (hdr->SCP.Section10 != NULL) free(hdr->SCP.Section10);
+	if (hdr->SCP.Section11 != NULL) free(hdr->SCP.Section11);
+*/
+#endif
 
 	if (hdr != NULL) free(hdr);
 	return;
@@ -2466,7 +2491,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 		/* writing header 3, in Tag-Length-Value from
 			currently only tag=1 is used for storing user-specific events (i.e. free text annotations
 		 */
-	     	uint32_t TagNLen[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+		uint32_t TagNLen[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 	     	uint8_t tag=1;
 	     	if (hdr->EVENT.LenCodeDesc > 1) {	// first entry is always empty - no need to save tag1
 	     		for (k=0; k<hdr->EVENT.LenCodeDesc; k++)
@@ -2474,13 +2499,13 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     		TagNLen[tag] += 1; 			// acounts for terminating \0
 	     		hdr->HeadLen += 4+TagNLen[tag];
 	     	}
-	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[tag]);
 	     	tag = 2;
 	     	if (hdr->AS.bci2000 != NULL) {
 	     		TagNLen[tag] = strlen(hdr->AS.bci2000)+1;
 	     		hdr->HeadLen += 4+TagNLen[tag];
 	     	}
-	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[tag]);
 	     	tag = 3;
 	     	if ((hdr->ID.Manufacturer.Name != NULL) || (hdr->ID.Manufacturer.Model != NULL) || (hdr->ID.Manufacturer.Version != NULL) || (hdr->ID.Manufacturer.SerialNumber != NULL)) {
 	     		if (hdr->ID.Manufacturer.Name == NULL) hdr->ID.Manufacturer.Name="";
@@ -2491,7 +2516,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     		TagNLen[tag] = strlen(hdr->ID.Manufacturer.Name)+strlen(hdr->ID.Manufacturer.Model)+strlen(hdr->ID.Manufacturer.Version)+strlen(hdr->ID.Manufacturer.SerialNumber)+4;
 	     		hdr->HeadLen += 4+TagNLen[tag];
 	     	}
-	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[tag]);
 	     	tag = 4;
 /* OBSOLETE
 	     	char FLAG_SENSOR_ORIENTATION = 0;
@@ -2505,7 +2530,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     		TagNLen[tag] = hdr->NS*sizeof(float)*4;
      		hdr->HeadLen += 4+TagNLen[tag];
 */
-	     	if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[tag]);
 	     	tag = 5;
 	     	for (k=0; k<16; k++) {
 	     		if (hdr->IPaddr[k]) {
@@ -2514,14 +2539,14 @@ void struct2gdfbin(HDRTYPE *hdr)
 		     	}
 	     		hdr->HeadLen += 4+TagNLen[tag];
 	     	}
-	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[tag]);
 	     	tag = 6;
      		TagNLen[tag] = hdr->ID.Technician==NULL ? 0 :  strlen(hdr->ID.Technician);
 	     	if (TagNLen[tag]) {
 	     		TagNLen[tag]++;
 	     		hdr->HeadLen += 4+TagNLen[tag];
 	     	}
-	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[tag]);
 	     	tag = 7;
 		if (hdr->ID.Hospital!=NULL) {
 	     		TagNLen[tag] = strlen(hdr->ID.Hospital);
@@ -2530,8 +2555,59 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     			hdr->HeadLen += 4+TagNLen[tag];
 	     		}
 	     	}
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[tag]);
 
-	     	if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[1]);
+#if (BIOSIG_VERSION >= 10500)
+		tag = 9;
+		if (hdr->SCP.Section7 != NULL) {
+			TagNLen[tag] = hdr->SCP.Section7Length;  // leu32p(hdr->SCP.Section7+4);
+			if (TagNLen[tag]) {
+				TagNLen[tag]++;
+				hdr->HeadLen += 4+TagNLen[tag];
+			}
+		}
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen, TagNLen[tag]);
+		tag = 10;
+		if (hdr->SCP.Section8 != NULL) {
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %08x %08x %08x %08x\n",leu32p(hdr->SCP.Section8-16),leu32p(hdr->SCP.Section8-12),leu32p(hdr->SCP.Section8-8),leu32p(hdr->SCP.Section8-4));
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %08x %08x %08x %08x\n",leu32p(hdr->SCP.Section8),leu32p(hdr->SCP.Section8+4),leu32p(hdr->SCP.Section8+8),leu32p(hdr->SCP.Section8+12));
+
+			TagNLen[tag] = hdr->SCP.Section8Length;  // leu32p(hdr->SCP.Section8+4);
+			if (TagNLen[tag]) {
+				TagNLen[tag]++;
+				hdr->HeadLen += 4+TagNLen[tag];
+			}
+		}
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen, TagNLen[tag]);
+		tag = 11;
+		if (hdr->SCP.Section9 != NULL) {
+			TagNLen[tag] = hdr->SCP.Section9Length;  // leu32p(hdr->SCP.Section9+4);
+			if (TagNLen[tag]) {
+				TagNLen[tag]++;
+				hdr->HeadLen += 4+TagNLen[tag];
+			}
+		}
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen, TagNLen[tag]);
+		tag = 12;
+		if (hdr->SCP.Section10 != NULL) {
+			TagNLen[tag] = hdr->SCP.Section10Length;  // leu32p(hdr->SCP.Section10+4);
+			if (TagNLen[tag]) {
+				TagNLen[tag]++;
+				hdr->HeadLen += 4+TagNLen[tag];
+			}
+		}
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[tag]);
+		tag = 13;
+		if (hdr->SCP.Section11 != NULL) {
+			TagNLen[tag] = hdr->SCP.Section11Length;  // leu32p(hdr->SCP.Section11+4);
+			if (TagNLen[tag]) {
+				TagNLen[tag]++;
+				hdr->HeadLen += 4+TagNLen[tag];
+			}
+		}
+#endif
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen,TagNLen[tag]);
 	     	/* end */
 
 		if (hdr->TYPE==GDF) {
@@ -2540,7 +2616,6 @@ void struct2gdfbin(HDRTYPE *hdr)
 #else
 			hdr->VERSION = 2.22;
 #endif
-
 			if (hdr->HeadLen & 0x00ff)	// in case of GDF v2, make HeadLen a multiple of 256.
 			hdr->HeadLen = (hdr->HeadLen & 0xff00) + 256;
 		}
@@ -2824,32 +2899,67 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     	}
 */
 
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag5\n");
-
 	     	tag = 5;
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag %i\n",tag);
 	     	if (TagNLen[tag]>0) {
 			leu32a(tag + (TagNLen[tag]<<8), Header2); // Tag=5 & Length of Tag 5
      			memcpy(Header2+4,hdr->IPaddr,TagNLen[tag]);
 			Header2 += 4+TagNLen[tag];
 	     	}
 
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag6\n");
-
 	     	tag = 6;
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag %i\n",tag);
 	     	if (TagNLen[tag]>0) {
 			leu32a(tag + (TagNLen[tag]<<8), Header2); // Tag=6 & Length of Tag 6
      			strcpy((char*)(Header2+4),hdr->ID.Technician);		/* Flawfinder: ignore *** memory is allocated after 1st H3 scan above */
 			Header2 += 4+TagNLen[tag];
 	     	}
 
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag7\n");
-
 	     	tag = 7;
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag %i\n",tag);
 	     	if (TagNLen[tag]>0) {
 			leu32a(tag + (TagNLen[tag]<<8), Header2); // Tag=7 & Length of Tag 7
      			strcpy((char*)(Header2+4),hdr->ID.Hospital);		/* Flawfinder: ignore *** memory is allocated after 1st H3 scan above */
 			Header2 += 4+TagNLen[tag];
 	     	}
+
+#if (BIOSIG_VERSION >= 10500)
+		tag = 9;
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag %i\n",tag);
+		if (TagNLen[tag]>0) {
+			leu32a(tag + (TagNLen[tag]<<8), Header2); 	// Tag=9 & Length of Tag 9
+			memcpy((char*)(Header2+4),hdr->SCP.Section7, TagNLen[tag]);		/* Flawfinder: ignore *** memory is allocated after 1st H3 scan above */
+			Header2 += 4+TagNLen[tag];
+		}
+		tag = 10;
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag %i\n",tag);
+		if (TagNLen[tag]>0) {
+			leu32a(tag + (TagNLen[tag]<<8), Header2); 	// Tag=9 & Length of Tag 9
+			memcpy((char*)(Header2+4),hdr->SCP.Section8, TagNLen[tag]);		/* Flawfinder: ignore *** memory is allocated after 1st H3 scan above */
+			Header2 += 4+TagNLen[tag];
+		}
+		tag = 11;
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag %i\n",tag);
+		if (TagNLen[tag]>0) {
+			leu32a(tag + (TagNLen[tag]<<8), Header2); 	// Tag=9 & Length of Tag 9
+			memcpy((char*)(Header2+4),hdr->SCP.Section9, TagNLen[tag]);		/* Flawfinder: ignore *** memory is allocated after 1st H3 scan above */
+			Header2 += 4+TagNLen[tag];
+		}
+		tag = 12;
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag %i\n",tag);
+		if (TagNLen[tag]>0) {
+			leu32a(tag + (TagNLen[tag]<<8), Header2); 	// Tag=9 & Length of Tag 9
+			memcpy((char*)(Header2+4),hdr->SCP.Section10, TagNLen[tag]);		/* Flawfinder: ignore *** memory is allocated after 1st H3 scan above */
+			Header2 += 4+TagNLen[tag];
+		}
+		tag = 13;
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag %i\n",tag);
+		if (TagNLen[tag]>0) {
+			leu32a(tag + (TagNLen[tag]<<8), Header2); 	// Tag=9 & Length of Tag 9
+			memcpy((char*)(Header2+4),hdr->SCP.Section11, TagNLen[tag]);		/* Flawfinder: ignore *** memory is allocated after 1st H3 scan above */
+			Header2 += 4+TagNLen[tag];
+		}
+#endif
 
 		while (Header2 < (hdr->AS.Header + hdr->HeadLen) ) {
 			*Header2 = 0;
@@ -3205,6 +3315,24 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"user-specific events defined\n");
 		    			hdr->ID.Hospital = strndup((char*)(Header2+pos+4),len);
 		    		}
 
+#if (BIOSIG_VERSION >= 10500)
+				else if (tag==9) {
+					hdr->SCP.Section7 = Header2+pos+4;
+				}
+				else if (tag==10) {
+					hdr->SCP.Section8 = Header2+pos+4;
+				}
+				else if (tag==11) {
+					hdr->SCP.Section9 = Header2+pos+4;
+				}
+				else if (tag==12) {
+					hdr->SCP.Section10 = Header2+pos+4;
+				}
+				else if (tag==13) {
+					hdr->SCP.Section11 = Header2+pos+4;
+				}
+#endif
+
 		    		/* further tags may include
 		    		- Manufacturer: SCP, MFER, GDF1
 		    		- Orientation of MEG channels
@@ -3214,6 +3342,9 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"user-specific events defined\n");
 
 		    		pos+= 4+len;
 		    		tag = (uint8_t)Header2[pos];
+
+				if (VERBOSE_LEVEL>8) fprintf(stdout,"GDFr3: next Tag=%i pos=%i\n",tag,(int)pos);
+
 		    	}
 		}
 
@@ -10088,6 +10219,7 @@ if (VERBOSE_LEVEL>8)
 			biosigERROR(hdr, B4C_CRC_ERROR, "Warning SOPEN(SCP-READ): Bad CRC!");
 		}
 		sopen_SCP_read(hdr);
+
 		serror2(hdr);	// report and reset error, but continue
 		// hdr->FLAG.SWAP = 0; 	// no swapping
 		hdr->FILE.LittleEndian = (__BYTE_ORDER == __LITTLE_ENDIAN); 	// no swapping
@@ -13815,6 +13947,7 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 		fprintf(fid,"row-based=%i\n",hdr->FLAG.ROW_BASED_CHANNELS);
 		fprintf(fid,"uncalib  =%i\n",hdr->FLAG.UCAL);
 		fprintf(fid,"OFdetect =%i\n",hdr->FLAG.OVERFLOWDETECTION);
+
 	}
 
 	if (VERBOSE>1) {
@@ -13899,6 +14032,16 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 				const char *str = GetEventDescription(hdr,k); 
 				if (str) fprintf(fid,"\t\t%s",str);
 			}
+		}
+		if (hdr->SCP.Section8) {
+			const char* StatusString2;
+			switch (hdr->SCP.Section8[16]) {
+			case 0: StatusString2 = "Original (not overread)"; break;
+			case 1: StatusString2 = "Confirmed"; break;
+			case 2: StatusString2 = "Overread (not confirmed)"; break;
+			default: StatusString2 = "unknown"; break;
+			}
+			fprintf(stdout, "\nSCP.Section8: status: %s\n", StatusString2);
 		}
 	}
 

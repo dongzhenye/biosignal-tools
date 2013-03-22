@@ -1076,6 +1076,16 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 		/**** SECTION 7 ****/
 		else if (curSect==7)  {
+#if (BIOSIG_VERSION >= 10500)
+
+			/*
+			hdr->SCP.Section7 = realloc(hdr->SCP.Section7, len);
+			memcpy(hdr->SCP.Section7, PtrCurSect+curSectPos, len);
+			*/
+			hdr->SCP.Section7Length = leu32p(PtrCurSect+4)-curSectPos;
+			hdr->SCP.Section7 = PtrCurSect+curSectPos;
+
+#endif
 			uint16_t N_QRS = *(uint8_t*)(PtrCurSect+curSectPos)-1;
 			uint8_t  N_PaceMaker = *(uint8_t*)(PtrCurSect+curSectPos+1);
 			// uint16_t RRI = leu16p(PtrCurSect+curSectPos+2);
@@ -1159,6 +1169,14 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 		/**** SECTION 8 ****/
 		else if (curSect==8)  {
+#if (BIOSIG_VERSION >= 10500)
+			/*
+			hdr->SCP.Section8 = realloc(hdr->SCP.Section8, len);
+			memcpy(hdr->SCP.Section8, PtrCurSect+curSectPos, len);
+			*/
+			hdr->SCP.Section8Length = leu32p(PtrCurSect+4)-curSectPos;
+			hdr->SCP.Section8 = PtrCurSect+curSectPos;
+#endif
 			aECG->Section8.Confirmed = *(char*)(PtrCurSect+curSectPos);
 			aECG->Section8.t.tm_year = leu16p(PtrCurSect+curSectPos+1)-1900;
 			aECG->Section8.t.tm_mon  = *(uint8_t*)(PtrCurSect+curSectPos+3)-1;
@@ -1179,17 +1197,41 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 		/**** SECTION 9 ****/
 		else if (curSect==9)  {
+#if (BIOSIG_VERSION >= 10500)
+			/*
+			hdr->SCP.Section9 = realloc(hdr->SCP.Section9, len);
+			memcpy(hdr->SCP.Section9, PtrCurSect+curSectPos, len);
+			*/
+			hdr->SCP.Section9Length = leu32p(PtrCurSect+4)-curSectPos;
+			hdr->SCP.Section9 = PtrCurSect+curSectPos;
+#endif
 			aECG->Section9.StartPtr = (char*)(PtrCurSect+curSectPos);
 			aECG->Section9.Length   = len;
 		}
 
 		/**** SECTION 10 ****/
 		else if (curSect==10)  {
+#if (BIOSIG_VERSION >= 10500)
+			/*
+			hdr->SCP.Section10 = realloc(hdr->SCP.Section10, len);
+			memcpy(hdr->SCP.Section10, PtrCurSect+curSectPos, len);
+			*/
+			hdr->SCP.Section10Length = leu32p(PtrCurSect+4)-curSectPos;
+			hdr->SCP.Section10 = PtrCurSect+curSectPos;
+#endif
 		}
 
 		/**** SECTION 11 ****/
 		else if (curSect==11)  {
  			if(len<curSectPos+9) continue; //Something is very wrong
+#if (BIOSIG_VERSION >= 10500)
+			/*
+			hdr->SCP.Section11 = realloc(hdr->SCP.Section11, len);
+			memcpy(hdr->SCP.Section11, PtrCurSect+curSectPos, len);
+			*/
+			hdr->SCP.Section11Length = leu32p(PtrCurSect+4)-curSectPos;
+			hdr->SCP.Section11 = PtrCurSect+curSectPos;
+#endif
 			aECG->Section11.Confirmed = *(char*)(PtrCurSect+curSectPos);
 			aECG->Section11.t.tm_year = leu16p(PtrCurSect+curSectPos+1)-1900;
 			aECG->Section11.t.tm_mon  = *(uint8_t*)(PtrCurSect+curSectPos+3)-1;

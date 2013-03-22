@@ -561,18 +561,48 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 		}
 		else if (curSect==7)  // SECTION 7 
 		{
+			if (hdr->SCP.Section7 != NULL) {
+				curSectLen = hdr->SCP.Section7Length+16; // current section length
+				ptr = (uint8_t*)realloc(ptr,sectionStart+curSectLen);
+				PtrCurSect = ptr+sectionStart;
+				memcpy(PtrCurSect+16,hdr->SCP.Section7,hdr->SCP.Section7Length);
+			}
 		}
 		else if (curSect==8)  // SECTION 8 
 		{
+			if (hdr->SCP.Section8 != NULL) {
+				curSectLen = hdr->SCP.Section8Length+16; // current section length
+				ptr = (uint8_t*)realloc(ptr,sectionStart+curSectLen);
+				PtrCurSect = ptr+sectionStart;
+				memcpy(PtrCurSect,hdr->SCP.Section8,hdr->SCP.Section8Length);
+			}
 		}
 		else if (curSect==9)  // SECTION 9 
 		{
+			if (hdr->SCP.Section9 != NULL) {
+				curSectLen = hdr->SCP.Section9Length+16; // current section length
+				ptr = (uint8_t*)realloc(ptr,sectionStart+curSectLen);
+				PtrCurSect = ptr+sectionStart;
+				memcpy(PtrCurSect,hdr->SCP.Section9,hdr->SCP.Section9Length);
+			}
 		}
 		else if (curSect==10)  // SECTION 10 
 		{
+			if (hdr->SCP.Section10 != NULL) {
+				curSectLen = hdr->SCP.Section10Length+16; // current section length
+				ptr = (uint8_t*)realloc(ptr,sectionStart+curSectLen);
+				PtrCurSect = ptr+sectionStart;
+				memcpy(PtrCurSect+16,hdr->SCP.Section10,hdr->SCP.Section10Length);
+			}
 		}
 		else if (curSect==11)  // SECTION 11
 		{
+			if (hdr->SCP.Section11 != NULL) {
+				curSectLen = hdr->SCP.Section11Length+16; // current section length
+				ptr = (uint8_t*)realloc(ptr,sectionStart+curSectLen);
+				PtrCurSect = ptr+sectionStart;
+				memcpy(PtrCurSect+16,hdr->SCP.Section11,hdr->SCP.Section11Length);
+			}
 		}
 		else {
 		}
@@ -593,6 +623,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			leu32a(curSectLen, ptr+sectionStart+4); 	// section length->section header
 			ptr[sectionStart+8] = VERSION; 	// Section Version Number 
 			ptr[sectionStart+9] = VERSION; 	// Protocol Version Number
+			memset(ptr+sectionStart+10,0,6);
 			crc = CRCEvaluate(ptr+sectionStart+2,curSectLen-2); // compute CRC
 			leu16a(crc, ptr+sectionStart);
 		}	
