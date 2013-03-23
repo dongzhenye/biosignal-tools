@@ -1,7 +1,6 @@
 /*
 
-    $Id$
-    Copyright (C) 2005,2006,2007,2012 Alois Schloegl <alois.schloegl@gmail.com>
+    Copyright (C) 2005,2006,2007,2012,2013 Alois Schloegl <alois.schloegl@gmail.com>
 
     This file is part of the "BioSig for C/C++" repository 
     (biosig4c++) at http://biosig.sf.net/ 
@@ -62,10 +61,12 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 		aECG->LatestConfirmingPhysician="/0";
 		aECG->Diagnosis="/0";
 		aECG->EmergencyLevel=0;
+#if (BIOSIG_VERSION < 10500)
 		aECG->Section8.NumberOfStatements = 0; 
 		aECG->Section8.Statements = NULL; 
 		aECG->Section11.NumberOfStatements = 0; 
 		aECG->Section11.Statements = NULL; 
+#endif
 	}
 	else 
 		aECG = (struct aecg*)hdr->aECG;
@@ -559,6 +560,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			aECG->Section6.StartPtr = sectionStart; 
 			aECG->Section6.Length = curSectLen; 
 		}
+#if (BIOSIG_VERSION >= 10500)
 		else if (curSect==7)  // SECTION 7 
 		{
 			if (hdr->SCP.Section7 != NULL) {
@@ -604,6 +606,7 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 				memcpy(PtrCurSect+16,hdr->SCP.Section11,hdr->SCP.Section11Length);
 			}
 		}
+#endif
 		else {
 		}
 

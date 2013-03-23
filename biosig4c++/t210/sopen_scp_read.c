@@ -1,7 +1,6 @@
 /*
 
-    $Id$
-    Copyright (C) 2005,2006,2007,2011,2012 Alois Schloegl <alois.schloegl@gmail.com>
+    Copyright (C) 2005,2006,2007,2011,2012,2013 Alois Schloegl <alois.schloegl@gmail.com>
     Copyright (C) 2011 Stoyan Mihaylov
 
     This file is part of the "BioSig for C/C++" repository 
@@ -380,11 +379,12 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 	aECG->FLAG.DIFF      = 0; 
 	aECG->FLAG.REF_BEAT  = 0; 
 	aECG->FLAG.BIMODAL   = 0;
+#if (BIOSIG_VERSION < 10500)
 	aECG->Section8.NumberOfStatements = 0; 
 	aECG->Section8.Statements = NULL; 
 	aECG->Section11.NumberOfStatements = 0; 
 	aECG->Section11.Statements = NULL; 
-
+#endif
 	en1064.FLAG.HUFFMAN  = 0; 
 	en1064.FLAG.DIFF     = 0; 
 	en1064.FLAG.REF_BEAT = 0; 
@@ -1077,11 +1077,6 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		/**** SECTION 7 ****/
 		else if (curSect==7)  {
 #if (BIOSIG_VERSION >= 10500)
-
-			/*
-			hdr->SCP.Section7 = realloc(hdr->SCP.Section7, len);
-			memcpy(hdr->SCP.Section7, PtrCurSect+curSectPos, len);
-			*/
 			hdr->SCP.Section7Length = leu32p(PtrCurSect+4)-curSectPos;
 			hdr->SCP.Section7 = PtrCurSect+curSectPos;
 
@@ -1170,13 +1165,9 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		/**** SECTION 8 ****/
 		else if (curSect==8)  {
 #if (BIOSIG_VERSION >= 10500)
-			/*
-			hdr->SCP.Section8 = realloc(hdr->SCP.Section8, len);
-			memcpy(hdr->SCP.Section8, PtrCurSect+curSectPos, len);
-			*/
 			hdr->SCP.Section8Length = leu32p(PtrCurSect+4)-curSectPos;
 			hdr->SCP.Section8 = PtrCurSect+curSectPos;
-#endif
+#else
 			aECG->Section8.Confirmed = *(char*)(PtrCurSect+curSectPos);
 			aECG->Section8.t.tm_year = leu16p(PtrCurSect+curSectPos+1)-1900;
 			aECG->Section8.t.tm_mon  = *(uint8_t*)(PtrCurSect+curSectPos+3)-1;
@@ -1193,29 +1184,23 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				aECG->Section8.Statements[k] = (char*)(PtrCurSect+curSectPos+3);
 				curSectPos += 3+leu16p(PtrCurSect+curSectPos+1);
 			}
+#endif
 		}
 
 		/**** SECTION 9 ****/
 		else if (curSect==9)  {
 #if (BIOSIG_VERSION >= 10500)
-			/*
-			hdr->SCP.Section9 = realloc(hdr->SCP.Section9, len);
-			memcpy(hdr->SCP.Section9, PtrCurSect+curSectPos, len);
-			*/
 			hdr->SCP.Section9Length = leu32p(PtrCurSect+4)-curSectPos;
 			hdr->SCP.Section9 = PtrCurSect+curSectPos;
-#endif
+#else
 			aECG->Section9.StartPtr = (char*)(PtrCurSect+curSectPos);
 			aECG->Section9.Length   = len;
+#endif
 		}
 
 		/**** SECTION 10 ****/
 		else if (curSect==10)  {
 #if (BIOSIG_VERSION >= 10500)
-			/*
-			hdr->SCP.Section10 = realloc(hdr->SCP.Section10, len);
-			memcpy(hdr->SCP.Section10, PtrCurSect+curSectPos, len);
-			*/
 			hdr->SCP.Section10Length = leu32p(PtrCurSect+4)-curSectPos;
 			hdr->SCP.Section10 = PtrCurSect+curSectPos;
 #endif
@@ -1231,7 +1216,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			*/
 			hdr->SCP.Section11Length = leu32p(PtrCurSect+4)-curSectPos;
 			hdr->SCP.Section11 = PtrCurSect+curSectPos;
-#endif
+#else
 			aECG->Section11.Confirmed = *(char*)(PtrCurSect+curSectPos);
 			aECG->Section11.t.tm_year = leu16p(PtrCurSect+curSectPos+1)-1900;
 			aECG->Section11.t.tm_mon  = *(uint8_t*)(PtrCurSect+curSectPos+3)-1;
@@ -1248,6 +1233,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				aECG->Section11.Statements[k] = (char*)(PtrCurSect+curSectPos+4);
 				curSectPos += 3+leu16p(PtrCurSect+curSectPos+1);
 			}
+#endif
 		}
 
 		/**** SECTION 12 ****/

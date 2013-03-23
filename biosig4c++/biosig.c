@@ -1,6 +1,6 @@
 /*
 
-    Copyright (C) 2005,2006,2007,2008,2009,2010,2011,2012,2013 Alois Schloegl <alois.schloegl@gmail.com>
+    Copyright (C) 2005-2013 Alois Schloegl <alois.schloegl@gmail.com>
     Copyright (C) 2011 Stoyan Mihaylov
     This file is part of the "BioSig for C/C++" repository
     (biosig4c++) at http://biosig.sf.net/
@@ -1695,6 +1695,7 @@ void destructHDR(HDRTYPE* hdr) {
 	sclose(hdr);
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"destructHDR(%s): free HDR.aECG\n",hdr->FileName);
+#if (BIOSIG_VERSION < 10500)
     	if (hdr->aECG != NULL) {
 		if (((struct aecg*)hdr->aECG)->Section8.NumberOfStatements>0)
 			free(((struct aecg*)hdr->aECG)->Section8.Statements);
@@ -1702,7 +1703,7 @@ void destructHDR(HDRTYPE* hdr) {
 			free(((struct aecg*)hdr->aECG)->Section11.Statements);
     		free(hdr->aECG);
     	}
-
+#endif
 	if (hdr->ID.Technician != NULL) free(hdr->ID.Technician);
 	if (hdr->ID.Hospital   != NULL) free(hdr->ID.Hospital);
 
@@ -1754,18 +1755,6 @@ void destructHDR(HDRTYPE* hdr) {
 	if (VERBOSE_LEVEL>7)  fprintf(stdout,"destructHDR: free HDR\n");
 
 	if (hdr->FileName != NULL) free(hdr->FileName);
-
-#if (BIOSIG_VERSION >= 10500)
-/*
-	memory management of hdr->SCP is done somewhere else, 
-        points into hdr->AS.Header area
-	if (hdr->SCP.Section7  != NULL) free(hdr->SCP.Section7);
-	if (hdr->SCP.Section8  != NULL) free(hdr->SCP.Section8);
-	if (hdr->SCP.Section9  != NULL) free(hdr->SCP.Section9);
-	if (hdr->SCP.Section10 != NULL) free(hdr->SCP.Section10);
-	if (hdr->SCP.Section11 != NULL) free(hdr->SCP.Section11);
-*/
-#endif
 
 	if (hdr != NULL) free(hdr);
 	return;
@@ -2562,20 +2551,14 @@ void struct2gdfbin(HDRTYPE *hdr)
 		if (hdr->SCP.Section7 != NULL) {
 			TagNLen[tag] = hdr->SCP.Section7Length;  // leu32p(hdr->SCP.Section7+4);
 			if (TagNLen[tag]) {
-				TagNLen[tag]++;
 				hdr->HeadLen += 4+TagNLen[tag];
 			}
 		}
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %i %i %i\n",tag, hdr->HeadLen, TagNLen[tag]);
 		tag = 10;
 		if (hdr->SCP.Section8 != NULL) {
-
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %08x %08x %08x %08x\n",leu32p(hdr->SCP.Section8-16),leu32p(hdr->SCP.Section8-12),leu32p(hdr->SCP.Section8-8),leu32p(hdr->SCP.Section8-4));
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw101 %08x %08x %08x %08x\n",leu32p(hdr->SCP.Section8),leu32p(hdr->SCP.Section8+4),leu32p(hdr->SCP.Section8+8),leu32p(hdr->SCP.Section8+12));
-
 			TagNLen[tag] = hdr->SCP.Section8Length;  // leu32p(hdr->SCP.Section8+4);
 			if (TagNLen[tag]) {
-				TagNLen[tag]++;
 				hdr->HeadLen += 4+TagNLen[tag];
 			}
 		}
@@ -2584,7 +2567,6 @@ void struct2gdfbin(HDRTYPE *hdr)
 		if (hdr->SCP.Section9 != NULL) {
 			TagNLen[tag] = hdr->SCP.Section9Length;  // leu32p(hdr->SCP.Section9+4);
 			if (TagNLen[tag]) {
-				TagNLen[tag]++;
 				hdr->HeadLen += 4+TagNLen[tag];
 			}
 		}
@@ -2593,7 +2575,6 @@ void struct2gdfbin(HDRTYPE *hdr)
 		if (hdr->SCP.Section10 != NULL) {
 			TagNLen[tag] = hdr->SCP.Section10Length;  // leu32p(hdr->SCP.Section10+4);
 			if (TagNLen[tag]) {
-				TagNLen[tag]++;
 				hdr->HeadLen += 4+TagNLen[tag];
 			}
 		}
@@ -2602,7 +2583,6 @@ void struct2gdfbin(HDRTYPE *hdr)
 		if (hdr->SCP.Section11 != NULL) {
 			TagNLen[tag] = hdr->SCP.Section11Length;  // leu32p(hdr->SCP.Section11+4);
 			if (TagNLen[tag]) {
-				TagNLen[tag]++;
 				hdr->HeadLen += 4+TagNLen[tag];
 			}
 		}
@@ -3318,18 +3298,23 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"user-specific events defined\n");
 #if (BIOSIG_VERSION >= 10500)
 				else if (tag==9) {
 					hdr->SCP.Section7 = Header2+pos+4;
+					hdr->SCP.Section7Length = len;
 				}
 				else if (tag==10) {
 					hdr->SCP.Section8 = Header2+pos+4;
+					hdr->SCP.Section8Length = len;
 				}
 				else if (tag==11) {
 					hdr->SCP.Section9 = Header2+pos+4;
+					hdr->SCP.Section9Length = len;
 				}
 				else if (tag==12) {
 					hdr->SCP.Section10 = Header2+pos+4;
+					hdr->SCP.Section10Length = len;
 				}
 				else if (tag==13) {
 					hdr->SCP.Section11 = Header2+pos+4;
+					hdr->SCP.Section11Length = len;
 				}
 #endif
 
@@ -14033,19 +14018,84 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 				if (str) fprintf(fid,"\t\t%s",str);
 			}
 		}
-		if (hdr->SCP.Section8) {
-			const char* StatusString2;
-			switch (hdr->SCP.Section8[16]) {
-			case 0: StatusString2 = "Original (not overread)"; break;
-			case 1: StatusString2 = "Confirmed"; break;
-			case 2: StatusString2 = "Overread (not confirmed)"; break;
-			default: StatusString2 = "unknown"; break;
-			}
-			fprintf(stdout, "\nSCP.Section8: status: %s\n", StatusString2);
-		}
 	}
 
 	if (VERBOSE>4) {
+		const char* StatusString[] = {"Original (not overread)", "Confirmed", "Overread (not confirmed)", "unknown"};
+#if (BIOSIG_VERSION >= 10500)
+
+		if (hdr->SCP.Section7) {
+			fprintf(stdout,"\n\n=== SCP Section 7: Global measurements ===\n");
+			fprintf(stdout,"\n\n  (report of this section is not implemented yet \n");
+		}
+		if (hdr->SCP.Section8) {
+			struct tm t;
+			t.tm_year = leu16p(hdr->SCP.Section8+1)-1900;
+			t.tm_mon  = hdr->SCP.Section8[3]-1;
+			t.tm_mday = hdr->SCP.Section8[4];
+			t.tm_hour = hdr->SCP.Section8[5];
+			t.tm_min  = hdr->SCP.Section8[6];
+			t.tm_sec  = hdr->SCP.Section8[7];
+			uint8_t NumberOfStatements = hdr->SCP.Section8[8];
+
+			fprintf(stdout,"\n\n=== SCP Section 8: Storage of full text interpretive statements ===\n");
+			fprintf(stdout,"Report %04i-%02i-%02i %02ih%02im%02is (Status=%s) %i statements\n",t.tm_year+1900,t.tm_mon+1,t.tm_mday,t.tm_hour,t.tm_min,t.tm_sec,StatusString[min(hdr->SCP.Section8[0],3)], NumberOfStatements);
+
+			uint32_t curSectPos = 9;
+			uint8_t k;
+			for (k=0; k < NumberOfStatements;k++) {
+				if (curSectPos+3 > hdr->SCP.Section8Length) break;
+				fprintf(stdout, "%s\n", (char*)(hdr->SCP.Section8+curSectPos+3));
+				curSectPos += 3+leu16p(hdr->SCP.Section8+curSectPos+1);
+			}
+		}
+		if (hdr->SCP.Section9) {
+			struct tm t;
+			t.tm_year = leu16p(hdr->SCP.Section9+1)-1900;
+			t.tm_mon  = hdr->SCP.Section9[3]-1;
+			t.tm_mday = hdr->SCP.Section9[4];
+			t.tm_hour = hdr->SCP.Section9[5];
+			t.tm_min  = hdr->SCP.Section9[6];
+			t.tm_sec  = hdr->SCP.Section9[7];
+			uint8_t NumberOfStatements = hdr->SCP.Section9[8];
+
+			fprintf(stdout,"\n\n=== SCP Section 9: Storing manufacturer specific interpretive statements and data related to the overreading trail ===\n");
+			fprintf(stdout,"Report %04i-%02i-%02i %02ih%02im%02is (Status=%s) %i statements\n",t.tm_year+1900,t.tm_mon+1,t.tm_mday,t.tm_hour,t.tm_min,t.tm_sec,StatusString[min(hdr->SCP.Section8[0],3)], NumberOfStatements);
+
+			uint32_t curSectPos = 9;
+			uint8_t k;
+			for (k=0; k < NumberOfStatements;k++) {
+				if (curSectPos+3 > hdr->SCP.Section9Length) break;
+				fprintf(stdout, "%s\n", (char*)(hdr->SCP.Section9+curSectPos+3));
+				curSectPos += 3+leu16p(hdr->SCP.Section9+curSectPos+1);
+			}
+		}
+		if (hdr->SCP.Section10) {
+			fprintf(stdout,"\n\n=== SCP Section 10: Lead measurement block ===\n");
+			fprintf(stdout,"\n\n  (report of this section is not implemented yet \n");
+		}
+		if (hdr->SCP.Section11) {
+			struct tm t;
+			t.tm_year = leu16p(hdr->SCP.Section11+1)-1900;
+			t.tm_mon  = hdr->SCP.Section11[3]-1;
+			t.tm_mday = hdr->SCP.Section11[4];
+			t.tm_hour = hdr->SCP.Section11[5];
+			t.tm_min  = hdr->SCP.Section11[6];
+			t.tm_sec  = hdr->SCP.Section11[7];
+			uint8_t NumberOfStatements = hdr->SCP.Section11[8];
+
+			fprintf(stdout,"\n\n=== SCP Section 11: Storage of the universal ECG interpretive statement codes ===\n");
+			fprintf(stdout,"Report %04i-%02i-%02i %02ih%02im%02is (Status=%s) %i statements\n",t.tm_year+1900,t.tm_mon+1,t.tm_mday,t.tm_hour,t.tm_min,t.tm_sec,StatusString[min(hdr->SCP.Section8[0],3)], NumberOfStatements);
+
+			uint32_t curSectPos = 9;
+			uint8_t k;
+			for (k=0; k < NumberOfStatements;k++) {
+				if (curSectPos+3 > hdr->SCP.Section11Length) break;
+				fprintf(stdout, "%s\n", (char*)(hdr->SCP.Section11+curSectPos+3));
+				curSectPos += 3+leu16p(hdr->SCP.Section11+curSectPos+1);
+			}
+		}
+#else
 		if (hdr->aECG && (hdr->TYPE==SCP_ECG)) {
 			struct aecg* aECG = (struct aecg*)hdr->aECG;
 			fprintf(stdout,"\nInstitution Number: %i\n",aECG->Section1.Tag14.INST_NUMBER);
@@ -14074,24 +14124,16 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 				fprintf(stdout,"Blood pressure (systolic/diastolic) : %3.0f/%3.0f mmHg\n",aECG->systolicBloodPressure,aECG->diastolicBloodPressure);
 
 
-			const char* StatusString;
-			switch (aECG->Section8.Confirmed) {
-			case 0: StatusString = "Original (not overread)"; break;
-			case 1: StatusString = "Confirmed"; break;
-			case 2: StatusString = "Overread (not confirmed)"; break;
-			default: StatusString = "unknown"; break;
-			}
-
 			uint8_t k;
 			if (aECG->Section8.NumberOfStatements>0) {
-				fprintf(stdout,"\n\nReport %04i-%02i-%02i %02ih%02im%02is (Status=%s)\n",aECG->Section8.t.tm_year+1900,aECG->Section8.t.tm_mon+1,aECG->Section8.t.tm_mday,aECG->Section8.t.tm_hour,aECG->Section8.t.tm_min,aECG->Section8.t.tm_sec,StatusString);
+				fprintf(stdout,"\n\nReport %04i-%02i-%02i %02ih%02im%02is (Status=%s)\n",aECG->Section8.t.tm_year+1900,aECG->Section8.t.tm_mon+1,aECG->Section8.t.tm_mday,aECG->Section8.t.tm_hour,aECG->Section8.t.tm_min,aECG->Section8.t.tm_sec,StatusString[min(aECG->Section8.Confirmed,3)]);
 				for (k=0; k<aECG->Section8.NumberOfStatements;k++) {
 					fprintf(stdout,"%s\n",aECG->Section8.Statements[k]);
 				}
 			}
 
 			if (aECG->Section11.NumberOfStatements>0) {
-				fprintf(stdout,"\n\nReport %04i-%02i-%02i %02ih%02im%02is (Status=%s)\n",aECG->Section11.t.tm_year+1900,aECG->Section11.t.tm_mon+1,aECG->Section11.t.tm_mday,aECG->Section11.t.tm_hour,aECG->Section11.t.tm_min,aECG->Section11.t.tm_sec,StatusString);
+				fprintf(stdout,"\n\nReport %04i-%02i-%02i %02ih%02im%02is (Status=%s)\n",aECG->Section11.t.tm_year+1900,aECG->Section11.t.tm_mon+1,aECG->Section11.t.tm_mday,aECG->Section11.t.tm_hour,aECG->Section11.t.tm_min,aECG->Section11.t.tm_sec,StatusString[min(aECG->Section11.Confirmed,3)]);
 				for (k=0; k<aECG->Section11.NumberOfStatements;k++) {
 					fprintf(stdout,"%s\n",aECG->Section11.Statements[k]);
 				}
@@ -14099,6 +14141,7 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 
 			fprintf(stdout,"\n\nSection9:\n%s\n\n",aECG->Section9.StartPtr);
 		}
+#endif  // BIOSIGVERSION < 10500
 	}
 	fprintf(fid,"\n\n");
 
