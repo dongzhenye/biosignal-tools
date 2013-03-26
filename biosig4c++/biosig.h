@@ -39,8 +39,8 @@
 #define __BIOSIG_EXT_H__
 
 #define BIOSIG_VERSION_MAJOR 1
-#define BIOSIG_VERSION_MINOR 4
-#define BIOSIG_PATCHLEVEL 4
+#define BIOSIG_VERSION_MINOR 5
+#define BIOSIG_PATCHLEVEL 0
 // for backward compatibility 
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
@@ -447,14 +447,14 @@ typedef struct HDR_STRUCT {
 			so do not dynamically re-allocate the pointers.  
 		*/
 		const uint8_t* Section7;
-		uint32_t Section7Length;
 		const uint8_t* Section8;
-		uint32_t Section8Length;
 		const uint8_t* Section9;
-		uint32_t Section9Length;
 		const uint8_t* Section10;
-		uint32_t Section10Length;
 		const uint8_t* Section11;
+		uint32_t Section7Length;
+		uint32_t Section8Length;
+		uint32_t Section9Length;
+		uint32_t Section10Length;
 		uint32_t Section11Length;
 	} SCP;
 #endif
