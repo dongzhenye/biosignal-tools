@@ -1,3 +1,24 @@
+/*
+    Copyright (C) by several contributors before 2012
+    Copyright (C) Alois Schloegl 2012
+    This is part of a patch against "SigViewer -r 557", 
+    maintained at http://biosig.sf.net/ 
+
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 3
+    of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>. 
+*/
+
+
 #include "gdf_data_block.h"
 
 #include <QDebug>
@@ -9,7 +30,7 @@ namespace SigViewer_
 {
 
 //-------------------------------------------------------------------------------------------------
-GDFDataBlock::GDFDataBlock (QSharedPointer<GDFSignalCache> cache, ChannelID channel, unsigned length, float32 sample_rate)
+GDFDataBlock::GDFDataBlock (QSharedPointer<GDFSignalCache> cache, ChannelID channel, size_t length, float64 sample_rate)
     : DataBlock (length, sample_rate),
       channel_ (channel),
       start_sample_ (0),
@@ -21,7 +42,7 @@ GDFDataBlock::GDFDataBlock (QSharedPointer<GDFSignalCache> cache, ChannelID chan
 }
 
 //-------------------------------------------------------------------------------------------------
-GDFDataBlock::GDFDataBlock (GDFDataBlock const& src, unsigned start_sample, unsigned length)
+GDFDataBlock::GDFDataBlock (GDFDataBlock const& src, size_t start_sample, size_t length)
     : DataBlock (src, length),
       channel_ (src.channel_),
       start_sample_ (start_sample),
@@ -41,13 +62,13 @@ GDFDataBlock::~GDFDataBlock ()
 }
 
 //-------------------------------------------------------------------------------------------------
-QSharedPointer<DataBlock> GDFDataBlock::createSubBlock (uint32 start, uint32 length) const
+QSharedPointer<DataBlock> GDFDataBlock::createSubBlock (size_t start, size_t length) const
 {
     return QSharedPointer<DataBlock> (new GDFDataBlock (*this, start_sample_ + start, length));
 }
 
 //-------------------------------------------------------------------------------------------------
-float32 const& GDFDataBlock::operator[] (uint32 index) const
+float32 const& GDFDataBlock::operator[] (size_t index) const
 {
     current_value_ = cache_->getSample (channel_, start_sample_ + index);
     return current_value_;

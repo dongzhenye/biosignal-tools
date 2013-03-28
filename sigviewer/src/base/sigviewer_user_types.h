@@ -3,7 +3,7 @@
     $Id: user_types.h,v 1.3 2009-02-10 13:19:57 schloegl Exp $
     Copyright (C) Thomas Brunner  2005,2006
 		  Clemens Brunner 2006
-    		  Alois Schloegl  2009
+    		  Alois Schloegl  2009,2012
     		  
     This file is part of the "SigViewer" repository
     at http://biosig.sf.net/
@@ -25,6 +25,7 @@
 
 
 // sigviewer_user_types.h
+#include <stddef.h>
 
 #ifndef SIGVIEWER_USER_TYPES_H
 #define SIGVIEWER_USER_TYPES_H

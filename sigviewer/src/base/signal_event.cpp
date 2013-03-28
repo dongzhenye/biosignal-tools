@@ -1,3 +1,23 @@
+/*
+    Copyright (C) by several contributors before 2012
+    Copyright (C) Alois Schloegl 2012
+    This is part of a patch against "SigViewer -r 557", 
+    maintained at http://biosig.sf.net/ 
+
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 3
+    of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>. 
+*/
+
 // signal_event.cpp
 
 #include "signal_event.h"
@@ -18,8 +38,8 @@ SignalEvent::SignalEvent()
 }
 
 // constructor
-SignalEvent::SignalEvent(uint32 position, EventType type, float64 sample_rate, ChannelID channel,
-                         uint32 duration, int32 id)
+SignalEvent::SignalEvent(size_t position, EventType type, float64 sample_rate, ChannelID channel,
+                         size_t duration, int32 id)
 : id_(id),
   position_(position),
   sample_rate_ (sample_rate),
@@ -73,15 +93,15 @@ int32 SignalEvent::getId() const
 }
 
 // get position
-uint32 SignalEvent::getPosition() const
+size_t SignalEvent::getPosition() const
 {
     return position_;
 }
 
 //-----------------------------------------------------------------------------
-float32 SignalEvent::getPositionInSec() const
+float64 SignalEvent::getPositionInSec() const
 {
-    return static_cast<float32>(position_) / sample_rate_;
+    return static_cast<float64>(position_) / sample_rate_;
 }
 
 
@@ -98,21 +118,21 @@ ChannelID SignalEvent::getChannel() const
 }
 
 // get duration
-uint32 SignalEvent::getDuration() const
+size_t SignalEvent::getDuration() const
 {
     return duration_;
 }
 
 //-----------------------------------------------------------------------------
-float32 SignalEvent::getDurationInSec() const
+float64 SignalEvent::getDurationInSec() const
 {
-    return static_cast<float32>(duration_) / sample_rate_;
+    return static_cast<float64>(duration_) / sample_rate_;
 }
 
 //-----------------------------------------------------------------------------
-float32 SignalEvent::getEndInSec () const
+float64 SignalEvent::getEndInSec () const
 {
-    return (static_cast<float32>(duration_ + position_)) / sample_rate_;
+    return (static_cast<float64>(duration_ + position_)) / sample_rate_;
 }
 
 //-----------------------------------------------------------------------------
@@ -128,7 +148,7 @@ void SignalEvent::setId (EventID id)
 }
 
 // set position
-void SignalEvent::setPosition(uint32 position)
+void SignalEvent::setPosition(size_t position)
 {
     position_ = position;
 }
@@ -146,7 +166,7 @@ void SignalEvent::setChannel(ChannelID channel)
 }
 
 // set duration
-void SignalEvent::setDuration(uint32 duration)
+void SignalEvent::setDuration(size_t duration)
 {
     duration_ = duration;
 }

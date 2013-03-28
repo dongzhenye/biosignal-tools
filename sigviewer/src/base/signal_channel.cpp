@@ -4,7 +4,7 @@
     Copyright (C) Thomas Brunner  2006,2007 
     Copyright (C) Christoph Eibel 2007,2008, 
     Copyright (C) Clemens Brunner 2006,2007,2008  
-    Copyright (C) Alois Schloegl  2008,2009
+    Copyright (C) Alois Schloegl  2008,2009,2011,2012
     This file is part of the "SigViewer" repository 
     at http://biosig.sf.net/ 
 
@@ -31,20 +31,60 @@ namespace SigViewer_
 {
 
 //-----------------------------------------------------------------------------
+SignalChannel::SignalChannel (unsigned ch,
+                              const HDRTYPE* hdr) :
+    label_ (QString(hdr->CHANNEL[ch].Label).trimmed()),
+    physical_maximum_(hdr->CHANNEL[ch].PhysMax), 	 
+    digital_maximum_(hdr->CHANNEL[ch].DigMax), 	 
+    physical_minimum_(hdr->CHANNEL[ch].PhysMin), 	 
+    digital_minimum_(hdr->CHANNEL[ch].DigMin), 	 
+    data_type_(hdr->CHANNEL[ch].GDFTYP), 	 
+    lowpass_(hdr->CHANNEL[ch].LowPass), 	 
+    highpass_(hdr->CHANNEL[ch].HighPass), 	 
+    notch_(hdr->CHANNEL[ch].Notch) 	 
+
+{
+#if (BIOSIG_VERSION < 10400)
+     char tmpstr[30]; 
+     PhysDim(hdr->CHANNEL[ch].PhysDimCode),tmpstr);
+#else
+     const char *tmpstr = PhysDim3(hdr->CHANNEL[ch].PhysDimCode);
+#endif
+     phys_y_dimension_label_ = QString(tmpstr);
+     samplerate_ = hdr->SampleRate * hdr->CHANNEL[ch].SPR / hdr->SPR; 
+}
+
+
 SignalChannel::SignalChannel (unsigned number,
-                              QString const& label,
-                              QString const& phys_y_dimension_label) :
-    number_ (number),
-    label_ (label),
-    phys_y_dimension_label_ (phys_y_dimension_label)
+                              CHANNEL_TYPE C) :
+
+    /* obsolete */                              
+    label_ (QString(C.Label).trimmed()),
+    physical_maximum_(C.PhysMax), 	 
+    digital_maximum_(C.DigMax), 	 
+    physical_minimum_(C.PhysMin), 	 
+    digital_minimum_(C.DigMin), 	 
+    data_type_(C.GDFTYP), 	 
+    lowpass_(C.LowPass), 	 
+    highpass_(C.HighPass), 	 
+    notch_(C.Notch) 	 
+
 {
 
+#if (BIOSIG_VERSION < 10400)
+     char tmpstr[30]; 
+     PhysDim(C.PhysDimCode),tmpstr);
+#else
+     const char *tmpstr = PhysDim3(C.PhysDimCode);
+#endif
+     phys_y_dimension_label_ = QString(tmpstr);
+     samplerate_ = -1.0; 
 }
 
 //-----------------------------------------------------------------------------
-uint32 SignalChannel::getNumber() const
+float64 SignalChannel::getSampleRate() const
 {
-    return number_;
+    return samplerate_;
 }
 
 //-----------------------------------------------------------------------------

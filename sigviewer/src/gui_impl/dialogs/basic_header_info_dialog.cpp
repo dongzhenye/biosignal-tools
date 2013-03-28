@@ -1,3 +1,26 @@
+/*
+
+    $Id: biosig_reader.cpp,v 1.36 2009/03/03 11:57:07 cle1109 Exp $
+    Copyright (C) Christoph Eibel 2010, 2011
+    Copyright (C) Alois Schloegl  2011
+    This file is part of the "SigViewer" repository
+    at http://biosig.sf.net/
+
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 3
+    of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
+
 // basic_header_info_dialog.cpp
 
 #include "basic_header_info_dialog.h"
@@ -176,7 +199,9 @@ void BasicHeaderInfoDialog::buildTree()
         tmp_item = new QTreeWidgetItem(channel_item);
 
         tmp_item->setText(0, tr("Sample Rate"));
-        tmp_item->setText(1, QString::number(basic_header_->getSampleRate()));
+        float64 fs = channel->getSampleRate();
+        if (fs < 0.0) fs = basic_header_->getSampleRate();
+        tmp_item->setText(1, QString::number(fs));
         tmp_item->setText(2, tr("Hz"));
 
         tmp_item = new QTreeWidgetItem(channel_item);

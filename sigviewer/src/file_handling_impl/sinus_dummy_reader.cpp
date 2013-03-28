@@ -29,10 +29,11 @@ SinusDummyReader::SinusDummyReader ()
             data->push_back (sin(sample_index / ((i*i+1))));
         QSharedPointer<DataBlock const> data_block (new FixedDataBlock (data, 100));
         data_.insert(i, data_block);
-
+/*
         QSharedPointer<SignalChannel> channel (new SignalChannel(i,
                                                    QString::number(i)));
         header->addDummyChannel(i, channel);
+*/
         header_ = header;
     }
 

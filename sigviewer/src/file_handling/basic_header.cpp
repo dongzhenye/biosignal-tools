@@ -12,7 +12,7 @@ QString BasicHeader::getFileTypeString () const
 }
 
 //-----------------------------------------------------------------------------
-float32 BasicHeader::getSampleRate () const
+float64 BasicHeader::getSampleRate () const
 {
     return sample_rate_;
 }
@@ -61,7 +61,7 @@ void BasicHeader::setFileTypeString (QString const& file_type_string)
 }
 
 //-------------------------------------------------------------------------
-void BasicHeader::setSampleRate (float sample_rate)
+void BasicHeader::setSampleRate (float64 sample_rate)
 {
     sample_rate_ = sample_rate;
 }

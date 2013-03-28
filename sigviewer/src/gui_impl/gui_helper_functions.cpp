@@ -1,3 +1,24 @@
+/*
+    Copyright (C) by several contributors before 2012
+    Copyright (C) Alois Schloegl 2012
+    This is part of a patch against "SigViewer -r 557", 
+    maintained at http://biosig.sf.net/ 
+
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 3
+    of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>. 
+*/
+
+
 #include "gui_impl/gui_helper_functions.h"
 #include "dialogs/channel_selection_dialog.h"
 #include "select_shown_channels_dialog.h"
@@ -28,12 +49,8 @@ void animateProperty (QObject* target, QByteArray const& property_name,
     bool animations_activated = settings.value("activated", false).toBool();
     int animation_duration = settings.value("duration", 200).toInt();
     settings.endGroup();
-#if QT_VERSION < 0x040600
-    animations_activated = false;
-#endif
     if (animations_activated)
     {
-#if QT_VERSION >= 0x040600
         QPropertyAnimation* animation = new QPropertyAnimation (target,
                                                                 property_name);
         animation->setDuration (animation_duration);
@@ -45,7 +62,6 @@ void animateProperty (QObject* target, QByteArray const& property_name,
             call_back_object->connect (animation, SIGNAL(finished()), call_back_slot);
         }
         animation->start (animation->DeleteWhenStopped);
-#endif
     }
     else
     {

@@ -1,3 +1,24 @@
+/*
+    Copyright (C) by several contributors before 2012
+    Copyright (C) Alois Schloegl 2012
+    This is part of a patch against "SigViewer -r 557", 
+    maintained at http://biosig.sf.net/ 
+
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 3
+    of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>. 
+*/
+
+
 #include "data_block.h"
 
 #include "signal_processing/FFTReal.h"
@@ -9,10 +30,10 @@
 
 namespace SigViewer_ {
 
-unsigned DataBlock::instance_count_ = 0;
+size_t DataBlock::instance_count_ = 0;
 
 //-----------------------------------------------------------------------------
-DataBlock::DataBlock (unsigned length, float32 sample_rate_per_unit)
+DataBlock::DataBlock (size_t length, float64 sample_rate_per_unit)
     : length_ (length),
       sample_rate_per_unit_ (sample_rate_per_unit)
 {
@@ -20,7 +41,7 @@ DataBlock::DataBlock (unsigned length, float32 sample_rate_per_unit)
 }
 
 //-----------------------------------------------------------------------------
-DataBlock::DataBlock (DataBlock const& src, unsigned new_length)
+DataBlock::DataBlock (DataBlock const& src, size_t new_length)
     : length_ (new_length),
       sample_rate_per_unit_ (src.sample_rate_per_unit_),
       label_ (src.label_)
@@ -37,7 +58,7 @@ DataBlock::~DataBlock ()
 }
 
 //-----------------------------------------------------------------------------
-uint32 DataBlock::size () const
+size_t DataBlock::size () const
 {
     return length_;
 }
@@ -79,7 +100,7 @@ std::string DataBlock::getYUnitLabel () const
 }
 
 //-------------------------------------------------------------------------
-float32 DataBlock::getSampleRatePerUnit () const
+float64 DataBlock::getSampleRatePerUnit () const
 {
     return sample_rate_per_unit_;
 }

@@ -1,3 +1,24 @@
+/*
+    Copyright (C) by several contributors before 2012
+    Copyright (C) Alois Schloegl 2012
+    This is part of a patch against "SigViewer -r 557", 
+    maintained at http://biosig.sf.net/ 
+
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 3
+    of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>. 
+*/
+
+
 #ifndef DATA_BLOCK_H
 #define DATA_BLOCK_H
 
@@ -23,10 +44,10 @@ public:
     virtual ~DataBlock ();
 
     //-------------------------------------------------------------------------
-    virtual QSharedPointer<DataBlock> createSubBlock (uint32 start, uint32 length) const = 0;
+    virtual QSharedPointer<DataBlock> createSubBlock (size_t start, size_t length) const = 0;
 
     //-------------------------------------------------------------------------
-    virtual float32 const& operator[] (uint32 index) const = 0;
+    virtual float32 const& operator[] (size_t index) const = 0;
 
     //-------------------------------------------------------------------------
     virtual float32 getMin () const = 0;
@@ -36,7 +57,7 @@ public:
 
     //-------------------------------------------------------------------------
     /// length of the block
-    uint32 size () const;
+    size_t size () const;
 
     //-------------------------------------------------------------------------
     std::string getLabel () const;
@@ -59,22 +80,22 @@ public:
     std::string getYUnitLabel () const;
 
     //-------------------------------------------------------------------------
-    float32 getSampleRatePerUnit () const;
+    float64 getSampleRatePerUnit () const;
 
 protected:
     // protected constructors here:
-    DataBlock (unsigned length, float32 sample_rate_per_unit);
-    DataBlock (DataBlock const& src, unsigned new_length);
+    DataBlock (size_t length, float64 sample_rate_per_unit);
+    DataBlock (DataBlock const& src, size_t new_length);
 
 private:
-    uint32 length_;
-    float32 sample_rate_per_unit_;
+    size_t length_;
+    float64 sample_rate_per_unit_;
 
     std::string label_;
     std::string x_unit_label_;
     std::string y_unit_label_;
 
-    static unsigned instance_count_;
+    static size_t instance_count_;
 };
 
 }

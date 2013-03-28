@@ -55,7 +55,7 @@ float64 round125(float64 value)
 }
 
 //-----------------------------------------------------------------------------
-int sampleRateToDecimalPrecision (float sample_rate)
+int sampleRateToDecimalPrecision (float64 sample_rate)
 {
     int precision = 0;
     for (; sample_rate > 10; sample_rate /= 10)

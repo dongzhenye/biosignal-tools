@@ -33,7 +33,7 @@ macx:QT += opengl
 INCLUDEPATH += $$_PRO_FILE_PWD_/../extern/include \
                $$_PRO_FILE_PWD_/.
 LIBS += -L$$_PRO_FILE_PWD_/../extern/lib \
-    -lbiosig# \
+    -lbiosig -lcholmod -lz \
     #-lGDF
 
 macx:INCLUDEPATH += /opt/local/include

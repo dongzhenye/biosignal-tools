@@ -1,3 +1,24 @@
+/*
+    Copyright (C) by several contributors before 2012
+    Copyright (C) Alois Schloegl 2012
+    This is part of a patch against "SigViewer -r 557", 
+    maintained at http://biosig.sf.net/ 
+
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 3
+    of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>. 
+*/
+
+
 #include "signal_graphics_item.h"
 #include "event_graphics_item.h"
 #include "signal_browser_model_4.h"
@@ -56,9 +77,7 @@ SignalGraphicsItem::SignalGraphicsItem (QSharedPointer<SignalViewSettings const>
   created_event_item_ (0),
   hand_tool_on_ (false)
 {
-#if QT_VERSION >= 0x040600
     setFlag (QGraphicsItem::ItemUsesExtendedStyleOption, true);
-#endif
     setAcceptHoverEvents(false);
     connect (signal_view_settings.data(), SIGNAL(gridFragmentationChanged()), SLOT(updateYGridIntervall()));
 }
@@ -232,8 +251,8 @@ void SignalGraphicsItem::paint (QPainter* painter, const QStyleOptionGraphicsIte
 
     last_x = start_sample * pixel_per_sample;
 
-    float32 last_y = (*data_block)[0];
-    float32 new_y = 0;
+    float64 last_y = (*data_block)[0];
+    float64 new_y = 0;
 
     if (draw_x_grid_)
         drawXGrid (painter, option);
@@ -294,12 +313,12 @@ void SignalGraphicsItem::mouseMoveEvent (QGraphicsSceneMouseEvent* event)
     }
     else if (new_event_)
     {
-        float32 pixel_per_sample = signal_view_settings_->getPixelsPerSample ();
+        float64 pixel_per_sample = signal_view_settings_->getPixelsPerSample ();
         int32 sample_cleaned_pos = event->scenePos().x() / pixel_per_sample + 0.5;
         sample_cleaned_pos *= pixel_per_sample;
         int32 new_event_width = new_signal_event_->getDuration ();
-        uint32 old_pos = new_signal_event_->getPosition ();
-        uint32 old_width = new_signal_event_->getDuration ();
+        size_t old_pos = new_signal_event_->getPosition ();
+        size_t old_width = new_signal_event_->getDuration ();
 
         if (sample_cleaned_pos < new_signal_event_reference_x_)
         {

@@ -13,7 +13,7 @@ public:
     SinusDummyHeader ();
 
     //-------------------------------------------------------------------------
-    virtual uint32 getNumberOfSamples () const {return 10000;}
+    virtual size_t getNumberOfSamples () const {return 10000;}
 
     //-------------------------------------------------------------------------
     void addDummyChannel (ChannelID id, QSharedPointer<SignalChannel const> channel)

@@ -1,3 +1,26 @@
+/*
+
+    $Id$
+    Copyright (C) Christoph Eibel 2010, 2011
+    Copyright (C) Alois Schloegl 2011,2012
+    This file is part of the "SigViewer" repository
+    at http://biosig.sf.net/
+
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either version 3
+    of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
+
 #include "biosig_basic_header.h"
 
 #include <ctime>
@@ -16,14 +39,14 @@ BiosigBasicHeader::BiosigBasicHeader (HDRTYPE* raw_header, QString const& file_p
         for (unsigned index = 0; index < raw_header->EVENT.LenCodeDesc; index++)
         {
             if (raw_header->EVENT.CodeDesc[index])
-                user_defined_event_map_[index+1] = QString(raw_header->EVENT.CodeDesc[index]);
+                user_defined_event_map_[index] = QString(raw_header->EVENT.CodeDesc[index]);
         }
     }
 
 
     setFileTypeString (QString (GetFileTypeString(raw_header->TYPE)).append(" v").append(QString::number(raw_header->VERSION)));
 
-    float sampling_rate = raw_header->SampleRate;
+    float64 sampling_rate = raw_header->SampleRate;
 
     setSampleRate (sampling_rate);
     readChannelsInfo (raw_header);
@@ -32,7 +55,7 @@ BiosigBasicHeader::BiosigBasicHeader (HDRTYPE* raw_header, QString const& file_p
 }
 
 //-----------------------------------------------------------------------------
-uint32 BiosigBasicHeader::getNumberOfSamples () const
+size_t BiosigBasicHeader::getNumberOfSamples () const
 {
     return ceil(static_cast<double>(number_samples_));
 }
@@ -46,19 +69,12 @@ QMap<unsigned, QString> BiosigBasicHeader::getNamesOfUserSpecificEvents () const
 //-------------------------------------------------------------------------
 void BiosigBasicHeader::readChannelsInfo (HDRTYPE const* raw_header)
 {
+    unsigned ch = 0; 
     for (unsigned channel_index = 0; channel_index < raw_header->NS; channel_index++)
+    if (raw_header->CHANNEL[channel_index].OnOff)
     {
-        QString label = QString (QByteArray(raw_header->CHANNEL[channel_index].Label, MAX_LENGTH_LABEL)).trimmed();
-
-        char p[MAX_LENGTH_PHYSDIM+1];
-        p[MAX_LENGTH_PHYSDIM] = 0;
-        PhysDim(raw_header->CHANNEL[channel_index].PhysDimCode, p);
-        QString phys_y_dim_label = QString (p).trimmed();
-        if (phys_y_dim_label.compare("uV") == 0)
-            phys_y_dim_label = QString (QChar((ushort)0xb5)).append("V");
-        QSharedPointer<SignalChannel> channel (new SignalChannel(channel_index, label,
-                                                                 phys_y_dim_label));
-        addChannel (channel_index, channel);
+        QSharedPointer<SignalChannel> channel (new SignalChannel(channel_index, raw_header));
+        addChannel (ch++, channel);
     }
 }
 
