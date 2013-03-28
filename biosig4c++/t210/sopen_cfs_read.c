@@ -60,9 +60,9 @@ EXTERN_C void sopen_cfs_read(HDRTYPE* hdr) {
 		        CFS - The CED Filing System October 2006
 		*/
 
-
 		/* General Header */
 		// uint32_t filesize = leu32p(hdr->AS.Header+22);	// unused
+		hdr->FILE.size = leu32p(hdr->AS.Header+0x16);	//    file size
 		hdr->NS    = leu16p(hdr->AS.Header+0x2a);	// 6  number of channels
 		uint16_t n = leu16p(hdr->AS.Header+0x2c);	// 7  number of file variables
 		uint16_t d = leu16p(hdr->AS.Header+0x2e);	// 8  number of data section variables
@@ -70,6 +70,23 @@ EXTERN_C void sopen_cfs_read(HDRTYPE* hdr) {
 		uint16_t DataHeaderSize = leu16p(hdr->AS.Header+0x32);	// 10 byte size of data section header
 		uint32_t LastDataSectionHeaderOffset = leu32p(hdr->AS.Header+0x34);	// 11 last data section header offset
 		uint16_t NumberOfDataSections = leu16p(hdr->AS.Header+0x38);	// 12 last data section header offset
+
+		// decode start time and date
+		{
+			struct tm t;
+			char strtmp[9];
+			memcpy(strtmp, hdr->AS.Header+0x1a, 8);
+			strtmp[8] = 0; // terminating null character
+			t.tm_hour = atoi(strtok(strtmp,":/"));
+			t.tm_min  = atoi(strtok(NULL,":/"));
+			t.tm_sec  = atoi(strtok(NULL,":/"));
+			memcpy(strtmp, hdr->AS.Header+0x22, 8);
+			t.tm_mday = atoi(strtok(strtmp,":/"));
+			t.tm_mon  = atoi(strtok(NULL,":/"))-1;
+			t.tm_year = atoi(strtok(NULL,":/"));
+			if (t.tm_year<39) t.tm_year+=100;
+			hdr->T0 = tm_time2gdf_time(&t);
+		}
 
 		if (NumberOfDataSections) {
 			hdr->EVENT.TYP = (typeof(hdr->EVENT.TYP)) realloc(hdr->EVENT.TYP, (hdr->EVENT.N + NumberOfDataSections - 1) * sizeof(*hdr->EVENT.TYP));
