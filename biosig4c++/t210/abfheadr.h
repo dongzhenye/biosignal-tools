@@ -1210,7 +1210,6 @@ struct ABFSynch
 #define ABF_NEWFILETAG           4
 #define ABF_ANNOTATIONTAG        5        // Same as a comment tag except that nAnnotationIndex holds 
                                           // the index of the annotation that holds extra information.
-/*
 //
 // Definition of the ABF Tag structure
 //
@@ -1249,9 +1248,9 @@ struct ABFVoiceTagInfo
    short nCompressionType;    // Compression method used.
    short nSampleSize;         // Size of the samples acquired.
    ABFLONG  lSamplesPerSecond;   // Rate at which the sound was acquired.
-   DWORD dwCRC;               // CRC used to check data integrity.
-   WORD  wChannels;           // Number of channels in the tag (usually 1).
-   WORD  wUnused;             // Unused space.
+   uint32_t dwCRC;               // CRC used to check data integrity.
+   uint16_t wChannels;           // Number of channels in the tag (usually 1).
+   uint16_t wUnused;             // Unused space.
 }; // Size 32
 
 //
@@ -1287,7 +1286,6 @@ struct ABFDelta
       float fNewParamValue;   // this entry may be either a float or a long.
    };
 }; // Size = 12
-*/
 
 #ifndef RC_INVOKED
 #pragma pack(pop)                      // return to default packing
