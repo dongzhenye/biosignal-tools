@@ -23,11 +23,17 @@
 
 
 #include <ctype.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "../biosig-dev.h"
+
+#define ABFLONG uint32_t
+#include "axon_structs.h"	// ABF2
+#include "abfheadr.h"	// ABF1
+
 
 /*
 	read data block of ATF file into the cache
@@ -91,34 +97,21 @@ EXTERN_C void sopen_abf_read(HDRTYPE* hdr) {
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"sopen_abf_read 101\n");
 
-#if 1
-	if (hdr->HeadLen < 512) {
-	    	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header, 512);
-		hdr->HeadLen  += ifread(hdr->AS.Header+hdr->HeadLen, 1, 512-hdr->HeadLen, hdr);
-	}
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"sopen_abf_read 111\n");
-
-#else 
 	if (!memcmp(hdr->AS.Header, "ABF ", 4)) {	// ABF v1.x
-		//if (hdr->VERSION < 2.0) {  // ABF v1.x
 		size_t count = hdr->HeadLen; 	
-
-		// TODO: this is strange but results in 512. 
-		hdr->HeadLen = bef32p(hdr->AS.Header+8);
-
+		hdr->VERSION = lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fFileVersionNumber));
+		hdr->HeadLen = (hdr->VERSION < 1.6) ? ABF_OLDHEADERSIZE : ABF_HEADERSIZE;
 		if (count < hdr->HeadLen) {
 			hdr->AS.Header = (uint8_t*) realloc(hdr->AS.Header, hdr->HeadLen);
 			count         += ifread(hdr->AS.Header+count, 1, hdr->HeadLen-count, hdr);
 		}
 		hdr->HeadLen = count;
-
 	} else {	// ABF 2.0+
 		if (hdr->HeadLen < 512) {
 		    	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header, 512);
 			hdr->HeadLen  += ifread(hdr->AS.Header+hdr->HeadLen, 1, 512-hdr->HeadLen, hdr);
 		}
 	}
-#endif
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"sopen_abf_read 115\n");
 
@@ -201,7 +194,7 @@ EXTERN_C void sopen_abf_read(HDRTYPE* hdr) {
 				uint64_t numBlocks  = leu64p(hdr->AS.Header + k1*16 + 19*4+8);
 
 				if (VERBOSE_LEVEL>7)
-					fprintf(stdout,"ABF %02i: %04u %04u %08lu\n",k1,BlockIndex,BlockSize,numBlocks);
+					fprintf(stdout,"ABF %02i: %04u %04u %08u\n",k1,(uint32_t)BlockIndex,(uint32_t)BlockSize,(uint32_t)numBlocks);
 
 				ifseek(hdr, BlockIndex*512, SEEK_SET);
 				b  = (uint8_t*)realloc(b,numBlocks*BlockSize);
