@@ -603,8 +603,8 @@ elseif strncmp(X.datatype,'TF-MVAR',7)    % logS2 and S1
                 [t3,r] = strtok(r);
 
         %suche das erste vorkommen des Zeitfenstermittelpunktes, der als
-        %Parameter hinter 'eventrelated' übergeben wurde - dieses TW ist
-        %das Referenzfenster für den eventrelated-Vergleich (meistens BL)
+        %Parameter hinter 'eventrelated' Ã¼bergeben wurde - dieses TW ist
+        %das Referenzfenster fÃ¼r den eventrelated-Vergleich (meistens BL)
 		ix  = min( find(XT == max(tmp) ));
 %                nix(ix) = 0;
                 rix = repmat(ix,1,sum(nix));
@@ -852,7 +852,7 @@ elseif strncmp(X.datatype,'TF-MVAR',7)    % logS2 and S1
                 x3 = reshape(cm(xc,3),size(xc));
 
                                 
-                % cat(3,x1,x2,x3) enthält das Bild, wobei es die Dimension
+                % cat(3,x1,x2,x3) enthÃ¤lt das Bild, wobei es die Dimension
                 % (m-by-n-by-3 besitzt --> Zeile * Spalte * RGB-Floats
                 H.xKord = repmat(XT,1,sz(1)); %X-Koordinaten
                 H.yKord = repmat(X.F(fidx),1,sz(2)); %Y-Koordinaten
@@ -895,14 +895,14 @@ end;
 
 %set data proporties--------------------------
 numPlots = size(H.Label,1);   % Number of channels
-numXIntervalle = size(H.T,2); % Anzahl der Intervalle auf der X-Achse je Kanal (Auflösung Zeitfenster)
+numXIntervalle = size(H.T,2); % Anzahl der Intervalle auf der X-Achse je Kanal (AuflÃ¶sung Zeitfenster)
 numYIntervalle = size(H.F,2); % Anzahl der Intervalle auf der Y-Achse je Kanal (Frequenzen)
 
 
 %Vertical lines----------------------------
 axisTmp = axis; %Achsenminima und -maxima
 xDim = axisTmp(2) - axisTmp(1);
-xInterval = xDim / (numPlots); %Größe eine Subplots auf der X-Achse
+xInterval = xDim / (numPlots); %GrÃ¶ÃŸe eine Subplots auf der X-Achse
 xVerLines = [1:numPlots+1]  * xInterval + axisTmp(1); %X-Koordinaten der vertikalen Linien
 
 v = get(gca);
@@ -913,7 +913,7 @@ end;
 
 %Horizontal lines-------------------------
 yDim = axisTmp(4) - axisTmp(3);
-yInterval = yDim / numPlots; %Größe eines Subplots auf der Y-Achse
+yInterval = yDim / numPlots; %GrÃ¶ÃŸe eines Subplots auf der Y-Achse
 HorLines = [1:numPlots]  * yInterval +  axisTmp(3); %Y-Koordinaten der horizontalen Linien
 
 v = get(gca);
@@ -2349,7 +2349,7 @@ elseif strcmp(X.datatype,'TSD_BCI8')    % obsolote
         set(h(2),'color',[0,.5,0]);
         set(h(3),'color',[0,1,0]);
         set(h(4),'color',[0,1,0]);
-        legend('Accuracy [%]','kappa ± s.d. [%]')
+        legend('Accuracy [%]','kappa Â± s.d. [%]')
         xlabel('t [s]');
 
 elseif strcmp(X.datatype,'TSD_BCI7')    % obsolete
