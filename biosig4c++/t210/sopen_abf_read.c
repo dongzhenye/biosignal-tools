@@ -359,6 +359,9 @@ EXTERN_C void sopen_abf_read(HDRTYPE* hdr) {
 
 	} else {	// ABF 2.0+
 
+		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "ABF2 format currently not supported");
+		return;
+
 		fprintf(stdout,"Warning ABF v%4.2f: implementation is not complete!\n",hdr->VERSION);
 
 		if (hdr->HeadLen < 512) {
