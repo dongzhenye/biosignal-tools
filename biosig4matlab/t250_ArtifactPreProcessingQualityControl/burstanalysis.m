@@ -37,14 +37,24 @@ function [HDR, s] = burstanalysis(fn, varargin)
 verbose = 0; 	% 1 for visualizing results, 0: no visualization 
 
 if (1)
-	[HDR, s] = detect_spikes_bursts(fn);
+	[H1, s] = detect_spikes_bursts(fn);
 else
 	%% use visual scoring 
-	[s, HDR] = sload(fn);
+	[s, H1] = sload(fn);
 end;
-[HDR] = spikes2bursts(HDR, varargin);
+[HDR] = spikes2bursts(H1, varargin);
 
 %hdr2ascii(HDR);
+
+[tmp,i1,j1]   = unique([HDR.EVENT.POS,HDR.EVENT.TYP,HDR.EVENT.DUR,HDR.EVENT.CHN],'rows');
+[tmp,i2]      = sort(HDR.EVENT.POS(i1));
+HDR.EVENT.POS = HDR.EVENT.POS(i1(i2));
+HDR.EVENT.TYP = HDR.EVENT.TYP(i1(i2));
+HDR.EVENT.CHN = HDR.EVENT.CHN(i1(i2));
+HDR.EVENT.DUR = HDR.EVENT.DUR(i1(i2));
+if isfield(HDR.EVENT,'TimeStamp')
+	HDR.EVENT.TimeStamp = HDR.EVENT.TimeStamp(i1(i2));
+end;
 
 ix201 = find(HDR.EVENT.TYP==hex2dec('0201'));
 ix202 = find(HDR.EVENT.TYP==hex2dec('0202'));
@@ -52,9 +62,10 @@ A = repmat(nan,length(ix201),6);
 B = repmat(nan,length(ix202),4);
 m = 0;
 for i = 1:length(ix202),
+	%if (HDR.EVENT.DUR(ix202(i))==0) continue; end;
 	u  = s(HDR.EVENT.POS(ix202(i)) + [ 0 : HDR.EVENT.DUR(ix202(i)) ], HDR.EVENT.CHN(ix202(i)) );
-	t0 = HDR.EVENT.POS(ix201) - HDR.EVENT.POS(ix202(i));
-	t0 = t0(0 <= t0 & t0 <= HDR.EVENT.DUR(ix202(i)));
+	t0 = sort(HDR.EVENT.POS(ix201)) - HDR.EVENT.POS(ix202(i));
+	t0 = t0((0 <= t0) & (t0 < HDR.EVENT.DUR(ix202(i))));
 	t0(end+1) = HDR.EVENT.DUR(ix202(i));
 	if (verbose>0) clf; plot(u); end; 
 	B(i,1) = i;
@@ -66,21 +77,25 @@ for i = 1:length(ix202),
 		[tmp, T2] = min(u(t0(k)+T1:t0(k+1)));
 		A(m,1:2) = [i,k];
 		%A(m,3) = T1 + t0(k) + HDR.EVENT.POS(ix202(i)); 	% peak time 
+%save -mat /tmp/m2.mat
 		A(m,3) = T1 + t0(k); 		% peak time
 		A(m,4) = u(T1 + t0(k)); 	% peak amplitude
 
-		if (k >= length(t0)-1); break; end
-
-		A(m,5) = A(m,3) + T2 - 1;	% time of minimum after peak
-		A(m,6) = u(T2 + T1 + t0(k)-1); 	% minimum after peak
-		if (isnan(B(i,4)) || (B(i,4) < A(m,6)) )
-			B(i, 4) = A(m, 6);
-		end;
 		if (verbose>0)
 			disp(A(m,:));
 			hold on 
 			plot(T1 + t0(k), u(T1 + t0(k)),'r+');
-			plot(T2 + T1 + t0(k)-1, u(T2 + T1 + t0(k)-1),'g+');
+		end;
+
+		if (k < length(t0)-1)
+			A(m,5) = A(m,3) + T2 - 1;	% time of minimum after peak
+			A(m,6) = u(T2 + T1 + t0(k)-1); 	% minimum after peak
+			if (isnan(B(i,4)) || (B(i,4) < A(m,6)) )
+				B(i, 4) = A(m, 6);
+			end;
+			if (verbose>0)
+				plot(T2 + T1 + t0(k)-1, u(T2 + T1 + t0(k)-1),'g+');
+			end;
 		end; 
 		%A(m,:) = [i, T1+t0(k)+HDR.EVENT.POS(ix201(i)), T2+T1+t0(k)+HDR.EVENT.POS(ix201(i))];
 	end
