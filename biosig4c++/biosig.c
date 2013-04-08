@@ -4527,7 +4527,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 	}
 
 	else if (hdr->TYPE==ABF) {
-		fprintf(stdout,"Warning ABF v%4.2f: implementation is not complete!\n",hdr->VERSION);
 		hdr->HeadLen = count; 
 		sopen_abf_read(hdr);
 	}
