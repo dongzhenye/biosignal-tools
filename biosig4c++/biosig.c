@@ -123,6 +123,7 @@ void sopen_cfs_read    (HDRTYPE* hdr);
 void sopen_smr_read    (HDRTYPE* hdr);
 void sopen_HL7aECG_write(HDRTYPE* hdr);
 void sopen_abf_read    (HDRTYPE* hdr);
+void sopen_abf2_read   (HDRTYPE* hdr);
 void sopen_ibw_read    (HDRTYPE* hdr);
 void sopen_alpha_read  (HDRTYPE* hdr);
 void sopen_FAMOS_read  (HDRTYPE* hdr);
@@ -1867,9 +1868,8 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    	hdr->TYPE = ABF;
     		hdr->VERSION = lef32p(hdr->AS.Header+4);
     	}
-	//else if (!memcmp(Header1,"ABF2",4)) {
 	else if (!memcmp(hdr->AS.Header, "ABF2", 4)) {
-	    	hdr->TYPE = ABF;
+		hdr->TYPE = ABF2;
     		hdr->VERSION = beu32p(hdr->AS.Header+4);
     	}
     	else if (!memcmp(Header1+20,"ACR-NEMA",8))
@@ -2309,6 +2309,7 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ unknown,    	"unknown" },
 	{ alpha,    	"alpha" },
 	{ ABF,    	"ABF" },
+	{ ABF2,    	"ABF2" },
 	{ ACQ,    	"ACQ" },
 	{ ACR_NEMA,    	"ACR_NEMA" },
 	{ AINF,    	"AINF" },
@@ -2592,7 +2593,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 
 		if (hdr->TYPE==GDF) {
 #if (BIOSIG_VERSION >= 10500)
-			hdr->VERSION = 2.50;
+			hdr->VERSION = 2.51;
 #else
 			hdr->VERSION = 2.22;
 #endif
@@ -3486,7 +3487,7 @@ int NumberOfChannels(HDRTYPE *hdr)
 {
         unsigned int k,NS;
         for (k=0, NS=0; k<hdr->NS; k++)
-                if (hdr->CHANNEL[k].OnOff) NS++;
+                if (hdr->CHANNEL[k].OnOff==1) NS++;
 
 #ifdef CHOLMOD_H
         if (hdr->Calib == NULL)
@@ -4529,6 +4530,11 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 	else if (hdr->TYPE==ABF) {
 		hdr->HeadLen = count; 
 		sopen_abf_read(hdr);
+	}
+
+	else if (hdr->TYPE==ABF2) {
+		hdr->HeadLen = count;
+		sopen_abf2_read(hdr);
 	}
 
 	else if (hdr->TYPE==ATF) {
@@ -11150,7 +11156,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 	    		fprintf(fid,"PhysMax  \t= %g\n",hdr->CHANNEL[k].PhysMax);
 	    		fprintf(fid,"PhysMin  \t= %g\n",hdr->CHANNEL[k].PhysMin);
 	    		fprintf(fid,"SamplingRate\t= %f\n",hdr->CHANNEL[k].SPR*hdr->SampleRate/hdr->SPR);
-	    		fprintf(fid,"NumberOfSamples\t= %i\n",(int)(hdr->CHANNEL[k].SPR*hdr->NRec));
+			fprintf(fid,"NumberOfSamples\t= %i\t# 0 indicates a channel with sparse samples\n",(int)(hdr->CHANNEL[k].SPR*hdr->NRec));
 	    		fprintf(fid,"HighPassFilter\t= %f\n",hdr->CHANNEL[k].HighPass);
 	    		fprintf(fid,"LowPassFilter\t= %f\n",hdr->CHANNEL[k].LowPass);
 	    		fprintf(fid,"NotchFilter\t= %f\n",hdr->CHANNEL[k].Notch);

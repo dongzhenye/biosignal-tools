@@ -150,9 +150,11 @@ enum FileFormat {
 	TIFF, TMS32, TMSiLOG, TRC, UNIPRO, VRML, VTK,
 	WAV, WG1, WinEEG, WMF, XML, XPM,
 	Z, ZIP, ZIP2,
-	TDMS, SMR, MX, IBW, AXG
+	TDMS, SMR, MX, IBW, AXG, ABF2
 };
-
+#if (BIOSIG_VERSION >= 10600)
+#error ABI change: order enum FileFormat alphabethically
+#endif
 
 /*
    error handling should use error variables local to each HDR

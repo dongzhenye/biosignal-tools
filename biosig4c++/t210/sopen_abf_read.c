@@ -96,8 +96,6 @@ EXTERN_C void sopen_abf_read(HDRTYPE* hdr) {
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"sopen_abf_read 101\n");
 
-	if (!memcmp(hdr->AS.Header, "ABF ", 4)) {	// ABF v1.x
-
 		fprintf(stdout,"Warning ABF v%4.2f: not well tested!\n",hdr->VERSION);
 
 		size_t count = hdr->HeadLen; 	
@@ -357,7 +355,19 @@ EXTERN_C void sopen_abf_read(HDRTYPE* hdr) {
 		hdr->HeadLen = ABF_BLOCKSIZE * lei32p(hdr->AS.Header + offsetof(struct ABFFileHeader, lDataSectionPtr));
 		ifseek(hdr, hdr->HeadLen, SEEK_SET);
 
-	} else {	// ABF 2.0+
+}  // end of sopen_abf_read
+
+
+EXTERN_C void sopen_abf2_read(HDRTYPE* hdr) {
+/*
+	this function will be called by the function SOPEN in "biosig.c"
+	Input:
+		char* Header	// contains the file content
+	Output:
+		HDRTYPE *hdr	// defines the HDR structure accoring to "biosig.h"
+*/
+
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"sopen_abf2_read 101\n");
 
 		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "ABF2 format currently not supported");
 		return;
@@ -509,6 +519,5 @@ continue; // FIXME
 				}
 			}
 			if (b) free(b);
-	}
 }
 
