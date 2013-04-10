@@ -8,8 +8,18 @@ function [HDR, s] = burstanalysis(fn, varargin)
 %
 % usage: 
 %	[HDR, s] = burstanalysis(fn)
-%	...        burstanalysis(fn, args)
-%	optional args for spike2bursts conversion		
+%	...        burstanalysis(..., args)
+%		optional args for spike2bursts conversion
+%
+%	...        burstanalysis(..., 'dT_Burst', dT_Burst)
+%	...        burstanalysis(..., 'dT_Exclude', dT_Exclude)
+%
+%	dT_Burst	[default: 50e-3 s] am inter-spike-interval (ISI) exceeding this value,
+%		marks the beginning of a new burst
+%	dT_Exclude an interspike interval smaller than this value, indicates a
+%		double detection, and the second detection is deleted.
+%		in case of several consecutive ISI's smaller than this value,
+%		all except the first spikes are deleted.
 %
 %	fn   name of file containing sample data and 
 %	visually corrected spike detections. The spike2burst 
@@ -35,16 +45,12 @@ function [HDR, s] = burstanalysis(fn, varargin)
 
 
 verbose = 0; 	% 1 for visualizing results, 0: no visualization 
-
-if (1)
-	[H1, s] = detect_spikes_bursts(fn);
-else
-	%% use visual scoring 
-	[s, H1] = sload(fn);
+[s, HDR] = sload(fn);
+if (~isfield(HDR,'EVENT') || ~isfield(HDR.EVENT,'TYP')  || ~any(HDR.EVENT.TYP==hex2dec('201')))
+	%% perform automated spike detection
+	[HDR, s] = detect_spikes_bursts(fn);
 end;
-[HDR] = spikes2bursts(H1, varargin);
-
-%hdr2ascii(HDR);
+[HDR] = spikes2bursts(HDR, varargin);
 
 [tmp,i1,j1]   = unique([HDR.EVENT.POS,HDR.EVENT.TYP,HDR.EVENT.DUR,HDR.EVENT.CHN],'rows');
 [tmp,i2]      = sort(HDR.EVENT.POS(i1));
@@ -59,25 +65,36 @@ end;
 ix201 = find(HDR.EVENT.TYP==hex2dec('0201'));
 ix202 = find(HDR.EVENT.TYP==hex2dec('0202'));
 A = repmat(nan,length(ix201),6);
-B = repmat(nan,length(ix202),4);
+B = repmat(nan,length(ix202),6);
 m = 0;
 for i = 1:length(ix202),
 	%if (HDR.EVENT.DUR(ix202(i))==0) continue; end;
+	tix0 = [ -50 : HDR.EVENT.DUR(ix202(i)) ];
+	u  = s(HDR.EVENT.POS(ix202(i)) + [ -50 : HDR.EVENT.DUR(ix202(i)) ], HDR.EVENT.CHN(ix202(i)) );
+	if (verbose>0) figure(1); clf; plot(tix0,u); end;
 	u  = s(HDR.EVENT.POS(ix202(i)) + [ 0 : HDR.EVENT.DUR(ix202(i)) ], HDR.EVENT.CHN(ix202(i)) );
 	t0 = sort(HDR.EVENT.POS(ix201)) - HDR.EVENT.POS(ix202(i));
 	t0 = t0((0 <= t0) & (t0 < HDR.EVENT.DUR(ix202(i))));
 	t0(end+1) = HDR.EVENT.DUR(ix202(i));
-	if (verbose>0) clf; plot(u); end; 
 	B(i,1) = i;
 	B(i,3) = HDR.EVENT.POS(ix202(i));
 	B(i,2) = length(t0)-1;
+
+	tix = max(1,ceil(HDR.EVENT.POS(ix202(i))-.01*HDR.SampleRate)):min(ceil(HDR.EVENT.POS(ix202(i))+.0003*HDR.SampleRate),size(s,1));
+	figure(2); subplot(211), plot(tix,s(tix));
+	[d,ix] = maxdistance(s(tix));
+	subplot(212); plot(tix,d);
+	B(i,5:6) = [tix(ix)-HDR.EVENT.POS(ix202(i)),s(tix(ix))];
+	if (verbose>0)
+		figure(1); hold on; plot(B(i,5),B(i,6),'ro');
+	end
+
 	for k  = 1:length(t0)-1,
 		m = m + 1;	
 		[tmp, T1] = max(u(t0(k)+1:t0(k+1)));
 		[tmp, T2] = min(u(t0(k)+T1:t0(k+1)));
 		A(m,1:2) = [i,k];
-		%A(m,3) = T1 + t0(k) + HDR.EVENT.POS(ix202(i)); 	% peak time 
-%save -mat /tmp/m2.mat
+		%peakT = T1 + t0(k) + HDR.EVENT.POS(ix202(i)); 	% peak time
 		A(m,3) = T1 + t0(k); 		% peak time
 		A(m,4) = u(T1 + t0(k)); 	% peak amplitude
 
@@ -99,7 +116,10 @@ for i = 1:length(ix202),
 		end; 
 		%A(m,:) = [i, T1+t0(k)+HDR.EVENT.POS(ix201(i)), T2+T1+t0(k)+HDR.EVENT.POS(ix201(i))];
 	end
-	if (verbose>0) pause; end; 
+	if (verbose>0)
+		plot(B(i,5),B(i,6),'ro');
+		pause;
+	end;
 end;
 A   = A(1:m,:);
 
@@ -130,8 +150,8 @@ fprintf(fid,'%i\t%i\t%f\t%f\t%f\t%f\n',A');
 if fid > 2, fclose(fid); end; 
 
 fid = fopen([HDR.FILE.Name,'.burstpeak.csv'],'w'); 
-fprintf(fid,'\n\n\nburst#\tnumberOfSpikes\tonset\tmaximum of minima after peak\n');
-fprintf(fid,'%i\t%i\t%f\t%f\n',B');
+fprintf(fid,'\n\n\nburst#\tnumberOfSpikes\tonset\tmaximum of minima after peak\ttrue burst onset time\tburst onset value\n');
+fprintf(fid,'%i\t%i\t%f\t%f\t%f\t%f\n',B');
 if fid > 2, fclose(fid); end; 
 
 
