@@ -96,8 +96,6 @@ EXTERN_C void sopen_abf_read(HDRTYPE* hdr) {
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"sopen_abf_read 101\n");
 
-		fprintf(stdout,"Warning ABF v%4.2f: not well tested!\n",hdr->VERSION);
-
 		size_t count = hdr->HeadLen; 	
 		hdr->VERSION = lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fFileVersionNumber));
 
