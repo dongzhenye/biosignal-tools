@@ -73,7 +73,8 @@
   #define FILESEP '/'
 #endif
 
-char * xgethostname (void);
+char* getlogin (void);
+char* xgethostname (void);
 
 /*-----------------------------------------------------------------------
    error handling should use error variables local to each HDR
@@ -354,8 +355,10 @@ uint32_t lcm(uint32_t A, uint32_t B)
 	A64 *= B/gcd(A,B);
 	if (A64 > 0x00000000ffffffffllu) {
 		fprintf(stderr,"Error: HDR.SPR=LCM(%u,%u) overflows and does not fit into uint32.\n",(unsigned)A,(unsigned)B);
+#ifndef ONLYGDF
 		B4C_ERRNUM = B4C_UNSPECIFIC_ERROR;
 		B4C_ERRMSG = "Computing LCM failed.";
+#endif
 	}
 	return((uint32_t)A64);
 };
@@ -12236,10 +12239,12 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 	if (VERBOSE_LEVEL>6)
 		fprintf(stdout,"SREAD( %p, %i, %i, %s ) MODE=%i\n",data, (int)start, (int)length, hdr->FileName, hdr->FILE.OPEN);
 
+#ifndef ONLYGDF
 	if (hdr->TYPE == ATF) {
 		sread_atf(hdr);
 		count = hdr->NRec;
 	}
+#endif
 
 	if (start >= (size_t)hdr->NRec) return(0);
 
