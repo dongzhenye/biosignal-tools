@@ -81,11 +81,13 @@ PathToSigViewerWIN64 = ../sigviewer4win64
 ifeq (,$(TARGET))
 	CC      := gcc	
 	CXX     := g++
+	LD      := ld
 	AR      := ar crs
 else 
 	PREFIX  := $(dir $(shell which $(TARGET)-gcc))
 	CC      := $(TARGET)-gcc
 	CXX     := $(TARGET)-g++
+	LD      := $(TARGET)-ld
 	AR      := $(TARGET)-ar crs
 	ifeq (mingw, $(findstring mingw, $(TARGET)))
 		## add gnulib's getlogin
@@ -94,6 +96,7 @@ else
 		## exclude conflicting definition of sopen from mingw's io.h
 		CFLAGS  += -I.
 		IO_H_FILE2 = io.h
+	        LIBS    += -lws2_32 -liberty -lssp
 	endif
 	CROSS   = $(HOME)/src/mce-w64/usr/bin/$(TARGET)
 endif
@@ -134,17 +137,17 @@ INCPATH       = -I/opt/local/include/
 #		../gdcm-2.0.10/Source/MediaStorageAndFileFormat 	\
 #		../gdcm-2.0.10/Source/DataDictionary 			\
 #		../gdcm-2.0.10/Source/Common
-LINK          = $(CXX)
+LINK          = $(LD)
 LFLAGS_dynamic = -L. -L/opt/local/lib
 LIBS_dynamic  = -lbiosig
 LFLAGS_static = -L/opt/local/lib
 LIBS_static   = libbiosig.a
 ifeq ($(LIBEXT),so)
   LFLAGS      += $(LFLAGS_dynamic)
-  LIBS        += $(LIBS_dynamic)
+#  LIBS        += $(LIBS_dynamic)
 else
   LFLAGS      += $(LFLAGS_static)
-  LIBS        += $(LIBS_static)
+#  LIBS        += $(LIBS_static)
 endif
 ifneq (,$(findstring WITH_ZLIB, $(DEFINES)))
   LDLIBS     += -lz
@@ -203,13 +206,6 @@ PYTHONVER      := $(shell $(PYTHON) -c "import sys; print(sys.version[:3])")
 NUMPY_INC      := $(shell $(PYTHON) -c "import numpy.distutils.misc_util as mu; print(' -I'.join(mu.get_numpy_include_dirs()))")
 PYTHON_INCPATH := /usr/include/python$(PYTHONVER)/
 PYTHON_LIB     := python$(PYTHONVER)
-
-##########################################################
-
-
-ifeq (mingw, $(findstring mingw, $(TARGET)))
-        LIBS    += -liberty
-endif
 
  
 ##########################################################
@@ -427,7 +423,7 @@ units.i : extern/units.csv
 #############################################################
 
 gdf.o: biosig.c biosig-dev.h biosig.h
-	$(CC) -c -D=ONLYGDF $(DEFINES_ALL) $(CFLAGS) $(INCPATH) -o "$@" "$<"
+	$(CC) -c -D=ONLYGDF -D=WITHOUT_NETWORK $(DEFINES_ALL) $(CFLAGS) $(INCPATH) -o "$@" "$<"
 
 #getlogin_r.o: win32/getlogin_r.c
 #	$(CC) -c $(DEFINES) $(CFLAGS) $(INCPATH) -o "$@" "$<"
@@ -632,13 +628,17 @@ t240/libcnsfef.a:
 libphysicalunits.a: physicalunits.o
 	-$(DELETE) "$@"
 	$(AR) "$@" "$<"
+libphysicalunits.def: physicalunits.o
+	$(CXX) -o libphysicalunits.dll -s -shared -fPIC "$<" $(LIBS) -Wl,--subsystem,windows,--output-def,libphysicalunits.def,--out-implib,libphysicalunits.dll.a
 
 libphysicalunits.so: physicalunits.o
 	$(CC) -shared -fPIC -Wl,-rpath,. -Wl,-soname,"$@" $(LDLIBS) -o "$@" "$<"
 
-libgdf.a: gdf.o
+libgdf.a: gdf.o getlogin.o
 	-$(DELETE) "$@"
 	$(AR) "$@" "$<"
+libgdf.def: gdf.o getlogin.o
+	$(CXX) -s -shared -fPIC -o libgdf.dll gdf.o getlogin.o $(LIBS) -L. -lphysicalunits -Wl,--subsystem,windows,--output-def,libgdf.def,--out-implib,libgdf.dll.a
 
 libgdf.so: gdf.o
 	$(CC) -shared -fPIC -Wl,-rpath,. -Wl,-soname,"$@".${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
@@ -652,6 +652,8 @@ libbiosig.a: $(OBJECTS) t240/libcnsfef.a libbiosig.pc
 	-$(DELETE) libbiosig.a
 	$(AR) libbiosig.a $(OBJECTS) t240/*.o
 	-touch ../sigviewer/src/file_context.cpp	# trigger to rebuild sigviewer
+libbiosig.def: $(OBJECTS) t240/libcnsfef.a libbiosig.pc
+	$(CXX) -o libbiosig.dll -s -shared -fPIC  $(OBJECTS) t240/libcnsfef.a $(LIBS) -Wl,--subsystem,windows,--output-def,libbiosig.def,--out-implib,libbiosig.dll.a
 
 
 libbiosig.so: $(OBJECTS) t240/libcnsfef.a libbiosig.pc
@@ -678,6 +680,9 @@ libbiosig.pc :
 libbiosig2.a: $(OBJECTS) biosig2.o t240/libcnsfef.a
 	-$(DELETE) libbiosig2.a
 	$(AR) libbiosig2.a $(OBJECTS) biosig2.o t240/*.o
+libbiosig2.def: $(OBJECTS) biosig2.o t240/libcnsfef.a
+	$(CXX) -o libbiosig2.dll -s -shared -fPIC  $(OBJECTS) t240/libcnsfef.a $(LIBS) -Wl,--subsystem,windows,--output-def,libbiosig2.def,--out-implib,libbiosig2.dll.a
+
 
 libbiosig2.so: $(OBJECTS) biosig2.o t240/libcnsfef.a
 	$(CXX) -shared -fPIC -Wl,-rpath,. -Wl,-soname,libbiosig2.so.${MAJOR_VERSION} $(LDLIBS) \
@@ -686,17 +691,17 @@ libbiosig2.so: $(OBJECTS) biosig2.o t240/libcnsfef.a
 	ln -sf libbiosig2.so.${MAJOR_VERSION} libbiosig2.so
 
 save2gdf: save2gdf.o libbiosig.$(LIBEXT)
-	$(LINK) $(CXXFLAGS) save2gdf.o $(LFLAGS) $(LIBS) -o save2gdf
+	$(CXX) $(CXXFLAGS) save2gdf.o libbiosig.$(LIBEXT) $(LFLAGS) $(LIBS) -o save2gdf
 
 pdp2gdf: pdp2gdf.o libbiosig.$(LIBEXT)
-	$(LINK) $(CXXFLAGS) pdp2gdf.o $(LFLAGS) $(LIBS) -o pdp2gdf
+	$(CXX) $(CXXFLAGS) pdp2gdf.o libbiosig.$(LIBEXT) $(LFLAGS) $(LIBS) -o pdp2gdf
 
 bscs: biosig_client biosig_server sandbox.o biosig.o
 biosig_client: biosig_client.c libbiosig.$(LIBEXT) biosig-network.o
-	$(LINK) $(CXXFLAGS) biosig_client.c  biosig-network.o $(LFLAGS) $(LIBS) -o biosig_client
+	$(CXX) $(CXXFLAGS) biosig_client.c biosig-network.o libbiosig.$(LIBEXT) $(LFLAGS) $(LIBS) -o biosig_client
 
 biosig_server: biosig_server.c libbiosig.$(LIBEXT) biosig-network.o
-	$(LINK) $(CXXFLAGS) biosig_server.c  biosig-network.o $(LFLAGS) $(LIBS) -o biosig_server
+	$(CXX) $(CXXFLAGS) biosig_server.c biosig-network.o libbiosig.$(LIBEXT) $(LFLAGS) $(LIBS) -o biosig_server
 
 
 #############################################################
@@ -819,6 +824,9 @@ distclean:
 clean:
 	-$(DELETE) *~
 	-$(DELETE) *.a
+	-$(DELETE) *.def
+	-$(DELETE) *.dll
+	-$(DELETE) *.dll.a
 	-$(DELETE) *.i
 	-$(DELETE) *.o
 	-$(DELETE) *.so
