@@ -141,7 +141,7 @@ end;
 
 if 0,
 
-elseif strcmp(arg2,'ISI') || strcmp(arg2,'HRV')  || strcmp(arg2,'RRI') 
+elseif (nargin>1) && ( strcmp(arg2,'ISI') || strcmp(arg2,'HRV') || strcmp(arg2,'RRI') )
 	if strcmp(arg2,'ISI') 
 		TYP = hex2dec('0201');	% spike/action potential
 		YLABEL = 'inter-spike interval [s]';
