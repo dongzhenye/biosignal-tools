@@ -1403,6 +1403,9 @@ if STATE.FLAG_NUM_NAN,
 	end;
 	if H.SPR * H.NRec ~= size(signal,1),
 		H.SPR = H.SPR + winlen * (n - 1);
+		if isfield(H,'AS') && isfield(H.AS,'SPR');
+			H.AS.SPR(:)=H.SPR;
+		end;
 	end;
 
 	if ~STATE.FLAG_NUM_NAN && (H.SPR * H.NRec ~= size(signal,1))

@@ -148,6 +148,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* file variable information *******
 			int i=-1; double f=NAN;
 			size_t pos = datapos + k*36;
 			uint16_t typ = leu16p(hdr->AS.Header+pos+22);
+			char   *unit = (char*)(hdr->AS.Header+pos+25);
 			uint16_t off = leu16p(hdr->AS.Header+pos+34);
 
 			size_t p3 = H1LEN + H2LEN*hdr->NS + (n+d)*36 + off + 42;
@@ -161,14 +162,21 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* file variable information *******
 			case 5: f = lef32p(hdr->AS.Header+p3); break;
 			case 6: f = lef64p(hdr->AS.Header+p3); break;
 			}
-if (VERBOSE_LEVEL>7) 	{
-			if (typ<5) fprintf(stdout," *0x%x = [%d]",(int)p3,i);
-			else if (typ<7) fprintf(stdout," *0x%x = [%g]",(int)p3,f);
-			else if (typ==7) fprintf(stdout," *0x%x = <%s>",(int)p3,hdr->AS.Header+p3);
+if (VERBOSE_LEVEL>8) 	{
+			fprintf(stdout,"[%i:] ",typ);
+			if (typ<1) ;
+			else if (typ<5) fprintf(stdout,"%d",i);
+			else if (typ<7) fprintf(stdout,"%g",f);
+			else if (typ==7) fprintf(stdout,"%s",hdr->AS.Header+p3+1);
+			fprintf(stdout,"%s\n",unit+1);
+			}
+else if (VERBOSE_LEVEL>7)
+			{
+			if (typ==7) fprintf(stdout,"[%i:] %s %s",typ, hdr->AS.Header+p3+1,unit);
 			}
 		}
 
-if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* DS variable information *********\n");
+if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* Data Section variable information *********\n");
 		datapos = LastDataSectionHeaderOffset; //H1LEN + H2LEN*hdr->NS + n*36;
 		// reverse order of data sections
 		uint32_t *DATAPOS = (uint32_t*)malloc(sizeof(uint32_t)*NumberOfDataSections);
@@ -177,6 +185,37 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* DS variable information *********
 		for (m = NumberOfDataSections; 0 < m; ) {
 			DATAPOS[--m] = datapos;
 			datapos = leu32p(hdr->AS.Header + datapos);
+		}
+
+		for (m = 0; m < NumberOfDataSections; m++ ) {
+			int i=-1; double f=NAN;
+			size_t pos = DATAPOS[m];
+			uint16_t typ = leu16p(hdr->AS.Header+pos+22);
+			char   *unit = (char*)(hdr->AS.Header+pos+25);
+			uint16_t off = leu16p(hdr->AS.Header+pos+34);
+
+			size_t p3 = H1LEN + H2LEN*hdr->NS + (n+d)*36 + off + 42;
+
+			switch (typ) {
+			case 0:
+			case 1: i = hdr->AS.Header[p3]; break;
+			case 2: i = lei16p(hdr->AS.Header+p3); break;
+			case 3: i = leu16p(hdr->AS.Header+p3); break;
+			case 4: i = lei32p(hdr->AS.Header+p3); break;
+			case 5: f = lef32p(hdr->AS.Header+p3); break;
+			case 6: f = lef64p(hdr->AS.Header+p3); break;
+			}
+if (VERBOSE_LEVEL>8) 	{
+			fprintf(stdout,"[%i:] ",typ);
+			if (typ<5) fprintf(stdout,"%d",i);
+			else if (typ<7) fprintf(stdout,"%g",f);
+			else if (typ==7) fprintf(stdout,"%s",hdr->AS.Header+p3+1);
+			fprintf(stdout,"%s\n",unit+1);
+			}
+else if (VERBOSE_LEVEL>7)
+			{
+			if (typ==7) fprintf(stdout,"[%i:] %s %s",typ, hdr->AS.Header+p3+1,unit);
+			}
 		}
 
 		if (hdr->AS.SegSel[0] > NumberOfDataSections) {

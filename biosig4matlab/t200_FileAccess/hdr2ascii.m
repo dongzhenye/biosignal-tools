@@ -234,7 +234,6 @@ else
 	Off = repmat(NaN,1,HDR.NS);
 end;
 
-Cal,Off,
 PhysDim = physicalunits(HDR.PhysDimCode); 
 fprintf(fid,'\n[Channel Header]\n#No  LeadId  Label\tfs [Hz]\tGDFTYP\tTH-  TH+  Offset  Calib  PhysDim  HP[Hz]  LP[Hz]  Notch  R[kOhm]  x  y  z\n'); 
 for k = 1:HDR.NS,
@@ -274,7 +273,10 @@ if ~BIOSIG_GLOBAL.ISLOADED_EVENTCODES,
 	H=sopen('eventcodes.txt'); sclose(H); 
 end;
 
-for k = 1:length(HDR.EVENT.POS);
+
+[tmp,eIdx]=sort(HDR.EVENT.POS); % sort event in chronological order
+
+for k = eIdx(:)',
 	if length(HDR.T0)==1,
 		T0 = HDR.T0;
 	else

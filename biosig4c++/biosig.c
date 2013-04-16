@@ -73,7 +73,8 @@
   #define FILESEP '/'
 #endif
 
-char * xgethostname (void);
+char* getlogin (void);
+char* xgethostname (void);
 
 /*-----------------------------------------------------------------------
    error handling should use error variables local to each HDR
@@ -123,6 +124,7 @@ void sopen_cfs_read    (HDRTYPE* hdr);
 void sopen_smr_read    (HDRTYPE* hdr);
 void sopen_HL7aECG_write(HDRTYPE* hdr);
 void sopen_abf_read    (HDRTYPE* hdr);
+void sopen_abf2_read   (HDRTYPE* hdr);
 void sopen_ibw_read    (HDRTYPE* hdr);
 void sopen_alpha_read  (HDRTYPE* hdr);
 void sopen_FAMOS_read  (HDRTYPE* hdr);
@@ -353,8 +355,10 @@ uint32_t lcm(uint32_t A, uint32_t B)
 	A64 *= B/gcd(A,B);
 	if (A64 > 0x00000000ffffffffllu) {
 		fprintf(stderr,"Error: HDR.SPR=LCM(%u,%u) overflows and does not fit into uint32.\n",(unsigned)A,(unsigned)B);
+#ifndef ONLYGDF
 		B4C_ERRNUM = B4C_UNSPECIFIC_ERROR;
 		B4C_ERRMSG = "Computing LCM failed.";
+#endif
 	}
 	return((uint32_t)A64);
 };
@@ -1867,9 +1871,8 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    	hdr->TYPE = ABF;
     		hdr->VERSION = lef32p(hdr->AS.Header+4);
     	}
-	//else if (!memcmp(Header1,"ABF2",4)) {
 	else if (!memcmp(hdr->AS.Header, "ABF2", 4)) {
-	    	hdr->TYPE = ABF;
+		hdr->TYPE = ABF2;
     		hdr->VERSION = beu32p(hdr->AS.Header+4);
     	}
     	else if (!memcmp(Header1+20,"ACR-NEMA",8))
@@ -2309,6 +2312,7 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ unknown,    	"unknown" },
 	{ alpha,    	"alpha" },
 	{ ABF,    	"ABF" },
+	{ ABF2,    	"ABF2" },
 	{ ACQ,    	"ACQ" },
 	{ ACR_NEMA,    	"ACR_NEMA" },
 	{ AINF,    	"AINF" },
@@ -2592,7 +2596,7 @@ void struct2gdfbin(HDRTYPE *hdr)
 
 		if (hdr->TYPE==GDF) {
 #if (BIOSIG_VERSION >= 10500)
-			hdr->VERSION = 2.50;
+			hdr->VERSION = 2.51;
 #else
 			hdr->VERSION = 2.22;
 #endif
@@ -3486,7 +3490,7 @@ int NumberOfChannels(HDRTYPE *hdr)
 {
         unsigned int k,NS;
         for (k=0, NS=0; k<hdr->NS; k++)
-                if (hdr->CHANNEL[k].OnOff) NS++;
+                if (hdr->CHANNEL[k].OnOff==1) NS++;
 
 #ifdef CHOLMOD_H
         if (hdr->Calib == NULL)
@@ -4527,9 +4531,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 	}
 
 	else if (hdr->TYPE==ABF) {
-		fprintf(stdout,"Warning ABF v%4.2f: implementation is not complete!\n",hdr->VERSION);
 		hdr->HeadLen = count; 
 		sopen_abf_read(hdr);
+	}
+
+	else if (hdr->TYPE==ABF2) {
+		hdr->HeadLen = count;
+		sopen_abf2_read(hdr);
 	}
 
 	else if (hdr->TYPE==ATF) {
@@ -11151,7 +11159,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 	    		fprintf(fid,"PhysMax  \t= %g\n",hdr->CHANNEL[k].PhysMax);
 	    		fprintf(fid,"PhysMin  \t= %g\n",hdr->CHANNEL[k].PhysMin);
 	    		fprintf(fid,"SamplingRate\t= %f\n",hdr->CHANNEL[k].SPR*hdr->SampleRate/hdr->SPR);
-	    		fprintf(fid,"NumberOfSamples\t= %i\n",(int)(hdr->CHANNEL[k].SPR*hdr->NRec));
+			fprintf(fid,"NumberOfSamples\t= %i\t# 0 indicates a channel with sparse samples\n",(int)(hdr->CHANNEL[k].SPR*hdr->NRec));
 	    		fprintf(fid,"HighPassFilter\t= %f\n",hdr->CHANNEL[k].HighPass);
 	    		fprintf(fid,"LowPassFilter\t= %f\n",hdr->CHANNEL[k].LowPass);
 	    		fprintf(fid,"NotchFilter\t= %f\n",hdr->CHANNEL[k].Notch);
@@ -12231,10 +12239,12 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 	if (VERBOSE_LEVEL>6)
 		fprintf(stdout,"SREAD( %p, %i, %i, %s ) MODE=%i\n",data, (int)start, (int)length, hdr->FileName, hdr->FILE.OPEN);
 
+#ifndef ONLYGDF
 	if (hdr->TYPE == ATF) {
 		sread_atf(hdr);
 		count = hdr->NRec;
 	}
+#endif
 
 	if (start >= (size_t)hdr->NRec) return(0);
 

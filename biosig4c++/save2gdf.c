@@ -513,6 +513,8 @@ int main(int argc, char **argv){
 			;
 		else if (SOURCE_TYPE==HEKA)
 			;
+		else if (SOURCE_TYPE==ABF)
+			;
 		else if (TARGET_TYPE==SCP_ECG && !hdr->FLAG.UCAL) {
 			double scale = PhysDimScale(hdr->CHANNEL[k].PhysDimCode) *1e9;
 			if (hdr->FLAG.ROW_BASED_CHANNELS) {

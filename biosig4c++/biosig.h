@@ -40,7 +40,7 @@
 
 #define BIOSIG_VERSION_MAJOR 1
 #define BIOSIG_VERSION_MINOR 5
-#define BIOSIG_PATCHLEVEL 0
+#define BIOSIG_PATCHLEVEL 1
 // for backward compatibility 
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
@@ -150,9 +150,11 @@ enum FileFormat {
 	TIFF, TMS32, TMSiLOG, TRC, UNIPRO, VRML, VTK,
 	WAV, WG1, WinEEG, WMF, XML, XPM,
 	Z, ZIP, ZIP2,
-	TDMS, SMR, MX, IBW, AXG
+	TDMS, SMR, MX, IBW, AXG, ABF2
 };
-
+#if (BIOSIG_VERSION >= 10600)
+#error ABI change: order enum FileFormat alphabethically
+#endif
 
 /*
    error handling should use error variables local to each HDR
