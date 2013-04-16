@@ -152,7 +152,7 @@ if HDR.FILE.OPEN >= 2,          % write-open of files
 	                                DUR(ix) = (HDR.EVENT.VAL(ix)-HDR.PhysMin(ch)).*(HDR.DigMax(ch)-HDR.DigMin(ch))./(HDR.PhysMax(ch)-HDR.PhysMin(ch))+HDR.DigMin(ch);
 	                                ix = find(HDR.EVENT.DUR<0);
 	                                DUR(ix)=HDR.EVENT.DUR(ix)+(2^32);	%% convert negative numbers to uint32 encoding
-	                                ## FIXME: conversion to float32
+	                                %% FIXME: conversion to float32
 	                        end;
                         end;
 
