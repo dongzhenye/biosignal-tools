@@ -1,7 +1,6 @@
 /*
 
-    $Id$
-    Copyright (C) 2008,2009,2010,2011,2012 Alois Schloegl <alois.schloegl@gmail.com>
+    Copyright (C) 2008-2013 Alois Schloegl <alois.schloegl@gmail.com>
     This file is part of the "BioSig for C/C++" repository
     (biosig4c++) at http://biosig.sf.net/
 
@@ -33,6 +32,52 @@
 	- need to separate sopen_heka() and sread_heka()
 	- data swapping 
 */
+
+
+/****************************************************************************
+   rational :
+     computes the rational approximation of a floating point number
+     such that n/d is an approximation for r with an relative
+     error smaller than tol
+
+ ****************************************************************************/
+void rational (double x, double tol, long *n, long *d) {
+
+        if (x != x) {		// i.e. isnan(x)
+                *n = 0;
+                *d = 0;
+                return;
+        }
+
+	if (!finite(x)) {
+	        *n = x>0; 	// i.e. sign(x)
+                *d = 0;
+                return;
+        }
+
+	tol *= fabs(x);
+	*n   = lround(x);
+	*d   = 1;
+	double frac = x - *n;
+	long lastn  = 1, lastd = 0;
+
+	while (fabs((*d) * x - (*n) ) >= fabs((*d) * tol)) {
+	        double flip = 1.0/frac;
+	        long step   = lround(flip);
+	        frac = flip - step;
+
+	        long nextn = *n, nextd = *d;
+	        *n = *n * step + lastn;
+	        *d = *d * step + lastd;
+	        lastn = nextn;
+	        lastd = nextd;
+	}
+
+	if (*d < 0) {
+	        *n = - *n;
+	        *d = - *d;
+	}
+}
 
 
 /****************************************************************************
@@ -196,8 +241,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 989: \n");
 		uint32_t K1=0, K2=0, K3=0, K4=0, K5=0;
 		double t;
 		size_t pos;
-
-if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 995 %i %i \n",StartOfPulse, Sizes.Rec.Root);
 
 		// read K1
 		if (SWAP) {
@@ -396,24 +439,23 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L3 @%i= %fHz\t%i/%i %i/%i %i/%i %s\n",
 						double Cal = DataScaler * PhysDimScale(pdc);
 						double Off = YOffset * PhysDimScale(pdc);
 						pdc &= 0xffe0; 
-						double Fs = round(1.0 / ( dT  * PhysDimScale(XUnits) ) );
+						double Fs = 1.0 / ( dT  * PhysDimScale(XUnits) ) ;
 
 						if (flagSweepSelected) {
 							if (hdr->SampleRate <= 0.0) hdr->SampleRate = Fs;
-        	                                        if (fabs(hdr->SampleRate - Fs) > 1e-9) {
+                                                        if (fabs(hdr->SampleRate - Fs) > 1e-9*Fs) {
 								unsigned long DIV1 = 1, DIV2 = 1;
-								unsigned long F0 = lcm(round(hdr->SampleRate), Fs);
-								DIV1 = F0 / hdr->SampleRate;
+								rational(hdr->SampleRate*dT*PhysDimScale(XUnits), 1e-6, &DIV2, &DIV1);
 								if (DIV1 > 1) {
-									hdr->SPR *= DIV1; 
+									hdr->SPR *= DIV1;
 									size_t n = 0;
-									while (n < hdr->EVENT.N) 
+									while (n < hdr->EVENT.N)
 										hdr->EVENT.POS[n++] *= DIV1;
 								}	
-								DIV2 = F0 / Fs;
-								if (DIV2 > 1) spr *= DIV2; 
-								hdr->SampleRate = F0; 
-						                hdr->EVENT.SampleRate = hdr->SampleRate; 
+
+								if (DIV2 > 1) spr *= DIV2;
+								hdr->SampleRate *= DIV1;
+						                hdr->EVENT.SampleRate = hdr->SampleRate;
 							}
 
 							// samples per sweep
@@ -429,7 +471,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L3 @%i= %fHz\t%i/%i %i/%i %i/%i %s\n",
 							if (!strcmp(hdr->CHANNEL[ns].Label,Label)) break;
 						}
 
-if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%i %i/%i %i/%i \n",(int)(pos+StartOfData),ns,AdcChan,Label,hdr->SampleRate,Fs,k1,K1,k2,K2,k3,K3,k4,K4);
+if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f %fHz\t%i/%i %i/%i %i/%i %i/%i \n",(int)(pos+StartOfData),ns,AdcChan,Label,hdr->SampleRate,Fs,k1,K1,k2,K2,k3,K3,k4,K4);
 		
 						CHANNEL_TYPE *hc;
 						if (ns >= hdr->NS) {
@@ -465,7 +507,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 							double Off2 = hc->PhysMin - Cal2 * hc->DigMin;
 							double Off3 = hc->PhysMax - Cal2 * hc->DigMax;
 
-if (VERBOSE_LEVEL>6) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %g/%g %g/%g \n",(int)(pos+StartOfData),ns,AdcChan,Label,Cal,Cal2,Off,Off2);
+if (VERBOSE_LEVEL>6) fprintf(stdout,"HEKA L5 @%i= #%i,%i, %s %g/%g %g/%g \n",(int)(pos+StartOfData),ns,AdcChan,Label,Cal,Cal2,Off,Off2);
 
 							assert(Cal==Cal2);
 							assert(Off==Off2);
@@ -535,7 +577,7 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %g/%g %g/%g \n",(in
                                                         biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: ValidYRange not set");
 						}
 
-if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%i %i/%i %i/%i \n",(int)(pos+StartOfData),ns,AdcChan,Label,hdr->SampleRate,Fs,k1,K1,k2,K2,k3,K3,k4,K4);
+if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L6 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%i %i/%i %i/%i \n",(int)(pos+StartOfData),ns,AdcChan,Label,hdr->SampleRate,Fs,k1,K1,k2,K2,k3,K3,k4,K4);
 
 						pos += Sizes.Rec.Trace+4;
 						// read number of children -- this should be 0 - ALWAYS;
@@ -624,14 +666,15 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
  ******************************************************************************/
 
 
-		void* tmpptr = realloc(hdr->AS.rawdata, hdr->NRec * hdr->AS.bpb);
+		void* tmpptr = realloc(hdr->AS.rawdata, hdr->NRec * (size_t)hdr->AS.bpb);
 		if (tmpptr!=NULL) 
 			hdr->AS.rawdata = (uint8_t*) tmpptr;
 		else {
                         biosigERROR(hdr, B4C_MEMORY_ALLOCATION_FAILED, "memory allocation failed - not enough memory!");
                         return;
 		}	
-		memset(hdr->AS.rawdata, 0xff, hdr->NRec * hdr->AS.bpb); 	// initialize with NAN's
+		memset(hdr->AS.rawdata, 0xff, hdr->NRec * (size_t)hdr->AS.bpb); 	// initialize with NAN's
+
 
 #ifdef NO_BI
 #define _BI (BI[k])
@@ -644,7 +687,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L4 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 			CHANNEL_TYPE *hc = hdr->CHANNEL+k;
 			switch (hc->GDFTYP) {
 			case 3:
-				for (k1=0; k1<hc->SPR; k1++) *(uint16_t*)(hdr->AS.rawdata + _BI + k1 * 2) = 0x8000;
+				for (k1=0; k1<hc->SPR; k1++) {
+                                        *(uint16_t*)(hdr->AS.rawdata + _BI + k1 * 2) = 0x8000;
+                                }
 				break;
 			case 5:
 				for (k1=0; k1<hc->SPR; k1++) *(uint32_t*)(hdr->AS.rawdata + _BI + k1 * 4) = 0x80000000;
