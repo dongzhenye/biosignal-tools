@@ -40,6 +40,7 @@
      such that n/d is an approximation for r with an relative
      error smaller than tol
 
+     see Octave's rat.m
  ****************************************************************************/
 void rational (double x, double tol, long *n, long *d) {
 
@@ -333,7 +334,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L2 @%i=%s %f\t%i/%i %i/%i     t=%.17g 
 				for (k3=0; k3<K3; k3++)	{
 					// read sweep
 					hdr->NRec++; 	// increase number of sweeps
-					uint32_t SPR = 0, spr = 0;
+					size_t SPR = 0, spr = 0;
 					gdf_time t   = heka2gdftime(*(double*)(hdr->AS.Header+pos+48));		// time of sweep. TODO: this should be taken into account 
 
 					gdf_time2tm_time_r(t,&tm); 
@@ -442,20 +443,25 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L3 @%i= %fHz\t%i/%i %i/%i %i/%i %s\n",
 						double Fs = 1.0 / ( dT  * PhysDimScale(XUnits) ) ;
 
 						if (flagSweepSelected) {
+
 							if (hdr->SampleRate <= 0.0) hdr->SampleRate = Fs;
                                                         if (fabs(hdr->SampleRate - Fs) > 1e-9*Fs) {
-								unsigned long DIV1 = 1, DIV2 = 1;
+								long DIV1 = 1, DIV2 = 1;
 								rational(hdr->SampleRate*dT*PhysDimScale(XUnits), 1e-6, &DIV2, &DIV1);
+
 								if (DIV1 > 1) {
+									if ( ((size_t)DIV1 * hdr->SPR) > 0xffffffffffffffff) {
+										fprintf(stderr,"!!! WARNING sopen_heka(%s) !!! due to resampling, the data will have more then 2^31 samples !!!\n", hdr->FileName);
+										biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"HEKA file has more than 2^32 samples - this is not supported yet");
+									}
 									hdr->SPR *= DIV1;
+									hdr->SampleRate *= DIV1;
+							                hdr->EVENT.SampleRate = hdr->SampleRate;
 									size_t n = 0;
 									while (n < hdr->EVENT.N)
 										hdr->EVENT.POS[n++] *= DIV1;
 								}	
-
 								if (DIV2 > 1) spr *= DIV2;
-								hdr->SampleRate *= DIV1;
-						                hdr->EVENT.SampleRate = hdr->SampleRate;
 							}
 
 							// samples per sweep
@@ -588,7 +594,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L6 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 					}	// end loop k4
 
 					// if sweep is selected, add number of samples to counter 
-					if (flagSweepSelected) hdr->SPR += SPR;
+					if (flagSweepSelected) {
+						if ( hdr->SPR > 0xffffffffffffffffu-SPR) {
+							biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"HEKA file has more than 2^32 samples - this is not supported yet");
+						}
+						hdr->SPR += SPR;
+					}
 				}		// end loop k3
 			}			// end loop k2
 		}				// end loop k1
