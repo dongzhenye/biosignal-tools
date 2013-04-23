@@ -2453,6 +2453,283 @@ enum FileFormat GetFileTypeFromString(const char *FileTypeString) {
 }
 
 
+/* =============================================================
+	setter and getter functions for accessing fields of HDRTYPE
+   ============================================================= */
+
+enum FileFormat biosig_get_filetype(HDRTYPE *hdr) {
+	if (hdr==NULL) return noFile;
+	return hdr->TYPE;
+}
+int biosig_set_filetype(HDRTYPE *hdr, enum FileFormat format) {
+	if (hdr==NULL) return -1;
+	hdr->TYPE=format;
+	return 0;
+}
+
+size_t biosig_get_number_of_channels(HDRTYPE *hdr) {
+	if (hdr==NULL) return -1;
+	size_t k,m;
+	for (k=0,m=0; k<hdr->NS; k++)
+		if (hdr->CHANNEL[k].OnOff==1) {
+			m++;
+		}
+	return m;
+}
+size_t biosig_get_number_of_records(HDRTYPE *hdr) {
+	if (hdr==NULL) return -1;
+	return hdr->NRec;
+}
+size_t biosig_get_number_of_samples(HDRTYPE *hdr) {
+	if (hdr==NULL) return -1;
+	return hdr->NRec*hdr->SPR;
+}
+size_t biosig_get_number_of_segments(HDRTYPE *hdr) {
+	if (hdr==NULL) return 0;
+	if (hdr->SPR==0) return 0;
+	size_t k, n;
+	for (k=0, n=1; k<hdr->EVENT.N; k++)
+		if (hdr->EVENT.TYP[k]==0x7ffe) n++;
+	return n;
+}
+
+biosig_data_type* biosig_get_data(HDRTYPE *hdr, char flag ) {
+	if (hdr==NULL) return NULL;
+        hdr->FLAG.ROW_BASED_CHANNELS = flag;
+        sread(NULL, 0, hdr->NRec, hdr);
+	return hdr->data.block;
+}
+double biosig_get_samplerate(HDRTYPE *hdr) {
+	if (hdr==NULL) return NAN;
+	return hdr->SampleRate;
+}
+int biosig_set_samplerate(HDRTYPE *hdr, double fs) {
+	if (hdr==NULL) return -1;
+	hdr->SampleRate=fs;
+	return 0;
+}
+
+
+size_t biosig_get_number_of_events(HDRTYPE *hdr) {
+	if (hdr==NULL) return 0;
+	return hdr->EVENT.N;
+}
+size_t biosig_set_number_of_events(HDRTYPE *hdr, size_t N) {
+	if (hdr==NULL) return 0;
+	size_t k;
+	hdr->EVENT.POS = (uint32_t*) realloc(hdr->EVENT.POS, N * sizeof(*hdr->EVENT.POS) );
+	hdr->EVENT.TYP = (uint16_t*) realloc(hdr->EVENT.TYP, N * sizeof(*hdr->EVENT.TYP) );
+	for (k = hdr->EVENT.N; k<N; k++) {
+		hdr->EVENT.POS[k] = 0;
+		hdr->EVENT.TYP[k] = 0;
+	}
+	k = ( (hdr->EVENT.DUR==NULL) || (hdr->EVENT.CHN==NULL) ) ? 0 : hdr->EVENT.N;
+	hdr->EVENT.DUR = (uint32_t*) realloc(hdr->EVENT.DUR, N * sizeof(*hdr->EVENT.DUR) );
+	hdr->EVENT.CHN = (uint16_t*) realloc(hdr->EVENT.CHN, N * sizeof(*hdr->EVENT.CHN) );
+	for (; k<N; k++) {
+		hdr->EVENT.CHN[k] = 0;
+		hdr->EVENT.DUR[k] = 0;
+	}
+	k = (hdr->EVENT.TimeStamp==NULL) ? 0 : hdr->EVENT.N;
+	hdr->EVENT.TimeStamp = (gdf_time*) realloc(hdr->EVENT.TimeStamp, N * sizeof(*hdr->EVENT.TimeStamp) );
+	for (; k<N; k++) {
+		hdr->EVENT.TimeStamp[k] = 0;
+	}
+	hdr->EVENT.N = N;
+	return hdr->EVENT.N;
+}
+
+int biosig_get_nth_event(HDRTYPE *hdr, size_t n, uint16_t *typ, uint32_t *pos, uint16_t *chn, uint32_t *dur, gdf_time *timestamp, const char **desc) {
+	if (hdr==NULL) return -1;
+	if (hdr->EVENT.N <= n) return -1;
+	uint16_t TYP=hdr->EVENT.TYP[n];
+	if (typ != NULL)
+		*typ = TYP;
+	if (pos != NULL)
+		*pos = hdr->EVENT.POS[n];
+	if (chn != NULL)
+		*chn = (hdr->EVENT.CHN==NULL) ? 0 : hdr->EVENT.CHN[n];
+	if (dur != NULL)
+		*dur = (hdr->EVENT.DUR==NULL) ? 0 : hdr->EVENT.DUR[n];
+	if (timestamp != NULL)
+		*timestamp = (hdr->EVENT.TimeStamp==NULL) ? 0 : hdr->EVENT.TimeStamp[n];
+	if ( (desc != NULL) && (*desc != NULL) )
+		*desc = (TYP < hdr->EVENT.LenCodeDesc) ? hdr->EVENT.CodeDesc[TYP] : NULL;
+	return 0;
+}
+int biosig_set_nth_event(HDRTYPE *hdr, size_t n, uint16_t* typ, uint32_t *pos, uint16_t *chn, uint32_t *dur, gdf_time *timestamp, char *Desc) {
+	if (hdr==NULL) return -1;
+	if (hdr->EVENT.N <= n)
+		biosig_set_number_of_events(hdr, n+1);
+
+	if (typ != NULL)
+		hdr->EVENT.TYP[n] = *typ;
+	else if (typ == NULL)
+		FreeTextEvent(hdr, n, Desc);   // sets hdr->EVENT.TYP[n]
+
+	if (pos != NULL)
+		hdr->EVENT.POS[n] = *pos;
+	if (chn != NULL)
+		hdr->EVENT.CHN[n] = *chn;
+	if (dur != NULL)
+		hdr->EVENT.DUR[n] = *dur;
+	if (timestamp != NULL)
+		hdr->EVENT.TimeStamp[n] = *timestamp;
+
+	return 0;
+}
+
+double biosig_get_eventtable_samplerate(HDRTYPE *hdr) {
+	if (hdr==NULL) return NAN;
+	return hdr->EVENT.SampleRate;
+}
+int biosig_set_eventtable_samplerate(HDRTYPE *hdr, double fs) {
+	if (hdr==NULL) return -1;
+	hdr->EVENT.SampleRate=fs;
+	return 0;
+}
+int biosig_change_eventtable_samplerate(HDRTYPE *hdr, double fs) {
+	if (hdr==NULL) return -1;
+	if (hdr->EVENT.SampleRate==fs) return 0;
+	size_t k;
+	double ratio = fs/hdr->EVENT.SampleRate;
+	for (k = 0; k < hdr->EVENT.N; k++) {
+		uint32_t POS = hdr->EVENT.POS[k];
+		hdr->EVENT.POS[k] = ratio*POS;
+		if (hdr->EVENT.DUR != NULL)
+			hdr->EVENT.DUR[k] = (POS + hdr->EVENT.DUR[k]) * ratio - hdr->EVENT.POS[k];
+	}
+	hdr->EVENT.SampleRate=fs;
+	return 0;
+}
+
+int biosig_get_startdatetime(HDRTYPE *hdr, struct tm *T) {
+	if (hdr==NULL) return -1;
+	gdf_time2tm_time_r(hdr->T0, T);
+	return (ldexp(hdr->T0,-32)<100.0);
+}
+int biosig_set_startdatetime(HDRTYPE *hdr, struct tm *T) {
+	if (hdr==NULL) return -1;
+	hdr->T0 = tm_time2gdf_time(T);
+	return (ldexp(hdr->T0,-32)<100.0);
+}
+
+int biosig_get_birthdate(HDRTYPE *hdr, struct tm *T) {
+	if (hdr==NULL) return -1;
+	gdf_time2tm_time_r(hdr->Patient.Birthday, T);
+	return (ldexp(hdr->Patient.Birthday,-32)<100.0);
+}
+int biosig_set_birthdate(HDRTYPE *hdr, struct tm *T) {
+	if (hdr==NULL) return -1;
+	hdr->Patient.Birthday = tm_time2gdf_time(T);
+	return (ldexp(hdr->Patient.Birthday,-32)<100.0);
+}
+
+const char* biosig_get_recording_id(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	return hdr->ID.Recording;
+}
+const char* biosig_get_technician(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	return hdr->ID.Technician;
+}
+const char* biosig_get_manufacturer_name(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	return hdr->ID.Manufacturer.Name;
+}
+const char* biosig_get_manufacturer_model(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	return hdr->ID.Manufacturer.Model;
+}
+const char* biosig_get_manufacturer_version(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	return hdr->ID.Manufacturer.Version;
+}
+const char* biosig_get_manufacturer_serial_number(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	return hdr->ID.Manufacturer.SerialNumber;
+}
+
+int biosig_set_recording_id(HDRTYPE *hdr, const char* rid) {
+	if (hdr==NULL) return -1;
+	strncpy(hdr->ID.Recording, rid, MAX_LENGTH_RID);
+	hdr->ID.Recording[MAX_LENGTH_RID]=0;
+	return 0;
+}
+int biosig_set_technician(HDRTYPE *hdr, const char* technician) {
+	if (hdr==NULL) return -1;
+	hdr->ID.Technician = (char*)technician;
+	return 0;
+}
+int biosig_set_manufacturer_name(HDRTYPE *hdr, const char* rid) {
+	if (hdr==NULL) return -1;
+	hdr->ID.Manufacturer.Name = (char*)rid;
+	return 0;
+}
+int biosig_set_manufacturer_model(HDRTYPE *hdr, const char* rid) {
+	if (hdr==NULL) return -1;
+	hdr->ID.Manufacturer.Model = rid;
+	return 0;
+}
+int biosig_set_manufacturer_version(HDRTYPE *hdr, const char* rid) {
+	if (hdr==NULL) return -1;
+	hdr->ID.Manufacturer.Version = rid;
+	return 0;
+}
+int biosig_set_manufacturer_serial_number(HDRTYPE *hdr, const char* rid) {
+	if (hdr==NULL) return -1;
+	hdr->ID.Manufacturer.SerialNumber = rid;
+	return 0;
+}
+
+// returns M-th channel, M is 0-based
+CHANNEL_TYPE* biosig_get_channel(HDRTYPE *hdr, int M) {
+	if (hdr==NULL) return NULL;
+	typeof(hdr->NS) k,m;
+	for (k=0,m=0; k<hdr->NS; k++)
+		if (hdr->CHANNEL[k].OnOff==1) {
+			if (M==k) return hdr->CHANNEL+k;
+		}
+	return NULL;
+}
+
+int biosig_channel_scale_to_unitcode(CHANNEL_TYPE *hc, uint16_t physdimcode) {
+	if (hc==NULL) return -1;
+	if (hc->PhysDimCode == physdimcode) return 0; 	// nothing to do
+	if ( (hc->PhysDimCode & 0xffe0) != (physdimcode & 0xffe0) ) return -2; 	// units do not match
+        double scale = PhysDimScale(hc->PhysDimCode);
+        scale /= PhysDimScale(physdimcode);
+	hc->PhysDimCode = physdimcode;
+        hc->PhysMax *= scale;
+        hc->PhysMin *= scale;
+        hc->Cal *= scale;
+        hc->Off *= scale;
+	return(0);
+}
+const char* biosig_channel_get_label(CHANNEL_TYPE *hc) {
+	if (hc==NULL) return NULL;
+	return hc->Label;
+}
+uint16_t biosig_channel_get_physdimcode(CHANNEL_TYPE *hc) {
+	if (hc==NULL) return 0;
+	return hc->PhysDimCode;
+}
+const char* biosig_channel_get_physdim(CHANNEL_TYPE *hc) {
+	if (hc==NULL) return NULL;
+	return PhysDim3(hc->PhysDimCode);
+}
+int biosig_channel_set_label(CHANNEL_TYPE *hc, const char* label) {
+	if (hc==NULL) return -1;
+	strncpy(hc->Label, label, MAX_LENGTH_LABEL);
+	hc->Label[MAX_LENGTH_LABEL]=0;
+	return 0;
+}
+int biosig_channel_set_physdimcode(CHANNEL_TYPE *hc, uint16_t physdimcode) {
+	if (hc==NULL) return -1;
+	hc->PhysDimCode = physdimcode;
+	return 0;
+}
+
 /****************************************************************************/
 /**                     struct2gdfbin                                      **/
 /****************************************************************************/
@@ -3475,7 +3752,7 @@ void rawEVT2hdrEVT(HDRTYPE *hdr) {
 #if (BIOSIG_VERSION >= 10500)
 			if (flag & 4) {
 				// TimeStamp
-				hdr->EVENT.TimeStamp = (uint64_t*) realloc(hdr->EVENT.DUR,hdr->EVENT.N*sizeof(*hdr->EVENT.TimeStamp));
+				hdr->EVENT.TimeStamp = (gdf_time*) realloc(hdr->EVENT.DUR,hdr->EVENT.N*sizeof(*hdr->EVENT.TimeStamp));
 				buf1 = hdr->AS.rawEventData+8+hdr->EVENT.N*(sze-8);
 				for (k=0; k < hdr->EVENT.N; k++) {
 					hdr->EVENT.TimeStamp[k] = leu64p(buf1 + k*8);
@@ -4409,10 +4686,10 @@ else if (!strncmp(MODE,"r",1)) {
 			/* convert EDF+/BDF+ annotation channel into event table */
 			for (k3 = 0; k3 < hdr->NRec; k3++) {
 				double timeKeeping = 0;	
-			    	char *line = Marker + k3 * bpb;
+				char *line = (char*)(Marker + k3 * bpb);
 				
 				char flag = !strncmp(Header1+193,"DF+D",4); // no time keeping for EDF+C
-				while (line < (Marker + (k3+1) * bpb)) {		
+				while (line < (char*)(Marker + (k3+1) * bpb)) {
 					// loop through all annotations within a segment	
 										
 if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ line<%s>\n",line);
@@ -4547,7 +4824,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 
 		if (hdr->FILE.COMPRESSION) {
 			biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "compressed ATF file format not supported");
-			return;
+			return hdr;
 		}
 
 		ifseek(hdr,0,SEEK_SET);
@@ -4633,7 +4910,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 			// extract next label
 			str = strtok(NULL,"\t\n\r");
 
-			if (VERBOSE_LEVEL>7) fprintf(stdout,"ATF label #%i:<%s>\n",k,hc->Label);
+			if (VERBOSE_LEVEL>7) fprintf(stdout,"ATF label #%i:<%s>\n",(int)k,hc->Label);
 
 		}
 		hdr->HeadLen = iftell(hdr);
@@ -4876,7 +5153,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 			int32_t NS   =  lei32p(Header1+8);
 			if (NS >= (1<<sizeof(hdr->NS)*8)) {
 				biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG with more the 65535 channels are not supported");
-				return;
+				return hdr;
 			}
 			hdr->NS = NS;
 		}
@@ -5131,7 +5408,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 				}
 				else if (!strcmp(line,"Timezone")) {
 					int m;
-					if (sscanf(val,"%+i min", &m) > 0)
+					if (sscanf(val,"%i min", &m) > 0)
 						hdr->tzmin = m;
 				}
 				else if (!strcmp(line,"Recording.IPaddress")) {
@@ -9690,7 +9967,7 @@ if (VERBOSE_LEVEL>8)
 				memcpy(tmp,identifier,8);
 				memcpy(tmp24,identifier+8,24);
 				
-				fprintf(stdout,"SOPEN (NEV) [225] %d %d <%s> <%s>\n",k,hdr->NS,tmp,tmp24); 		
+				fprintf(stdout,"SOPEN (NEV) [225] %d %d <%s> <%s>\n",(int)k,hdr->NS,tmp,tmp24);
 			}
 
 			if (!memcmp (identifier, "NEUEVWAV",8)) hdr->NS++;
@@ -9744,10 +10021,10 @@ if (VERBOSE_LEVEL>8)
 				hc->Impedance = NAN;
 
 				
-				hc->SPR =
-				hc->bi =
-				hc->bi8 =
-				hc->bufptr = 0;
+				hc->SPR = 0;
+				hc->bi = hdr->AS.bpb;
+				hc->bi8 = hdr->AS.bpb*8;
+				hc->bufptr = NULL;
  
 			}
 			else if (!memcmp (identifier, "NSASEXEV",8)) {
@@ -12833,7 +13110,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 	if (hdr->TYPE==ATF) {
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"ATF swrite\n");
 
-		size_t nr = hdr->data.size[hdr->FLAG.ROW_BASED_CHANNELS];        // if collapsed data, use k2, otherwise use k1
+		size_t nr = hdr->data.size[(int)hdr->FLAG.ROW_BASED_CHANNELS];        // if collapsed data, use k2, otherwise use k1
 		assert(nr == hdr->NRec * hdr->SPR);
 
 		typeof(hdr->NS) k,k2;
@@ -13465,6 +13742,16 @@ int serror2(HDRTYPE *hdr) {
 	return(status);
 }
 
+char *biosig_get_errormsg(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	if (hdr->AS.B4C_ERRNUM==0) return NULL;
+	return strdup(hdr->AS.B4C_ERRMSG);
+};
+
+enum B4C_ERROR biosig_check_error(HDRTYPE *hdr) {
+	if (hdr==NULL) return B4C_NO_ERROR;
+	return hdr->AS.B4C_ERRNUM;
+};
 
 
 /****************************************************************************/

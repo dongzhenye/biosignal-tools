@@ -33,7 +33,7 @@
 struct hdrlist_t {
 	HDRTYPE *hdr;		// header information as defined in level 1 interface
 	//const char *filename; // name of file, is always hdr->FileName
-	uint16_t NS; 	// number of effective channels, CHANNEL[].OnOff are ignored
+	uint16_t NS; 	        // number of effective channels, only CHANNEL[].OnOff==1 are considered
 	size_t *chanpos; 	// position of file handle for each channel
 } ; 
 
@@ -44,7 +44,7 @@ CHANNEL_TYPE *getChannelHeader(HDRTYPE *hdr, uint16_t channel) {
 	CHANNEL_TYPE *hc = hdr->CHANNEL;
 	typeof(hdr->NS) chan = 0; 
 	while (1) {
-		if (hc->OnOff) {
+		if (hc->OnOff==1) {
 			if (chan==channel) return hc;
 			chan++;
 		}
@@ -58,7 +58,7 @@ int biosig_lib_version(void) {
 	return (BIOSIG_VERSION);
 }
 
-int biosig_open_file_readonly(const char *path, HDRTYPE *hdr, int read_annotations) {
+int biosig_open_file_readonly(const char *path, int read_annotations) {
 /* 
 
 	on success returns handle. 
@@ -66,13 +66,14 @@ int biosig_open_file_readonly(const char *path, HDRTYPE *hdr, int read_annotatio
 	int k = 0;
 	while (k < hdrlistlen && hdrlist[k].hdr != NULL) k++;
 	if (k >= hdrlistlen) return(-1);
-	hdr = sopen(path,"r",hdr);
+	HDRTYPE *hdr = sopen(path,"r",NULL);
 	hdrlist[k].hdr = hdr;
 	//hdrlist[k].filename = hdr->FileName;
 	hdrlist[k].NS  = 0; 
-	for (k=0; k<hdr->NS; k++) 
-		hdrlist[k].NS++;
 	hdrlist[k].chanpos  = calloc(hdrlist[k].NS,sizeof(size_t)); 
+
+        if (read_annotations)
+                sort_eventtable(hdrlist[k].hdr);
 
 	return(k);
 }
@@ -173,6 +174,8 @@ int biosig_get_annotation(int handle, size_t n, struct biosig_annotation_struct 
 }
 
 int biosig_open_file_writeonly(const char *path, enum FileFormat filetype, int number_of_signals) {
+
+        /* TODO: does not open file and write to file */
 #if 1
 	int k = 0;
 	while (k < hdrlistlen && hdrlist[k].hdr != NULL) k++;
@@ -194,8 +197,26 @@ int biosig_open_file_writeonly(const char *path, enum FileFormat filetype, int n
 		hdrlistlen = k+1;
 	}
 #endif
+        hdr->FLAG.UCAL = 0;
+        hdr->FLAG.OVERFLOWDETECTION = 0;
+        hdr->FILE.COMPRESSION = 0;
+
 	hdrlist[k].hdr  = hdr;
 	return(0); 
+}
+
+double biosig_get_global_samplefrequency(int handle) {
+
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(NAN);
+	return (hdrlist[handle].hdr->SampleRate);
+}
+
+int biosig_set_global_samplefrequency(int handle, double samplefrequency) {
+
+	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
+	hdrlist[handle].hdr->SampleRate = samplefrequency;
+
+	return 0;
 }
 
 double biosig_get_samplefrequency(int handle, int biosig_signal) {
@@ -212,17 +233,24 @@ int biosig_set_samplefrequency(int handle, int biosig_signal, double samplefrequ
 
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
 	HDRTYPE *hdr = hdrlist[handle].hdr;
-	typeof(hdr->NS) ns = hdr->NS;
-	if (biosig_signal >= ns) return(-1);
+	typeof(hdr->NS) ns = 0;
+	int ch;
+        for (ch = 0; ch < hdr->NS; ch++) {
+                if (hdr->CHANNEL[ch].OnOff==1) {
+                        if (ns==biosig_signal) break;
+                        ns++;
+                }
+        }
+	if (ch >= hdr->NS) return(-1);
 
 	// FIXME: resulting sampling rate might depend on calling order; what's the overall sampling rate ? 
 	if (samplefrequency != hdr->SampleRate) {
-		double spr = samplefrequency*hdr->SPR/hdr->SampleRate;
+		double spr = samplefrequency * hdr->SPR / hdr->SampleRate;
 		hdr->CHANNEL[biosig_signal].SPR = spr;
-		if (spr!=ceil(spr)) return (-2);
+		if (spr != ceil(spr)) return (-2);
 		return 0;
 	}
-	hdr->CHANNEL[biosig_signal].SPR = hdr->SPR;
+	hdr->CHANNEL[ch].SPR = hdr->SPR;
 	return 0;
 }
 

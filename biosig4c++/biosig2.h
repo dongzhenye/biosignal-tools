@@ -1,7 +1,6 @@
 /*
 
-    $Id$
-    Copyright (C) 2012 Alois Schloegl <alois.schloegl@gmail.com>
+    Copyright (C) 2012,2013 Alois Schloegl <alois.schloegl@gmail.com>
     This file is part of the "BioSig for C/C++" repository
     (biosig4c++) at http://biosig.sf.net/
 
@@ -40,10 +39,11 @@ struct biosig_annotation_struct {       /* this structure is used for annotation
         const char *annotation; 	/* description of the event in UTF-8, this is a null terminated string */
        };
 
+typedef HDRTYPE *biosig_handle_t ;
 
 int biosig_lib_version(void);
 
-int biosig_open_file_readonly(const char *path, HDRTYPE *hdr, int read_annotations);
+int biosig_open_file_readonly(const char *path, int read_annotations);
 
 int biosig_close_file(int handle);
 int biosig_read_samples(int handle, size_t channel, size_t n, double *buf, unsigned char UCAL);
@@ -56,6 +56,9 @@ size_t biosig_tell(int handle);
 void biosig_rewind(int handle, int biosig_signal);
 int biosig_get_annotation(int handle, size_t n, struct biosig_annotation_struct *annot);
 int biosig_open_file_writeonly(const char *path, enum FileFormat filetype, int number_of_signals);
+
+double biosig_get_global_samplefrequency(int handle);
+int biosig_set_global_samplefrequency(int handle, double samplefrequency);
 
 double biosig_get_samplefrequency(int handle, int biosig_signal);
 int biosig_set_samplefrequency(int handle, int biosig_signal,  double samplefrequency);
@@ -170,7 +173,7 @@ struct edf_annotation_struct {                       /* this structure is used f
        };
 
 int edfopen_file_writeonly(const char *path, int filetype, int number_of_signals);
-#define edfopen_file_readonly(a,b,c) 		biosig_open_file_readonly(a,b,c) 
+#define edfopen_file_readonly(a,c) 		biosig_open_file_readonly(a,c)
 #define edfclose_file(handle) 			biosig_close_file(handle)
 int edfread_physical_samples(int handle, int edfsignal, int n, double *buf);
 int edfread_digital_samples(int handle, int edfsignal, int n, int *buf);
