@@ -40,7 +40,7 @@
 
 #define BIOSIG_VERSION_MAJOR 1
 #define BIOSIG_VERSION_MINOR 5
-#define BIOSIG_PATCHLEVEL 1
+#define BIOSIG_PATCHLEVEL 2
 // for backward compatibility 
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
@@ -783,7 +783,7 @@ int asprintf_hdr2json(char **str, HDRTYPE* hdr);
 /* get, set and check function of filetype */
 enum FileFormat biosig_get_filetype(HDRTYPE *hdr);
 int biosig_set_filetype(HDRTYPE *hdr, enum FileFormat format);
-#define biosig_check_filetype(a,b) biosig_getfiletype(a)==b)
+#define biosig_check_filetype(a,b) (biosig_get_filetype(a)==b)
 
 // returns error message in memory allocated with strdup
 enum B4C_ERROR biosig_check_error(HDRTYPE *hdr);
@@ -794,7 +794,7 @@ size_t biosig_get_number_of_samples(HDRTYPE *hdr);
 size_t biosig_get_number_of_records(HDRTYPE *hdr);
 size_t biosig_get_number_of_segments(HDRTYPE *hdr);
 
-biosig_data_type* biosig_get_data(HDRTYPE *hdr, );
+biosig_data_type* biosig_get_data(HDRTYPE *hdr, char flag);
 
 double biosig_get_samplerate(HDRTYPE *hdr);
 int biosig_set_samplerate(HDRTYPE *hdr, double fs);

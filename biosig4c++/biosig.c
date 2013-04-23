@@ -2693,7 +2693,7 @@ CHANNEL_TYPE* biosig_get_channel(HDRTYPE *hdr, int M) {
 	return NULL;
 }
 
-int biosig_channel_scale_to_unitcode(CHANNEL_TYPE *hc, uint16_t physdimcode) {
+int biosig_channel_change_scale_to_unitcode(CHANNEL_TYPE *hc, uint16_t physdimcode) {
 	if (hc==NULL) return -1;
 	if (hc->PhysDimCode == physdimcode) return 0; 	// nothing to do
 	if ( (hc->PhysDimCode & 0xffe0) != (physdimcode & 0xffe0) ) return -2; 	// units do not match

@@ -93,8 +93,10 @@ int biosig_set_transducer(int handle, int biosig_signal, const char *transducer)
 const char *biosig_get_physical_dimension(int handle, int biosig_signal);
 int biosig_set_physical_dimension(int handle, int biosig_signal, const char *phys_dim);
 
+/*
 int biosig_get_startdatetime(int handle, struct tm *T);
 int biosig_set_startdatetime(int handle, const struct tm *T);
+*/
 
 const char *biosig_get_patientname(int handle);
 int biosig_set_patientname(int handle, const char *patientname);
@@ -103,13 +105,17 @@ int biosig_set_patientcode(int handle, const char *patientcode);
 int biosig_get_gender(int handle);
 int biosig_set_gender(int handle, int gender);
 
+/*
 int biosig_get_birthdate(int handle, struct tm *T);
 int biosig_set_birthdate(int handle, const struct tm *T);
+*/
 
 int biosig_set_patient_additional(int handle, const char *patient_additional);
 int biosig_set_admincode(int handle, const char *admincode);
+/*
 const char *biosig_get_technician(int handle);
 int biosig_set_technician(int handle, const char *technician);
+*/
 int biosig_set_equipment(int handle, const char *equipment);
 int biosig_set_recording_additional(int handle, const char *recording_additional);
 

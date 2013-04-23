@@ -447,6 +447,7 @@ int biosig_set_physical_dimension(int handle, int biosig_signal, const char *phy
 	return (0);
 }
 
+/*
 int biosig_get_startdatetime(int handle, struct tm *T) {
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
 	HDRTYPE *hdr = hdrlist[handle].hdr;
@@ -460,6 +461,7 @@ int biosig_set_startdatetime(int handle, const struct tm *T) {
 	hdr->T0   = tm_time2gdf_time(T);
 	return (0);
 }
+*/
 
 int edf_set_startdatetime(int handle, int startdate_year, int startdate_month, int startdate_day, int starttime_hour, int starttime_minute, int starttime_second) {
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
@@ -519,6 +521,7 @@ int biosig_set_gender(int handle, int gender) {
 	}
 }
 
+/*
 int biosig_get_birthdate(int handle, struct tm *T) {
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
 	HDRTYPE *hdr = hdrlist[handle].hdr;
@@ -532,6 +535,7 @@ int biosig_set_birthdate(int handle, const struct tm *T) {
 	hdr->Patient.Birthday = tm_time2gdf_time(T);
 	return (0);
 }
+*/
 
 int edf_set_birthdate(int handle, int birthdate_year, int birthdate_month, int birthdate_day) {
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);
@@ -557,6 +561,7 @@ int biosig_set_admincode(int handle, const char *admincode) {
 	return (-1);
 }
 
+/*
 const char *biosig_get_technician(int handle)  {
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(NULL);
 	HDRTYPE *hdr = hdrlist[handle].hdr;
@@ -569,6 +574,7 @@ int biosig_set_technician(int handle, const char *technician) {
 	strcpy(hdr->ID.Technician, technician);
 	return(0);
 }
+*/
 
 // TODO: implement the following functions
 int biosig_set_equipment(int handle, const char *equipment) {
