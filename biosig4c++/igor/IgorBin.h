@@ -33,9 +33,9 @@ extern "C" {
 #endif
 
 // All structures written to disk are 2-byte-aligned.
-#if GENERATINGPOWERPC
-	#pragma options align=mac68k
-#endif
+//#if GENERATINGPOWERPC
+//	#pragma options align=mac68k
+//#endif
 #if __GNUC__
 	#pragma pack(2)
 #endif
@@ -46,7 +46,7 @@ extern "C" {
 	all pointers need to be remapped to uint32_t. 
 */ 
 typedef uint32_t ptr_t;
-typedef ptr_t Handle;
+typedef ptr_t bs_Handle;
 
 
 // From IgorMath.h
@@ -119,7 +119,7 @@ struct WaveHeader2 {
 	char bname[MAX_WAVE_NAME2+2];		// Name of wave plus trailing null.
 	int16_t whVersion;			// Write 0. Ignore on read.
 	int16_t srcFldr;			// Used in memory only. Write zero. Ignore on read.
-	Handle fileName;			// Used in memory only. Write zero. Ignore on read.
+	bs_Handle fileName;			// Used in memory only. Write zero. Ignore on read.
 
 	char dataUnits[MAX_UNIT_CHARS+1];	// Natural data units go here - null if none.
 	char xUnits[MAX_UNIT_CHARS+1];		// Natural x-axis units go here - null if none.
@@ -144,7 +144,7 @@ struct WaveHeader2 {
 	char wUnused[2];			// Reserved. Write zero. Ignore on read.
 
 	uint32_t  modDate;			// DateTime of last modification.
-	Handle waveNoteH;			// Used in memory only. Write zero. Ignore on read.
+	bs_Handle waveNoteH;			// Used in memory only. Write zero. Ignore on read.
 
 	float wData[4];				// The start of the array of waveform data.
 };
@@ -184,11 +184,11 @@ struct WaveHeader5 {
 	int16_t whpad3;				// Reserved. Write zero. Ignore on read.
 	double topFullScale,botFullScale;	// The max and max full scale value for wave.
 
-	Handle dataEUnits;			// Used in memory only. Write zero. Ignore on read.
-	Handle dimEUnits[MAXDIMS];		// Used in memory only. Write zero. Ignore on read.
-	Handle dimLabels[MAXDIMS];		// Used in memory only. Write zero. Ignore on read.
+	bs_Handle dataEUnits;			// Used in memory only. Write zero. Ignore on read.
+	bs_Handle dimEUnits[MAXDIMS];		// Used in memory only. Write zero. Ignore on read.
+	bs_Handle dimLabels[MAXDIMS];		// Used in memory only. Write zero. Ignore on read.
 	
-	Handle waveNoteH;			// Used in memory only. Write zero. Ignore on read.
+	bs_Handle waveNoteH;			// Used in memory only. Write zero. Ignore on read.
 	int32_t whUnused[16];			// Reserved. Write zero. Ignore on read.
 
 	// The following stuff is considered private to Igor.
@@ -205,7 +205,7 @@ struct WaveHeader5 {
 	
 	int16_t whpad4;				// Reserved. Write zero. Ignore on read.
 	int16_t srcFldr;			// Used in memory only. Write zero. Ignore on read.
-	Handle fileName;			// Used in memory only. Write zero. Ignore on read.
+	bs_Handle fileName;			// Used in memory only. Write zero. Ignore on read.
 	
 	//int32_t **sIndices;			// Used in memory only. Write zero. Ignore on read.
 	ptr_t sIndices;
@@ -217,9 +217,9 @@ typedef WaveHeader5 *WavePtr5;
 typedef WavePtr5 *WaveHandle5;
 
 
-#if GENERATINGPOWERPC
-	#pragma options align=reset
-#endif
+//#if GENERATINGPOWERPC
+//	#pragma options align=reset
+//#endif
 #if __GNUC__
 	#pragma pack()
 #endif
