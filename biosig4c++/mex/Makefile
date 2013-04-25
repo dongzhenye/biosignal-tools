@@ -45,7 +45,6 @@ else
 endif
 
 
-mex: mex4m mex4o 
 win32 win mexw32: mexSLOAD.mexw32 mexSOPEN.mexw32 mexSSAVE.mexw32
 win64 mexw64: mexSLOAD.mexw64 mexSOPEN.mexw64 mexSSAVE.mexw64
 all: mex4m mex4o win32 win64
@@ -57,8 +56,14 @@ clean:
 ## set Matlab and Octave variables
 ifneq ($(shell which matlab), )
   MATLABDIR  := $(dir $(shell readlink -f $(shell which matlab) ) )
-  MEX         = $(MATLABDIR)mex
-  MEX_EXT    := $(shell $(MATLABDIR)mexext)
+endif
+
+ifndef MATLABDIR
+mex: mex4o
+else
+mex: mex4m mex4o
+  MEX        = $(MATLABDIR)mex
+  MEX_EXT   := $(shell $(MATLABDIR)mexext)
 endif
 
 # Octave - global install  (e.g. from debian package)
@@ -80,8 +85,7 @@ OCT           	= mkoctfile$(OCTAVE_VERSION)
 #############################################################
 #	MEX-Interface for Octave and Matlab
 #############################################################
-mex: mex4m mex4o
-ifneq ($(shell which matlab), )
+ifdef MEX_EXT
 mex4m: mexSLOAD.$(MEX_EXT) mexSOPEN.$(MEX_EXT) mexSSAVE.$(MEX_EXT)
 mexSLOAD: mexSLOAD.$(MEX_EXT) 
 mexSOPEN: mexSOPEN.$(MEX_EXT)
