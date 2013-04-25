@@ -120,7 +120,7 @@ int ibwChecksum(int16_t *data, int flag_swap, int oldcksum, int numbytes) {
 }
 
 
-
+/*
 void ReorderBytes(void *p, int bytesPerPoint, long numValues)	// Reverses byte order.
 {
 	unsigned char ch, *p1, *p2, *pEnd;
@@ -137,6 +137,7 @@ void ReorderBytes(void *p, int bytesPerPoint, long numValues)	// Reverses byte o
 		p = (unsigned char *)p + bytesPerPoint;
 	}
 }
+*/
 
 inline void ReorderShort(void* sp)
 {
@@ -165,7 +166,7 @@ void ReorderBinHeader2(BinHeader2* p)
 	ReorderShort(&p->version);
 	ReorderLong(&p->wfmSize);
 	ReorderLong(&p->noteSize);
-	ReorderLong(&p->pictSize);
+//	ReorderLong(&p->pictSize);
 	ReorderShort(&p->checksum);
 }
 
@@ -175,7 +176,7 @@ void ReorderBinHeader3(BinHeader3* p)
 	ReorderLong(&p->wfmSize);
 	ReorderLong(&p->noteSize);
 	ReorderLong(&p->formulaSize);
-	ReorderLong(&p->pictSize);
+//	ReorderLong(&p->pictSize);
 	ReorderShort(&p->checksum);
 }
 
@@ -187,70 +188,101 @@ void ReorderBinHeader5(BinHeader5* p)
 	ReorderLong(&p->formulaSize);
 	ReorderLong(&p->noteSize);
 	ReorderLong(&p->dataEUnitsSize);
-	ReorderBytes(&p->dimEUnitsSize, 4, 4);
-	ReorderBytes(&p->dimLabelsSize, 4, 4);
+//	ReorderBytes(&p->dimEUnitsSize, 4, 4);
+	ReorderLong(&p->dimEUnitsSize[0]);
+	ReorderLong(&p->dimEUnitsSize[1]);
+	ReorderLong(&p->dimEUnitsSize[2]);
+	ReorderLong(&p->dimEUnitsSize[3]);
+//	ReorderBytes(&p->dimLabelsSize, 4, 4);
+	ReorderLong(&p->dimLabelsSize[0]);
+	ReorderLong(&p->dimLabelsSize[1]);
+	ReorderLong(&p->dimLabelsSize[2]);
+	ReorderLong(&p->dimLabelsSize[3]);
 	ReorderLong(&p->sIndicesSize);
-	ReorderLong(&p->optionsSize1);
-	ReorderLong(&p->optionsSize2);
+//	ReorderLong(&p->optionsSize1);
+//	ReorderLong(&p->optionsSize2);
 }
 
 void ReorderWaveHeader2(WaveHeader2* p)
 {
 	ReorderShort(&p->type);
-	ReorderLong(&p->next);
+//	ReorderLong(&p->next);
 	// char bname does not need to be reordered.
-	ReorderShort(&p->whVersion);
-	ReorderShort(&p->srcFldr);
-	ReorderLong(&p->fileName);
+//	ReorderShort(&p->whVersion);
+//	ReorderShort(&p->srcFldr);
+//	ReorderLong(&p->fileName);
 	// char dataUnits does not need to be reordered.
 	// char xUnits does not need to be reordered.
 	ReorderLong(&p->npnts);
-	ReorderShort(&p->aModified);
+//	ReorderShort(&p->aModified);
 	ReorderDouble(&p->hsA);
 	ReorderDouble(&p->hsB);
-	ReorderShort(&p->wModified);
-	ReorderShort(&p->swModified);
+//	ReorderShort(&p->wModified);
+//	ReorderShort(&p->swModified);
 	ReorderShort(&p->fsValid);
 	ReorderDouble(&p->topFullScale);
 	ReorderDouble(&p->botFullScale);
 	// char useBits does not need to be reordered.
 	// char kindBits does not need to be reordered.
-	ReorderLong(&p->formula);
-	ReorderLong(&p->depID);
+//	ReorderLong(&p->formula);
+//	ReorderLong(&p->depID);
 	ReorderLong(&p->creationDate);
 	// char wUnused does not need to be reordered.
 	ReorderLong(&p->modDate);
-	ReorderLong(&p->waveNoteH);
+//	ReorderLong(&p->waveNoteH);
 	// The wData field marks the start of the wave data which will be reordered separately.
 }
 
 void ReorderWaveHeader5(WaveHeader5* p)
 {
-	ReorderLong(&p->next);
+//	ReorderLong(&p->next);
 	ReorderLong(&p->creationDate);
 	ReorderLong(&p->modDate);
 	ReorderLong(&p->npnts);
 	ReorderShort(&p->type);
-	ReorderShort(&p->dLock);
+//	ReorderShort(&p->dLock);
 	// char whpad1 does not need to be reordered.
-	ReorderShort(&p->whVersion);
+//	ReorderShort(&p->whVersion);
 	// char bname does not need to be reordered.
-	ReorderLong(&p->whpad2);
-	ReorderLong(&p->dFolder);
-	ReorderBytes(&p->nDim, 4, 4);
-	ReorderBytes(&p->sfA, 8, 4);
-	ReorderBytes(&p->sfB, 8, 4);
+//	ReorderLong(&p->whpad2);
+//	ReorderLong(&p->dFolder);
+//	ReorderBytes(&p->nDim, 4, 4);
+	ReorderLong(&p->nDim[0]);
+	ReorderLong(&p->nDim[1]);
+	ReorderLong(&p->nDim[2]);
+	ReorderLong(&p->nDim[3]);
+//	ReorderBytes(&p->sfA, 8, 4);
+	ReorderDouble(&p->sfA[0]);
+	ReorderDouble(&p->sfA[1]);
+	ReorderDouble(&p->sfA[2]);
+	ReorderDouble(&p->sfA[3]);
+//	ReorderBytes(&p->sfB, 8, 4);
+	ReorderDouble(&p->sfB[0]);
+	ReorderDouble(&p->sfB[1]);
+	ReorderDouble(&p->sfB[2]);
+	ReorderDouble(&p->sfB[3]);
 	// char dataUnits does not need to be reordered.
 	// char dimUnits does not need to be reordered.
 	ReorderShort(&p->fsValid);
-	ReorderShort(&p->whpad3);
+//	ReorderShort(&p->whpad3);
 	ReorderDouble(&p->topFullScale);
 	ReorderDouble(&p->botFullScale);
+/*
+	// according to IgorBin.h, the following stuff can be ignored for reading IBW files //
+
 	ReorderLong(&p->dataEUnits);
-	ReorderBytes(&p->dimEUnits, 4, 4);
-	ReorderBytes(&p->dimLabels, 4, 4);
+//	ReorderBytes(&p->dimEUnits, 4, 4);
+	ReorderLong(&p->dimEUnits[0]);
+	ReorderLong(&p->dimEUnits[1]);
+	ReorderLong(&p->dimEUnits[2]);
+	ReorderLong(&p->dimEUnits[3]);
+//	ReorderBytes(&p->dimLabels, 4, 4);
+	ReorderLong(&p->dimLabels[0]);
+	ReorderLong(&p->dimLabels[1]);
+	ReorderLong(&p->dimLabels[2]);
+	ReorderLong(&p->dimLabels[3]);
 	ReorderLong(&p->waveNoteH);
-	ReorderBytes(&p->whUnused, 4, 16);
+//	ReorderBytes(&p->whUnused, 4, 16);
 	ReorderShort(&p->aModified);
 	ReorderShort(&p->wModified);
 	ReorderShort(&p->swModified);
@@ -263,6 +295,7 @@ void ReorderWaveHeader5(WaveHeader5* p)
 	ReorderLong(&p->fileName);
 	ReorderLong(&p->sIndices);
 	// The wData field marks the start of the wave data which will be reordered separately.
+*/
 }
 
 
@@ -403,9 +436,9 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 					size_t n;
 					hdr->EVENT.POS = (uint32_t*)realloc(hdr->EVENT.POS, hdr->EVENT.N * sizeof(*hdr->EVENT.POS));
 					hdr->EVENT.TYP = (uint16_t*)realloc(hdr->EVENT.TYP, hdr->EVENT.N * sizeof(*hdr->EVENT.TYP));
-					for (n = 0; n < hdr->EVENT.N;) {
+					for (n = 0; n < hdr->EVENT.N; n++) {
 						hdr->EVENT.TYP[n] = 0x7ffe;
-						hdr->EVENT.POS[n] = (++n)*w5->nDim[0];
+						hdr->EVENT.POS[n] = (n+1)*w5->nDim[0];
 					}
 				}
 
@@ -432,7 +465,7 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 			break;
 	}
 
-	if (VERBOSE_LEVEL > 7) fprintf(stdout, "Wave name=%s, npnts=%d, type=0x%x.\n", hdr->CHANNEL[0].Label, hdr->NRec, type);
+	if (VERBOSE_LEVEL > 7) fprintf(stdout, "Wave name=%s, npnts=%d, type=0x%x.\n", hdr->CHANNEL[0].Label, (int)hdr->NRec, type);
 	
 	uint16_t gdftyp; 
 	double digmin,digmax; 

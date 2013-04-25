@@ -33,20 +33,18 @@ extern "C" {
 #endif
 
 // All structures written to disk are 2-byte-aligned.
-#if GENERATINGPOWERPC
-	#pragma options align=mac68k
-#endif
 #if __GNUC__
-	#pragma pack(2)
-#endif
-
-/*
+	#pragma pack(push,2)
+	/*
  	igor uses a 32bit memory model, all pointers are 32 bit. 
 	in order to keep the structs containing poiners aligned, 
 	all pointers need to be remapped to uint32_t. 
-*/ 
-typedef uint32_t ptr_t;
-typedef ptr_t Handle;
+	*/
+	#define ptr_t uint32_t
+	#define Handle uint32_t
+#elif GENERATINGPOWERPC
+	#pragma options align=mac68k
+#endif
 
 
 // From IgorMath.h
@@ -131,7 +129,7 @@ struct WaveHeader2 {
 
 	int16_t wModified;			// Used in memory only. Write zero. Ignore on read.
 	int16_t swModified;			// Used in memory only. Write zero. Ignore on read.
-	int16_t fsValid;						// True if full scale values have meaning.
+	int16_t fsValid;			// True if full scale values have meaning.
 	double topFullScale,botFullScale;	// The min full scale value for wave.
 		   
 	char useBits;				// Used in memory only. Write zero. Ignore on read.
@@ -140,7 +138,7 @@ struct WaveHeader2 {
 	ptr_t formula;
 
 	int32_t depID;				// Used in memory only. Write zero. Ignore on read.
-	uint32_t creationDate;		// DateTime of creation. Not used in version 1 files.
+	uint32_t creationDate;			// DateTime of creation. Not used in version 1 files.
 	char wUnused[2];			// Reserved. Write zero. Ignore on read.
 
 	uint32_t  modDate;			// DateTime of last modification.
@@ -216,12 +214,12 @@ typedef struct WaveHeader5 WaveHeader5;
 typedef WaveHeader5 *WavePtr5;
 typedef WavePtr5 *WaveHandle5;
 
-
-#if GENERATINGPOWERPC
-	#pragma options align=reset
-#endif
 #if __GNUC__
-	#pragma pack()
+	#pragma pack(pop)
+	#undef ptr_t
+	#undef Handle
+#elif GENERATINGPOWERPC
+	#pragma options align=reset
 #endif
 
 // All structures written to disk are 2-byte-aligned.
