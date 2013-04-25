@@ -22,12 +22,490 @@
 */
 
 
+#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include "biosig.h"
 #include "biosig2.h"
 
+
+/* =============================================================
+	setter and getter functions for accessing fields of HDRTYPE
+   ============================================================= */
+
+enum FileFormat biosig_get_filetype(HDRTYPE *hdr) {
+	if (hdr==NULL) return noFile;
+	return hdr->TYPE;
+}
+int biosig_set_filetype(HDRTYPE *hdr, enum FileFormat format) {
+	if (hdr==NULL) return -1;
+	hdr->TYPE=format;
+	if (format==GDF)
+	    hdr->VERSION = 1.0/0.0; // use latest version
+	return 0;
+}
+
+int biosig_set_flags(HDRTYPE *hdr, char compression, char ucal, char overflowdetection) {
+	if (hdr==NULL) return -1;
+	hdr->FLAG.UCAL = ucal;
+	hdr->FLAG.OVERFLOWDETECTION = overflowdetection;
+	hdr->FILE.COMPRESSION = compression;
+	return 0;
+}
+
+size_t biosig_get_number_of_channels(HDRTYPE *hdr) {
+	if (hdr==NULL) return -1;
+	size_t k,m;
+	for (k=0,m=0; k<hdr->NS; k++)
+		if (hdr->CHANNEL[k].OnOff==1) {
+			m++;
+		}
+	return m;
+}
+size_t biosig_get_number_of_records(HDRTYPE *hdr) {
+	if (hdr==NULL) return -1;
+	return hdr->NRec;
+}
+size_t biosig_get_number_of_samples(HDRTYPE *hdr) {
+	if (hdr==NULL) return -1;
+	return hdr->NRec*hdr->SPR;
+}
+size_t biosig_get_number_of_samples_per_record(HDRTYPE *hdr) {
+	if (hdr==NULL) return -1;
+	return hdr->SPR;
+}
+size_t biosig_get_number_of_segments(HDRTYPE *hdr) {
+	if (hdr==NULL) return 0;
+	if (hdr->SPR==0) return 0;
+	size_t k, n;
+	for (k=0, n=1; k<hdr->EVENT.N; k++)
+		if (hdr->EVENT.TYP[k]==0x7ffe) n++;
+	return n;
+}
+
+int biosig_set_number_of_channels(HDRTYPE *hdr, int ns) {
+	if (hdr==NULL) return -1;
+	// define variable header
+	void *ptr = realloc(hdr->CHANNEL, ns*sizeof(CHANNEL_TYPE));
+	if (ptr==NULL) return -1;
+	hdr->CHANNEL = (CHANNEL_TYPE*)ptr;
+	int k;
+	for (k=hdr->NS; k < ns; k++) {
+		// initialize new channels
+		CHANNEL_TYPE *hc = hdr->CHANNEL+k;
+		hc->Label[0]  = 0;
+		hc->LeadIdCode= 0;
+		strcpy(hc->Transducer, "EEG: Ag-AgCl electrodes");
+		hc->PhysDimCode = 19+4256; // uV
+		hc->PhysMax   = +100;
+		hc->PhysMin   = -100;
+		hc->DigMax    = +2047;
+		hc->DigMin    = -2048;
+		hc->Cal	      = NAN;
+		hc->Off	      = 0.0;
+		hc->TOffset   = 0.0;
+		hc->GDFTYP    = 3;	// int16
+		hc->SPR       = 1;	// one sample per block
+		hc->bi 	      = 2*k;
+		hc->bi8	      = 16*k;
+		hc->OnOff     = 1;
+		hc->HighPass  = 0.16;
+		hc->LowPass   = 70.0;
+		hc->Notch     = 50;
+		hc->Impedance = INFINITY;
+		hc->fZ        = NAN;
+		hc->XYZ[0] 	= 0.0;
+		hc->XYZ[1] 	= 0.0;
+		hc->XYZ[2] 	= 0.0;
+	}
+	hdr->NS = ns;
+	return 0;
+}
+int biosig_set_number_of_samples(HDRTYPE *hdr, ssize_t nrec, ssize_t spr) {
+	if (hdr==NULL) return -1;
+	if (nrec >= 0) hdr->NRec = nrec;
+	if (spr  >= 0) hdr->SPR  = spr;
+	return 0;
+}
+//ATT_DEPREC int biosig_set_number_of_segments(HDRTYPE *hdr, )
+
+biosig_data_type* biosig_get_data(HDRTYPE *hdr, char flag ) {
+	if (hdr==NULL) return NULL;
+        hdr->FLAG.ROW_BASED_CHANNELS = flag;
+        sread(NULL, 0, hdr->NRec, hdr);
+	return hdr->data.block;
+}
+double biosig_get_samplerate(HDRTYPE *hdr) {
+	if (hdr==NULL) return NAN;
+	return hdr->SampleRate;
+}
+int biosig_set_samplerate(HDRTYPE *hdr, double fs) {
+	if (hdr==NULL) return -1;
+	hdr->SampleRate=fs;
+	return 0;
+}
+
+
+size_t biosig_get_number_of_events(HDRTYPE *hdr) {
+	if (hdr==NULL) return 0;
+	return hdr->EVENT.N;
+}
+size_t biosig_set_number_of_events(HDRTYPE *hdr, size_t N) {
+	if (hdr==NULL) return 0;
+	size_t k;
+	hdr->EVENT.POS = (uint32_t*) realloc(hdr->EVENT.POS, N * sizeof(*hdr->EVENT.POS) );
+	hdr->EVENT.TYP = (uint16_t*) realloc(hdr->EVENT.TYP, N * sizeof(*hdr->EVENT.TYP) );
+	for (k = hdr->EVENT.N; k<N; k++) {
+		hdr->EVENT.POS[k] = 0;
+		hdr->EVENT.TYP[k] = 0;
+	}
+	k = ( (hdr->EVENT.DUR==NULL) || (hdr->EVENT.CHN==NULL) ) ? 0 : hdr->EVENT.N;
+	hdr->EVENT.DUR = (uint32_t*) realloc(hdr->EVENT.DUR, N * sizeof(*hdr->EVENT.DUR) );
+	hdr->EVENT.CHN = (uint16_t*) realloc(hdr->EVENT.CHN, N * sizeof(*hdr->EVENT.CHN) );
+	for (; k<N; k++) {
+		hdr->EVENT.CHN[k] = 0;
+		hdr->EVENT.DUR[k] = 0;
+	}
+	k = (hdr->EVENT.TimeStamp==NULL) ? 0 : hdr->EVENT.N;
+	hdr->EVENT.TimeStamp = (gdf_time*) realloc(hdr->EVENT.TimeStamp, N * sizeof(*hdr->EVENT.TimeStamp) );
+	for (; k<N; k++) {
+		hdr->EVENT.TimeStamp[k] = 0;
+	}
+	hdr->EVENT.N = N;
+	return hdr->EVENT.N;
+}
+
+int biosig_get_nth_event(HDRTYPE *hdr, size_t n, uint16_t *typ, uint32_t *pos, uint16_t *chn, uint32_t *dur, gdf_time *timestamp, const char **desc) {
+	if (hdr==NULL) return -1;
+	if (hdr->EVENT.N <= n) return -1;
+	uint16_t TYP=hdr->EVENT.TYP[n];
+	if (typ != NULL)
+		*typ = TYP;
+	if (pos != NULL)
+		*pos = hdr->EVENT.POS[n];
+	if (chn != NULL)
+		*chn = (hdr->EVENT.CHN==NULL) ? 0 : hdr->EVENT.CHN[n];
+	if (dur != NULL)
+		*dur = (hdr->EVENT.DUR==NULL) ? 0 : hdr->EVENT.DUR[n];
+	if (timestamp != NULL)
+		*timestamp = (hdr->EVENT.TimeStamp==NULL) ? 0 : hdr->EVENT.TimeStamp[n];
+	if ( (desc != NULL) && (*desc != NULL) )
+		*desc = (TYP < hdr->EVENT.LenCodeDesc) ? hdr->EVENT.CodeDesc[TYP] : NULL;
+	return 0;
+}
+int biosig_set_nth_event(HDRTYPE *hdr, size_t n, uint16_t* typ, uint32_t *pos, uint16_t *chn, uint32_t *dur, gdf_time *timestamp, char *Desc) {
+	if (hdr==NULL) return -1;
+	if (hdr->EVENT.N <= n)
+		biosig_set_number_of_events(hdr, n+1);
+
+	if (typ != NULL)
+		hdr->EVENT.TYP[n] = *typ;
+	else if (typ == NULL)
+		FreeTextEvent(hdr, n, Desc);   // sets hdr->EVENT.TYP[n]
+
+	if (pos != NULL)
+		hdr->EVENT.POS[n] = *pos;
+	if (chn != NULL)
+		hdr->EVENT.CHN[n] = *chn;
+	if (dur != NULL)
+		hdr->EVENT.DUR[n] = *dur;
+	if (timestamp != NULL)
+		hdr->EVENT.TimeStamp[n] = *timestamp;
+
+	return 0;
+}
+
+double biosig_get_eventtable_samplerate(HDRTYPE *hdr) {
+	if (hdr==NULL) return NAN;
+	return hdr->EVENT.SampleRate;
+}
+int biosig_set_eventtable_samplerate(HDRTYPE *hdr, double fs) {
+	if (hdr==NULL) return -1;
+	hdr->EVENT.SampleRate=fs;
+	return 0;
+}
+int biosig_change_eventtable_samplerate(HDRTYPE *hdr, double fs) {
+	if (hdr==NULL) return -1;
+	if (hdr->EVENT.SampleRate==fs) return 0;
+	size_t k;
+	double ratio = fs/hdr->EVENT.SampleRate;
+	for (k = 0; k < hdr->EVENT.N; k++) {
+		uint32_t POS = hdr->EVENT.POS[k];
+		hdr->EVENT.POS[k] = ratio*POS;
+		if (hdr->EVENT.DUR != NULL)
+			hdr->EVENT.DUR[k] = (POS + hdr->EVENT.DUR[k]) * ratio - hdr->EVENT.POS[k];
+	}
+	hdr->EVENT.SampleRate=fs;
+	return 0;
+}
+
+int biosig_get_startdatetime(HDRTYPE *hdr, struct tm *T) {
+	if (hdr==NULL) return -1;
+	gdf_time2tm_time_r(hdr->T0, T);
+	return (ldexp(hdr->T0,-32)<100.0);
+}
+int biosig_set_startdatetime(HDRTYPE *hdr, struct tm *T) {
+	if (hdr==NULL) return -1;
+	hdr->T0 = tm_time2gdf_time(T);
+	return (ldexp(hdr->T0,-32)<100.0);
+}
+
+int biosig_get_birthdate(HDRTYPE *hdr, struct tm *T) {
+	if (hdr==NULL) return -1;
+	gdf_time2tm_time_r(hdr->Patient.Birthday, T);
+	return (ldexp(hdr->Patient.Birthday,-32)<100.0);
+}
+int biosig_set_birthdate(HDRTYPE *hdr, struct tm *T) {
+	if (hdr==NULL) return -1;
+	hdr->Patient.Birthday = tm_time2gdf_time(T);
+	return (ldexp(hdr->Patient.Birthday,-32)<100.0);
+}
+
+const char* biosig_get_recording_id(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	return hdr->ID.Recording;
+}
+const char* biosig_get_technician(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	return hdr->ID.Technician;
+}
+const char* biosig_get_manufacturer_name(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	return hdr->ID.Manufacturer.Name;
+}
+const char* biosig_get_manufacturer_model(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	return hdr->ID.Manufacturer.Model;
+}
+const char* biosig_get_manufacturer_version(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	return hdr->ID.Manufacturer.Version;
+}
+const char* biosig_get_manufacturer_serial_number(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	return hdr->ID.Manufacturer.SerialNumber;
+}
+
+int biosig_set_recording_id(HDRTYPE *hdr, const char* rid) {
+	if (hdr==NULL) return -1;
+	strncpy(hdr->ID.Recording, rid, MAX_LENGTH_RID);
+	hdr->ID.Recording[MAX_LENGTH_RID]=0;
+	return 0;
+}
+int biosig_set_technician(HDRTYPE *hdr, const char* technician) {
+	if (hdr==NULL) return -1;
+	hdr->ID.Technician = (char*)technician;
+	return 0;
+}
+int biosig_set_manufacturer_name(HDRTYPE *hdr, const char* rid) {
+	if (hdr==NULL) return -1;
+	hdr->ID.Manufacturer.Name = (char*)rid;
+	return 0;
+}
+int biosig_set_manufacturer_model(HDRTYPE *hdr, const char* rid) {
+	if (hdr==NULL) return -1;
+	hdr->ID.Manufacturer.Model = rid;
+	return 0;
+}
+int biosig_set_manufacturer_version(HDRTYPE *hdr, const char* rid) {
+	if (hdr==NULL) return -1;
+	hdr->ID.Manufacturer.Version = rid;
+	return 0;
+}
+int biosig_set_manufacturer_serial_number(HDRTYPE *hdr, const char* rid) {
+	if (hdr==NULL) return -1;
+	hdr->ID.Manufacturer.SerialNumber = rid;
+	return 0;
+}
+
+// returns M-th channel, M is 0-based
+CHANNEL_TYPE* biosig_get_channel(HDRTYPE *hdr, int M) {
+	if (hdr==NULL) return NULL;
+	typeof(hdr->NS) k,m;
+	for (k=0,m=0; k<hdr->NS; k++)
+		if (hdr->CHANNEL[k].OnOff==1) {
+			if (M==k) return hdr->CHANNEL+k;
+		}
+	return NULL;
+}
+
+int biosig_channel_change_scale_to_physdimcode(CHANNEL_TYPE *hc, uint16_t physdimcode) {
+	if (hc==NULL) return -1;
+	if (hc->PhysDimCode == physdimcode) return 0; 	// nothing to do
+	if ( (hc->PhysDimCode & 0xffe0) != (physdimcode & 0xffe0) ) return -2; 	// units do not match
+        double scale = PhysDimScale(hc->PhysDimCode);
+        scale /= PhysDimScale(physdimcode);
+	hc->PhysDimCode = physdimcode;
+        hc->PhysMax *= scale;
+        hc->PhysMin *= scale;
+        hc->Cal *= scale;
+        hc->Off *= scale;
+	return(0);
+}
+const char* biosig_channel_get_label(CHANNEL_TYPE *hc) {
+	if (hc==NULL) return NULL;
+	return hc->Label;
+}
+uint16_t biosig_channel_get_physdimcode(CHANNEL_TYPE *hc) {
+	if (hc==NULL) return 0;
+	return hc->PhysDimCode;
+}
+const char* biosig_channel_get_physdim(CHANNEL_TYPE *hc) {
+	if (hc==NULL) return NULL;
+	return PhysDim3(hc->PhysDimCode);
+}
+int biosig_channel_set_label(CHANNEL_TYPE *hc, const char* label) {
+	if (hc==NULL) return -1;
+	strncpy(hc->Label, label, MAX_LENGTH_LABEL);
+	hc->Label[MAX_LENGTH_LABEL]=0;
+	return 0;
+}
+int biosig_channel_set_physdimcode(CHANNEL_TYPE *hc, uint16_t physdimcode) {
+	if (hc==NULL) return -1;
+	hc->PhysDimCode = physdimcode;
+	return 0;
+}
+
+
+int biosig_channel_get_scaling(CHANNEL_TYPE *hc, double *PhysMax, double *PhysMin, double *DigMax, double *DigMin) {
+	if (hc==NULL) return -1;
+	if (PhysMax != NULL)
+		*PhysMax = hc->PhysMax;
+	if (PhysMin != NULL)
+		*PhysMax = hc->PhysMin;
+	if (DigMax != NULL)
+		*DigMax = hc->DigMax;
+	if (DigMin != NULL)
+		*DigMin = hc->DigMin;
+	return 0;
+}
+int biosig_channel_set_scaling(CHANNEL_TYPE *hc, double PhysMax, double PhysMin, double DigMax, double DigMin) {
+	if (hc==NULL) return -1;
+	hc->PhysMax = PhysMax;
+	hc->PhysMin = PhysMin;
+	hc->DigMax = DigMax;
+	hc->DigMin = DigMin;
+	hc->Cal    = ( PhysMax - PhysMin) / ( DigMax - DigMin );
+	hc->Off    = PhysMin - DigMin * hc->Cal;
+	return 0;
+}
+
+double biosig_channel_get_cal(CHANNEL_TYPE *hc) {
+	if (hc==NULL) return -1;
+	double cal = ( hc->PhysMax - hc->PhysMin) / ( hc->DigMax - hc->DigMin );
+	assert(cal==hc->Cal);
+	return (cal);
+}
+double biosig_channel_get_off(CHANNEL_TYPE *hc) {
+	if (hc==NULL) return -1;
+	double off = hc->PhysMin - hc->DigMin * hc->Cal;
+	assert(off==hc->Off);
+	return off;
+}
+
+int biosig_channel_set_cal(CHANNEL_TYPE *hc, double cal) {
+	if (hc==NULL) return -1;
+	hc->Cal = cal;
+	return 0;
+}
+int biosig_channel_set_off(CHANNEL_TYPE *hc, double off) {
+	if (hc==NULL) return -1;
+	hc->Off = off;
+	return 0;
+}
+
+int biosig_channel_get_filter(CHANNEL_TYPE *hc, double *LowPass, double *HighPass, double *Notch) {
+	if (hc==NULL) return -1;
+	if (LowPass != NULL)
+		*LowPass = hc->LowPass;
+	if (HighPass != NULL)
+		*HighPass = hc->HighPass;
+	if (Notch != NULL)
+		*Notch = hc->Notch;
+	return 0;
+}
+int biosig_channel_set_filter(CHANNEL_TYPE *hc, double LowPass, double HighPass, double Notch) {
+	if (hc==NULL) return -1;
+	hc->LowPass = LowPass;
+	hc->HighPass = HighPass;
+	hc->Notch = Notch;
+	return 0;
+}
+
+double biosig_channel_get_timing_offset(CHANNEL_TYPE *hc) {
+	if (hc==NULL) return -1;
+	return hc->TOffset;
+}
+int biosig_channel_set_timing_offset(CHANNEL_TYPE *hc, double off) {
+	if (hc==NULL) return -1;
+	hc->TOffset = off;
+	return 0;
+}
+
+double biosig_channel_get_impedance(CHANNEL_TYPE *hc) {
+	if (hc==NULL) return -1;
+	return ( (hc->PhysDimCode & 0x7ffe) == 4256 ) ? hc->Impedance : NAN;
+}
+int biosig_channel_set_impedance(CHANNEL_TYPE *hc, double val) {
+	if (hc==NULL) return -1;
+	if ( (hc->PhysDimCode & 0x7ffe) != 4256 ) return -1;
+	hc->Impedance = val;
+	return 0;
+}
+
+uint16_t biosig_channel_get_datatype(CHANNEL_TYPE *hc) {
+	if (hc==NULL) return -1;
+	return hc->GDFTYP;
+}
+int biosig_channel_set_datatype(CHANNEL_TYPE *hc, uint16_t gdftyp) {
+	if (hc==NULL) return -1;
+	hc->GDFTYP = gdftyp;
+	return 0;
+}
+
+double biosig_get_channel_samplerate(HDRTYPE *hdr, int chan) {
+	CHANNEL_TYPE *hc = biosig_get_channel(hdr, chan);
+	if (hc==NULL) return -1;
+	if (hdr==NULL) return -1;
+	return (hdr->SampleRate * hc->SPR / hdr->SPR);
+}
+size_t biosig_channel_get_samples_per_record(CHANNEL_TYPE *hc) {
+	if (hc==NULL) return -1;
+	return hc->SPR;
+}
+int    biosig_channel_set_samples_per_record(CHANNEL_TYPE *hc, size_t spr)  {
+	if (hc==NULL) return -1;
+	hc->SPR = spr;
+	return 0;
+}
+
+int  biosig_set_channel_samplerate_and_samples_per_record(HDRTYPE *hdr, int chan, ssize_t spr, double fs)  {
+	CHANNEL_TYPE *hc = biosig_get_channel(hdr,chan);
+	if (hc==NULL) return -1;
+	if ((spr <= 0) && (fs >= 0.0)) {
+		hc->SPR = hdr->SPR * fs / hdr->SampleRate;
+		return 0;
+	}
+	if ((spr >= 0) && (fs != fs)) {
+		hc->SPR = spr;
+		return 0;
+	}
+	assert (hdr->SampleRate * hc->SPR == fs * hdr->SPR);
+	return (hdr->SampleRate * hc->SPR != fs * hdr->SPR);
+}
+
+
+
+/*
+        DO NOT USE         DO NOT USE         DO NOT USE         DO NOT USE
+
+        the functions below are experimental and have not been used so far
+        in any productions system
+        They will be removed or significantly changed .
+
+        DO NOT USE         DO NOT USE         DO NOT USE         DO NOT USE
+*/
 
 #define hdrlistlen 64
 struct hdrlist_t {
@@ -134,6 +612,7 @@ int biosig_read_samples(int handle, size_t channel, size_t n, double *buf, unsig
 	return (0);
 }
 
+/*
 int biosig_read_physical_samples(int handle, size_t biosig_signal, size_t n, double *buf) {
 	return biosig_read_samples(handle, biosig_signal, n, buf, (unsigned char)(0));
 }
@@ -141,6 +620,7 @@ int biosig_read_physical_samples(int handle, size_t biosig_signal, size_t n, dou
 int biosig_read_digital_samples(int handle, size_t biosig_signal, size_t n, double *buf) {
 	return biosig_read_samples(handle, biosig_signal, n, buf, (unsigned char)(1));
 }
+*/
 
 size_t biosig_seek(int handle, long long offset, int whence) {
 	if (handle<0 || handle >= hdrlistlen || hdrlist[handle].hdr==NULL) return(-1);

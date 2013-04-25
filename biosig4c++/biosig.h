@@ -45,7 +45,7 @@
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
 
-#ifdef _VCPP_DEF
+#if defined(_VCPP_DEF) || defined(_MSC_VER)
 #define __BYTE_ORDER  __LITTLE_ENDIAN
 typedef unsigned __int64	uint64_t;
 typedef __int64			int64_t;
@@ -773,89 +773,6 @@ int asprintf_hdr2json(char **str, HDRTYPE* hdr);
    memory for str is automatically allocated and must be freed 
    after usage. 
  --------------------------------------------------------------- */
-
-#if (BIOSIG_VERSION >= 10600)
-/* =============================================================
-	setter and getter functions for accessing fields of HDRTYPE
-	these functions are currently experimential and are likely to change
-   ============================================================= */
-
-/* get, set and check function of filetype */
-enum FileFormat biosig_get_filetype(HDRTYPE *hdr);
-int biosig_set_filetype(HDRTYPE *hdr, enum FileFormat format);
-#define biosig_check_filetype(a,b) (biosig_get_filetype(a)==b)
-
-// returns error message in memory allocated with strdup
-enum B4C_ERROR biosig_check_error(HDRTYPE *hdr);
-char *biosig_get_errormsg(HDRTYPE *hdr);
-
-size_t biosig_get_number_of_channels(HDRTYPE *hdr);
-size_t biosig_get_number_of_samples(HDRTYPE *hdr);
-size_t biosig_get_number_of_records(HDRTYPE *hdr);
-size_t biosig_get_number_of_segments(HDRTYPE *hdr);
-
-biosig_data_type* biosig_get_data(HDRTYPE *hdr, char flag);
-
-double biosig_get_samplerate(HDRTYPE *hdr);
-int biosig_set_samplerate(HDRTYPE *hdr, double fs);
-
-size_t biosig_get_number_of_events(HDRTYPE *hdr);
-size_t biosig_set_number_of_events(HDRTYPE *hdr, size_t N);
-
-// get n-th event, variables pointing to NULL are ignored
-int biosig_get_nth_event(HDRTYPE *hdr, size_t n, uint16_t *typ, uint32_t *pos, uint16_t *chn, uint32_t *dur, gdf_time *timestamp, const char **desc);
-/* set n-th event, variables pointing to NULL are ignored
-   typ or  Desc can be used to determine the type of the event.
-   if both, typ and Desc, are not NULL, the result is undefined */
-int biosig_set_nth_event(HDRTYPE *hdr, size_t n, uint16_t* typ, uint32_t *pos, uint16_t *chn, uint32_t *dur, gdf_time *timestamp, char *Desc);
-
-double biosig_get_eventtable_samplerate(HDRTYPE *hdr);
-int    biosig_set_eventtable_samplerate(HDRTYPE *hdr, double fs);
-int    biosig_change_eventtable_samplerate(HDRTYPE *hdr, double fs);
-
-
-int biosig_get_startdatetime(HDRTYPE *hdr, struct tm *T);
-int biosig_set_startdatetime(HDRTYPE *hdr, struct tm *T);
-
-int biosig_get_birthdate(HDRTYPE *hdr, struct tm *T);
-int biosig_set_birthdate(HDRTYPE *hdr, struct tm *T);
-
-const char* biosig_get_recording_id(HDRTYPE *hdr);
-const char* biosig_get_technician(HDRTYPE *hdr);
-const char* biosig_get_manufacturer_name(HDRTYPE *hdr);
-const char* biosig_get_manufacturer_model(HDRTYPE *hdr);
-const char* biosig_get_manufacturer_version(HDRTYPE *hdr);
-const char* biosig_get_manufacturer_serial_number(HDRTYPE *hdr);
-
-int biosig_set_recording_id(HDRTYPE *hdr, const char* rid);
-int biosig_set_technician(HDRTYPE *hdr, const char* rid);
-int biosig_set_manufacturer_name(HDRTYPE *hdr, const char* rid);
-int biosig_set_manufacturer_model(HDRTYPE *hdr, const char* rid);
-int biosig_set_manufacturer_version(HDRTYPE *hdr, const char* rid);
-int biosig_set_manufacturer_serial_number(HDRTYPE *hdr, const char* rid);
-
-/* =============================================================
-	setter and getter functions for accessing fields of CHANNEL_TYPE
-	these functions are currently experimential and are likely to change
-   ============================================================= */
-
-// returns M-th channel, M is zero-based
-CHANNEL_TYPE* biosig_get_channel(HDRTYPE *hdr, int M);
-
-// this will affect result of next SREAD when flag.ucal==0
-int biosig_channel_change_scale_to_unitcode(CHANNEL_TYPE *chan, uint16_t physdimcode);
-#define biosig_channel_change_scale_to_unit(a,b) biosig_channel_set_scale_to_unitcode(a, PhysDimCode(b))
-
-const char* biosig_channel_get_label(CHANNEL_TYPE *chan);
-const char* biosig_channel_get_physdim(CHANNEL_TYPE *chan);
-uint16_t biosig_channel_get_physdimcode(CHANNEL_TYPE *chan);
-
-int biosig_channel_set_label(CHANNEL_TYPE *chan, const char* label);
-int biosig_channel_set_physdimcode(CHANNEL_TYPE *chan, uint16_t physdimcode);
-#define biosig_channel_set_unit(a,b) biosig_channel_set_unitcode(a, PhysDimCode(b))
-
-#endif
-
 
 #ifdef __cplusplus
 }
