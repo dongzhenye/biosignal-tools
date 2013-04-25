@@ -33,20 +33,18 @@ extern "C" {
 #endif
 
 // All structures written to disk are 2-byte-aligned.
-//#if GENERATINGPOWERPC
-//	#pragma options align=mac68k
-//#endif
 #if __GNUC__
-	#pragma pack(2)
-#endif
-
-/*
+	#pragma pack(push,2)
+	/*
  	igor uses a 32bit memory model, all pointers are 32 bit. 
 	in order to keep the structs containing poiners aligned, 
 	all pointers need to be remapped to uint32_t. 
-*/ 
-typedef uint32_t ptr_t;
-typedef ptr_t bs_Handle;
+	*/
+	#define ptr_t uint32_t
+	#define Handle uint32_t
+#elif GENERATINGPOWERPC
+	#pragma options align=mac68k
+#endif
 
 
 // From IgorMath.h
@@ -119,7 +117,7 @@ struct WaveHeader2 {
 	char bname[MAX_WAVE_NAME2+2];		// Name of wave plus trailing null.
 	int16_t whVersion;			// Write 0. Ignore on read.
 	int16_t srcFldr;			// Used in memory only. Write zero. Ignore on read.
-	bs_Handle fileName;			// Used in memory only. Write zero. Ignore on read.
+	Handle fileName;			// Used in memory only. Write zero. Ignore on read.
 
 	char dataUnits[MAX_UNIT_CHARS+1];	// Natural data units go here - null if none.
 	char xUnits[MAX_UNIT_CHARS+1];		// Natural x-axis units go here - null if none.
@@ -131,7 +129,7 @@ struct WaveHeader2 {
 
 	int16_t wModified;			// Used in memory only. Write zero. Ignore on read.
 	int16_t swModified;			// Used in memory only. Write zero. Ignore on read.
-	int16_t fsValid;						// True if full scale values have meaning.
+	int16_t fsValid;			// True if full scale values have meaning.
 	double topFullScale,botFullScale;	// The min full scale value for wave.
 		   
 	char useBits;				// Used in memory only. Write zero. Ignore on read.
@@ -140,11 +138,11 @@ struct WaveHeader2 {
 	ptr_t formula;
 
 	int32_t depID;				// Used in memory only. Write zero. Ignore on read.
-	uint32_t creationDate;		// DateTime of creation. Not used in version 1 files.
+	uint32_t creationDate;			// DateTime of creation. Not used in version 1 files.
 	char wUnused[2];			// Reserved. Write zero. Ignore on read.
 
 	uint32_t  modDate;			// DateTime of last modification.
-	bs_Handle waveNoteH;			// Used in memory only. Write zero. Ignore on read.
+	Handle waveNoteH;			// Used in memory only. Write zero. Ignore on read.
 
 	float wData[4];				// The start of the array of waveform data.
 };
@@ -184,11 +182,11 @@ struct WaveHeader5 {
 	int16_t whpad3;				// Reserved. Write zero. Ignore on read.
 	double topFullScale,botFullScale;	// The max and max full scale value for wave.
 
-	bs_Handle dataEUnits;			// Used in memory only. Write zero. Ignore on read.
-	bs_Handle dimEUnits[MAXDIMS];		// Used in memory only. Write zero. Ignore on read.
-	bs_Handle dimLabels[MAXDIMS];		// Used in memory only. Write zero. Ignore on read.
+	Handle dataEUnits;			// Used in memory only. Write zero. Ignore on read.
+	Handle dimEUnits[MAXDIMS];		// Used in memory only. Write zero. Ignore on read.
+	Handle dimLabels[MAXDIMS];		// Used in memory only. Write zero. Ignore on read.
 	
-	bs_Handle waveNoteH;			// Used in memory only. Write zero. Ignore on read.
+	Handle waveNoteH;			// Used in memory only. Write zero. Ignore on read.
 	int32_t whUnused[16];			// Reserved. Write zero. Ignore on read.
 
 	// The following stuff is considered private to Igor.
@@ -205,7 +203,7 @@ struct WaveHeader5 {
 	
 	int16_t whpad4;				// Reserved. Write zero. Ignore on read.
 	int16_t srcFldr;			// Used in memory only. Write zero. Ignore on read.
-	bs_Handle fileName;			// Used in memory only. Write zero. Ignore on read.
+	Handle fileName;			// Used in memory only. Write zero. Ignore on read.
 	
 	//int32_t **sIndices;			// Used in memory only. Write zero. Ignore on read.
 	ptr_t sIndices;
@@ -216,12 +214,12 @@ typedef struct WaveHeader5 WaveHeader5;
 typedef WaveHeader5 *WavePtr5;
 typedef WavePtr5 *WaveHandle5;
 
-
-//#if GENERATINGPOWERPC
-//	#pragma options align=reset
-//#endif
 #if __GNUC__
-	#pragma pack()
+	#pragma pack(pop)
+	#undef ptr_t
+	#undef Handle
+#elif GENERATINGPOWERPC
+	#pragma options align=reset
 #endif
 
 // All structures written to disk are 2-byte-aligned.
