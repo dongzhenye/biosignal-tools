@@ -24,7 +24,9 @@
   #endif 
 #endif 
 
+#ifndef TRUE
 #define TRUE (1)
+#endif
 
 #ifdef CHOLMOD_H
 //#include "cholmod/matlab/cholmod_matlab.h"
@@ -450,7 +452,7 @@ void mexFunction(
 	if ((status=serror2(hdr))) return;  
 
 	if (VERBOSE_LEVEL>7) 
-		fprintf(stderr,"\n[129] SREAD/SCLOSE on %s successful [%i,%i] [%Li,%i] %i.\n",hdr->FileName,hdr->data.size[0],hdr->data.size[1],hdr->NRec,count,NS);
+		fprintf(stderr,"\n[129] SREAD/SCLOSE on %s successful [%i,%i] [%i,%i] %i.\n",hdr->FileName,(int)hdr->data.size[0],(int)hdr->data.size[1],(int)hdr->NRec,(int)count,(int)NS);
 
 
 //	hdr2ascii(hdr,stderr,4);	

@@ -26,8 +26,6 @@
   #endif 
 #endif 
 
-#define TRUE (1)
-
 //#define VERBOSE_LEVEL  9 
 //extern int VERBOSE_LEVEL;
 //#define DEBUG
@@ -65,8 +63,9 @@ double getDouble(const mxArray *pm, size_t idx) {
 	case mxUNKNOWN_CLASS:
 	case mxCELL_CLASS:
 	case mxSTRUCT_CLASS:
-	default: 
 */
+	default:
+		return(NAN);
 	}
 	return(NAN);
 }
