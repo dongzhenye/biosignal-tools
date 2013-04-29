@@ -161,7 +161,7 @@ elseif isnumeric(arg1)
 		t1 = BIOSIG_GLOBAL.DecimalFactor.Prefix{BIOSIG_GLOBAL.DecimalFactor.Code==s(k)};
 		ix = find(BIOSIG_GLOBAL.Units.Code==n(k));
 		if ~isempty(ix)
-			t2 = BIOSIG_GLOBAL.Units.Symbol{ix};
+			t2 = BIOSIG_GLOBAL.Units.Symbol{ix(1)};
 			PhysDim{k} = [t1,t2];
 			scale(k) = BIOSIG_GLOBAL.DecimalFactor.Cal(BIOSIG_GLOBAL.DecimalFactor.Code==s(k));
 		end; 	
