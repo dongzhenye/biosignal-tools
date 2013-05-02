@@ -38,7 +38,7 @@ add support for zlib-compressed (gzipped) XML data
 */
 
 #include <ctype.h>
-#include <iconv.h>
+//#include <iconv.h>  // not available on Windows
 
 #ifdef TIXML_USE_STL
 #include <sstream>

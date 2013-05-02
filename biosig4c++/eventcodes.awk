@@ -61,7 +61,7 @@ BEGIN { FS = "\t";
  
 END {
         for (i=1; i<=nG; i++) {
-                printf("\t{ 0x%s, \"%s\" },\n",G[i,1],G[i,2]) | "sort >> eventcodegroups.i"
+                printf("\t{ 0x%s, \"%s\" },\n",G[i,1],G[i,2]) >> "eventcodegroups.i"
         } 
        
         for (i=1; i<256; i++) {
@@ -69,7 +69,7 @@ END {
                printf("\t{ 0x%04x, 0x0000, \"condition %i\" },\n",i,i) >> "eventcodes.i"
         } 
         for (i=1; i<=nC; i++) {
-                printf("\t{ %s, 0x%s, \"%s\" },\n",C[i,1],C[i,2],C[i,3]) | "sort >> eventcodes.i"
+                printf("\t{ %s, 0x%s, \"%s\" },\n",C[i,1],C[i,2],C[i,3]) >> "eventcodes.i"
         } 
 }
 
