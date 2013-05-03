@@ -2012,9 +2012,9 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 
     	else if (!memcmp(Header1,MAGIC_NUMBER_FEF1,sizeof(MAGIC_NUMBER_FEF1)) || !memcmp(Header1,MAGIC_NUMBER_FEF2,sizeof(MAGIC_NUMBER_FEF1))) {
 	    	hdr->TYPE = FEF;
-		char *tmp = strndup((char*)hdr->AS.Header+8,8);
+		char tmp[9];tmp[8] = 0;
+		memcpy(tmp,hdr->AS.Header+8,8);
 		hdr->VERSION = (float)atol(tmp);
-		free(tmp);
     	}
     	else if (!memcmp(Header1,"fLaC",4))
 	    	hdr->TYPE = FLAC;
@@ -2022,9 +2022,9 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 
     	else if (!memcmp(Header1,"GDF",3) && (hdr->HeadLen > 255)) {
 	    	hdr->TYPE = GDF;
-	    	char *tmp = strndup((char*)hdr->AS.Header+3,5);
+		char tmp[6]; tmp[5] = 0;
+		memcpy(tmp,hdr->AS.Header+3, 5);
 	    	hdr->VERSION 	= strtod(tmp,NULL);
-		free(tmp);
 	}
 
 #ifndef  ONLYGDF
@@ -2257,9 +2257,9 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
     	}
 	else if ((hdr->HeadLen > 23) && !memcmp(Header1,"# vtk DataFile Version ",23)) {
 		hdr->TYPE = VTK;
-		char *tmp = strndup((char*)Header1+23,3);
+		char tmp[4]; tmp[3]=0;
+		memcpy(tmp,(char*)Header1+23,3);
 		hdr->VERSION = strtod(tmp,NULL);
-		free(tmp);
 	}
 	else if (!strncmp(Header1,"Serial number",13))
 		hdr->TYPE = ASCII_IBI;
@@ -3297,7 +3297,12 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"user-specific events defined\n");
 		    		}
 		    		else if (tag==7) {
 		    			// recording institution
-		    			hdr->ID.Hospital = strndup((char*)(Header2+pos+4),len);
+					// hdr->ID.Hospital = strndup((char*)(Header2+pos+4),len);
+					hdr->ID.Hospital = malloc(len+1);
+					if (hdr->ID.Hospital) {
+						hdr->ID.Hospital[len] = 0;
+						strncpy(hdr->ID.Hospital,Header2+pos+4,len);
+					}
 		    		}
 
 #if (BIOSIG_VERSION >= 10500)
@@ -6798,7 +6803,12 @@ if (VERBOSE_LEVEL>8)
         			hdr->SampleRate = atof(Header1+pos);
         			break;
         		case 0x00000012:
-        			hdr->ID.Hospital = strndup(Header1+pos,len);
+				// strndup(hdr->ID.Hospital,Header1+pos,len);
+				hdr->ID.Hospital = malloc(len+1);
+				if (hdr->ID.Hospital) {
+					hdr->ID.Hospital[len] = 0;
+					strncpy(hdr->ID.Hospital,Header1+pos,len);
+				}
         			break;
 
         		case 0x00000003: // units
