@@ -65,8 +65,6 @@ if (WIN32)
     win32/getdelim.c
     win32/getline.c
     win32/getlogin.c
-    win32/strnlen.c
-    win32/strndup.c
   )
 endif ()
 

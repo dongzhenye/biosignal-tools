@@ -293,8 +293,6 @@ MinGWOBJECTS  = \
 		win32/crc4scp.obj \
 		win32/biosig.obj \
 		win32/getlogin.obj \
-		win32/strndup.obj \
-		win32/strnlen.obj \
 		win32/sopen_cfs_read.obj \
 		win32/sopen_heka_read.obj \
 		win32/sopen_igor.obj \
