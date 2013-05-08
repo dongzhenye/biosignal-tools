@@ -139,17 +139,17 @@ void ReorderBytes(void *p, int bytesPerPoint, long numValues)	// Reverses byte o
 }
 */
 
-inline void ReorderShort(void* sp)
+void ReorderShort(void* sp)
 {
 	*(uint16_t*)sp = bswap_16(*(uint16_t*)sp);
 }
 
-inline void ReorderLong(void* lp)
+void ReorderLong(void* lp)
 {
 	*(uint32_t*)lp = bswap_32(*(uint32_t*)lp);
 }
 
-inline void ReorderDouble(void* dp)
+void ReorderDouble(void* dp)
 {
 	*(uint64_t*)dp = bswap_64(*(uint64_t*)dp);
 }
