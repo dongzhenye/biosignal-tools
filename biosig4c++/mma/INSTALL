@@ -1,15 +1,70 @@
 
 
-== Compling for Linux/Unix/Mac platform ===============
-	adapt biosig4c++/Makefile and biosig4c++/mma/Makefile with the 
-	correct directory in the section "userspecified variables" and run 
+== Compiling on Debian and derivatives ===============
 
-    cd  biosig4c++/mma/	
-    make sload
+== 1. REQUIREMENTS ==
+
+   sudo apt-get install libsuitesparse-dev libz-dev
+
+
+== 2. DOWNLOAD ==
+   and extract biosig4c++ and change into directory
+   cd biosig4c++/
+
+or checkout the latest version from the git repository
+
+   git clone git://git.code.sf.net/p/biosig/code biosig-code
+   cd biosig-code/biosig4c++/
+
+== 3. COMPILATION ==
+
+   make libbiosig.a
+   make mma
+
+At the end, there are certainly some error messages, caused by the
+failed attempt of copying
+  mma/sload to ../../mma/
+you can ignore these. The important part is whether the file
+   mma/sload
+has been built.
+
+If it fails (file mma/sload not available), you might need to edit
+mma/Makefile (line 18)
+
+  MLINKDIR=
+
+set it to the directory of the developerkit of your mathematica
+installation.
+
+Try again
+  make mma
+
+
+== 4. INSTALL ==
+copy the files
+
+  mma/sload mma/*.nb
+
+into your working directory.
+
+== 5. USAGE ==
+Start mathematica
+
+   link=Install["sload"]
+   ?sload
+
+mySLOAD.nb zeigt wie man sload in mathematica verwendet.
+
+
+=== OTHER PLATFORMS === 
+ are currently not maintained. The information below might be outdated. 
+
+
     
 
-== Compiling on Windows ===============================
-Prerequisites: 
+
+   = Compiling on Windows =
+   Prerequisites: 
 	MinGW 
 	Mathematica (tested with v7.0) 
 	Download and extract sources of biosig4c++ (v0.96.2 or later)
@@ -19,8 +74,8 @@ Prerequisites:
 		make -f Makefile.win32 sload.exe 
 
 
-== Cross-Compiling on Linux for Windows ===============
-Prerequisites:
+   = Cross-Compiling on Linux for Windows =
+   Prerequisites:
 	Cross-compiler (e.g. mxe)
         wine 
 	Mathlink developer files from Windows 
@@ -38,8 +93,7 @@ The installation can be tested by starting Mathematica, loading and running test
 
 
 
-
-Copyright (C) 2011 Alois Schloegl 
+Copyright (C) 2011,2013 Alois Schloegl 
 [1] http://pub.ist.ac.at/~schloegl/biosig/TESTED
 
 
