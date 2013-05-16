@@ -3301,7 +3301,7 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"user-specific events defined\n");
 					hdr->ID.Hospital = malloc(len+1);
 					if (hdr->ID.Hospital) {
 						hdr->ID.Hospital[len] = 0;
-						strncpy(hdr->ID.Hospital,Header2+pos+4,len);
+						strncpy(hdr->ID.Hospital,(char*)Header2+pos+4,len);
 					}
 		    		}
 
@@ -3935,13 +3935,14 @@ else if (!strncmp(MODE,"r",1)) {
 #endif
 
     	hdr->AS.Header = (uint8_t*)malloc(513);
-	size_t k,name=0,ext=0;
+	size_t k;
+#ifndef  ONLYGDF
+	size_t name=0,ext=0;
 	for (k=0; hdr->FileName[k]; k++) {
 		if (hdr->FileName[k]==FILESEP) name = k+1;
 		if (hdr->FileName[k]=='.')     ext  = k+1;
 	}
 
-#ifndef  ONLYGDF
 	const char *FileExt  = hdr->FileName+ext;
 	const char *FileName = hdr->FileName+name;
 #endif //ONLYGDF

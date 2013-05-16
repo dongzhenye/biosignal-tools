@@ -229,8 +229,10 @@ char debugfile[] = "flowmonDD.log.txt";
 		}
 		else if (!strncmp(argv[k],"-V",2)) {
 	                char c = argv[k][2];
+#ifndef VERBOSE_LEVEL
 	                if ('0'<=c && c<='9') 
 	                        VERBOSE_LEVEL = c-'0';
+#endif
 		}
 		else if (!strcmp(argv[k],"-z")) {
 		        flag_GZIP = 1;
