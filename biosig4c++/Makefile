@@ -679,7 +679,7 @@ libbiosig2.a: $(OBJECTS) biosig2.o t240/libcnsfef.a
 	-$(DELETE) libbiosig2.a
 	$(AR) libbiosig2.a $(OBJECTS) biosig2.o t240/*.o
 libbiosig2.def: $(OBJECTS) biosig2.o t240/libcnsfef.a
-	$(CXX) -o libbiosig2.dll -s -shared -fPIC  $(OBJECTS) t240/libcnsfef.a $(LIBS) -Wl,--subsystem,windows,--output-def,libbiosig2.def,--out-implib,libbiosig2.dll.a
+	$(CXX) -o libbiosig2.dll -s -shared -fPIC  $(OBJECTS) biosig2.o t240/libcnsfef.a $(LIBS) -Wl,--subsystem,windows,--output-def,libbiosig2.def,--out-implib,libbiosig2.dll.a
 
 
 libbiosig2.so: $(OBJECTS) biosig2.o t240/libcnsfef.a
