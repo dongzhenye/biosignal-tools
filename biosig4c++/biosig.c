@@ -8582,6 +8582,8 @@ if (VERBOSE_LEVEL>8)
 		double Cal = 1.0, Off = 0.0;
 		char SWAP = ( __BYTE_ORDER == __LITTLE_ENDIAN);   // default of MFER is BigEndian
 		hdr->FILE.LittleEndian = 0;
+		hdr->SampleRate = 1000; 	// default sampling rate is 1000 Hz
+		hdr->NS = 1;	 		// default number of channels is 1
 		/* TAG */
 		uint8_t tag = hdr->AS.Header[0];
     		ifseek(hdr,1,SEEK_SET);
@@ -8654,6 +8656,8 @@ if (VERBOSE_LEVEL>8)
 				if (len>16) fprintf(stderr,"Warning MFER tag2 incorrect length %i>16\n",len);
 				curPos += ifread(&v,1,len,hdr);
 				v[len]  = 0;
+if (VERBOSE_LEVEL>7)
+	fprintf(stdout,"MFER: character code <%s>\n",v);
 			}
 			else if (tag==4) {
 				// SPR
@@ -8914,6 +8918,24 @@ if (VERBOSE_LEVEL>8)
 			else if (tag==66)     //0x42: NIPB, SpO2(value)
 			{
 			}
+			else if (tag==67)     //0x43: Sample skew
+			{
+				int skew=0;
+				curPos += ifread(&skew, 1, len,hdr);
+if (VERBOSE_LEVEL>2)
+	fprintf(stdout,"MFER: sample skew %s ns\n",skew);
+			}
+			else if (tag==70)     //0x46: digital signature
+			{
+if (VERBOSE_LEVEL>2)
+	fprintf(stdout,"MFER: digital signature \n");
+			}
+
+			else if (tag==103)     //0x67 Group definition
+			{
+if (VERBOSE_LEVEL>2)
+	fprintf(stdout,"MFER: Group definition\n");
+			}
 
 			else if (tag==129)   //0x81
 			{
@@ -8983,10 +9005,15 @@ if (VERBOSE_LEVEL>8)
 				else
 					hdr->T0 += (uint64_t) (          t16  * 1e+3 +          u16  * ldexp(1.0,32) / (24*3600e6) );
 			}
+			else if (tag==135)     //0x67 Object identifier
+			{
+if (VERBOSE_LEVEL>2)
+	fprintf(stdout,"MFER: object identifier\n");
+			}
 			else {
 		    		curPos += len;
 		    		ifseek(hdr,len,SEEK_CUR);
-				if (VERBOSE_LEVEL==9)
+				if (VERBOSE_LEVEL>7)
 					fprintf(stdout,"tag=%i (len=%i) not supported\n",tag,len);
 		    	}
 
