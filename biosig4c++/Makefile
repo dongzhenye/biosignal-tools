@@ -83,6 +83,7 @@ ifeq (,$(TARGET))
 	CXX     := g++
 	LD      := ld
 	AR      := ar crs
+	PREFIX  := /usr/bin/
 else 
 	PREFIX  := $(dir $(shell which $(TARGET)-gcc))
 	CC      := $(TARGET)-gcc
@@ -420,7 +421,7 @@ units.i : extern/units.csv
 #	Compilation: exceptions, explicit rules
 #############################################################
 
-gdf.o: biosig.c biosig-dev.h biosig.h
+gdf.o: biosig.c biosig-dev.h biosig.h eventcodes.i units.i
 	$(CC) -c -D=ONLYGDF -D=WITHOUT_NETWORK $(DEFINES_ALL) $(CFLAGS) $(INCPATH) -o "$@" "$<"
 
 #getlogin_r.o: win32/getlogin_r.c
@@ -771,19 +772,16 @@ save2aecg: save2gdf
 #	APPLICATIONS: TTL2TRIG, FLOWMON
 #############################################################
 
-gdfwrite.o:  biosig.c biosig-dev.h biosig.h 
-	$(CC) -c -D=ONLYGDF $(DEFINE_ALL) $(CFLAGS) -o "$@" biosig.c
-
 ###	TTL2TRIG
-bin/ttl2trig : src/ttl2trig.c gdfwrite.o physicalunits.o
-	$(CXX) -D=WITH_BIOSIG $(DEFINE_ALL) "$<" gdfwrite.o physicalunits.o -Wall -Wextra -lasound -o "$@"
+bin/ttl2trig : src/ttl2trig.c gdf.o physicalunits.o
+	$(CXX) -D=WITH_BIOSIG $(DEFINE_ALL) "$<" gdf.o physicalunits.o -Wall -Wextra -lasound -o "$@"
 
 ###	FLOWMON
 flowmon.o: src/flowmon2.c 
 	$(CC)  -c $(DEFINES_ALL) $(CFLAGS) -o "$@" src/flowmon2.c 
         
-bin/flowmon: flowmon.o gdfwrite.o physicalunits.o
-	$(LINK) flowmon.o gdfwrite.o physicalunits.o -lpthread -o "$@"
+bin/flowmon: flowmon.o gdf.o physicalunits.o
+	$(CC) flowmon.o gdf.o physicalunits.o -lpthread -lm -o "$@"
 
 
 #############################################################
