@@ -2111,6 +2111,9 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    	hdr->TYPE = NeuroLoggerHEX;
     	else if (!memcmp(Header1,"Neuron",6))
 	    	hdr->TYPE = NEURON;
+	else if (!memcmp(Header1,"\x93NUMPY",6)) {
+		hdr->TYPE = NUMPY;
+	}
     	else if (!memcmp(Header1,"[FileInfo]",10))
 	    	hdr->TYPE = Persyst;
     	else if (!memcmp(Header1,"SXDF",4))
@@ -2390,6 +2393,7 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ NEX1,    	"NEX1" },
 	{ NIFTI,    	"NIFTI" },
 	{ NEURON,    	"NEURON" },
+	{ NUMPY,    	"NUMPY" },
 	{ Persyst,    	"Persyst" },
 	{ OGG,    	"OGG" },
 	{ PDP,    	"PDP" },
@@ -9841,6 +9845,105 @@ if (VERBOSE_LEVEL>2)
 
 		ifclose(hdr);
 		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Format NIFTI not supported");
+		return(hdr);
+	}
+
+	else if (hdr->TYPE==NUMPY) {
+		/*
+			There is no way to extract sampling rate and scaling factors from numpy files.
+			For this reason, numpy is not going to be a supported data format.
+		*/
+		fprintf(stderr,"Warning SOPEN (NUMPY): sampling rate, scaling, physical units etc. are not supported, and are most likely incorrect.");
+		hdr->VERSION = hdr->AS.Header[6]+hdr->AS.Header[7]/100;
+		hdr->HeadLen = leu16p(hdr->AS.Header+8);
+		if (count < hdr->HeadLen) {
+			hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen+1);
+			count += ifread(hdr->AS.Header + count, 1, hdr->HeadLen - count, hdr);
+		}
+		hdr->AS.Header[hdr->HeadLen]=0;
+
+		hdr->NS=1;
+		hdr->SPR=0;
+		hdr->NRec=1;
+		uint16_t gdftyp = 0;
+
+		const char *h=(char*)hdr->AS.Header+10;
+		int flag_order = (strstr(h,"'fortran_order': False")==NULL) + (strstr(h,"'fortran_order': True")==NULL)*2;
+		switch (flag_order) {
+		case 1:
+			break;
+		case 2:
+			break;
+		default:
+			biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "format NUMPY: fortran_order not specified or invalid");
+		}
+		char *descr = strstr(h,"'descr':");
+		if (descr==NULL)
+			biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Format NUMPY: descr not defined");
+		else {
+			descr += 8;
+			descr += strspn(descr," \t'");
+			descr[strcspn(descr," \t'")]=0;
+			if (descr[0]=='<')
+				hdr->FILE.LittleEndian = 1;
+			else if (descr[0]=='>')
+				hdr->FILE.LittleEndian = 0;
+			else
+				biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Format NUMPY: field 'descr': endianity undefined");
+
+			if      (!strcmp(descr+1,"f8")) gdftyp = 17;
+			else if (!strcmp(descr+1,"f4")) gdftyp = 16;
+			else if (!strcmp(descr+1,"u8")) gdftyp = 8;
+			else if (!strcmp(descr+1,"i8")) gdftyp = 7;
+			else if (!strcmp(descr+1,"u4")) gdftyp = 6;
+			else if (!strcmp(descr+1,"i4")) gdftyp = 5;
+			else if (!strcmp(descr+1,"u2")) gdftyp = 4;
+			else if (!strcmp(descr+1,"i2")) gdftyp = 3;
+			else if (!strcmp(descr+1,"u1")) gdftyp = 2;
+			else if (!strcmp(descr+1,"i1")) gdftyp = 1;
+			else
+				biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Format NUMPY: field 'descr': not supported");
+		}
+
+		char *shapestr = strstr(h,"'shape':");
+		if (shapestr==NULL)
+			biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Format NUMPY: shape not defined");
+		else {
+			int n = 0;
+			char *tmpstr = strchr(shapestr,'(') + 1;
+			while (tmpstr && *tmpstr) {
+				*strchr(tmpstr,')') = 0;	// terminating \0
+				char *next = strchr(tmpstr,',');
+				if (next) {
+					*next=0;
+					long dim = atol(tmpstr);
+					switch (n) {
+					case 0: hdr->SPR =dim; break;
+					case 1: hdr->NS  =dim; break;
+					//case 2: hdr->NRec=dim; break;
+					default:
+						biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "format NUMPY: shape not supported");
+					}
+					n++;
+					tmpstr = next+1;
+				}
+			}
+		}
+		hdr->AS.bpb = hdr->NS*GDFTYP_BITS[gdftyp]>>3;
+		hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL,hdr->NS*sizeof(CHANNEL_TYPE));
+		typeof (hdr->NS) k;
+		for (k=0; k<hdr->NS; k++) {
+			CHANNEL_TYPE *hc = hdr->CHANNEL+k;
+			hc->GDFTYP = gdftyp;
+			hc->SPR    = hdr->SPR;
+			hc->Cal    = 1.0;
+			hc->Off    = 0.0;
+		}
+
+		if (VERBOSE_LEVEL > 6)
+			fprintf(stdout,"NUMPY:\n%s",(char*)hdr->AS.Header+10);
+
+		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Format NUMPY not supported");
 		return(hdr);
 	}
 
