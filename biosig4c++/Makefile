@@ -22,12 +22,15 @@
 ## make biosig4perl - makes perl interface (experimental)
 ## make biosig4ruby - makes ruby interface (experimental)
 ## make biosig4tcl - makes tcl/tk interface (experimental)
-## make win32      - makes save2gdf.exe, libbiosig.a, libbiosig.dll, for MSWindows, requires MinGW
-##                   eventually this will be replaced by `TARGET=i686-pc-mingw32 make ...`
-##		     `TARGET=i686-pc-mingw32 make` builds save2gdf.exe and static libs biosig, biosig2, gdf, physicalunits
-## make win64      - makes save2gdf.exe, libbiosig.a, libbiosig.dll for 64bit Windows, requires mce-w64 
-##                   eventually this will be replaced by `TARGET=x86_64-static-mingw32 make ...`
-##		     `TARGET=x86_64-static-mingw32 make` builds save2gdf.exe and static libs biosig, biosig2, gdf, physicalunits
+##
+## make win32 and make win64 are obsolete. save2gdf.exe, and libbiosig.{a,dll} for windows can now be built
+## with the mingw-cross-compiler environment (mxe.cc).
+##    git clone https://github.com/schloegl/mxe.git
+##    make biosig
+## should do what you want. Please note, that win32mma does now also rely that libbiosig is built with MXE.
+## Make sure that CROSS or CROSS64 is properly defined when running `make`
+##
+## ???
 ## make sigviewer  - makes sigviewer
 
 ##### Target: Win32
@@ -50,7 +53,7 @@ LIBEXT        = a
 
 ### User-specified options: its likely you want to change this
 # settings for cross compiler: tested with MXE and mce-w64 with make suitesparse zlib qt ; 
-CROSS   = $(HOME)/src/mce-w64/usr/bin/i686-pc-mingw32
+CROSS   = $(HOME)/src/mxe.github.schloegl/usr/bin/i686-pc-mingw32
 ## local MXE
 ifeq "$(wildcard $(CROSS)-gcc)" ""
 CROSS   = $(HOME)/src/mxe/usr/bin/i686-pc-mingw32
@@ -62,13 +65,12 @@ ifeq "$(wildcard $(CROSS)-gcc)" ""
 CROSS         = /usr/local/src/mxe/usr/bin/i686-pc-mingw32
 endif
 
-CROSS64       = $(HOME)/src/mce-w64/usr/bin/x86_64-static-mingw32
+CROSS64       = $(HOME)/src/mxe.github.schloegl/usr/bin/x86_64-w64-mingw32
 ifeq "$(wildcard $(CROSS64)-gcc)" ""
 CROSS64       = $(shell pwd)/../mce-w64/usr/bin/x86_64-static-mingw32
 endif
 IO_H_FILE   := $(subst /bin/,/include/,$(CROSS))/io.h
 IO_H_FILE64 := $(subst /bin/,/include/,$(CROSS64))/io.h
-
 
 # settings for mex files
 MEX_OPTION    = -largeArrayDims # turn on for 64 bit Matlab, otherwise empty
@@ -101,7 +103,6 @@ else
 	endif
 	CROSS   = $(HOME)/src/mce-w64/usr/bin/$(TARGET)
 endif
-
 
 #DEFINES_ALL   = -D=NDEBUG 
 
@@ -374,10 +375,11 @@ vpath %.cpp ./:./t210:./t230:./XMLParser:./mex
 ## exclude conflicting definition of sopen from mingw's io.h
 io.h: 
 	$(SED) '/ sopen/ s#^#//#' $(PREFIX)../$(TARGET)/include/io.h > io.h
-win32/io.h: $(IO_H_FILE)
-	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE) > "$@"
-win64/io.h: $(IO_H_FILE64)
-	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE64) > "$@"
+
+#win32/io.h: $(IO_H_FILE)
+#	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE) > "$@"
+#win64/io.h: $(IO_H_FILE64)
+#	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE64) > "$@"
 
 win32/%.obj: t240/%.c  biosig-dev.h biosig.h 
 	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -I t240 -o "$@" "$<"
@@ -711,10 +713,10 @@ mma: mma/sload
 mma/sload: libbiosig.$(LIBEXT) mma/sload.tm mma/sload.c
 	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" sload
 
-win32mma: win32/libbiosig.a mma/sload.tm mma/sload.c
+win32mma: mma/sload.tm mma/sload.c
 	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" sload.exe
 
-win64mma: win64/libbiosig.a  mma/sload.tm mma/sload.c
+win64mma: mma/sload.tm mma/sload.c
 	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" sload.w64.exe
 
 
