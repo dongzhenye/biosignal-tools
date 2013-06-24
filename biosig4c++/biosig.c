@@ -13692,7 +13692,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: sz=%i\n", (int)sz);
 	if (!isnan(hdr->SampleRate)) c += sprintf(STR, "\t\"Samplingrate\"\t: %f,\n",hdr->SampleRate);
 	strftime(tmp,40,"%Y-%m-%d %H:%M:%S",gdf_time2tm_time(hdr->T0));
 	c += sprintf(STR, "\t\"StartOfRecording\"\t: \"%s\",\n",tmp);
-	c += sprintf(STR, "\t\"Timezone\"\t: %+i,\n", hdr->tzmin);
+	c += sprintf(STR, "\t\"TimezoneMinutesEastOfUTC\"\t: %i,\n", hdr->tzmin);
 	c += sprintf(STR, "\t\"NumberOfSweeps\"\t: %d,\n",(unsigned)NumberOfSweeps);
 	c += sprintf(STR, "\t\"NumberOfGroupsOrUserSpecifiedEvents\"\t: %d,\n", (unsigned)NumberOfUserSpecifiedEvents);
 
@@ -13881,7 +13881,7 @@ int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)
 	if (!isnan(hdr->SampleRate)) fprintf(fid,"\t\"Samplingrate\"\t: %f,\n",hdr->SampleRate);
 	strftime(tmp,40,"%Y-%m-%d %H:%M:%S",gdf_time2tm_time(hdr->T0));
 	fprintf(fid,"\t\"StartOfRecording\"\t: \"%s\",\n",tmp);
-	fprintf(fid,"\t\"Timezone\"\t: %+i,\n", hdr->tzmin);
+	fprintf(fid,"\t\"TimezoneMinutesEastOfUTC\"\t: %i,\n", hdr->tzmin);
 	fprintf(fid,"\t\"NumberOfSweeps\"\t: %d,\n",(unsigned)NumberOfSweeps);
 	fprintf(fid,"\t\"NumberOfGroupsOrUserSpecifiedEvents\"\t: %d,\n",(unsigned)NumberOfUserSpecifiedEvents);
 
