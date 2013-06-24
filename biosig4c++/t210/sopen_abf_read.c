@@ -222,8 +222,11 @@ EXTERN_C void sopen_abf_read(HDRTYPE* hdr) {
 			hc->LeadIdCode = 0;
 			if ((k < ABF_ADCCOUNT) && (lei16p(hdr->AS.Header + offsetof(struct ABFFileHeader, nADCSamplingSeq) + 2 * k) >= 0)) {
 				hc->OnOff = 1;
-				strncpy(hc->Label, (char*)hdr->AS.Header + offsetof(struct ABFFileHeader, sADCChannelName) + k*ABF_ADCNAMELEN, min(ABF_ADCNAMELEN,MAX_LENGTH_LABEL));
-				hc->Label[ABF_ADCNAMELEN] = 0;
+
+				int ll = min(ABF_ADCNAMELEN, MAX_LENGTH_LABEL);
+				strncpy(hc->Label, (char*)hdr->AS.Header + offsetof(struct ABFFileHeader, sADCChannelName) + k*ABF_ADCNAMELEN, ll);
+				while (ll > 0 && isspace(hc->Label[--ll]));
+				hc->Label[ll+1] = 0;
 
 				char units[ABF_ADCUNITLEN+1]; {
 					memcpy(units, (char*)hdr->AS.Header + offsetof(struct ABFFileHeader, sADCUnits) + k*ABF_ADCUNITLEN, ABF_ADCUNITLEN);
