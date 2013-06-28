@@ -284,17 +284,73 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 				
 			}
 
+			SPR += spr;
+			SZ  += sz;
+		}
+
+		/*
+		The previous and the next loop have been split, in oder to avoid
+		multiple reallocations. Multiple reallocations seem to be a major
+		issue for performance problems of Windows (a 50 MB file with 480 sweeps took 50 s to load).
+		However, the two loops might contain some redundant operations.
+		*/
+		hdr->AS.flag_collapsed_rawdata = 0;
+		void *ptr = realloc(hdr->AS.rawdata, hdr->NS * SPR * sizeof(double));
+		if (!ptr) {
+			biosigERROR(hdr,B4C_MEMORY_ALLOCATION_FAILED, "CFS: memory allocation failed in line __LINE__");
+		}
+		hdr->AS.rawdata = (uint8_t*)ptr;
+
+		SPR = 0, SZ = 0;
+		for (m = 0; m < NumberOfDataSections; m++) {
+
+			datapos = DATAPOS[m];
+			if (!leu32p(hdr->AS.Header+datapos+8)) continue; 	// empty segment
+
+			uint32_t sz    = 0;
+			uint32_t bpb   = 0, spr = 0;
+			hdr->AS.first  = 0;
+			hdr->AS.length = 0;
+			char flag_firstchan = 1;
+			for (k = 0; k < hdr->NS; k++) {
+				uint8_t *pos = hdr->AS.Header + datapos + 30 + 24 * k;
+
+				CHANNEL_TYPE *hc = hdr->CHANNEL + k;
+
+				hc->bi      = leu32p(pos);
+				hc->SPR     = leu32p(pos+4);
+				hc->Cal     = lef32p(pos+8);
+				hc->Off     = lef32p(pos+12);
+				double Xcal = lef32p(pos+16);
+				double Xoff = lef32p(pos+20);// unused
+
+if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x%g %g %g\n",m,k,spr,(int)SPR,hc->SPR,hc->Cal,hc->Off,hc->bi,xPhysDimScale[k], Xcal, Xoff);
+
+				double Fs = 1.0 / (xPhysDimScale[k] * Xcal);
+				if ( (hc->OnOff == 0) || (Xcal == 0.0) ) {
+					; // do nothing:
+				}
+				else if (flag_firstchan) {
+					hdr->SampleRate = Fs;
+					flag_firstchan = 0;
+				}
+				else if (fabs(hdr->SampleRate - Fs) > 1e-3) {
+					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: different sampling rates are not supported\n");
+				}
+
+				if (hc->OnOff && (spr < hc->SPR))
+					spr = hc->SPR;
+				sz  += hc->SPR * GDFTYP_BITS[hc->GDFTYP] >> 3;
+				bpb += GDFTYP_BITS[hc->GDFTYP]>>3;	// per single sample
+				hdr->AS.length += hc->SPR;
+
+			}
+
 			if (1) {
 				/* hack: copy data into a single block (rawdata)
 				   this is used as a data cache, no I/O is needed in sread, at the cost that sopen is slower
 				   sread_raw does not attempt to reload the data
 				 */
-				hdr->AS.flag_collapsed_rawdata = 0; 
-				void *ptr = realloc(hdr->AS.rawdata, hdr->NS * (SPR + spr) * sizeof(double));
-				if (!ptr) {
-					biosigERROR(hdr,B4C_MEMORY_ALLOCATION_FAILED, "CFS: memory allocation failed in line __LINE__");
-				}
-				hdr->AS.rawdata = (uint8_t*)ptr;
 
 				hdr->AS.first = 0;
 				uint8_t ns = 0; 
