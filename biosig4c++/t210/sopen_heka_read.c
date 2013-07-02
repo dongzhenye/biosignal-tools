@@ -126,11 +126,11 @@ void sopen_heka(HDRTYPE* hdr, FILE *itx) {
     		// HEKA PatchMaster file format
 
 		count = hdr->HeadLen;
-		ifseek(hdr,0,SEEK_SET);
-		hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header, 1024);
-		count = ifread(hdr->AS.Header, 1, 1024, hdr);
+		struct stat FileBuf;
+		stat(hdr->FileName,&FileBuf);
+		hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header, FileBuf.st_size);
+		count += ifread(hdr->AS.Header+count, 1, 1024-count, hdr);
 		hdr->HeadLen = count;
-
 
 		hdr->FILE.LittleEndian = *(uint8_t*)(hdr->AS.Header+52) > 0;
 		char SWAP = ( hdr->FILE.LittleEndian && (__BYTE_ORDER == __BIG_ENDIAN))  \
@@ -142,10 +142,8 @@ void sopen_heka(HDRTYPE* hdr, FILE *itx) {
 		}
 		SWAP = 0;  // might be useful for compile time optimization
 
-		while (!ifeof(hdr)) {
-			hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header, 2*count);
-			count += ifread(hdr->AS.Header+count, 1, count, hdr);
-		}
+		/* get file size and read whole file */
+		count += ifread(hdr->AS.Header+count, 1, FileBuf.st_size - count, hdr);
 
 if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 114\n");
 
