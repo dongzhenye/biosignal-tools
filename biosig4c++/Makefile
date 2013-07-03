@@ -68,8 +68,8 @@ CROSS64       = $(HOME)/src/mxe/usr/bin/x86_64-w64-mingw32
 ifeq "$(wildcard $(CROSS64)-gcc)" ""
 CROSS64       = $(shell pwd)/../mce-w64/usr/bin/x86_64-static-mingw32
 endif
-IO_H_FILE   := $(subst /bin/,/include/,$(CROSS))/io.h
-IO_H_FILE64 := $(subst /bin/,/include/,$(CROSS64))/io.h
+IO_H_FILE   := $(subst /bin/,//,$(CROSS))/include/io.h
+IO_H_FILE64 := $(subst /bin/,//,$(CROSS64))/include/io.h
 
 # settings for mex files
 MEX_OPTION    = -largeArrayDims # turn on for 64 bit Matlab, otherwise empty
@@ -378,14 +378,14 @@ vpath %.cpp ./:./t210:./t230:./XMLParser:./mex
 io.h: 
 	$(SED) '/ sopen/ s#^#//#' $(PREFIX)../$(TARGET)/include/io.h > io.h
 
-#win32/io.h: $(IO_H_FILE)
-#	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE) > "$@"
-#win64/io.h: $(IO_H_FILE64)
-#	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE64) > "$@"
+win32/io.h: $(IO_H_FILE)
+	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE) > "$@"
+win64/io.h: $(IO_H_FILE64)
+	$(SED) '/ sopen/ s#^#//#' $(IO_H_FILE64) > "$@"
 
 win32/%.obj: t240/%.c  biosig-dev.h biosig.h 
 	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -I t240 -o "$@" "$<"
-win32/%.obj: %.c win32/io.h 
+win32/%.obj: %.c win32/io.h
 	$(MinGWCC) -c $(DEFINES) $(MinGWCFLAGS) -o "$@" "$<"
 win32/%.obj: %.cpp
 	$(MinGWCXX) -c $(DEFINES) $(MinGWCFLAGS) -o "$@" "$<"
@@ -396,7 +396,7 @@ win32/%.obj: win32/%.c
 
 win64/%.obj: t240/%.c  biosig-dev.h biosig.h 
 	$(MinGW64CC) -c $(DEFINES) $(MinGW64CFLAGS) -I t240 -o "$@" "$<"
-win64/%.obj: %.c win64/io.h 
+win64/%.obj: %.c win64/io.h
 	$(MinGW64CC) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
 win64/%.obj: %.cpp
 	$(MinGW64CXX) -c $(DEFINES) $(MinGW64CFLAGS) -o "$@" "$<"
@@ -657,11 +657,11 @@ mex mex4m mex4o oct: mex/Makefile mex/mexSLOAD.cpp mex/mexSSAVE.cpp
 	$(MAKE) -C mex DEFINES='$(DEFINES)' CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" OCTAVE_VERSION=$(OCTAVE_VERSION) MATLABDIR=$(MATLABDIR) $@
 	-cp mex/*.mex* ../biosig4matlab/t200_FileAccess/
 
-mexw32: mex/Makefile mex/mexSLOAD.cpp mex/mexSSAVE.cpp
+mexw32: mex/Makefile mex/mexSLOAD.cpp mex/mexSSAVE.cpp win32/io.h
 	$(MAKE) -C mex DEFINES='$(DEFINES)' CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
 	-cp mex/*.mexw32 ../biosig4matlab/t200_FileAccess/
 	
-mexw64: mex/Makefile mex/mexSLOAD.cpp mex/mexSSAVE.cpp
+mexw64: mex/Makefile mex/mexSLOAD.cpp mex/mexSSAVE.cpp win64/io.h
 	$(MAKE) -C mex DEFINES='$(DEFINES)' CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
 	-cp mex/*.mexw64 ../biosig4matlab/t200_FileAccess/
 
