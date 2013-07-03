@@ -1,7 +1,6 @@
 ####### Makefile for "BioSig for C/C++" #####################
 ###
-###  $Id$
-###  Copyright (C) 2006,2007,2008,2009,2011,2012 Alois Schloegl <alois.schloegl@ist.ac.at>
+###  Copyright (C) 2006-2013 Alois Schloegl <alois.schloegl@ist.ac.at>
 ###  This file is part of the "BioSig for C/C++" repository
 ###  (biosig4c++) at http://biosig.sf.net/
 ###
@@ -54,8 +53,10 @@ clean:
 
 ##########################################################
 ## set Matlab and Octave variables
+ifndef MATLABDIR
 ifneq ($(shell which matlab), )
   MATLABDIR  := $(dir $(shell readlink -f $(shell which matlab) ) )
+endif
 endif
 
 ifndef MATLABDIR
@@ -73,14 +74,14 @@ endif
 OCT           	= mkoctfile$(OCTAVE_VERSION)
 ##########################################################
 
-../libbiosig.$(LIBEXT):
-	$(MAKE) -C .. libbiosig.$(LIBEXT)
+#../libbiosig.$(LIBEXT):
+#	$(MAKE) -C .. libbiosig.$(LIBEXT)
 
-../win32/libbiosig.a:
-	$(MAKE) -C .. win32/libbiosig.a
+#../win32/libbiosig.a:
+#	$(MAKE) -C .. win32/libbiosig.a
 
-../win64/libbiosig.a:
-	$(MAKE) -C .. win64/libbiosig.a
+#../win64/libbiosig.a:
+#	$(MAKE) -C .. win64/libbiosig.a
 
 #############################################################
 #	MEX-Interface for Octave and Matlab
@@ -89,7 +90,7 @@ ifdef MEX_EXT
 mex4m: mexSLOAD.$(MEX_EXT) mexSOPEN.$(MEX_EXT) mexSSAVE.$(MEX_EXT)
 mexSLOAD: mexSLOAD.$(MEX_EXT) 
 mexSOPEN: mexSOPEN.$(MEX_EXT)
-%.$(MEX_EXT): %.cpp ../libbiosig.$(LIBEXT) Makefile
+%.$(MEX_EXT): %.cpp Makefile ../libbiosig.$(LIBEXT) Makefile
 	$(MEX) $(MEX_OPTION) $(DEFINES) "$<" $(LFLAGS) $(LIBS)
 	-$(COPY) $@ ../../biosig4matlab/t200_FileAccess/
 mexSOPEN.$(MEX_EXT): mexSLOAD.cpp ../libbiosig.$(LIBEXT) Makefile
@@ -129,8 +130,8 @@ mexSLOAD.oct:  mexSLOAD.cpp ../libbiosig.$(LIBEXT) Makefile
 mexSOPEN.obj: mexSLOAD.cpp
 	$(CROSS)-$(CXX) -c -DMATLAB_MEX_FILE -D=mexSOPEN $(DEFINES) -x c++ -o "$@" -I$(W32MAT_INC) -O2 -DMX_COMPAT_32 "$<" 
 
-%.mexw32: %.obj ../win32/libbiosig.a
-	$(CROSS)-$(CXX) -shared $(GNUMEX)/mex.def -o "$@" -L$(GNUMEX) -s "$<" -llibmx -llibmex ../win32/libbiosig.a $(LDLIBS) -lws2_32 
+%.mexw32: %.obj
+	$(CROSS)-$(CXX) -shared $(GNUMEX)/mex.def -o "$@" -L$(GNUMEX) -s "$<" -llibmx -llibmex -lbiosig -lssp $(LDLIBS) -lws2_32
 
 
 #########################################################
@@ -144,5 +145,5 @@ mexSOPEN.obj: mexSLOAD.cpp
 mexSOPEN.o64: mexSLOAD.cpp
 	$(CROSS64)-$(CXX) -c -DMATLAB_MEX_FILE -D=mexSOPEN $(DEFINES) -x c++ -o $@ -I$(W64MAT_INC) -O2 "$<" 
 
-%.mexw64: %.o64 ../win64/libbiosig.a
-	$(CROSS64)-$(CXX) -shared $(GNUMEX64)/mex.def -o "$@" -L$(GNUMEX64) -s "$<" -llibmx -llibmex ../win64/libbiosig.a  $(LDLIBS) -lws2_32
+%.mexw64: %.o64
+	$(CROSS64)-$(CXX) -shared $(GNUMEX64)/mex.def -o "$@" -L$(GNUMEX64) -s "$<" -llibmx -llibmex -lbiosig -lssp $(LDLIBS) -lws2_32

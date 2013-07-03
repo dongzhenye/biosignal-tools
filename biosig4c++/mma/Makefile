@@ -1,7 +1,6 @@
 ####### Makefile to compile sload.exe for loading data supported by libbiosig into Mathematica
 ###
-###  $Id$
-###  Copyright (C) 2010,2011,2012 Alois Schloegl, IST Austria <alois.schloegl@ist.ac.at>
+###  Copyright (C) 2010,2011,2012,2013 Alois Schloegl, IST Austria <alois.schloegl@ist.ac.at>
 ###  This file is part of the "BioSig for C/C++" repository
 ###  (biosig4c++) at http://biosig.sf.net/
 ###
@@ -52,10 +51,10 @@ sloadtm.c: sload.tm
 	sed -i 's# __DATE__# ",__DATE__," ",__TIME__,"#' "$@"
 
 sload: sload.o sloadtm.o
-	${CC} sloadtm.o sload.o -L.. -lbiosig -L${LIBDIR} -l${MLLIB} ${EXTRALIBS} -o "$@"
+	${CC} sloadtm.o sload.o -lbiosig -L${LIBDIR} -l${MLLIB} ${EXTRALIBS} -o "$@"
 	# copy to users directory if available
-	-cp $@ ../../mma/
-	-cp $@ ../../mma/sload-$(shell date +%Y%m%d)
+	#-cp $@ ~/K/Software/MathematicaTools/mma/
+	#-cp $@ ~/K/Software/MathematicaTools/mma/sload-$(shell date +%Y%m%d)
 
 
 ###########################################
@@ -83,8 +82,8 @@ sloadtm.obj : sloadtm.win32.c
 sload.exe : sload.obj sloadtm.obj
 	${CCw32} sload.obj sloadtm.obj -static-libgcc -static-libstdc++ -lbiosig -lssp -L${LIBDIRwin} -l${MLLIBwin} ${EXTRALIBSwin} -o "$@"
 	# copy to users directory if available
-	#-cp $@ ../../mma/
-	#-cp $@ ../../mma/sload-$(shell date +%Y%m%d).exe
+	#-cp $@ ~/K/Software/MathematicaTools/mma/
+	#-cp $@ ~/K/Software/MathematicaTools/mma/sload-$(shell date +%Y%m%d).exe
 
 
 ###########################################
@@ -110,8 +109,8 @@ sloadtm.w64.obj : sloadtm.win64.c
 sload.w64.exe : sload.w64.obj sloadtm.w64.obj
 	${CCw64} sload.w64.obj sloadtm.w64.obj -static-libgcc -static-libstdc++  -lbiosig -lssp -L${LIBDIRwin64} -l${MLLIBwin64} ${EXTRALIBSwin} -o "$@"
 	# copy to users directory if available
-	#-cp $@ ../../mma/
-	#-cp $@ ../../mma/sload-$(shell date +%Y%m%d).win64.exe
+	#-cp $@ ~/K/Software/MathematicaTools/mma/
+	#-cp $@ ~/K/Software/MathematicaTools/mma/sload-$(shell date +%Y%m%d).win64.exe
 
 	
 ###########################################

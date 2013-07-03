@@ -1,6 +1,5 @@
 ####### Makefile for "BioSig for C/C++" #####################
 ###
-###  $Id$
 ###  Copyright (C) 2006-2013 Alois Schloegl <alois.schloegl@ist.ac.at>
 ###  This file is part of the "BioSig for C/C++" repository
 ###  (biosig4c++) at http://biosig.sf.net/
@@ -53,7 +52,7 @@ LIBEXT        = a
 
 ### User-specified options: its likely you want to change this
 # settings for cross compiler: tested with MXE and mce-w64 with make suitesparse zlib qt ; 
-CROSS   = $(HOME)/src/mxe.github.schloegl/usr/bin/i686-pc-mingw32
+CROSS   = $(HOME)/src/mxe/usr/bin/i686-pc-mingw32
 ## local MXE
 ifeq "$(wildcard $(CROSS)-gcc)" ""
 CROSS   = $(HOME)/src/mxe/usr/bin/i686-pc-mingw32
@@ -65,7 +64,7 @@ ifeq "$(wildcard $(CROSS)-gcc)" ""
 CROSS         = /usr/local/src/mxe/usr/bin/i686-pc-mingw32
 endif
 
-CROSS64       = $(HOME)/src/mxe.github.schloegl/usr/bin/x86_64-w64-mingw32
+CROSS64       = $(HOME)/src/mxe/usr/bin/x86_64-w64-mingw32
 ifeq "$(wildcard $(CROSS64)-gcc)" ""
 CROSS64       = $(shell pwd)/../mce-w64/usr/bin/x86_64-static-mingw32
 endif
@@ -99,12 +98,12 @@ else
 		## exclude conflicting definition of sopen from mingw's io.h
 		CFLAGS  += -I.
 		IO_H_FILE2 = io.h
-	        LIBS    += -lws2_32 -liberty -lssp
+	        LIBS    += -liberty -lssp -lws2_32
 	endif
 	CROSS   = $(HOME)/src/mce-w64/usr/bin/$(TARGET)
 endif
 
-#DEFINES_ALL   = -D=NDEBUG 
+DEFINES_ALL   = -D=NDEBUG
 
 DEFINES      += $(DEFINES_ALL)
 #DEFINES      += -D=WITH_SON 
@@ -185,7 +184,10 @@ VERBOSE	     := -V0
 ##########################################################
 ## set Matlab and Octave variables
 ifneq ($(shell which matlab), )
-  MATLABDIR  := $(dir $(shell readlink -f $(shell which matlab) ) )
+ifndef MATLABDIR
+  #MATLABDIR  := $(dir $(shell readlink -f $(shell which matlab) ) )
+  MATLABDIR  := /usr/local/MATLAB/R2011b/bin/
+endif
   MEX         = $(MATLABDIR)mex
   MEX_EXT    := $(shell $(MATLABDIR)mexext)
 endif
@@ -515,104 +517,32 @@ tcl: libbiosig.$(LIBEXT) tcl/biosig.i
 #	WIN32 - BUILD
 #############################################################
 
-win32/libphysicalunits.a: win32/physicalunits.obj
-	-$(DELETE) "$@"
-	$(CROSS)-$(AR) "$@" "$<"
+# libraries are built in MXE
 
-win32/libphysicalunits.dll: win32/physicalunits.obj
-	$(MinGWLINK) -shared -fPIC  "$<" -o "$@" -Wl,--output-def,win32/physicalunits.def,--out-implib,win32/physicalunits.dll.a
-
-
-win32/libgdf.a: win32/gdf.obj
-	-$(DELETE) "$@"
-	$(CROSS)-$(AR) "$@" "$<"
-
-win32/libgdf.dll: win32/gdf.obj
-	$(MinGWLINK) -shared -fPIC "$<" -o "$@" -Wl,--output-def,win32/libgdf.def,--out-implib,win32/libgdf.dll.a
-
-win32/libgdf.lib: win32/libgdf.a 
-	$(COPY) "$<" "$@"
-
-win32/libbiosig.lib: win32/libbiosig.a 
-	$(COPY) "$<" "$@"
-
-win32/libbiosig.a: $(MinGWOBJECTS) win32/libcnsfef.a
-	-$(DELETE) "$@"
-	$(CROSS)-$(AR) "$@" $(MinGWOBJECTS) t240/*.obj
-	-touch ../sigviewer4win32/src/file_context.cpp	# trigger to rebuild sigviewer
-
-win32/libcnsfef.a:
-	$(MAKE) CROSS=$(CROSS) -C t240 ../win32/libcnsfef.a 
-
-win32/libbiosig.dll: $(MinGWOBJECTS)
-	$(MinGWLINK) -shared -fPIC  $(MinGWOBJECTS) $(MinGWLIBS) -o "$@" -Wl,--output-def,win32/libbiosig.def,--out-implib,win32/libbiosig.dll.a
-	-$(COPY) "$@" $(PathToSigViewerWIN32)/extern/lib/
-
-win32/libbiosig2.a: $(MinGWOBJECTS) win32/biosig2.obj win32/libcnsfef.a
-	-$(DELETE) "$@"
-	$(CROSS)-$(AR) "$@" $(MinGWOBJECTS) win32/biosig2.obj t240/*.obj
-win32/libbiosig2.dll: $(MinGWOBJECTS) win32/biosig2.obj biosig.h biosig-dev.h
-	$(MinGWLINK) -shared -fPIC  $(MinGWOBJECTS) win32/biosig2.obj $(MinGWLIBS) -o "$@" -Wl,--output-def,win32/libbiosig2.def,--out-implib,win32/libbiosig2.dll.a
-
-win32/save2gdf.exe: save2gdf.c win32/libbiosig.a
+win32/save2gdf.exe: save2gdf.c
 	$(MinGWLINK) $(MinGWCFLAGS) "$<" $(MinGWLIBS) -o "$@"
 
-win32/pdp2gdf.exe: pdp2gdf.c win32/libbiosig.a
+win32/pdp2gdf.exe: pdp2gdf.c
 	$(MinGWLINK) $(MinGWCFLAGS) "$<" $(MinGWLIBS) -o "$@"
 
-win32 exe: win32/save2gdf.exe win32/libbiosig.dll win32/libbiosig.a #mexw32 win32mma 
+win32: mexw32 win32mma
+
 
 
 #############################################################
 #	WIN64 - BUILD
 #############################################################
 
-win64/libphysicalunits.a: win64/physicalunits.obj
-	-$(DELETE) "$@"
-	$(CROSS)-$(AR) "$@" "$<"
+# Libraries are build in MXE
 
-win64/libphysicalunits.dll: win64/physicalunits.obj
-	$(MinGWLINK) -shared -fPIC  "$<" -o "$@" -Wl,--output-def,win64/physicalunits.def,--out-implib,win64/physicalunits.dll.a
-
-
-win64/libgdf.a: win64/gdf.obj
-	-$(DELETE) "$@"
-	$(CROSS64)-$(AR) "$@" "$<"
-
-win64/libgdf.dll: win64/gdf.obj
-	$(MinGW64LINK) -shared -fPIC  "$<" -o "$@" -Wl,--output-def,win64/libgdf.def,--out-implib,win64/libgdf.dll.a
-
-win64/libgdf.lib: win64/libgdf.a 
-	$(COPY) "$<" "$@"
-
-win64/libbiosig.lib: win64/libbiosig.a 
-	$(COPY) "$<" "$@"
-
-win64/libbiosig.a: $(MinGW64OBJECTS) win64/libcnsfef.a
-	-$(DELETE) "$@"
-	$(CROSS64)-$(AR) "$@" $(MinGW64OBJECTS) t240/*.o64
-	-touch ../sigviewer4win64/src/file_context.cpp	# trigger to rebuild sigviewer
-
-win64/libcnsfef.a:
-	$(MAKE) CROSS64=$(CROSS64) -C t240 ../win64/libcnsfef.a 
-
-win64/libbiosig.dll: $(MinGW64OBJECTS)
-	$(MinGW64LINK) -shared -fPIC  $(MinGW64OBJECTS) $(MinGW64LIBS) -o "$@" -Wl,--output-def,win64/libbiosig.def,--out-implib,win64/libbiosig.dll.a
-	-$(COPY) "$@" $(PathToSigViewerWIN64)/extern/lib/
-
-win64/libbiosig2.a: $(MinGW64OBJECTS) win64/libcnsfef.a win64/biosig2.obj
-	-$(DELETE) "$@"
-	$(CROSS64)-$(AR) "$@" $(MinGW64OBJECTS) win64/biosig2.obj t240/*.o64
-win64/libbiosig2.dll: $(MinGW64OBJECTS) win64/biosig2.obj
-	$(MinGW64LINK) -shared -fPIC  $(MinGW64OBJECTS) win64/biosig2.obj $(MinGW64LIBS) -o "$@" -Wl,--output-def,win64/libbiosig2.def,--out-implib,win64/libbiosig2.dll.a
-
-win64/save2gdf.exe: save2gdf.c win64/libbiosig.a
+win64/save2gdf.exe: save2gdf.c
 	$(MinGW64LINK) $(MinGW64CFLAGS) "$<" $(MinGW64LIBS) -o "$@"
 
-win64/pdp2gdf.exe: pdp2gdf.c win64/libbiosig.a
+win64/pdp2gdf.exe: pdp2gdf.c
 	$(MinGW64LINK) $(MinGW64CFLAGS) "$<" $(MinGW64LIBS) -o "$@"
 
-win64: win64/save2gdf.exe win64/libbiosig.dll win64/libbiosig.a #mexw64 win64mma 
+win64: mexw64
+
 
 
 #############################################################
@@ -710,7 +640,7 @@ biosig_server: biosig_server.c libbiosig.$(LIBEXT) biosig-network.o
 #############################################################
 mma: mma/sload
 
-mma/sload: libbiosig.$(LIBEXT) mma/sload.tm mma/sload.c
+mma/sload: mma/sload.tm mma/sload.c
 	$(MAKE) -C mma CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" sload
 
 win32mma: mma/sload.tm mma/sload.c
@@ -723,15 +653,15 @@ win64mma: mma/sload.tm mma/sload.c
 #############################################################
 #	MEX-files for Octave and Matlab
 #############################################################
-mex mex4m mex4o oct: libbiosig.a
-	$(MAKE) -C mex DEFINES='$(DEFINES)' CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" OCTAVE_VERSION=$(OCTAVE_VERSION) $@
+mex mex4m mex4o oct: mex/Makefile mex/mexSLOAD.cpp mex/mexSSAVE.cpp
+	$(MAKE) -C mex DEFINES='$(DEFINES)' CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" OCTAVE_VERSION=$(OCTAVE_VERSION) MATLABDIR=$(MATLABDIR) $@
 	-cp mex/*.mex* ../biosig4matlab/t200_FileAccess/
 
-mexw32: win32/libbiosig.a
+mexw32: mex/Makefile mex/mexSLOAD.cpp mex/mexSSAVE.cpp
 	$(MAKE) -C mex DEFINES='$(DEFINES)' CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
 	-cp mex/*.mexw32 ../biosig4matlab/t200_FileAccess/
 	
-mexw64: win64/libbiosig.a
+mexw64: mex/Makefile mex/mexSLOAD.cpp mex/mexSSAVE.cpp
 	$(MAKE) -C mex DEFINES='$(DEFINES)' CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
 	-cp mex/*.mexw64 ../biosig4matlab/t200_FileAccess/
 
