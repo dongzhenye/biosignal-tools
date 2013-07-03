@@ -4,7 +4,7 @@
     Copyright (C) 2011 Stoyan Mihaylov
 
     This file is part of the "BioSig for C/C++" repository 
-    (biosig4c++) at http://biosig.sf.net/ 
+    (biosig4c++) at http://biosig.sf.net/
 
 
     This program is free software; you can redistribute it and/or
@@ -16,13 +16,13 @@
  */
 
 
-// #define WITHOUT_SCP_DECODE    // use SCP-DECODE if needed, Bimodal, reference beat  
+// #define WITHOUT_SCP_DECODE    // use SCP-DECODE if needed, Bimodal, reference beat
 
 /*
-	the experimental version needs a few more thinks: 
+	the experimental version needs a few more thinks:
 	- Bimodal and RefBeat decoding do not work yet
 
-	- validation and testing  
+	- validation and testing
 */
 
 
@@ -40,19 +40,19 @@ EXTERN_C int scp_decode(HDRTYPE* hdr, struct pointer_section *section, struct DA
 EXTERN_C void sopen_SCP_clean(struct DATA_DECODE*, struct DATA_RECORD*, struct DATA_INFO*);
 #endif
 
-// Huffman Tables         	
+// Huffman Tables
 uint16_t NHT; 	/* number of Huffman tables */
 typedef struct table_t {
-	uint8_t PrefixLength;
-       	uint8_t CodeLength;
-       	uint8_t TableModeSwitch;
-       	int16_t BaseValue;
-       	uint32_t BaseCode;
-} table_t; 
+		uint8_t PrefixLength;
+		uint8_t CodeLength;
+		uint8_t TableModeSwitch;
+		int16_t BaseValue;
+		uint32_t BaseCode;
+} table_t;
 typedef struct huffman_t {
-      	uint16_t NCT; 	/* number of Code structures in Table #1 */
-       	table_t *Table; 
-} huffman_t; 
+		uint16_t NCT; 	/* number of Code structures in Table #1 */
+		table_t *Table;
+} huffman_t;
 huffman_t *Huffman;
 
 typedef struct htree_t {
@@ -85,35 +85,35 @@ table_t DefaultTable[19] = {
 };
 
 /*
-	This structure defines the fields used for "Annotated ECG" 
+	This structure defines the fields used for "Annotated ECG"
  */
 typedef struct en1064_t {
 	char*		test;		/* test field for annotated ECG */
-	
-	float		diastolicBloodPressure;				
-	float		systolicBloodPressure;	
+
+	float		diastolicBloodPressure;
+	float		systolicBloodPressure;
 	char*		MedicationDrugs;
 	char*		ReferringPhysician;
 	char*		LatestConfirmingPhysician;
 	char*		Diagnosis;
 	uint8_t		EmergencyLevel; /* 0: routine 1-10: increased emergency level */
 
-	float		HeartRate;	
+	float		HeartRate;
 	float		P_wave[2]; 	/* start and end  */
-	float		QRS_wave[2]; 	/* start and end  */
+	float		QRS_wave[2];	/* start and end  */
 	float		T_wave[2]; 	/* start and end  */
 	float		P_QRS_T_axes[3];
 
 	/***** SCP only fields *****/
-	struct {	
-		uint8_t	HUFFMAN;	
+	struct {
+		uint8_t	HUFFMAN;
 		uint8_t	REF_BEAT;
 		uint8_t	DIFF;// OBSOLETE
 		uint8_t	BIMODAL;// OBSOLETE
 	} FLAG;
-        struct {
+	struct {
 		//uint8_t tag14[41],tag15[41];
-	        struct {
+		struct {
 			uint16_t INST_NUMBER;		/* tag 14, byte 1-2  */
 			uint16_t DEPT_NUMBER;		/* tag 14, byte 3-4  */
 			uint16_t DEVICE_ID;		/* tag 14, byte 5-6  */
@@ -125,52 +125,51 @@ typedef struct en1064_t {
 			uint8_t LANG_SUPP_CODE;		/* tag 14, byte 17 (LANG_SUPP_CODE has to be 0x00 => Ascii only, latin and 1-byte code) */
 			uint8_t ECG_CAP_DEV;		/* tag 14, byte 18 (ECG_CAP_DEV has to be 0xD0 => Acquire, (No Analysis), Print and Store) */
 			uint8_t MAINS_FREQ;		/* tag 14, byte 19 (MAINS_FREQ has to be 0: unspecified, 1: 50 Hz, 2: 60Hz) */
-			char 	reserved[22]; 		/* char[35-19] reserved; */			
+			char 	reserved[22]; 		/* char[35-19] reserved; */
 			char* 	ANAL_PROG_REV_NUM;
 			char* 	SERIAL_NUMBER_ACQ_DEV;
 			char* 	ACQ_DEV_SYS_SW_ID;
 			char* 	ACQ_DEV_SCP_SW; 	/* tag 14, byte 38 (SCP_IMPL_SW has to be "OpenECG XML-SCP 1.00") */
 			char* 	ACQ_DEV_MANUF;		/* tag 14, byte 38 (ACQ_DEV_MANUF has to be "Manufacturer") */
-        	} Tag14, Tag15; 
-        } Section1;
-        struct {
-        } Section2;
-        struct {
-        	uint8_t NS, flags;
-        	struct { 
-        		uint32_t start;
-        		uint32_t end;
-//        		uint8_t  id;
-        	} *lead;
-        } Section3;
-        struct {
-        	uint16_t len_ms, fiducial_sample, N;
-       		uint32_t SPR;
-        	struct { 
-        		uint16_t btyp;
-        		uint32_t SB;
-        		uint32_t fcM;
-        		uint32_t SE;
-        		uint32_t QB;
-        		uint32_t QE;
-        	} *beat;
-        } Section4;
-        struct {
-        	size_t   StartPtr;
-        	size_t	 Length;
-        	uint16_t AVM, dT_us;
-        	uint8_t  DIFF; //diff: see FLAG 
-        	uint16_t *inlen;
-        	int32_t  *datablock;
-        } Section5;
-        struct {
-        	size_t   StartPtr;
-        	size_t	 Length;
-        	uint16_t AVM, dT_us;
-        	uint8_t  DIFF, BIMODAL; //diff, bimodal: see FLAG 
-        	uint16_t *inlen;
-        	int32_t  *datablock;
-        } Section6;
+		} Tag14, Tag15;
+	} Section1;
+	struct {
+	} Section2;
+	struct {
+		uint8_t NS, flags;
+		struct {
+			uint32_t start;
+			uint32_t end;
+//			uint8_t  id;
+		} *lead;
+	} Section3;
+	struct {
+		uint16_t len_ms, fiducial_sample, N;
+		uint32_t SPR;
+		struct {
+			uint16_t btyp;
+			uint32_t SB;
+			uint32_t fcM;
+			uint32_t SE;
+			uint32_t QB;
+			uint32_t QE;
+		} *beat;
+	} Section4;
+	struct {
+		size_t   StartPtr;
+		size_t	 Length;
+		uint16_t AVM, dT_us;
+		uint8_t  DIFF; //diff: see FLAG
+		uint16_t *inlen;
+		int32_t  *datablock;
+	} Section5;
+	struct {
+		size_t   StartPtr;
+		size_t	 Length;
+		uint16_t AVM, dT_us;
+		uint8_t  DIFF, BIMODAL; //diff, bimodal: see FLAG
+		int32_t  *datablock;
+	} Section6;
 } en1064_t;
 en1064_t en1064;
 
@@ -185,15 +184,15 @@ htree_t* newNode() {
 
 /* check Huffman tree */
 int checkTree(htree_t *T) {
-	int v,v1,v2,v3; 
-	
+	int v,v1,v2,v3;
+
 	v1 = (T->child0 == NULL) && (T->child0 == NULL) && (T->idxTable > 0);
 	v2 = (T->idxTable == 0) && (T->child0 != NULL) && checkTree(T->child0);
 	v3 = (T->idxTable == 0) && (T->child1 != NULL) && checkTree(T->child1);
 	v = v1 || v2 || v3;
 #ifndef ANDROID
 	if (!v) fprintf(stderr,"Warning: Invalid Node in Huffman Tree: %i %p %p\n",T->idxTable,T->child0,T->child1);
-#endif 
+#endif
 	return(v);
 }
 
@@ -217,7 +216,7 @@ htree_t* makeTree(huffman_t HT) {
 		}
 		node->idxTable = k1+1;
 	}
-	return(T); 
+	return(T);
 }
 
 /* get rid of Huffman tree */
@@ -228,17 +227,17 @@ void freeTree(htree_t* T) {
 }
 
 int DecodeHuffman(htree_t *HTrees[], huffman_t *HuffmanTables, uint8_t* indata, size_t inlen, int32_t* outdata, size_t outlen) {
-	uint16_t ActualTable = 0; 
-	htree_t *node; 
+	uint16_t ActualTable = 0;
+	htree_t *node;
 	size_t k1, k2, i;
-	uint32_t acc; 
+	uint32_t acc;
 	int8_t dlen,k3,r;
 
 	k1=0, k2=0;
 	node = HTrees[ActualTable];
 	r = 0; i = 0;
 	while ((k1 < inlen*8) && (k2 < outlen)) {
-		r = k1 % 8; 
+		r = k1 % 8;
 		i = k1 / 8;
 
 		if (!node->idxTable) {
@@ -247,15 +246,15 @@ int DecodeHuffman(htree_t *HTrees[], huffman_t *HuffmanTables, uint8_t* indata, 
 					node = node->child1;
 				else {
 					return(-1);
-				}	
-			}	
+				}
+			}
 			else {
 				if (node->child0 != NULL)
 					node = node->child0;
 				else {
 					return(-1);
-				}	
-			}	
+				}
+			}
 			++k1;
 		}
 
@@ -264,18 +263,18 @@ int DecodeHuffman(htree_t *HTrees[], huffman_t *HuffmanTables, uint8_t* indata, 
 
 		if (node->idxTable) {
 			// leaf of tree reached
-			table_t TableEntry = HuffmanTables[ActualTable].Table[node->idxTable - 1]; 
+			table_t TableEntry = HuffmanTables[ActualTable].Table[node->idxTable - 1];
 			dlen = TableEntry.PrefixLength - TableEntry.CodeLength;
 			if (!TableEntry.TableModeSwitch)
-				// switch Huffman Code 
+				// switch Huffman Code
 				ActualTable = TableEntry.BaseValue;
 			else if (dlen) {
 				// no compression
-				acc = 0;  //(uint32_t)(indata[i]%(1<<r)); 
+				acc = 0;  //(uint32_t)(indata[i]%(1<<r));
 				for (k3=0; k3*8-r < dlen; k3++)
 					acc = (acc<<8)+(uint32_t)indata[i+k3];
 				
-				outdata[k2] = (acc >> (k3*8 - r - dlen)) & ((1L << dlen) - 1L) ; 
+				outdata[k2] = (acc >> (k3*8 - r - dlen)) & ((1L << dlen) - 1L) ;
 				if (outdata[k2] >= (1 << (dlen-1)))
 					outdata[k2] -= 1 << dlen;
 				k1 += dlen; 
@@ -283,7 +282,7 @@ int DecodeHuffman(htree_t *HTrees[], huffman_t *HuffmanTables, uint8_t* indata, 
 			}
 			else {
 				// lookup Huffman Table 
-				outdata[k2++] = TableEntry.BaseValue; 
+				outdata[k2++] = TableEntry.BaseValue;
 			}
 			// reset node to root
 			node = HTrees[ActualTable];
@@ -292,75 +291,72 @@ int DecodeHuffman(htree_t *HTrees[], huffman_t *HuffmanTables, uint8_t* indata, 
 	return(0);
 };
 
-void deallocEN1064(en1064_t en1064) {	
-	/* free allocated memory */ 
+void deallocEN1064(en1064_t en1064) {
+	/* free allocated memory */
 	if (en1064.FLAG.HUFFMAN) {
 		size_t k1=0;
 		for (; k1<en1064.FLAG.HUFFMAN; k1++) {
-		 	if (NHT!=19999) free(Huffman[k1].Table);
-		 	freeTree(HTrees[k1]); 
-		} 
+			if (NHT!=19999) free(Huffman[k1].Table);
+			freeTree(HTrees[k1]);
+		}
 		free(Huffman);
-		free(HTrees); 
-	}	
+		free(HTrees);
+	}
 
 	if (en1064.Section3.lead != NULL) 	free(en1064.Section3.lead);
 	if (en1064.Section4.beat != NULL) 	free(en1064.Section4.beat);
 	if (en1064.Section5.inlen != NULL) 	free(en1064.Section5.inlen);
 	if (en1064.Section5.datablock != NULL) 	free(en1064.Section5.datablock);
-	if (en1064.Section6.inlen != NULL) 	free(en1064.Section6.inlen);
 //	if (en1064.Section6.datablock != NULL) 	free(en1064.Section6.datablock);
- 	en1064.Section5.inlen = NULL;
- 	en1064.Section5.datablock = NULL;
- 	en1064.Section3.lead = NULL;
- 	en1064.Section4.beat = NULL;
- 	en1064.Section6.inlen = NULL;
+	en1064.Section5.inlen = NULL;
+	en1064.Section5.datablock = NULL;
+	en1064.Section3.lead = NULL;
+	en1064.Section4.beat = NULL;
 }
 
-EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {	
+EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 /*
 	this function is a stub or placeholder and need to be defined in order to be useful. 
 	It will be called by the function SOPEN in "biosig.c"
 
-	Input: 
+	Input:
 		char* Header	// contains the file content
-		
-	Output: 
+
+	Output:
 		HDRTYPE *hdr	// defines the HDR structure accoring to "biosig.h"
-*/	
+*/
 
 	uint8_t*	ptr; 	// pointer to memory mapping of the file layout
 	uint8_t*	PtrCurSect;	// point to current section 
 	uint8_t*	Ptr2datablock=NULL; 	// pointer to data block 
 	int32_t* 	data=NULL;		// point to rawdata
 	uint16_t	curSect=0; 	// current section
-	uint32_t 	len; 
-	uint16_t 	crc; 
-	uint32_t	i,k1,k2; 
+	uint32_t 	len;
+	uint16_t 	crc;
+	uint32_t	i,k1,k2;
 	size_t		curSectPos;
-	size_t 		sectionStart; 
+	size_t 		sectionStart;
 	int 		NSections = 12;
 	uint8_t		tag;
 	float 		HighPass=0, LowPass=INFINITY, Notch=-1; 	// filter settings
-	uint16_t	Cal5=0, Cal6=0, Cal0=0;	// scaling coefficients 
+	uint16_t	Cal5=0, Cal6=0, Cal0=0;	// scaling coefficients
 	uint16_t 	dT_us = 1000; 	// sampling interval in microseconds
 
-	/* 
+	/*
 	   Try direct conversion SCP->HDR to internal data structure
-		+ whole data is loaded once, then no further File I/O is needed. 
-		- currently Huffman and Bimodal compression is not supported. 
-	*/	
+		+ whole data is loaded once, then no further File I/O is needed.
+		- currently Huffman and Bimodal compression is not supported.
+	*/
 
 	struct aecg* aECG;
- 	en1064.Section5.inlen = NULL;
- 	en1064.Section5.datablock = NULL;
- 	en1064.Section3.lead = NULL;
- 	en1064.Section4.beat = NULL;
- 	en1064.Section6.inlen = NULL;
+	en1064.Section5.inlen = NULL;
+	en1064.Section5.datablock = NULL;
+	en1064.Section3.lead = NULL;
+	en1064.Section4.beat = NULL;
 	if (hdr->aECG == NULL) {
 		hdr->aECG = malloc(sizeof(struct aecg));
 		aECG = (struct aecg*)hdr->aECG;
-		aECG->diastolicBloodPressure=0.0;				 
+		aECG->diastolicBloodPressure=0.0;
 		aECG->systolicBloodPressure=0.0;
 		aECG->MedicationDrugs = NULL;
 		aECG->ReferringPhysician= NULL;
@@ -369,25 +365,24 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		aECG->Diagnosis=NULL;
 		aECG->EmergencyLevel=0;
 	}
-	else 
+	else
 		aECG = (struct aecg*)hdr->aECG;
 
-	
-	aECG->Section1.Tag14.VERSION = 0; // acquiring.protocol_revision_number 
+	aECG->Section1.Tag14.VERSION = 0; // acquiring.protocol_revision_number
 	aECG->Section1.Tag15.VERSION = 0; // analyzing.protocol_revision_number
-	aECG->FLAG.HUFFMAN   = 0; 
-	aECG->FLAG.DIFF      = 0; 
-	aECG->FLAG.REF_BEAT  = 0; 
+	aECG->FLAG.HUFFMAN   = 0;
+	aECG->FLAG.DIFF      = 0;
+	aECG->FLAG.REF_BEAT  = 0;
 	aECG->FLAG.BIMODAL   = 0;
 #if (BIOSIG_VERSION < 10500)
-	aECG->Section8.NumberOfStatements = 0; 
-	aECG->Section8.Statements = NULL; 
-	aECG->Section11.NumberOfStatements = 0; 
-	aECG->Section11.Statements = NULL; 
+	aECG->Section8.NumberOfStatements = 0;
+	aECG->Section8.Statements = NULL;
+	aECG->Section11.NumberOfStatements = 0;
+	aECG->Section11.Statements = NULL;
 #endif
-	en1064.FLAG.HUFFMAN  = 0; 
-	en1064.FLAG.DIFF     = 0; 
-	en1064.FLAG.REF_BEAT = 0; 
+	en1064.FLAG.HUFFMAN  = 0;
+	en1064.FLAG.DIFF     = 0;
+	en1064.FLAG.REF_BEAT = 0;
 	en1064.FLAG.BIMODAL  = 0;
 	en1064.Section4.len_ms	 = 0;
 	
@@ -396,9 +391,9 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 	struct DATA_DECODE decode;
 	struct DATA_RECORD record;
 	struct DATA_INFO textual;
-	bool   AS_DECODE = 0; 
+	bool   AS_DECODE = 0;
 
-	decode.length_BdR0 = NULL; 	
+	decode.length_BdR0 = NULL;
 	decode.samples_BdR0= NULL;
 	decode.length_Res  = NULL;
 	decode.samples_Res = NULL;
@@ -437,32 +432,32 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 	decode.flag_Res.decimation_factor=0;
 #endif 
 	
-	ptr = hdr->AS.Header; 
+	ptr = hdr->AS.Header;
 	hdr->NRec = 0;
 
 	sectionStart = 6;
-	PtrCurSect = ptr+sectionStart;	
+	PtrCurSect = ptr+sectionStart;
 
 	/**** SECTION 0 ****/
 	len = leu32p(PtrCurSect+4); 
 	NSections = min((len-16)/10,_NUM_SECTION);
 
-	section[0].ID	  = 0; 	
-	section[0].length = len; 	
+	section[0].ID	  = 0;
+	section[0].length = len;
 	section[0].index  = 6+16;
 	int K;
 	for (K=1; K<_NUM_SECTION; K++) {
-		section[K].ID	  = K; 	
-		section[K].length = 0; 	
+		section[K].ID	  = K;
+		section[K].length = 0;
 		section[K].index  = 0;
 	}
 
 	for (K=1; K<NSections; K++)	{
 		// this is needed because fields are not always sorted
-		curSect = leu32p(ptr+6+16+K*10); 
+		curSect = leu32p(ptr+6+16+K*10);
 		if (curSect < _NUM_SECTION) {
-			section[curSect].ID 	= curSect; 	
-			section[curSect].length = leu32p(ptr+6+16+K*10+2); 	
+			section[curSect].ID 	= curSect;
+			section[curSect].length = leu32p(ptr+6+16+K*10+2);
 			section[curSect].index  = leu32p(ptr+6+16+K*10+6)-1;
 		}
 	}
@@ -480,10 +475,10 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		fprintf(stdout,"SCP Section %i %i len=%i secStart=%i HeaderLength=%i\n",K,curSect,len,(int)sectionStart,hdr->HeadLen);
 
 	if (len==0) continue;	 /***** empty section *****/
-	 	if (sectionStart + len > hdr->HeadLen) {
-	 		biosigERROR(hdr, B4C_INCOMPLETE_FILE, "SOPEN(SCP-READ): File inclomplete - Section length + start of section is more then total length of header");
-	 		break;
-	 	}
+		if (sectionStart + len > hdr->HeadLen) {
+			biosigERROR(hdr, B4C_INCOMPLETE_FILE, "SOPEN(SCP-READ): File inclomplete - Section length + start of section is more then total length of header");
+			break;
+		}
 
 		PtrCurSect = ptr+sectionStart;
 		crc 	   = leu16p(PtrCurSect);
@@ -506,13 +501,13 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 #endif
 		curSectPos = 16;
 
-		/**** SECTION 0 ****/
-		if (curSect==0)  
+		/**** SECTION 0: POINTERS TO DATA AREAS IN THE RECORD ****/
+		if (curSect==0)
 		{
-		}		
+		}
 
-		/**** SECTION 1 ****/
-		else if (curSect==1)  
+		/**** SECTION 1: HEADER INFORMATION - PATIENT DATA/ECG ACQUISITION DATA ****/
+		else if (curSect==1)
 		{
 			struct tm t0,t1;
 			t0.tm_year = 0;
@@ -525,8 +520,8 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			hdr->T0    = 0;
 			hdr->Patient.Birthday = 0;
 			uint32_t len1;
- 
- 			while ((curSectPos<=len) && (*(PtrCurSect+curSectPos) < 255)) {
+
+			while ((curSectPos<=len) && (*(PtrCurSect+curSectPos) < 255)) {
 				tag = *(PtrCurSect+curSectPos);
 				len1 = leu16p(PtrCurSect+curSectPos+1);
 				if (VERBOSE_LEVEL>8)
@@ -538,7 +533,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					fprintf(stdout,"Warning SCP(read): section 1 corrupted (exceeds file length)\n");
 #endif
 			break;
-				} 	 
+				}
 				if (tag==0) {
 					if (!hdr->FLAG.ANONYMOUS)
 						strncpy(hdr->Patient.Name, (char*)(PtrCurSect+curSectPos),min(len1,MAX_LENGTH_NAME));
@@ -555,7 +550,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					strncpy(hdr->Patient.Id,(char*)(PtrCurSect+curSectPos),min(len1,MAX_LENGTH_PID));
 					hdr->Patient.Id[MAX_LENGTH_PID] = 0;
 					
-					if (!strcmp(hdr->Patient.Id,"UNKNOWN")) 
+					if (!strcmp(hdr->Patient.Id,"UNKNOWN"))
 						hdr->Patient.Id[0] = 0;
 				}
 				else if (tag==3) {
@@ -566,11 +561,11 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					t1.tm_year = leu16p(PtrCurSect+curSectPos)-1900;
 					t1.tm_mon  = *(PtrCurSect+curSectPos+2)-1;
 					t1.tm_mday = *(PtrCurSect+curSectPos+3);
-					t1.tm_hour = 12; 
-					t1.tm_min  =  0; 
-					t1.tm_sec  =  0; 
+					t1.tm_hour = 12;
+					t1.tm_min  =  0;
+					t1.tm_sec  =  0;
 					t1.tm_isdst= -1; // daylight saving time: unknown
-//					t1.tm_gmtoff  =  0; 
+//					t1.tm_gmtoff  =  0;
 					hdr->Patient.Birthday = tm_time2gdf_time(&t1);
 				}
 				else if (tag==6) {
@@ -581,7 +576,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				}
 				else if (tag==8) {
 					hdr->Patient.Sex = *(PtrCurSect+curSectPos);
-					if (hdr->Patient.Sex>2) hdr->Patient.Sex = 0;  
+					if (hdr->Patient.Sex>2) hdr->Patient.Sex = 0;
 				}
 				else if (tag==9) {
 				}
@@ -591,7 +586,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					aECG->systolicBloodPressure  = leu16p(PtrCurSect+curSectPos);
 				}
 				else if (tag==12) {
- 					aECG->diastolicBloodPressure = leu16p(PtrCurSect+curSectPos);
+					aECG->diastolicBloodPressure = leu16p(PtrCurSect+curSectPos);
 				}
 				else if (tag==13) {
 					aECG->Diagnosis = (char*)(PtrCurSect+curSectPos);
@@ -611,7 +606,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					tmp += strlen(hdr->ID.Manufacturer.Version+tmp)+1;	// skip SW
 					tmp += strlen(hdr->ID.Manufacturer.Version+tmp)+1;	// skip SW
 					hdr->ID.Manufacturer.Name = hdr->ID.Manufacturer.Version+tmp;
-					
+
 					/* might become obsolete */					
 					//memcpy(hdr->aECG->Section1.tag14,PtrCurSect+curSectPos,40);
 					//hdr->VERSION = *(PtrCurSect+curSectPos+14)/10.0;	// tag 14, byte 15
@@ -628,15 +623,14 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 						"Nihon Kohden","Okin","Quinton","Siemens","Spacelabs",
 						"Telemed","Hellige","ESA-OTE","Schiller",
 						"Picker-Schwarzer","et medical devices",
-						"Zwönitz",NULL}; 
-											
+						"Zwönitz",NULL};
+
 					if (!strlen(hdr->ID.Manufacturer.Name)) {
 						if (aECG->Section1.Tag14.MANUF_CODE < 21)
 							hdr->ID.Manufacturer.Name = MANUFACTURER[aECG->Section1.Tag14.MANUF_CODE];
-						else 
+						else
 							fprintf(stderr,"Warning SOPEN(SCP): unknown manufacturer code\n");
-					}		 
-											
+					}
 
 					aECG->Section1.Tag14.MOD_DESC    = (char*)(PtrCurSect+curSectPos+8); 
 					aECG->Section1.Tag14.VERSION     = *(PtrCurSect+curSectPos+14);
@@ -720,21 +714,21 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				}
 				else if (tag==30) {
 				}
- 				else if (tag==31) {
+				else if (tag==31) {
 				}
 				else if (tag==32) {
 					if (PtrCurSect[curSectPos]==0) {
 						unsigned k=1;
 						for (; k < len1; k++) {
 							if ((PtrCurSect[curSectPos+k] > 9) && (PtrCurSect[curSectPos+k] < 40)) 
-								hdr->Patient.Impairment.Heart = 2; 
-							else if (PtrCurSect[curSectPos+k]==1) 
-								hdr->Patient.Impairment.Heart = 1; 
+								hdr->Patient.Impairment.Heart = 2;
+							else if (PtrCurSect[curSectPos+k]==1)
+								hdr->Patient.Impairment.Heart = 1;
 							else if (PtrCurSect[curSectPos+k]==42) {
-								hdr->Patient.Impairment.Heart = 3; 
+								hdr->Patient.Impairment.Heart = 3;
 								break;
-							}	
-						}	
+							}
+						}
 					}
 				}
 				else if (tag==33) {
@@ -742,12 +736,12 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				else if (tag==34) {
 					int16_t tzmin = lei16p(PtrCurSect+curSectPos);
 					if (tzmin != 0x7fff) {
-						if (abs(tzmin)<=780) 
+						if (abs(tzmin)<=780)
 							hdr->tzmin = tzmin;
 						else 
 							fprintf(stderr,"Warning SOPEN(SCP-READ): invalid time zone (Section 1, Tag34)\n");
 					}
-					//fprintf(stdout,"SOPEN(SCP-READ): tzmin = %i %x \n",tzmin,tzmin); 
+					//fprintf(stdout,"SOPEN(SCP-READ): tzmin = %i %x \n",tzmin,tzmin);
 				}
 				else {
 				}
@@ -756,15 +750,15 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			hdr->T0     = tm_time2gdf_time(&t0);
 		}
 
-		/**** SECTION 2 ****/
+		/**** SECTION 2: HUFFMAN TABLES USED IN ENCODING OF ECG DATA (IF USED) ****/
 		else if (curSect==2)  {
-			aECG->FLAG.HUFFMAN = 1; 
-			en1064.FLAG.HUFFMAN = 1; 
+			aECG->FLAG.HUFFMAN = 1;
+			en1064.FLAG.HUFFMAN = 1;
 
 			NHT = leu16p(PtrCurSect+curSectPos);
 			curSectPos += 2;
 			if (NHT==19999) {
-				en1064.FLAG.HUFFMAN = 1; 
+				en1064.FLAG.HUFFMAN = 1;
 				Huffman = (huffman_t*)malloc(sizeof(huffman_t));
 				HTrees  = (htree_t**)malloc(sizeof(htree_t*));
 				Huffman[0].NCT   = 19;
@@ -773,14 +767,14 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				k2 = 0; 
 #ifndef ANDROID
 				if (VERBOSE_LEVEL==9)
-					for (k1=0; k1<Huffman[k2].NCT; k1++) 
+					for (k1=0; k1<Huffman[k2].NCT; k1++)
 					fprintf(stdout,"%3i: %2i %2i %1i %3i %6u \n",k1,Huffman[k2].Table[k1].PrefixLength,Huffman[k2].Table[k1].CodeLength,Huffman[k2].Table[k1].TableModeSwitch,Huffman[k2].Table[k1].BaseValue,Huffman[k2].Table[k1].BaseCode); 
-				if (!checkTree(HTrees[0])) // ### OPTIONAL, not needed ### 
+				if (!checkTree(HTrees[0])) // ### OPTIONAL, not needed ###
 					fprintf(stderr,"Warning: invalid Huffman Tree\n");
 #endif 
 			}
 			else {
-				en1064.FLAG.HUFFMAN = NHT; 
+				en1064.FLAG.HUFFMAN = NHT;
 				Huffman = (huffman_t*)malloc(NHT*sizeof(huffman_t));
 				for (k2=0; k2<NHT; k2++) {
 					Huffman[k2].NCT   = leu16p(PtrCurSect+curSectPos);
@@ -788,10 +782,10 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					Huffman[k2].Table = (typeof(Huffman[k2].Table))malloc(Huffman[k2].NCT * sizeof(*Huffman[k2].Table));
 					HTrees      = (htree_t**)malloc(Huffman[k2].NCT*sizeof(htree_t*));
 					for (k1=0; k1<Huffman[k2].NCT; k1++) {
-						Huffman[k2].Table[k1].PrefixLength = *(PtrCurSect+curSectPos);  
-						Huffman[k2].Table[k1].CodeLength = *(PtrCurSect+curSectPos+1);  
-						Huffman[k2].Table[k1].TableModeSwitch = *(PtrCurSect+curSectPos+2);  
-						Huffman[k2].Table[k1].BaseValue  = lei16p(PtrCurSect+curSectPos+3);  
+						Huffman[k2].Table[k1].PrefixLength = *(PtrCurSect+curSectPos);
+						Huffman[k2].Table[k1].CodeLength = *(PtrCurSect+curSectPos+1);
+						Huffman[k2].Table[k1].TableModeSwitch = *(PtrCurSect+curSectPos+2);
+						Huffman[k2].Table[k1].BaseValue  = lei16p(PtrCurSect+curSectPos+3);
 						Huffman[k2].Table[k1].BaseCode   = leu32p(PtrCurSect+curSectPos+5);
 						curSectPos += 9;
 #ifndef ANDROID
@@ -799,17 +793,17 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 							fprintf(stdout,"%3i %3i: %2i %2i %1i %3i %6u \n",k2,k1,Huffman[k2].Table[k1].PrefixLength,Huffman[k2].Table[k1].CodeLength,Huffman[k2].Table[k1].TableModeSwitch,Huffman[k2].Table[k1].BaseValue,Huffman[k2].Table[k1].BaseCode);
 #endif
 					}
-					HTrees[k2] = makeTree(Huffman[k2]); 
+					HTrees[k2] = makeTree(Huffman[k2]);
 					if (!checkTree(HTrees[k2])) {
 						biosigERROR(hdr, B4C_DECOMPRESSION_FAILED, "Warning: invalid Huffman Tree");
-						// AS_DECODE = 2; // forced use of SCP-DECODE 
+						// AS_DECODE = 2; // forced use of SCP-DECODE
 					}
 				}
 			}
 		}
 
-		/**** SECTION 3 ****/
-		else if (curSect==3)  
+		/**** SECTION 3: ECG LEAD DEFINITION ****/
+		else if (curSect==3)
 		{
 			hdr->NS = *(PtrCurSect+curSectPos);
 			aECG->FLAG.REF_BEAT = (*(PtrCurSect+curSectPos+1) & 0x01);
@@ -823,7 +817,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				en1064.FLAG.REF_BEAT = 0;
 			}
 #ifndef ANDROID
-			if (!(en1064.Section3.flags & 0x04) || ((en1064.Section3.flags>>3) != hdr->NS)) 
+			if (!(en1064.Section3.flags & 0x04) || ((en1064.Section3.flags>>3) != hdr->NS))
 				fprintf(stderr,"Warning (SCP): channels are not simultaneously recorded! %x %i\n",en1064.Section3.flags,hdr->NS);
 #endif
 
@@ -842,9 +836,9 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				hdr->CHANNEL[i].LeadIdCode =  *(PtrCurSect+curSectPos+8);
 				hdr->CHANNEL[i].Label[0]= 0;
 				hdr->CHANNEL[i].Transducer[0]= 0;
-				hdr->CHANNEL[i].LowPass = LowPass; 
-				hdr->CHANNEL[i].HighPass= HighPass; 
-				hdr->CHANNEL[i].Notch 	= Notch; 
+				hdr->CHANNEL[i].LowPass = LowPass;
+				hdr->CHANNEL[i].HighPass= HighPass;
+				hdr->CHANNEL[i].Notch 	= Notch;
 				curSectPos += 9;
 
 #ifndef ANDROID
@@ -853,7 +847,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 #endif
 			}
 		}
-		/**** SECTION 4 ****/
+		/**** SECTION 4: QRS LOCATIONS (IF REFERENCE BEATS ARE ENCODED) ****/
 		else if (curSect==4)  {
 			en1064.Section4.len_ms	= leu16p(PtrCurSect+curSectPos);
 			en1064.Section4.fiducial_sample	= leu16p(PtrCurSect+curSectPos+2);
@@ -869,33 +863,33 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				en1064.Section4.beat[i].fcM  = leu32p(PtrCurSect+curSectPos+6);
 				en1064.Section4.beat[i].SE   = leu32p(PtrCurSect+curSectPos+10);
 				curSectPos += 14;
-			}	
+			}
 			for (i=0; i < en1064.Section4.N; i++) {
 				en1064.Section4.beat[i].QB   = leu32p(PtrCurSect+curSectPos);
 				en1064.Section4.beat[i].QE   = leu32p(PtrCurSect+curSectPos+4);
 				curSectPos += 8;
 				en1064.Section4.SPR += en1064.Section4.beat[i].QE-en1064.Section4.beat[i].QB-1;
-			}	
+			}
 			if (en1064.Section4.len_ms==0) {
 				en1064.FLAG.REF_BEAT = 0;
-			}	
+			}
 		}
 
-		/**** SECTION 5 ****/
+		/**** SECTION 5: ENCODED REFERENCE BEAT DATA IF REFERENCE BEATS ARE STORED ****/
 		else if (curSect==5)  {
 			Cal5 			= leu16p(PtrCurSect+curSectPos);
 			en1064.Section5.AVM	= leu16p(PtrCurSect+curSectPos);
 			en1064.Section5.dT_us	= leu16p(PtrCurSect+curSectPos+2);
 			en1064.Section5.DIFF 	= *(PtrCurSect+curSectPos+4);
 			en1064.Section5.Length  = (1000L * en1064.Section4.len_ms) / en1064.Section5.dT_us; // hdr->SPR;
-			en1064.Section5.inlen	= (typeof(en1064.Section5.inlen))malloc(hdr->NS*sizeof(*en1064.Section5.inlen));
+			en1064.Section5.inlen	= (typeof(en1064.Section5.inlen))malloc(hdr->NS*2);
 			for (i=0; i < hdr->NS; i++) {
 				en1064.Section5.inlen[i] = leu16p(PtrCurSect+curSectPos+6+2*i);
-				if (!section[4].length && (en1064.Section5.Length<en1064.Section5.inlen[i]))
+				if (!section[4].length && (en1064.Section5.Length < en1064.Section5.inlen[i]))
 					en1064.Section5.Length = en1064.Section5.inlen[i];
 			}
 			if (!section[4].length && en1064.FLAG.HUFFMAN) {
-				 en1064.Section5.Length *= 5; // decompressed data might need more space 
+				 en1064.Section5.Length *= 5; // decompressed data might need more space
 #ifndef ANDROID
 				 fprintf(stderr,"Warning SCPOPEN: Section 4 not defined - size of Sec5 can be only guessed (%i allocated)\n",(int)en1064.Section5.Length);
 #endif
@@ -903,7 +897,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 			en1064.Section5.datablock = NULL;
 			if (en1064.FLAG.REF_BEAT) {
-				en1064.Section5.datablock = (int32_t*)malloc(4 * hdr->NS * en1064.Section5.Length); 
+				en1064.Section5.datablock = (int32_t*)malloc(4 * hdr->NS * en1064.Section5.Length);
 
 				Ptr2datablock           = (PtrCurSect+curSectPos+6+2*hdr->NS);
 				for (i=0; i < hdr->NS; i++) {
@@ -941,31 +935,30 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		else if (curSect==6)  {
 			hdr->NRec = 1;
 
-			en1064.Section6.inlen	= (typeof(en1064.Section6.inlen))malloc(hdr->NS*sizeof(*en1064.Section6.inlen));
-			uint16_t gdftyp 	= 5;	// int32: internal raw data type   
-			hdr->AS.rawdata = (uint8_t*)realloc(hdr->AS.rawdata,4 * hdr->NS * hdr->SPR * hdr->NRec); 
+			uint16_t gdftyp 	= 5;	// int32: internal raw data type
+			hdr->AS.rawdata = (uint8_t*)realloc(hdr->AS.rawdata,4 * hdr->NS * hdr->SPR * hdr->NRec);
 			data = (int32_t*)hdr->AS.rawdata;
 
 			en1064.Section6.AVM	= leu16p(PtrCurSect+curSectPos);
 			en1064.Section6.dT_us	= leu16p(PtrCurSect+curSectPos+2);
-			hdr->SampleRate 	= 1e6/en1064.Section6.dT_us;
-			en1064.Section6.DIFF 	= *(PtrCurSect+curSectPos+4);
-			en1064.FLAG.DIFF 	= *(PtrCurSect+curSectPos+4);
-			en1064.Section6.BIMODAL = *(PtrCurSect+curSectPos+5);
-			en1064.FLAG.BIMODAL     = *(PtrCurSect+curSectPos+5);
+			hdr->SampleRate	= 1e6/en1064.Section6.dT_us;
+			en1064.Section6.DIFF	= *(PtrCurSect+curSectPos+4);
+			en1064.FLAG.DIFF	= *(PtrCurSect+curSectPos+4);
+			en1064.Section6.BIMODAL	= *(PtrCurSect+curSectPos+5);
+			en1064.FLAG.BIMODAL	= *(PtrCurSect+curSectPos+5);
 
 			Cal6 			= leu16p(PtrCurSect+curSectPos);
 			en1064.Section6.dT_us	= leu16p(PtrCurSect+curSectPos+2);
 			aECG->FLAG.DIFF 	= *(PtrCurSect+curSectPos+4);
 			aECG->FLAG.BIMODAL = *(PtrCurSect+curSectPos+5);
 
-			if ((section[5].length>4) &&  en1064.Section5.dT_us) 
+			if ((section[5].length>4) &&  en1064.Section5.dT_us)
 				dT_us = en1064.Section5.dT_us;
-			else 	
+			else
 				dT_us = en1064.Section6.dT_us;
-			hdr->SampleRate 	= 1e6/dT_us; 
+			hdr->SampleRate	= 1e6/dT_us;
 
-			typeof(hdr->SPR) SPR  = ( en1064.FLAG.BIMODAL ? en1064.Section4.SPR : hdr->SPR);  
+			typeof(hdr->SPR) SPR  = ( en1064.FLAG.BIMODAL ? en1064.Section4.SPR : hdr->SPR);
 
 			if      (Cal5==0 && Cal6 >0) Cal0 = Cal6;
 			else if (Cal5 >0 && Cal6==0) Cal0 = Cal5;
@@ -974,9 +967,9 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			uint16_t cal6 = Cal6/Cal0; 
 
 			Ptr2datablock = (PtrCurSect+curSectPos + 6 + hdr->NS*2);   // pointer for huffman decoder
-			len = 0;  
+			len = 0;
 			size_t ix;
-			hdr->AS.bpb   = hdr->NS * hdr->SPR*GDFTYP_BITS[gdftyp]>>3;  
+			hdr->AS.bpb   = hdr->NS * hdr->SPR*GDFTYP_BITS[gdftyp]>>3;
 			for (i=0; i < hdr->NS; i++) {
 				if (VERBOSE_LEVEL>8)
 					fprintf(stdout,"sec6-%i\n",i);
@@ -987,19 +980,19 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				hc->Cal 	= Cal0 * 1e-3;
 				hc->Off         = 0;
 				hc->OnOff       = 1;    // 1: ON 0:OFF
-				hc->GDFTYP      = gdftyp;  
+				hc->GDFTYP      = gdftyp;
 #ifndef NO_BI
-				hc->bi          = i*hdr->SPR*GDFTYP_BITS[gdftyp]>>3;  
-#endif 
+				hc->bi          = i*hdr->SPR*GDFTYP_BITS[gdftyp]>>3;
+#endif
 				// ### TODO: these values should represent the true saturation values ### //
 				hc->DigMax      = ldexp(1.0,20)-1;
 				hc->DigMin      = ldexp(-1.0,20);
 				hc->PhysMax     = hc->DigMax * hc->Cal;
 				hc->PhysMin     = hc->DigMin * hc->Cal;
 
-				en1064.Section6.inlen[i]    = leu16p(PtrCurSect+curSectPos+6+2*i);
+				uint16_t inlen    = leu16p(PtrCurSect+curSectPos+6+2*i);
 				if (en1064.FLAG.HUFFMAN) {
-					if (DecodeHuffman(HTrees, Huffman, Ptr2datablock, en1064.Section6.inlen[i], data + i*hdr->SPR, hdr->SPR)) {
+					if (DecodeHuffman(HTrees, Huffman, Ptr2datablock, inlen, data + i*hdr->SPR, hdr->SPR)) {
 						biosigERROR(hdr, B4C_DECOMPRESSION_FAILED, "Empty node in Huffman table! Do not know what to do !");
 					}
 					if (hdr->AS.B4C_ERRNUM) {
@@ -1011,53 +1004,53 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					for (k1=0, ix = i*hdr->SPR; k1 < SPR; k1++)
 						data[ix+k1] = lei16p(Ptr2datablock + 2*k1);
 				}
-				len += en1064.Section6.inlen[i];
-				Ptr2datablock += en1064.Section6.inlen[i]; 
+				len += inlen;
+				Ptr2datablock += inlen;
 
 				if (aECG->FLAG.DIFF==1) {
 					for (ix = i*hdr->SPR+1; ix < i*hdr->SPR + SPR; ix++)
 						data[ix] += data[ix-1];
-				}		
+				}
 				else if (aECG->FLAG.DIFF==2) {
 					for (ix = i*hdr->SPR+2; ix < i*hdr->SPR + SPR; ix++)
 						data[ix] += 2*data[ix-1] - data[ix-2];
 				}
 #ifndef WITHOUT_SCP_DECODE
-				if (aECG->FLAG.BIMODAL || en1064.FLAG.REF_BEAT) { 	
+				if (aECG->FLAG.BIMODAL || en1064.FLAG.REF_BEAT) {
 //				if (aECG->FLAG.BIMODAL) {
 //				if (aECG->FLAG.REF_BEAT {
 					/*	this is experimental work
-						Bimodal and RefBeat decompression are under development. 
-						"continue" ignores code below  
-						AS_DECODE=1 will call later SCP-DECODE instead  
-					*/ 	
-					AS_DECODE = 1; continue; 
+						Bimodal and RefBeat decompression are under development.
+						"continue" ignores code below
+						AS_DECODE=1 will call later SCP-DECODE instead
+					*/
+					AS_DECODE = 1; continue;
 				}
 #endif
 
 				if (aECG->FLAG.BIMODAL) {
-					// ### FIXME ### 
-					ix = i*hdr->SPR;		// memory offset
-					k1 = en1064.Section4.SPR; 	// SPR of decimated data 
+					// ### FIXME ###
+					ix = i*hdr->SPR;			// memory offset
+					k1 = en1064.Section4.SPR;		// SPR of decimated data
 					k2 = hdr->SPR;			// SPR of sample data
-					uint32_t k3 = en1064.Section4.N-1; // # of protected zones 
-					uint8_t  k4 = 4;		// decimation factor 
+					uint32_t k3 = en1064.Section4.N-1;	// # of protected zones
+					uint8_t  k4 = 4;			// decimation factor
 					do {
 						--k2;
 						data[ix + k2] = data[ix + k1 - 1];
-						if (k2 > en1064.Section4.beat[k3].QE) { // outside protected zone 
+						if (k2 > en1064.Section4.beat[k3].QE) { // outside protected zone
 							if (--k4==0) {k4=4; --k1; };
 						}
-						else {	// inside protected zone 
+						else {	// inside protected zone
 							--k1;
 							if (k2<en1064.Section4.beat[k3].QB) {--k3; k4=4;};
 						}
 					} while (k2 && (k1>0));
 				}
-			
+
 				if (en1064.FLAG.REF_BEAT) {
 					/* Add reference beats */
-					// ### FIXME ### 
+					// ### FIXME ###
 					for (k1 = 0; k1 < en1064.Section4.N; k1++) {
 						if (en1064.Section4.beat[k1].btyp == 0)
 						for (ix = 0; ix < en1064.Section5.Length; ix++) {
@@ -1070,7 +1063,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				}
 			}
 
-			en1064.Section6.datablock = data; 
+			en1064.Section6.datablock = data;
 
 			curSectPos += 6 + 2*hdr->NS + len;
 
@@ -1091,13 +1084,13 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			// uint16_t RRI = leu16p(PtrCurSect+curSectPos+2);
 			// uint16_t PPI = leu16p(PtrCurSect+curSectPos+4);
 			curSectPos += 6;
-			//size_t curSectPos0 = curSectPos; // backup of pointer 
+			//size_t curSectPos0 = curSectPos; // backup of pointer
 			
-			// skip data on QRS measurements 
+			// skip data on QRS measurements
 			/*
 			// ### FIXME ### 
-			It seems that the P,QRS, and T wave events can not be reconstructed 
-			because they refer to the reference beat and not to the overall signal data.  	
+			It seems that the P,QRS, and T wave events can not be reconstructed
+			because they refer to the reference beat and not to the overall signal data.
 			Maybe Section 4 information need to be used. However, EN1064 does not mention this.
 			
 			hdr->EVENT.POS = (uint32_t*)realloc(hdr->EVENT.POS, (hdr->EVENT.N+5*N_QRS+N_PaceMaker)*sizeof(*hdr->EVENT.POS));
@@ -1141,7 +1134,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				hc->Off         = 0;
 				hc->OnOff       = 1;    // 1: ON 0:OFF
 				strcpy(hc->Transducer,"Pacemaker");
-				hc->GDFTYP      = 3;  
+				hc->GDFTYP      = 3;
 
 				// ### these values should represent the true saturation values ###//
 				hc->DigMax      = ldexp(1.0,15)-1;
@@ -1149,7 +1142,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				hc->PhysMax     = hc->DigMax * hc->Cal;
 				hc->PhysMin     = hc->DigMin * hc->Cal;
 			}
-			// skip pacemaker spike measurements  
+			// skip pacemaker spike measurements
 			for (i=0; i < N_PaceMaker; i++) {
 				++hdr->EVENT.N;
 				hdr->EVENT.TYP[hdr->EVENT.N] = 0x7fff;
@@ -1158,10 +1151,10 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				hdr->EVENT.DUR[hdr->EVENT.N] = leu16p(PtrCurSect+curSectPos+2);
 				curSectPos += 4;
 			}
-			// skip pacemaker spike information section  
+			// skip pacemaker spike information section
 			curSectPos += N_PaceMaker*6;
-			
-			// QRS type information 
+
+			// QRS type information
 			N_QRS = leu16p(PtrCurSect+curSectPos);
 			curSectPos += 2;
 
@@ -1254,15 +1247,16 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		}
 		else {
 		}
-	}	
+	}
 
-	/* free allocated memory */ 
-	deallocEN1064(en1064);	
+	/* free allocated memory */
+	deallocEN1064(en1064);
 
 
+	return 0;
 #ifndef WITHOUT_SCP_DECODE
-   	if (AS_DECODE==0) return(0); 
-    		
+	if (AS_DECODE==0) return(0);
+
 /*
 ---------------------------------------------------------------------------
 Copyright (C) 2006  Eugenio Cervesato.
@@ -1284,39 +1278,39 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ---------------------------------------------------------------------------
 */
 
-	/* Fall back method: 
+	/* Fall back method:
 
-		+ implements Huffman, reference beat and Bimodal compression. 
+		+ implements Huffman, reference beat and Bimodal compression.
 		- uses piece-wise file access
 		- defines intermediate data structure
-	*/	
+	*/
 
 #ifndef ANDROID
 	fprintf(stdout, "\nUse SCP_DECODE (Huffman=%i RefBeat=%i Bimodal=%i)\n", aECG->FLAG.HUFFMAN, aECG->FLAG.REF_BEAT, aECG->FLAG.BIMODAL);
 #endif
 
 	textual.des.acquiring.protocol_revision_number = aECG->Section1.Tag14.VERSION;
-	textual.des.analyzing.protocol_revision_number = aECG->Section1.Tag15.VERSION; 
+	textual.des.analyzing.protocol_revision_number = aECG->Section1.Tag15.VERSION;
 
-	decode.flag_Res.bimodal = (aECG->Section1.Tag14.VERSION > 10 ? aECG->FLAG.BIMODAL : 0);  
-	decode.Reconstructed    = (int32_t*) hdr->AS.rawdata; 
+	decode.flag_Res.bimodal = (aECG->Section1.Tag14.VERSION > 10 ? aECG->FLAG.BIMODAL : 0);
+	decode.Reconstructed    = (int32_t*) hdr->AS.rawdata;
 
-	// TODO: check error handling 
-	biosigERROR(hdr, 0, NULL); 
+	// TODO: check error handling
+	biosigERROR(hdr, 0, NULL);
 	if (scp_decode(hdr, section, &decode, &record, &textual, add_filter)) {
 		if (Cal0>1)
 			for (i=0; i < hdr->NS * hdr->SPR * hdr->NRec; ++i)
 				data[i] /= Cal0;
 	}
-	else { 
-		biosigERROR(hdr, B4C_CANNOT_OPEN_FILE, "SCP-DECODE can not read file"); 
+	else {
+		biosigERROR(hdr, B4C_CANNOT_OPEN_FILE, "SCP-DECODE can not read file");
 		return(0);
 	}
-	
-	 // end of fall back method 
- 	decode.Reconstructed = NULL;
- 	sopen_SCP_clean(&decode, &record, &textual);
+
+	// end of fall back method
+	decode.Reconstructed = NULL;
+	sopen_SCP_clean(&decode, &record, &textual);
 
 	return(1);
-#endif 
+#endif
 };
