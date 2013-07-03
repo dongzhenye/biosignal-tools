@@ -139,8 +139,9 @@ elseif isfield(H,'LeadIdCode') && all((H.LeadIdCode>0) & (H.LeadIdCode<256)) && 
 	d = [(abs([-(H.SampleRate/2):(H.SampleRate/2)])' < (H.SampleRate/4))*ones(1,3)*1e-3/scale(1); repmat(NaN,1,3); d];	
 	
 	plot([1:H.SampleRate*(xlen*4+1)+2]'/H.SampleRate-1, d + ones(size(d,1),1)*[0,-1,-2]*3*1e-3/scale(1),'k');
-	set(gca,'xMinorTick','on','yMinorTick','on','xMinorGrid','on','yMinorGrid','on');
 	grid on
+	set(gca,'xMinorTick','on','yMinorTick','on','xMinorGrid','on','yMinorGrid','on','box','off');
+	set(gca,'gridlinestyle','-','minorgridlinestyle',':');
 	for k=1:length(pos),
 		h=text(xlen*floor((k-1)/3)+1,(1-3*mod(k-1,3))*1e-3/scale(1),x.Label(k));
 	end;
