@@ -1598,7 +1598,7 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->CHANNEL = (CHANNEL_TYPE*)calloc(hdr->NS, sizeof(CHANNEL_TYPE));
 	BitsPerBlock = 0;
 	for (k=0;k<hdr->NS;k++)	{
-		uint32_t nbits;
+		size_t nbits;
 		CHANNEL_TYPE *hc = hdr->CHANNEL+k;
 	      	hc->Label[0]  = 0;
 	      	hc->LeadIdCode= 0;
@@ -3141,7 +3141,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"#%2i: <%s> %i %i\n",k,hc->Label,(int)len,(i
 			hc->OnOff   = 1;
 			hc->bi      = bpb8>>3;
 			hc->bi8     = bpb8;
-			uint32_t nbits = (GDFTYP_BITS[hc->GDFTYP]*hc->SPR);
+			size_t nbits = (GDFTYP_BITS[hc->GDFTYP]*(size_t)hc->SPR);
 			bpb8 += nbits;
 
 			if (hdr->VERSION < 1.90) {
@@ -4336,7 +4336,7 @@ else if (!strncmp(MODE,"r",1)) {
 			hdr->SPR 	= lcm(hdr->SPR, hc->SPR);
 			hc->bi 		= hdr->AS.bpb;
 			hc->bi8     	= BitsPerBlock;
-			uint32_t nbits 	= GDFTYP_BITS[hc->GDFTYP]*hc->SPR;
+			size_t nbits 	= GDFTYP_BITS[hc->GDFTYP]*(size_t)hc->SPR;
 			BitsPerBlock   += nbits;
 			uint32_t nbytes = nbits>>3;
 			hdr->AS.bpb    += nbytes;
@@ -5240,7 +5240,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 
 						FILE *fid = fopen(datfile,"rb");
 						if (fid != NULL) {
-							size_t bufsiz = cp->SPR*GDFTYP_BITS[cp->GDFTYP]>>3;
+							size_t bufsiz = (size_t)cp->SPR*GDFTYP_BITS[cp->GDFTYP]>>3;
 							hdr->AS.rawdata = (uint8_t*) realloc(hdr->AS.rawdata,lengthRawData+bufsiz+1);
 							count = fread(hdr->AS.rawdata+lengthRawData,1,bufsiz+1,fid);
 							if (count != bufsiz)
@@ -5311,8 +5311,8 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 					sscanf(val,"%f \t%f \t%f",cp->XYZ,cp->XYZ+1,cp->XYZ+2);
 
 					// consolidate previous channel
-					if (((GDFTYP_BITS[cp->GDFTYP]*cp->SPR >> 3) != (hdr->AS.bpb-cp->bi)) && (hdr->TYPE==BIN)) {
-						fprintf(stdout,"Warning SOPEN(BIN): problems with channel %i - filesize %i does not fit header info %i\n",(int)k+1, hdr->AS.bpb-hdr->CHANNEL[k].bi,GDFTYP_BITS[hdr->CHANNEL[k].GDFTYP]*hdr->CHANNEL[k].SPR >> 3);
+					if ((((size_t)cp->SPR*GDFTYP_BITS[cp->GDFTYP] >> 3) != (hdr->AS.bpb-cp->bi)) && (hdr->TYPE==BIN)) {
+						fprintf(stdout,"Warning SOPEN(BIN): problems with channel %i - filesize %i does not fit header info %i\n",(int)k+1, hdr->AS.bpb-hdr->CHANNEL[k].bi,GDFTYP_BITS[hdr->CHANNEL[k].GDFTYP]*(size_t)hdr->CHANNEL[k].SPR >> 3);
 					}
 
 					hdr->SampleRate = hdr->SPR/duration;
@@ -5466,7 +5466,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 			hc->SPR    = 1;
 			hc->GDFTYP = gdftyp;
 			hc->bi     = hdr->AS.bpb;
-			hdr->AS.bpb    += (GDFTYP_BITS[hc->GDFTYP] * hc->SPR)>>3;
+			hdr->AS.bpb    += (GDFTYP_BITS[hc->GDFTYP] * (size_t)hc->SPR)>>3;
 		}
 		if (hdr->TYPE==BCI2000)
 			hdr->AS.bpb += BCI2000_StatusVectorLength;
@@ -5779,9 +5779,9 @@ if (VERBOSE_LEVEL>8)
 			hc->OnOff    = 1;
 		    	hc->PhysDimCode = 4275; // uV
     			hc->LeadIdCode  = 0;
-    			hc->bi 	= k*hc->SPR*GDFTYP_BITS[2]>>3;
+			hc->bi 	= k*hc->SPR*(GDFTYP_BITS[2]>>3);
 		}
-		hdr->AS.bpb     = hdr->NS*hdr->SPR*GDFTYP_BITS[2]>>3;
+		hdr->AS.bpb     = hdr->NS*hdr->SPR*(GDFTYP_BITS[2]>>3);
 
 		struct stat FileBuf;
 		stat(hdr->FileName,&FileBuf);
@@ -6074,8 +6074,9 @@ if (VERBOSE_LEVEL>8)
 					hc->OnOff   	= 1;
 				    	hc->PhysDimCode = 4275; // uV
 		    			hc->LeadIdCode  = 0;
-					hc->bi8         = k*hdr->SPR*GDFTYP_BITS[gdftyp];
-					hc->bi          = hc->bi8>>3;
+					size_t bi8      = k*(size_t)hdr->SPR*GDFTYP_BITS[gdftyp];
+					hc->bi8         = bi8;
+					hc->bi          = bi8>>3;
 				}
 
 				if (VERBOSE_LEVEL>7) fprintf(stdout,"BVA210 seq=%i,pos=%i,%i <%s> bpb=%i\n",seq,(int)pos,hdr->HeadLen,t,hdr->AS.bpb);
@@ -6485,7 +6486,7 @@ if (VERBOSE_LEVEL>8)
 		    	hc->PhysMax	= hc->DigMax * hc->Cal + hc->Off;
 		    	hc->PhysMin	= hc->DigMin * hc->Cal + hc->Off;
 			hc->bi    	= bi;
-			bi 		+= hdr->SPR * GDFTYP_BITS[hc->GDFTYP]>>3;
+			bi 		+= (size_t)hdr->SPR * (GDFTYP_BITS[hc->GDFTYP]>>3);
 		}
 
 	    	if ((eventtablepos < nextfilepos) && !ifseek(hdr, eventtablepos, SEEK_SET)) {
@@ -6618,7 +6619,7 @@ if (VERBOSE_LEVEL>8)
 		    	hc->PhysMin	= hc->DigMin * hc->Cal + hc->Off;
 
 			hc->bi    = hdr->AS.bpb;
-			hdr->AS.bpb += hdr->SPR*GDFTYP_BITS[hc->GDFTYP]>>3;
+			hdr->AS.bpb += hdr->SPR*(GDFTYP_BITS[hc->GDFTYP]>>3);
 		}
 
 		if (VERBOSE_LEVEL>8)
@@ -7408,7 +7409,7 @@ if (VERBOSE_LEVEL>8)
 			hc->Cal	= PhysMax/ldexp(1,Bits);
 			hc->Off	= 0;
 			hc->SPR	= hdr->SPR;
-			hc->bi	= k*hdr->SPR*GDFTYP_BITS[gdftyp]>>3;
+			hc->bi	= k*hdr->SPR*(GDFTYP_BITS[gdftyp]>>3);
 
 			if (VERBOSE_LEVEL>8)
 				fprintf(stdout,"SOPEN(EGI): #%i %i %i\n",(int)k,Bits, PhysMax);
@@ -7428,7 +7429,7 @@ if (VERBOSE_LEVEL>8)
 			hc->OnOff   = 1;
 			}
 		}
-		hdr->AS.bpb = (hdr->NS*hdr->SPR + NEC) * GDFTYP_BITS[gdftyp]>>3;
+		hdr->AS.bpb = (hdr->NS*hdr->SPR + NEC) * (GDFTYP_BITS[gdftyp]>>3);
 		if (hdr->AS.Header[3] & 0x01)	// triggered
 			hdr->AS.bpb += 6;
 
@@ -8054,12 +8055,12 @@ if (VERBOSE_LEVEL>8)
 
 		pos = atol(strtok(NULL,dlm));
 		while (pos) {
-			hdr->AS.rawdata = (uint8_t*) realloc(hdr->AS.rawdata, ((hdr->NRec+1) * hdr->NS * GDFTYP_BITS[gdftyp])>>3);
+			hdr->AS.rawdata = (uint8_t*) realloc(hdr->AS.rawdata, (((size_t)hdr->NRec+1) * hdr->NS * GDFTYP_BITS[gdftyp])>>3);
 			for (k=0; k < hdr->NS; k++) {
 			if (gdftyp==16)
-				*(float*)(hdr->AS.rawdata  + ((hdr->NRec*hdr->NS+k)*GDFTYP_BITS[gdftyp]>>3)) = (float)atof(strtok(NULL,dlm));
+				*(float*)(hdr->AS.rawdata  + (((size_t)hdr->NRec*hdr->NS+k)*(GDFTYP_BITS[gdftyp]>>3))) = (float)atof(strtok(NULL,dlm));
 			else if (gdftyp==17)
-				*(double*)(hdr->AS.rawdata + ((hdr->NRec*hdr->NS+k)*GDFTYP_BITS[gdftyp]>>3)) = atof(strtok(NULL,dlm));
+				*(double*)(hdr->AS.rawdata + (((size_t)hdr->NRec*hdr->NS+k)*(GDFTYP_BITS[gdftyp]>>3))) = atof(strtok(NULL,dlm));
 			}
 			++hdr->NRec;
 
@@ -9058,7 +9059,7 @@ if (VERBOSE_LEVEL>2)
 	 		hc->PhysMin = hc->DigMin * hc->Cal + hc->Off;
 	    		hc->OnOff   = 1;
 	    		hc->bi      = hdr->AS.bpb;
-	    		hdr->AS.bpb += hdr->SPR*GDFTYP_BITS[gdftyp]>>3;
+			hdr->AS.bpb += hdr->SPR*(GDFTYP_BITS[gdftyp]>>3);
 	 	}
 
 		if (VERBOSE_LEVEL>7)
@@ -10256,8 +10257,9 @@ if (VERBOSE_LEVEL>2)
 					CHANNEL_TYPE *hc = hdr->CHANNEL+ch;
 
 					hc->SPR = hdr->SPR;
-					hc->bi8 = ch * hdr->SPR * GDFTYP_BITS[gdftyp]; 
-					hc->bi  = hc->bi8>>3; 
+					size_t bi8 = ch * (size_t)hdr->SPR * GDFTYP_BITS[gdftyp];
+					hc->bi8 = bi8;
+					hc->bi  = bi8>>3;
 				}
 				hdr->AS.bpb = FileBuf.st_size;
 			}
@@ -10662,7 +10664,7 @@ if (VERBOSE_LEVEL>2)
 			hc->HighPass = -1;
 		    	hc->LeadIdCode  = 0;
 			//hdr->AS.bpb    += 2 * hc->SPR;
-			hdr->AS.bpb    += (GDFTYP_BITS[hc->GDFTYP] * hc->SPR)>>3;
+			hdr->AS.bpb    += hc->SPR * (GDFTYP_BITS[hc->GDFTYP]>>3);
 
 			if (VERBOSE_LEVEL>7)
 				fprintf(stdout,"k=%i\tLabel=%s [%s]\tNS=%i\tpos=%i\n",(int)k,SignalName,tmp,(int)NS,(int)iftell(hdr));
@@ -10802,7 +10804,7 @@ if (VERBOSE_LEVEL>2)
 					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "TMSiLOG: Binary file corrupted");
 				}
 				else {
-					size_t sz = hdr->NS*hdr->SPR*hdr->NRec*GDFTYP_BITS[gdftyp]>>3;
+					size_t sz = (size_t)hdr->NS*hdr->SPR*hdr->NRec*(GDFTYP_BITS[gdftyp]>>3);
 					hdr->AS.rawdata = (uint8_t*)realloc(hdr->AS.rawdata,sz);
 					c = fread(hdr->AS.rawdata, hdr->NRec, hdr->SPR*hdr->NS*GDFTYP_BITS[gdftyp]>>3, fid);
 					if (c < sz) hdr->NRec = c;
@@ -10841,7 +10843,7 @@ if (VERBOSE_LEVEL>2)
 					typeof(hdr->NS) k2;
 					size_t k;
 					hdr->FILE.LittleEndian = (__BYTE_ORDER == __LITTLE_ENDIAN);
-					size_t sz = hdr->NS*hdr->SPR*hdr->NRec*GDFTYP_BITS[gdftyp]>>3;
+					size_t sz = (size_t)hdr->NS * hdr->SPR * hdr->NRec * GDFTYP_BITS[gdftyp]>>3;
 					hdr->AS.rawdata = (uint8_t*)realloc(hdr->AS.rawdata,sz);
 					for (k=0; k < (size_t)hdr->SPR*hdr->NRec; k++)
 					if (fgets(line,sz,fid)) {
@@ -11428,7 +11430,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 
 		if (VERBOSE_LEVEL>8) fprintf(stdout,"BVA-write: [214] gdftyp=%i NS=%i\n",gdftyp,hdr->NS);
 
-		hdr->AS.bpb = hdr->NS * hdr->SPR * GDFTYP_BITS[gdftyp] >> 3;
+		hdr->AS.bpb = (size_t)hdr->NS * hdr->SPR * GDFTYP_BITS[gdftyp] >> 3;
 
     		fprintf(fid,"\r\n\r\n[Channel Infos]\r\n");
     		fprintf(fid,"; Each entry: Ch<Channel number>=<Name>,<Reference channel name>,\r\n");
@@ -12130,7 +12132,7 @@ size_t bpb8_collapsed_rawdata(HDRTYPE *hdr)
 	typeof(hdr->NS) k;
 	for (k=0; k<hdr->NS; k++) {
 		CHptr 	= hdr->CHANNEL+k;
-		if (CHptr->OnOff) bpb8 += CHptr->SPR*GDFTYP_BITS[CHptr->GDFTYP];
+		if (CHptr->OnOff) bpb8 += (size_t)CHptr->SPR*GDFTYP_BITS[CHptr->GDFTYP];
 	}
 	return(bpb8);
 }
@@ -12173,7 +12175,7 @@ void collapse_rawdata(HDRTYPE *hdr)
 	for (k1=0; k1<hdr->NS; k1++) {
 		CHptr 	= hdr->CHANNEL+k1;
 
-		SZ = CHptr->SPR*GDFTYP_BITS[CHptr->GDFTYP];
+		SZ = (size_t)CHptr->SPR*GDFTYP_BITS[CHptr->GDFTYP];
 		if (SZ & 7) {
 			biosigERROR(hdr, B4C_RAWDATA_COLLAPSING_FAILED, "collapse_rawdata: does not support bitfields");
 		}
@@ -13337,7 +13339,7 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 				}
 			}
 			else if (hdr->TYPE == BIN) {
-				uint32_t nbytes	= (GDFTYP_BITS[hdr->CHANNEL[k1].GDFTYP]*hdr->CHANNEL[k1].SPR)>>3;
+				size_t nbytes	= ((size_t)hdr->CHANNEL[k1].SPR * GDFTYP_BITS[hdr->CHANNEL[k1].GDFTYP])>>3;
 				ifwrite(hdr->AS.rawdata+hdr->CHANNEL[k1].bi, nbytes, hdr->NRec, &H1);
 			}
 			ifclose(&H1);
