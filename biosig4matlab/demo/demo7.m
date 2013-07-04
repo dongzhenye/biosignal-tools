@@ -43,7 +43,7 @@ function y = demo7(arg1)
 % Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 % MULTIVARIATE AUTOREGRESSIVE Analysis: 
-if (nargin<1) | all(size(arg1)==1),
+if (nargin<1) || all(size(arg1)==1),
         k = arg1;
         [a{1},a{2},a{3},a{4},a{5}] = baccala2001;       
         AR0 = a{k};        % select parameter set
@@ -74,11 +74,11 @@ X.SampleRate = 100;
 X0 = X;
 
 
-ffields = {'Af','logh','logS','COH','iCOH','DTF','PDC','GPDC','pCOH','phase','PDCF','dDTF','ffDTF','GGC','iSpectrum','rSpectrum'};
-TIT = {'A(f)','Tranfer Function H(f)','Auto- & Cross-spectra','COH','iCOH','DTF','PDC','GPDC','pCOH','phase','PDCF','dDTF','ffDTF','GGC','iSpectrum','rSpectrum'};
+ffields = {'Af','logh','logS','COH','iCOH','DTF','PDC','GPDC','pCOH','phase','PDCF','dDTF','ffDTF','GGC','iSpectrum','rSpectrum','DCOH'};
+TIT = {'A(f)','Tranfer Function H(f)','Auto- & Cross-spectra','COH','iCOH','DTF','PDC','GPDC','pCOH','phase','PDCF','dDTF','ffDTF','GGC','iSpectrum','rSpectrum', 'DCOH/GDTF'};
 
 figure(1)
-%ffields = {'phase','dT'};
+ffields = {'DCOH','COH','PDC','GPDC','DTF'};
 for k=1:length(ffields);
 %	figure(k)
 	plota(X0,ffields{k});

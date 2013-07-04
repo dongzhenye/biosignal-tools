@@ -258,7 +258,7 @@ elseif strcmp(X.datatype,'MVAR'),
 		return;
 	end; 
 
-        [S,h,PDC,COH,DTF,DC,pCOH,dDTF,ffDTF, pCOH2, PDCF, coh, GGC, Af, GPDC, GGC2]=mvfreqz(X.B,X.A,X.C,f,Fs);
+        [S,h,PDC,COH,DTF,DC,pCOH,dDTF,ffDTF, pCOH2, PDCF, coh, GGC, Af, GPDC, GGC2, DCOH]=mvfreqz(X.B,X.A,X.C,f,Fs);
         Phase = zeros(size(h));
         for k1=1:K1;
         for k2=1:K2;
@@ -370,6 +370,10 @@ elseif strcmp(X.datatype,'MVAR'),
                         R = (GGC2);
                         range = [min(R(:)),max(R(:))];
                         %range = [.1,max(R(:))];
+                elseif strcmpi(Mode,'DCOH')||strcmpi(Mode,'GDTF'),
+                        R = DCOH;
+                        YTICK = 0:.5:1;
+                        YTICKLABEL = {'0','0.5',[]};
                 elseif strcmpi(Mode,'Af'),
                         R = abs(Af);
                         for k=1:size(R,1),
