@@ -654,7 +654,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L6 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 			BI[k] = hdr->AS.bpb;
 #endif
 			hc->SPR = hdr->SPR;
-			hdr->AS.bpb += hc->SPR * GDFTYP_BITS[hc->GDFTYP]>>3;
+			hdr->AS.bpb += hc->SPR * (GDFTYP_BITS[hc->GDFTYP]>>3);	// multiplation must not exceed 32 bit limit
 		}
 
 		if (hdr->AS.B4C_ERRNUM) {
