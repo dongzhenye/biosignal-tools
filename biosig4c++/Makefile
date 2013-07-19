@@ -916,6 +916,9 @@ testbin: save2gdf $(DATA_DIR)t1.edf
 	./save2gdf -f=BIN $(TEMP_DIR)t1.hdr $(TEMP_DIR)t2.hdr
 	./save2gdf -f=GDF $(TEMP_DIR)t2.hdr $(TEMP_DIR)t2.gdf
 
+testedf: save2gdf $(TEMP_DIR)Osas2002plusQRS.edf
+	./save2gdf -f=GDF $(TEMP_DIR)Osas2002plusQRS.edf $(TEMP_DIR)Osas2002plusQRS.gdf
+
 testscp: $(DATA_DIR)t1.scp save2gdf
 	# test converting SCP data
 	./save2gdf -f=HL7 "$<" $(TEMP_DIR)t1.scp.hl7

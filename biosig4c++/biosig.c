@@ -3414,7 +3414,7 @@ size_t hdrEVT2rawEVT(HDRTYPE *hdr) {
 	if (flag & 4) {
 		buf1 = hdr->AS.rawEventData+8+hdr->EVENT.N*(sze-8);
 		for (k32u=0; k32u<hdr->EVENT.N; k32u++) {
-			*(uint16_t*)(buf1+k32u*8) = l_endian_u64(hdr->EVENT.TimeStamp[k32u]);
+			*(uint64_t*)(buf1+k32u*8) = l_endian_u64(hdr->EVENT.TimeStamp[k32u]);
 		}
 	}
 #endif
@@ -14146,7 +14146,7 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 
 	if (VERBOSE>3) {
 		/* channel settings */
-		fprintf(fid,"\n\n[EVENT TABLE] N=%i Fs=%f",hdr->EVENT.N,hdr->EVENT.SampleRate);
+		fprintf(fid,"\n\n[EVENT TABLE %i] N=%i Fs=%f", (hdr->EVENT.TimeStamp!=NULL) + (hdr->EVENT.TYP!=NULL) + (hdr->EVENT.POS!=NULL) + (hdr->EVENT.CHN!=NULL) + (hdr->EVENT.DUR!=NULL), hdr->EVENT.N,hdr->EVENT.SampleRate);
 		fprintf(fid,"\nNo\tTYP\tPOS\tCHN\tDUR/VAL\tDesc");
 
 		size_t k;
