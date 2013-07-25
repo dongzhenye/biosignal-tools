@@ -57,6 +57,7 @@ int main(int argc, char **argv){
     int		TARGETSEGMENT=1; 	// select segment in multi-segment file format EEG1100 (Nihon Kohden)
     int 	VERBOSE	= 0; 
     char	FLAG_JSON = 0; 
+    char	FLAG_DYGRAPH = 0; 
     char	*argsweep = NULL;
     double	t1=0.0, t2=1.0/0.0;
 #ifdef CHOLMOD_H
@@ -93,9 +94,10 @@ int main(int argc, char **argv){
 		fprintf(stdout,"   -r, --ref=MM  \n\trereference data with matrix file MM. \n\tMM must be a 'MatrixMarket matrix coordinate real general' file.\n");
 #endif
 		fprintf(stdout,"   -f=FMT  \n\tconverts data into format FMT\n");
-		fprintf(stdout,"   -JSON  \n\tshows header, and events in JSON format\n");
 		fprintf(stdout,"\tFMT must represent a valid target file format\n");
 		fprintf(stdout,"\tCurrently are supported: HL7aECG, SCP_ECG (EN1064), GDF, EDF, BDF, CFWB, BIN, ASCII, ATF, BVA (BrainVision)\n\tas well as HEKA v2 -> ITX\n");
+		fprintf(stdout,"   -DYGRAPH, -f=DYGRAPH  \n\tproduces JSON output for presentation with dygraphs\n");
+		fprintf(stdout,"   -JSON  \n\tshows header and events in JSON format\n");
 		fprintf(stdout,"   -z=#, -z#\n\t# indicates the compression level (#=0 no compression; #=9 best compression, default #=1)\n");
 		fprintf(stdout,"   -s=#\tselect target segment # (in the multisegment file format EEG1100)\n");
 		fprintf(stdout,"   -SWEEP=ne,ng,ns\n\tsweep selection of HEKA/PM files\n\tne,ng, and ns select the number of experiment, the number of group, and the sweep number, resp.\n");
@@ -126,8 +128,12 @@ int main(int argc, char **argv){
 	    	argsweep = argv[k]+6;
 
 	}
+
 	else if (!strcmpi(argv[k],"-JSON"))
 		FLAG_JSON = 1;
+
+	else if (!strcmpi(argv[k],"-DYGRAPH"))
+		FLAG_DYGRAPH = 1;
 
     	else if (!strncmp(argv[k],"-f=",3))  	{
     		if (0) {}
@@ -151,6 +157,9 @@ int main(int argc, char **argv){
 			TARGET_TYPE=GDF1;
     		else if (!strncmp(argv[k],"-f=HL7",6))
 			TARGET_TYPE=HL7aECG;
+    		else if (!strncmp(argv[k],"-f=DYGRAPH",7)) {
+			FLAG_DYGRAPH = 1;
+		}
     		else if (!strncmp(argv[k],"-f=MFER",7))
 			TARGET_TYPE=MFER;
     		else if (!strncmp(argv[k],"-f=SCP",6))
@@ -325,7 +334,7 @@ int main(int argc, char **argv){
 	}	
  	else {
 		if (t2+t1 > hdr->NRec) t2 = hdr->NRec - t1;
-		if (dest != NULL)
+		if ((dest != NULL) || FLAG_DYGRAPH )
 			count = sread(NULL, t1, t2, hdr);
 	}
 	
@@ -345,7 +354,7 @@ int main(int argc, char **argv){
 	if (VERBOSE_LEVEL>7) 
 		fprintf(stdout,"\n[130] File  %s =%i/%i\n",hdr->FileName,hdr->FILE.OPEN,hdr->FILE.Des);
 
-	if (dest==NULL) {
+	if ((dest==NULL) && !FLAG_DYGRAPH) {
 		if (ne)	/* used for testig SFLUSH_GDF_EVENT_TABLE */
 		{
 			if (hdr->EVENT.N > ne)
@@ -374,6 +383,7 @@ int main(int argc, char **argv){
 		fprintf(stdout,"\n[139] File %s closed sd=%i/%i\n",hdr->FileName,hdr->FILE.OPEN,hdr->FILE.Des);
 
 	SOURCE_TYPE = hdr->TYPE;
+	if (FLAG_DYGRAPH) TARGET_TYPE=SOURCE_TYPE;
 	hdr->TYPE = TARGET_TYPE;
 	if ((hdr->TYPE==GDF) && (hdr->VERSION<2)) hdr->VERSION = 2.0;
 
@@ -569,16 +579,6 @@ int main(int argc, char **argv){
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[205] UCAL=%i\n", hdr->FLAG.UCAL);
 
-	/* write file */
-	size_t destlen = strlen(dest); 
-	char *tmp = (char*)malloc(destlen+4);
-	strcpy(tmp,dest);
-	if (hdr->FILE.COMPRESSION)  // add .gz extension to filename  
-		strcpy(tmp+destlen,".gz");
-
-	if (VERBOSE_LEVEL>7) 
-		fprintf(stdout,"[211] z=%i sd=%i\n",hdr->FILE.COMPRESSION,hdr->FILE.Des);
-
 	hdr->FLAG.ANONYMOUS = 1; 	// no personal names are processed 
 
 	/*
@@ -589,34 +589,78 @@ int main(int argc, char **argv){
 	void *tmpmem = hdr->AS.Header;
 	hdr->AS.Header = NULL;
 
-	hdr = sopen(tmp, "wb", hdr);
+	if (FLAG_DYGRAPH) {
+		FILE *fid = stdout;
+		if (dest != NULL) 	fid = fopen(dest,"wb+");
+		fprintf(fid,"{\n\"Header\": ");
+		fprintf_hdr2json(fid, hdr);
+		fprintf(fid,",\n\"Data\": [ ");
+		size_t k1,k2;
+		for (k1=0; k1 < hdr->SPR * hdr->NRec; k1++) {
+			if (k1>0) fprintf(fid,",\n\t");
+			fprintf(fid,"[");
+			for (k2=0; k2<hdr->NS; k2++) {
+				if (k2>0) fprintf(fid,", ");
+				size_t p = hdr->FLAG.ROW_BASED_CHANNELS ? hdr->data.size[0] * k1 + k2 : hdr->data.size[0] * k2 + k1 ;
+				fprintf(fid,"%g",data[p]);
+			}
+			fprintf(fid,"]");
+		}
+
+		fprintf(fid," ],\n\"labels\": [ ");
+		for (k2=0; k2<hdr->NS; k2++) {
+			CHANNEL_TYPE *hc = hdr->CHANNEL+k2;
+			if (k2>0) fprintf(fid,", ");
+			size_t p = hdr->FLAG.ROW_BASED_CHANNELS ? hdr->data.size[0] * k1 + k2 : hdr->data.size[0] * k2 + k1 ;
+			fprintf(fid,"\"%s [%s]\"",hc->Label,PhysDim3(hc->PhysDimCode));
+		}
+		fprintf(fid,"]\n}\n");
+
+
+		if (dest != NULL) fclose(fid);
+	}
+	else {
+		/* write file */
+		size_t destlen = strlen(dest); 
+		char *tmp = (char*)malloc(destlen+4);
+		strcpy(tmp,dest);
+		if (hdr->FILE.COMPRESSION)  // add .gz extension to filename  
+		strcpy(tmp+destlen,".gz");
+
+	if (VERBOSE_LEVEL>7) 
+		fprintf(stdout,"[211] z=%i sd=%i\n",hdr->FILE.COMPRESSION,hdr->FILE.Des);
+
+		hdr = sopen(tmp, "wb", hdr);
+
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"returned from sopen-wb\n");
-	free(tmp); 
-	if ((status=serror2(hdr))) {
-		destructHDR(hdr);
-		exit(status); 
-	}	
+
+		free(tmp); 
+		if ((status=serror2(hdr))) {
+			destructHDR(hdr);
+			exit(status); 
+		}	
 #ifndef WITHOUT_NETWORK
-	if (hdr->FILE.Des>0) 
-		savelink(source);
+		if (hdr->FILE.Des>0) 
+			savelink(source);
 #endif
-	if (VERBOSE_LEVEL>7)
-		fprintf(stdout,"\n[221] File %s opened. %i %i %i Des=%i\n",hdr->FileName,hdr->AS.bpb,hdr->NS,(int)(hdr->NRec),hdr->FILE.Des);
+		if (VERBOSE_LEVEL>7)
+			fprintf(stdout,"\n[221] File %s opened. %i %i %i Des=%i\n",hdr->FileName,hdr->AS.bpb,hdr->NS,(int)(hdr->NRec),hdr->FILE.Des);
 
-	swrite(data, hdr->NRec, hdr);
+		swrite(data, hdr->NRec, hdr);
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"[231] SWRITE finishes\n");
-	if ((status=serror2(hdr))) { 
-		destructHDR(hdr);
-		exit(status); 
-    	}	
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"[231] SWRITE finishes\n");
+		if ((status=serror2(hdr))) { 
+			destructHDR(hdr);
+			exit(status); 
+	    	}	
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[236] SCLOSE finished\n");
 
-	sclose(hdr);
+		sclose(hdr);
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"[241] SCLOSE finished\n");
 
+	}
 	status = serror2(hdr);
 	destructHDR(hdr);
 	if (tmpmem != NULL) free(tmpmem);
