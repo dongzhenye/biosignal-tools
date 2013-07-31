@@ -13,14 +13,13 @@ function [HDR]=mwfopen(HDR,PERMISSION,arg3,arg4,arg5,arg6)
 % as published by the Free Software Foundation; either version 3
 % of the License, or (at your option) any later version.
 
-%	$Id$
-%	(C) 2004,2007,2008 by Alois Schloegl <a.schloegl@ieee.orgA	
+%	(C) 2004,2007,2008,2013 by Alois Schloegl <alois.schloegl@gmail.com>
+% 	(C) 2013, Peter Beck, Joaneum Research
 %    	This is part of the BIOSIG-toolbox http://biosig.sf.net/
 
 
-HDR.FILE.OPEN= 0; 
-
 if nargin<1, PERMISSION='rb'; end;
+
 if ischar(HDR)
         tmp=HDR;
         HDR=[];
@@ -60,7 +59,7 @@ if ~isempty(findstr(PERMISSION,'r')),		%%%%% READ
                 len = fread(HDR.FILE.FID,1,'uint8');
                 %fprintf(1,'[%i] Tag %i: (%i)\n',ftell(HDR.FILE.FID),tag,len);
 
-                if (len < 0) | (len > 127),
+                if (len < 0) || (len > 127),
                         l   = mod(len,128);
                         len = fread(HDR.FILE.FID,[l,1],'uchar');
                         %len = 256.^[0:l-1]*len;        
@@ -78,13 +77,13 @@ if ~isempty(findstr(PERMISSION,'r')),		%%%%% READ
                 elseif tag==1;
                         [tmp,count] = fread(HDR.FILE.FID,[1,1],'uint8');
                         if 0, 
-                        elseif (tmp==0) & strcmp(HDR.Endianity,'ieee-le'),
+                        elseif (tmp==0) && strcmp(HDR.Endianity,'ieee-le'),
                                 tmp = ftell(HDR.FILE.FID);
                                 HDR.Endianity='ieee-be';
                                 fclose(HDR.FILE.FID);
                                 HDR.FILE.FID = fopen(HDR.FileName,PERMISSION,HDR.Endianity);
                                 fseek(HDR.FILE.FID,tmp,'bof');
-                        elseif (tmp==1) & strcmp(HDR.Endianity,'ieee-be'),
+                        elseif (tmp==1) && strcmp(HDR.Endianity,'ieee-be'),
                                 tmp = ftell(HDR.FILE.FID);
                                 HDR.Endianity='ieee-le';
                                 fclose(HDR.FILE.FID);
@@ -109,9 +108,9 @@ if ~isempty(findstr(PERMISSION,'r')),		%%%%% READ
                         elseif len == 2;
                                 [tmp,count] = fread(HDR.FILE.FID,1,'int16');
                         elseif len == 3;
-                                [tmp,count] = fread(HDR.FILE.FID,1,'bit24');
-                                %[tmp,count] = fread(HDR.FILE.FID,3,'uint8');
-                                %tmp = (2.^[16,8,0])*tmp;
+                                %[tmp,count] = fread(HDR.FILE.FID,1,'bit24');
+                                [tmp,count] = fread(HDR.FILE.FID,3,'uint8');
+                                tmp = (2.^[16,8,0])*tmp;
                         elseif len == 4;
                                 [tmp,count] = fread(HDR.FILE.FID,1,'int32');
                         else
@@ -129,8 +128,9 @@ if ~isempty(findstr(PERMISSION,'r')),		%%%%% READ
                         elseif len == 2;
                                 [tmp,count] = fread(HDR.FILE.FID,1,'int16');
                         elseif len == 3;
-                                [tmp,count] = fread(HDR.FILE.FID,1,'bit24');
-                                %tmp = (2.^[16,8,0])*tmp;
+                                %[tmp,count] = fread(HDR.FILE.FID,1,'bit24');
+                                [tmp,count] = fread(HDR.FILE.FID,3,'uint8');
+                                tmp = (2.^[16,8,0])*tmp;
                                 %tmp = (2.^[0:8:16])*tmp;
                         elseif len == 4;
                                 [tmp,count] = fread(HDR.FILE.FID,1,'int32');
@@ -143,8 +143,10 @@ if ~isempty(findstr(PERMISSION,'r')),		%%%%% READ
                         if     len==0; 	tmp = NaN;
                         elseif len==1;	[tmp,count] = fread(HDR.FILE.FID,1,'int8');
                         elseif len==2;	[tmp,count] = fread(HDR.FILE.FID,1,'int16');
-                        elseif len==3;	[tmp,count] = fread(HDR.FILE.FID,1,'bit24')
-                             		% tmp = (2.^[16,8,0])*tmp;
+                        elseif len==3;
+                                % [tmp,count] = fread(HDR.FILE.FID,1,'bit24')
+                                [tmp,count] = fread(HDR.FILE.FID,3,'uint8');
+                                tmp = (2.^[16,8,0])*tmp;
                         elseif len==4;	[tmp,count] = fread(HDR.FILE.FID,1,'int32');
                         else   fprintf(2,'Error MWFOPEN: max length exceeded in tag 06h\n');
                         end;
@@ -209,7 +211,10 @@ if ~isempty(findstr(PERMISSION,'r')),		%%%%% READ
                         len = len - 2;
                         if     len == 1;	[tmp,count] = fread(HDR.FILE.FID,1,'int8');
                         elseif len == 2;	[tmp,count] = fread(HDR.FILE.FID,1,'int16');
-                        elseif len == 3;	[tmp,count] = fread(HDR.FILE.FID,1,'bit24');
+                        elseif len == 3;
+                                % [tmp,count] = fread(HDR.FILE.FID,1,'bit24');
+                                [tmp,count] = fread(HDR.FILE.FID,3,'uint8');
+                                tmp = (2.^[16,8,0])*tmp;
                         elseif len == 4;	[tmp,count] = fread(HDR.FILE.FID,1,'int32');
                         end;
                         e = 10^tmp1(2);
@@ -234,7 +239,7 @@ if ~isempty(findstr(PERMISSION,'r')),		%%%%% READ
                         elseif tmp(1)== 5, HDR.PhysDimCode = 3808; %% dyne
                         elseif tmp(1)== 6, HDR.PhysDimCode = 3776; %% N
                         elseif tmp(1)== 7, HDR.PhysDimCode = 544;  %% '%'
-                        elseif tmp(1)== 8, HDR.PhysDimCode = 6048; %% °C
+                        elseif tmp(1)== 8, HDR.PhysDimCode = 6048; %% Â°C
                         elseif tmp(1)== 9, HDR.PhysDimCode = 2528; %% 1/min
                         elseif tmp(1)==10, HDR.PhysDimCode = 4264; %% 1/s
                         elseif tmp(1)==11, HDR.PhysDimCode = 4288; %% Ohm
@@ -257,7 +262,10 @@ if ~isempty(findstr(PERMISSION,'r')),		%%%%% READ
                         len = len - 2;
                         if     len == 1; [tmp,count] = fread(HDR.FILE.FID,1,'int8');
                         elseif len == 2; [tmp,count] = fread(HDR.FILE.FID,1,'int16');
-                        elseif len == 3; [tmp,count] = fread(HDR.FILE.FID,1,'bit24');
+                        elseif len == 3;
+                                %[tmp,count] = fread(HDR.FILE.FID,1,'bit24');
+                                [tmp,count] = fread(HDR.FILE.FID,3,'uint8');
+                                tmp = (2.^[16,8,0])*tmp;
                         elseif len == 4; [tmp,count] = fread(HDR.FILE.FID,1,'int32');
                         end;
                         HDR.Cal = tmp*e;
@@ -316,10 +324,10 @@ if ~isempty(findstr(PERMISSION,'r')),		%%%%% READ
                         nos = len/(HDR.AS.bps*HDR.AS.spb);
                         HDR.FRAME.sz(HDR.FRAME.N,1:5) = [HDR.AS.spb,nos,HDR.NRec,HDR.NS,len];
                         HDR.FRAME.Fs(HDR.FRAME.N) = HDR.SampleRate;
-                        
+
                         fseek(HDR.FILE.FID,len,'cof');
-			
-                        
+
+
                 elseif tag==63;     
                         chansel = mod(len,128)+1;
                         k = 1;
@@ -345,7 +353,9 @@ if ~isempty(findstr(PERMISSION,'r')),		%%%%% READ
                                                 elseif len == 2;
                                                         [tmp,count] = fread(HDR.FILE.FID,1,'int16');
                                                 elseif len == 3;
-                                                        [tmp,count] = fread(HDR.FILE.FID,1,'bit24');
+                                                        %[tmp,count] = fread(HDR.FILE.FID,1,'bit24');
+                                                        [tmp,count] = fread(HDR.FILE.FID,3,'uint8');
+                                                        tmp = (2.^[16,8,0])*tmp;
                                                 elseif len == 4;
                                                         [tmp,count] = fread(HDR.FILE.FID,1,'int32');
                                                 else
@@ -379,14 +389,14 @@ if ~isempty(findstr(PERMISSION,'r')),		%%%%% READ
                                 end;
                         else
                                 tag2 = 1; len2=1;
-                                while (tag2 | len2),
+                                while (tag2 || len2),
                                         tag2 = fread(HDR.FILE.FID,1,'uchar');
                                         len2 = fread(HDR.FILE.FID,1,'uint8');
                                         %% this part is not tested yet
                                         fprintf(1,'\t%i',chansel);
                                         fprintf(1,'> [%i] Tag %i: (%i)\n',ftell(HDR.FILE.FID),tag2,len2);
                                         
-                                        if (len2 < 0) | (len2 > 127),
+                                        if (len2 < 0) || (len2 > 127),
                                                 l   = mod(len2,128);
                                                 len2 = fread(HDR.FILE.FID,[l,1],'uchar');
                                                 %len = 256.^[0:l-1]*len;        
