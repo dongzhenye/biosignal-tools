@@ -81,16 +81,16 @@ for n = 1:N,
 	        if 0, 
 		elseif n<=on(1)
                         Y(n) = nan;		
-		elseif (on(ix-1) >= (n-1)) & (on(ix) <= (n+1)),
+		elseif (on(ix-1) >= (n-1)) && (on(ix) <= (n+1)),
                         Y(n) = Y(n) + 1;
 		% 2nd case: RR interval partially overlaps beginning of sample window
-	        elseif (on(ix-1) <  (n-1)) & (on(ix) <  (n+1)),
+	        elseif (on(ix-1) <  (n-1)) && (on(ix) <  (n+1)),
                         Y(n) = Y(n) + (on(ix)-(n-1))/(on(ix)-on(ix-1));
 		% 3rd case: RR interval partially overlaps the end of sample window
-	        elseif (on(ix-1) >  (n-1)) & (on(ix) >  (n+1)),
+	        elseif (on(ix-1) >  (n-1)) && (on(ix) >  (n+1)),
                         Y(n) = Y(n) + ((n+1) - on(ix-1))/(on(ix)-on(ix-1));
 		% 4th case: RR interval totally overlaps the sample window
-	        elseif (on(ix-1) <= (n-1)) & (on(ix) >= (n+1)),
+	        elseif (on(ix-1) <= (n-1)) && (on(ix) >= (n+1)),
                         Y(n) = Y(n) + 2/(on(ix)-on(ix-1));
 		elseif isnan(on(ix)),
                         Y(n) = nan;
