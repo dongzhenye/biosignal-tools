@@ -107,11 +107,10 @@ elseif ischar(arg2) && (strcmp(H.TYPE,'ELPOS') || (isfield(H,'ELEC') && strncmpi
         
 elseif isfield(H,'LeadIdCode') && all((H.LeadIdCode>0) & (H.LeadIdCode<256)) && all(H.PhysDimCode==H.PhysDimCode(1)) 
 	% 12-lead, 10s ECG 
-	xlen = 5; 
-	if (H.TYPE == 'SCP') 
-		H.SampleRate = round(H.SampleRate);
-	end; 
-	d = repmat(NaN,[H.SampleRate*xlen,12]);
+	xlen = 5;
+	Fs = round(H.SampleRate);
+
+	d = repmat(NaN,Fs*xlen,12);
 	pos = [1,2,61:64,3:8];
 	x = leadidcodexyz(pos); 
 	[tmp, scale] = physicalunits(H.PhysDimCode);
@@ -120,7 +119,7 @@ elseif isfield(H,'LeadIdCode') && all((H.LeadIdCode>0) & (H.LeadIdCode<256)) && 
 		ch = find(pos(k)==H.LeadIdCode);
 		if ~isempty(ch)
 			CH(ch) = k;
-			d(1:xlen*H.SampleRate-1,k)=s(1:xlen*H.SampleRate-1,ch);
+			d(1:xlen*Fs-1,k)=s(1:xlen*Fs-1,ch);
 		else
 			switch k
 			case 3
@@ -135,10 +134,10 @@ elseif isfield(H,'LeadIdCode') && all((H.LeadIdCode>0) & (H.LeadIdCode<256)) && 
 		end; 	
 	end;
 
-	d = reshape(permute(reshape(d,[H.SampleRate*xlen,3,4]),[1,3,2]),[H.SampleRate*xlen*4,3]);
-	d = [(abs([-(H.SampleRate/2):(H.SampleRate/2)])' < (H.SampleRate/4))*ones(1,3)*1e-3/scale(1); repmat(NaN,1,3); d];	
+	d = reshape(permute(reshape(d,[Fs*xlen,3,4]),[1,3,2]),[Fs*xlen*4,3]);
+	d = [(abs([-(Fs/2):(Fs/2)])' < (Fs/4))*ones(1,3)*1e-3/scale(1); repmat(NaN,1,3); d];
 	
-	plot([1:H.SampleRate*(xlen*4+1)+2]'/H.SampleRate-1, d + ones(size(d,1),1)*[0,-1,-2]*3*1e-3/scale(1),'k');
+	plot([1:Fs*(xlen*4+1)+2]'/Fs-1, d + ones(size(d,1),1)*[0,-1,-2]*3*1e-3/scale(1),'k');
 	grid on
 	set(gca,'xMinorTick','on','yMinorTick','on','xMinorGrid','on','yMinorGrid','on','box','off');
 	set(gca,'gridlinestyle','-','minorgridlinestyle',':');
