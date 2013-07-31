@@ -51,7 +51,11 @@ HDR = sclose(HDR);
 
 
 % QRS-Detection
-H2 = qrsdetect(s,HDR.SampleRate,2);
+try
+   H2 = qrsdetect(s,HDR.SampleRate,2);
+catch
+   H2 = qrsdetect(s,HDR.SampleRate,1);
+end;
 % resampling to 4 Hz using the Berger algorithm 
 [HRV,RRI] = berger(H2,4);
 % compute HRV parameters 
