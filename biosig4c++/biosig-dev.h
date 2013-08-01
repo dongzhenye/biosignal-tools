@@ -40,11 +40,10 @@
 #include <sys/param.h>
 #include <time.h>
 
+extern int VERBOSE_LEVEL; 	// used for debugging, variable is always defined
 
 #ifdef NDEBUG
-#define VERBOSE_LEVEL 0		// turn off debugging information
-#else
-extern int VERBOSE_LEVEL; 	// used for debugging
+#define VERBOSE_LEVEL 0 	// turn off debugging information, but its only used without NDEBUG
 #endif
 
 

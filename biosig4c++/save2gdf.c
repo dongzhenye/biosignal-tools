@@ -119,7 +119,7 @@ int main(int argc, char **argv){
 	}
     	else if (!strncmp(argv[k],"-VERBOSE",2))  {
 	    	VERBOSE = argv[k][strlen(argv[k])-1]-48;
-#ifndef VERBOSE_LEVEL
+#ifndef NDEBUG
 	// then VERBOSE_LEVEL is not a constant but a variable
 	VERBOSE_LEVEL = VERBOSE; 
 #endif

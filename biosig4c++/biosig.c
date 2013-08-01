@@ -59,6 +59,8 @@
 #  include <curl/curl.h>
 #endif 
 
+int VERBOSE_LEVEL = 0;		// this variable is always available, but only used without NDEBUG 
+
 #include "biosig-dev.h"
 #include "biosig-network.h"
 
@@ -106,9 +108,6 @@ void CSstart () {
 }
 #endif
 
-#ifndef VERBOSE_LEVEL
-int VERBOSE_LEVEL = 0;
-#endif
 
 #ifdef __cplusplus
 extern "C" {
