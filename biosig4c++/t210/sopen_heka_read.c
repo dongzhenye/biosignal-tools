@@ -674,14 +674,22 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA L6 @%i= #%i,%i, %s %f-%fHz\t%i/%i %i/%
 
  ******************************************************************************/
 
+if (VERBOSE_LEVEL > 7) fprintf(stdout,"HEKA: 400: %li  %li %li\n",(long)hdr->NRec, (long)hdr->AS.bpb,hdr->NRec * (size_t)hdr->AS.bpb);
 
-		void* tmpptr = realloc(hdr->AS.rawdata, hdr->NRec * (size_t)hdr->AS.bpb);
+		size_t sz = hdr->NRec * (size_t)hdr->AS.bpb;
+		if (sz/hdr->NRec < hdr->AS.bpb) {
+                        biosigERROR(hdr, B4C_MEMORY_ALLOCATION_FAILED, "memory allocation failed - more than 2GB required but platform supports only 32 bit!");
+                        return;
+		}
+
+		void* tmpptr = realloc(hdr->AS.rawdata, sz);
 		if (tmpptr!=NULL) 
 			hdr->AS.rawdata = (uint8_t*) tmpptr;
 		else {
                         biosigERROR(hdr, B4C_MEMORY_ALLOCATION_FAILED, "memory allocation failed - not enough memory!");
                         return;
 		}	
+		assert(hdr->NRec >= 0);
 		memset(hdr->AS.rawdata, 0xff, hdr->NRec * (size_t)hdr->AS.bpb); 	// initialize with NAN's
 
 
