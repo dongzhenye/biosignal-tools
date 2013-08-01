@@ -7537,7 +7537,55 @@ if (VERBOSE_LEVEL>8)
 
 #ifdef WITH_EMBLA
 	else if (hdr->TYPE==EMBLA) {
-		strncpy(hdr->CHANNEL[k].Label,buf+0x116,MAX_LENGTH_LABEL);
+		ifseek(hdr,48,SEEK_SET);
+		hdr->NS = 1;
+		hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
+		for (k=0; k < hdr->NS; k++) {
+			CHANNEL_TYPE* hc = hdr->CHANNEL+k;
+			hc->OnOff    = 1;
+			hc->GDFTYP   = 3;
+			hc->SPR      = hdr->SPR;
+			hc->Cal      = 0.1;
+			hc->Off      = 0.0;
+			hc->Transducer[0] = '\0';
+			hc->LowPass  = NAN;
+			hc->HighPass = NAN;
+			hc->PhysMax  =  3276.7;
+			hc->PhysMin  = -3276.8;
+			hc->DigMax   =  32767;
+			hc->DigMin   = -32768;
+			hc->LeadIdCode  = 0;
+			hc->PhysDimCode = 4275;	//uV
+			hc->bi   = k*hdr->SPR*2;
+
+			char *label = (char*)(hdr->AS.Header+1034+k*512);
+			len    = min(16,MAX_LENGTH_LABEL);
+			if ( (hdr->AS.Header[1025+k*512]=='E') && strlen(label)<13) {
+				strcpy(hc->Label, "EEG ");
+				strcat(hc->Label, label);
+			}
+			else
+				strncpy(hc->Label, label, len);
+		}
+
+		while (1) {
+			uint32_t taglen[2];
+			uint32_t *tag = &taglen[0];
+			uint32_t *len = &taglen[1];
+			size_t c = ifread(taglen, 4, 2, hdr);
+			if (ifeof(hdr)) break;
+			switch (*tag) {
+			case 32:
+				hdr->HeadLen = iftell(hdr);
+				hdr->SPR = *len/2;
+				hdr->AS.rawdata = realloc(hdr->AS.rawdata,*len);
+				ifread(hdr->AS.rawdata,2,*len/2,hdr);
+
+			default:
+				ifseek(hdr,*len,SEEK_CUR);
+			}
+			//strncpy(hdr->CHANNEL[k].Label,buf+0x116,MAX_LENGTH_LABEL);
+		}
 	}
 #endif
 	else if (hdr->TYPE==EMSA) {
