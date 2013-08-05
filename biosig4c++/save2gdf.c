@@ -56,6 +56,7 @@ int main(int argc, char **argv){
     uint16_t	k;
     int		TARGETSEGMENT=1; 	// select segment in multi-segment file format EEG1100 (Nihon Kohden)
     int 	VERBOSE	= 0; 
+    char	FLAG_CSV = 0;
     char	FLAG_JSON = 0; 
     char	FLAG_DYGRAPH = 0; 
     char	*argsweep = NULL;
@@ -96,6 +97,7 @@ int main(int argc, char **argv){
 		fprintf(stdout,"   -f=FMT  \n\tconverts data into format FMT\n");
 		fprintf(stdout,"\tFMT must represent a valid target file format\n");
 		fprintf(stdout,"\tCurrently are supported: HL7aECG, SCP_ECG (EN1064), GDF, EDF, BDF, CFWB, BIN, ASCII, ATF, BVA (BrainVision)\n\tas well as HEKA v2 -> ITX\n");
+		fprintf(stdout,"   -CSV  \n\texports data into CSV file\n");
 		fprintf(stdout,"   -DYGRAPH, -f=DYGRAPH  \n\tproduces JSON output for presentation with dygraphs\n");
 		fprintf(stdout,"   -JSON  \n\tshows header and events in JSON format\n");
 		fprintf(stdout,"   -z=#, -z#\n\t# indicates the compression level (#=0 no compression; #=9 best compression, default #=1)\n");
@@ -129,6 +131,9 @@ int main(int argc, char **argv){
 
 	}
 
+	else if (!strcmpi(argv[k],"-CSV"))
+		FLAG_CSV = 1;
+
 	else if (!strcmpi(argv[k],"-JSON"))
 		FLAG_JSON = 1;
 
@@ -157,7 +162,10 @@ int main(int argc, char **argv){
 			TARGET_TYPE=GDF1;
     		else if (!strncmp(argv[k],"-f=HL7",6))
 			TARGET_TYPE=HL7aECG;
-    		else if (!strncmp(argv[k],"-f=DYGRAPH",7)) {
+		else if (!strncmp(argv[k],"-f=CSV",6)) {
+			FLAG_CSV = 1;
+		}
+		else if (!strncmp(argv[k],"-f=DYGRAPH",10)) {
 			FLAG_DYGRAPH = 1;
 		}
     		else if (!strncmp(argv[k],"-f=MFER",7))
@@ -334,7 +342,7 @@ int main(int argc, char **argv){
 	}	
  	else {
 		if (t2+t1 > hdr->NRec) t2 = hdr->NRec - t1;
-		if ((dest != NULL) || FLAG_DYGRAPH )
+		if ((dest != NULL) || FLAG_CSV || FLAG_DYGRAPH )
 			count = sread(NULL, t1, t2, hdr);
 	}
 	
@@ -354,7 +362,7 @@ int main(int argc, char **argv){
 	if (VERBOSE_LEVEL>7) 
 		fprintf(stdout,"\n[130] File  %s =%i/%i\n",hdr->FileName,hdr->FILE.OPEN,hdr->FILE.Des);
 
-	if ((dest==NULL) && !FLAG_DYGRAPH) {
+	if ((dest==NULL) && !FLAG_CSV && !FLAG_DYGRAPH) {
 		if (ne)	/* used for testig SFLUSH_GDF_EVENT_TABLE */
 		{
 			if (hdr->EVENT.N > ne)
@@ -589,9 +597,38 @@ int main(int argc, char **argv){
 	void *tmpmem = hdr->AS.Header;
 	hdr->AS.Header = NULL;
 
-	if (FLAG_DYGRAPH) {
+	if (FLAG_CSV) {
+		const char SEP=',';
 		FILE *fid = stdout;
-		if (dest != NULL) 	fid = fopen(dest,"wb+");
+		if (dest != NULL) fid = fopen(dest,"wt+");
+		size_t k1,k2;
+		char flag = 0;
+		for (k2 = 0; k2 < hdr->NS; k2++) {
+			CHANNEL_TYPE *hc = hdr->CHANNEL+k2;
+			if (hc->OnOff) {
+				if (flag) fprintf(fid,"%c",SEP);
+				flag = 1;
+				fprintf(fid,"\"%s [%s]\"", hc->Label, PhysDim3(hc->PhysDimCode) );
+			}
+		}
+		for (k1 = 0; k1 < hdr->SPR*hdr->NRec; k1++) {
+			flag = 0;
+			for (k2 = 0; k2 < hdr->NS; k2++) {
+				CHANNEL_TYPE *hc = hdr->CHANNEL+k2;
+				if (hc->OnOff) {
+					fprintf(fid,"%c", flag ? SEP : '\n');
+					flag = 1;
+					size_t p = hdr->FLAG.ROW_BASED_CHANNELS ? hdr->data.size[0] * k1 + k2 : hdr->data.size[0] * k2 + k1 ;
+					fprintf(fid,"%g", data[p]);
+				}
+			}
+		}
+		fprintf(fid,"\n");
+		if (dest != NULL) fclose(fid);
+	}
+	else if (FLAG_DYGRAPH) {
+		FILE *fid = stdout;
+		if (dest != NULL) fid = fopen(dest,"wb+");
 		fprintf(fid,"{\n\"Header\": ");
 		fprintf_hdr2json(fid, hdr);
 		fprintf(fid,",\n\"Data\": [ ");
@@ -615,8 +652,6 @@ int main(int argc, char **argv){
 			fprintf(fid,"\"%s [%s]\"",hc->Label,PhysDim3(hc->PhysDimCode));
 		}
 		fprintf(fid,"]\n}\n");
-
-
 		if (dest != NULL) fclose(fid);
 	}
 	else {
