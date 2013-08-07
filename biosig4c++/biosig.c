@@ -3484,7 +3484,7 @@ void rawEVT2hdrEVT(HDRTYPE *hdr) {
 #if (BIOSIG_VERSION >= 10500)
 			if (flag & 4) {
 				// TimeStamp
-				hdr->EVENT.TimeStamp = (gdf_time*) realloc(hdr->EVENT.DUR,hdr->EVENT.N*sizeof(*hdr->EVENT.TimeStamp));
+				hdr->EVENT.TimeStamp = (gdf_time*) realloc(hdr->EVENT.TimeStamp, hdr->EVENT.N*sizeof(*hdr->EVENT.TimeStamp));
 				buf1 = hdr->AS.rawEventData+8+hdr->EVENT.N*(sze-8);
 				for (k=0; k < hdr->EVENT.N; k++) {
 					hdr->EVENT.TimeStamp[k] = leu64p(buf1 + k*8);
