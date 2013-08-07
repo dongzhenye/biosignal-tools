@@ -904,11 +904,13 @@ end;
                                 fprintf(2,'\nWarning SOPEN (GDF): File %s corrupted (Eventtable version %i ).\n',HDR.FileName,EVENT.Version);
                         end;
                         if bitand(EVENT.Version, 4),
-                                [HDR.EVENT.TimeStamp,c5] = fread(HDR.FILE.FID,[EVENT.N,1],'uint64');
-                                HDR.EVENT.TimeStamp = HDR.EVENT.TimeStamp * (2^-32);
-                                if (HDR.VERSION < 2.50)
-					fprintf(stdout,'Warning: GDF version smaller than 2.50 has timestamp data');
-                                end;
+				if (HDR.VERSION < 2.50)
+					fprintf(stdout,'Warning: GDF version smaller than 2.50 has timestamp data\n');
+				end;
+				[TimeStamp,c5] = fread(HDR.FILE.FID,[EVENT.N,1],'uint64');
+				if (c5 > 0)
+	                                HDR.EVENT.TimeStamp = TimeStamp * (2^-32);
+				end;
                         end;
                         HDR.AS.endpos = HDR.AS.EVENTTABLEPOS;   % set end of data block, might be important for SSEEK
 
