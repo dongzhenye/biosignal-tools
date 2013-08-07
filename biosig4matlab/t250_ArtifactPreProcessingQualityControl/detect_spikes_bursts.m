@@ -205,6 +205,10 @@ Fs = 20000; 	% assumed samplerate
 		EVENT.POS = [EVENT.POS; OnsetSpike];
 		EVENT.DUR = [EVENT.DUR; repmat(1,  size(OnsetSpike))];
 		EVENT.CHN = [EVENT.CHN; repmat(ch, size(OnsetSpike,1), 1) ];
+		if isfield(EVENT,'TimeStamp')
+			### TODO: these should be properly computed ###
+			EVENT.TimeStamp = [EVENT.TimeStamp; repmat(0, size(OnsetSpike,1), 1) ];
+		end;
 	end;
 	end;
 

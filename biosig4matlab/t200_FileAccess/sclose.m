@@ -156,7 +156,7 @@ if HDR.FILE.OPEN >= 2,          % write-open of files
 	                        end;
                         end;
 
-                        if isfield(HDR.EVENT,'TimeStamp')
+                        if isfield(HDR.EVENT,'TimeStamp') && (length(HDR.EVENT.TimeStamp)==length(HDR.EVENT.POS)),
 				EVENT.Version = bitor(EVENT.Version,4);
                         end;
 

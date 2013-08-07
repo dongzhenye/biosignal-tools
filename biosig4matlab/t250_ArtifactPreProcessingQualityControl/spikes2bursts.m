@@ -166,7 +166,7 @@ end;
 		%%%%%%% Burst Detection %%%%%%%%%%%%%%%%%%%
 		OnsetBurst = OnsetSpike ( [1; 1 + find( diff(OnsetSpike) > Fs * dT_Burst ) ] );
 
-		DUR        = repmat(NaN, size(OnsetBurst));
+		DUR        = repmat(NaN, length(OnsetBurst), 1);
 		BurstTable = repmat(NaN, length(OnsetBurst), 6);
 		OnsetBurst(end+1) = inf;
 
@@ -193,7 +193,11 @@ end;
 		EVENT.TYP = [EVENT.TYP; repmat(hex2dec('0202'), size(DUR))];
 		EVENT.POS = [EVENT.POS; OnsetBurst(1:end-1)];
 		EVENT.DUR = [EVENT.DUR; DUR];
-		EVENT.CHN = [EVENT.CHN; repmat(ch, size(DUR,1), 1) ];
+		EVENT.CHN = [EVENT.CHN; repmat(ch, size(DUR)) ];
+		if isfield(EVENT,'TimeStamp')
+			### TODO: these should be properly computed ###
+			EVENT.TimeStamp = [EVENT.TimeStamp; repmat(0, size(DUR)) ];
+		end;
 	end; 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
