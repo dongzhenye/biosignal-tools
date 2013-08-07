@@ -1074,8 +1074,10 @@ end;
                                 HDR.VERSION = 1.25;     %% old version 
                         elseif (HDR.VERSION < 2.19)
                                 HDR.VERSION = 2.11;     %% stable version 
+                        elseif (HDR.VERSION < 2.51)
+                                HDR.VERSION = 2.22;     %% stable version
                         else
-                                HDR.VERSION = 2.22;     %% experimental 
+                                HDR.VERSION = 2.51;     %% experimental
                         end;        
                 elseif strcmp(HDR.TYPE,'BDF'),
                         HDR.VERSION = -1;
