@@ -196,7 +196,7 @@ end;
 		EVENT.CHN = [EVENT.CHN; repmat(ch, size(DUR)) ];
 		if isfield(EVENT,'TimeStamp')
 			### TODO: these should be properly computed ###
-			EVENT.TimeStamp = [EVENT.TimeStamp; repmat(0, size(DUR)) ];
+			EVENT.TimeStamp = [EVENT.TimeStamp; repmat(NaN, size(DUR)) ];
 		end;
 	end; 
 

@@ -207,7 +207,7 @@ Fs = 20000; 	% assumed samplerate
 		EVENT.CHN = [EVENT.CHN; repmat(ch, size(OnsetSpike,1), 1) ];
 		if isfield(EVENT,'TimeStamp')
 			### TODO: these should be properly computed ###
-			EVENT.TimeStamp = [EVENT.TimeStamp; repmat(0, size(OnsetSpike,1), 1) ];
+			EVENT.TimeStamp = [EVENT.TimeStamp; repmat(NaN, size(OnsetSpike,1), 1) ];
 		end;
 	end;
 	end;
@@ -227,7 +227,6 @@ Fs = 20000; 	% assumed samplerate
 		vararg{end+1}=burstFile;
 	end;
 	HDR = spikes2bursts(HDR,vararg{:});
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %	Output
