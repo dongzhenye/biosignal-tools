@@ -176,7 +176,7 @@ size_t biosig_set_number_of_events(HDRTYPE *hdr, size_t N) {
 	return hdr->EVENT.N;
 }
 
-int biosig_get_nth_event(HDRTYPE *hdr, size_t n, uint16_t *typ, uint32_t *pos, uint16_t *chn, uint32_t *dur, gdf_time *timestamp, const char **desc) {
+int biosig_get_nth_event(HDRTYPE *hdr, size_t n, uint16_t *typ, uint32_t *pos, uint16_t *chn, uint32_t *dur, gdf_time *timestamp, char **desc) {
 	if (hdr==NULL) return -1;
 	if (hdr->EVENT.N <= n) return -1;
 	uint16_t TYP=hdr->EVENT.TYP[n];
@@ -190,7 +190,7 @@ int biosig_get_nth_event(HDRTYPE *hdr, size_t n, uint16_t *typ, uint32_t *pos, u
 		*dur = (hdr->EVENT.DUR==NULL) ? 0 : hdr->EVENT.DUR[n];
 	if (timestamp != NULL)
 		*timestamp = (hdr->EVENT.TimeStamp==NULL) ? 0 : hdr->EVENT.TimeStamp[n];
-	if ( (desc != NULL) && (*desc != NULL) )
+	if ( (desc != NULL) )
 		*desc = (TYP < hdr->EVENT.LenCodeDesc) ? hdr->EVENT.CodeDesc[TYP] : NULL;
 	return 0;
 }

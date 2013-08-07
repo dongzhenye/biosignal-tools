@@ -76,7 +76,7 @@ size_t biosig_get_number_of_events(HDRTYPE *hdr);
 size_t biosig_set_number_of_events(HDRTYPE *hdr, size_t N);
 
 // get n-th event, variables pointing to NULL are ignored
-int biosig_get_nth_event(HDRTYPE *hdr, size_t n, uint16_t *typ, uint32_t *pos, uint16_t *chn, uint32_t *dur, gdf_time *timestamp, const char **desc);
+int biosig_get_nth_event(HDRTYPE *hdr, size_t n, uint16_t *typ, uint32_t *pos, uint16_t *chn, uint32_t *dur, gdf_time *timestamp, char **desc);
 /* set n-th event, variables pointing to NULL are ignored
    typ or  Desc can be used to determine the type of the event.
    if both, typ and Desc, are not NULL, the result is undefined */
