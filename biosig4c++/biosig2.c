@@ -1,7 +1,7 @@
 /*
 
     $Id$
-    Copyright (C) 2012 Alois Schloegl <alois.schloegl@gmail.com>
+    Copyright (C) 2012,2013 Alois Schloegl <alois.schloegl@gmail.com>
     This file is part of the "BioSig for C/C++" repository
     (biosig4c++) at http://biosig.sf.net/
 
@@ -154,21 +154,21 @@ size_t biosig_get_number_of_events(HDRTYPE *hdr) {
 size_t biosig_set_number_of_events(HDRTYPE *hdr, size_t N) {
 	if (hdr==NULL) return 0;
 	size_t k;
-	hdr->EVENT.POS = (uint32_t*) realloc(hdr->EVENT.POS, N * sizeof(*hdr->EVENT.POS) );
-	hdr->EVENT.TYP = (uint16_t*) realloc(hdr->EVENT.TYP, N * sizeof(*hdr->EVENT.TYP) );
+	hdr->EVENT.POS = (uint32_t*) realloc(hdr->EVENT.POS, N * 4 );
+	hdr->EVENT.TYP = (uint16_t*) realloc(hdr->EVENT.TYP, N * 2 );
 	for (k = hdr->EVENT.N; k<N; k++) {
 		hdr->EVENT.POS[k] = 0;
 		hdr->EVENT.TYP[k] = 0;
 	}
 	k = ( (hdr->EVENT.DUR==NULL) || (hdr->EVENT.CHN==NULL) ) ? 0 : hdr->EVENT.N;
-	hdr->EVENT.DUR = (uint32_t*) realloc(hdr->EVENT.DUR, N * sizeof(*hdr->EVENT.DUR) );
-	hdr->EVENT.CHN = (uint16_t*) realloc(hdr->EVENT.CHN, N * sizeof(*hdr->EVENT.CHN) );
+	hdr->EVENT.DUR = (uint32_t*) realloc(hdr->EVENT.DUR, N * 4 );
+	hdr->EVENT.CHN = (uint16_t*) realloc(hdr->EVENT.CHN, N * 2 );
 	for (; k<N; k++) {
 		hdr->EVENT.CHN[k] = 0;
 		hdr->EVENT.DUR[k] = 0;
 	}
 	k = (hdr->EVENT.TimeStamp==NULL) ? 0 : hdr->EVENT.N;
-	hdr->EVENT.TimeStamp = (gdf_time*) realloc(hdr->EVENT.TimeStamp, N * sizeof(*hdr->EVENT.TimeStamp) );
+	hdr->EVENT.TimeStamp = (gdf_time*) realloc(hdr->EVENT.TimeStamp, N * 8 );
 	for (; k<N; k++) {
 		hdr->EVENT.TimeStamp[k] = 0;
 	}

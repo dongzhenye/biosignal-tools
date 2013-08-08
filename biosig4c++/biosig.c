@@ -8640,6 +8640,7 @@ if (VERBOSE_LEVEL>8)
 		uint8_t tag = hdr->AS.Header[0];
     		ifseek(hdr,1,SEEK_SET);
     		int curPos = 1;
+		size_t N_EVENT=0;	// number of events, memory is allocated for in the event table. 
 		while (!ifeof(hdr)) {
 			uint32_t len, val32=0;
 			int32_t  chan=-1;
@@ -8708,20 +8709,21 @@ if (VERBOSE_LEVEL>8)
 				if (len>16) fprintf(stderr,"Warning MFER tag2 incorrect length %i>16\n",len);
 				curPos += ifread(&v,1,len,hdr);
 				v[len]  = 0;
-if (VERBOSE_LEVEL>7)
-	fprintf(stdout,"MFER: character code <%s>\n",v);
+if (VERBOSE_LEVEL>7) fprintf(stdout,"MFER: character code <%s>\n",v);
 			}
 			else if (tag==4) {
 				// SPR
 				if (len>4) fprintf(stderr,"Warning MFER tag4 incorrect length %i>4\n",len);
 				curPos += ifread(buf,1,len,hdr);
 				hdr->SPR = *(int64_t*) mfer_swap8b(buf, len, SWAP);
+if (VERBOSE_LEVEL>7) fprintf(stdout,"MFER: TLV %i %i %i \n",tag,len,(int)hdr->SPR);
 			}
 			else if (tag==5)     //0x05: number of channels
 			{
 				if (len>4) fprintf(stderr,"Warning MFER tag5 incorrect length %i>4\n",len);
 				curPos += ifread(buf,1,len,hdr);
 				hdr->NS = *(int64_t*) mfer_swap8b(buf, len, SWAP);
+if (VERBOSE_LEVEL>7) fprintf(stdout,"MFER: TLV %i %i %i \n",tag,len,(int)hdr->NS);
 				hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL, hdr->NS*sizeof(CHANNEL_TYPE));
 				for (k=0; k<hdr->NS; k++) {
 					CHANNEL_TYPE *hc = hdr->CHANNEL+k;
@@ -8729,6 +8731,7 @@ if (VERBOSE_LEVEL>7)
 					hc->PhysDimCode = 0;
 					hc->Cal = 1.0;
 					hc->LeadIdCode = 0; 
+					hc->GDFTYP = 3;
 				}
 			}
 			else if (tag==6) 	// 0x06 "number of sequences"
@@ -8737,6 +8740,7 @@ if (VERBOSE_LEVEL>7)
 				if (len>4) fprintf(stderr,"Warning MFER tag6 incorrect length %i>4\n",len);
 				curPos += ifread(buf,1,len,hdr);
 				hdr->NRec = *(int64_t*) mfer_swap8b(buf, len, SWAP);
+if (VERBOSE_LEVEL>7) fprintf(stdout,"MFER: TLV %i %i %i \n",tag,len,(int)hdr->NRec);
 			}
 			else if (tag==8) {
 				if (len>2) fprintf(stderr,"Warning MFER tag8 incorrect length %i>2\n",len);
@@ -8785,6 +8789,9 @@ if (VERBOSE_LEVEL>7)
 				hdr->SampleRate = fval*pow(10.0, (int8_t)buf[1]);
 				if (buf[0]==1)  // s
 					hdr->SampleRate = 1.0/hdr->SampleRate;
+
+if (VERBOSE_LEVEL>7) fprintf(stdout,"MFER: TLV %i %i %i %i %g \n",tag,len,buf[0], buf[1], hdr->SampleRate);
+
 			}
 			else if (tag==12)    //0x0C
 			{
@@ -8832,6 +8839,51 @@ if (VERBOSE_LEVEL>7)
 					else if (gdftyp ==17) Off = *(double*)ptrbuf;
 				}
 			}
+			else if (tag==22) {
+				// MWF_NTE (16h): Comment
+				char buf[257];
+				ifread(buf,1,min(256,len),hdr);
+				buf[min(256,len)]=0;
+				if (VERBOSE_LEVEL > 7) fprintf(stdout,"MFER comment (tag=22): %s\n",buf);
+				size_t POS=0, CHN=0;
+				const char *Desc = NULL;
+
+				char *ptrP1 = strstr(buf,"<P=");
+				if (ptrP1) {
+					ptrP1+=3;
+					char *ptrP2 = strstr(ptrP1, ">");
+					if (ptrP2) {
+						*ptrP2=0;
+						ptrP2++;
+						POS = atol(ptrP1);
+						Desc = ptrP2;
+					}
+				}
+				char *ptrP3 = strstr(buf,"<C=");
+				if (ptrP3==NULL) {
+					ptrP3 = strstr(buf,"<L=");
+				}
+				if (ptrP3) {
+					ptrP3+=3;
+					char *ptrP2 = strstr(ptrP3, ">");
+					if (ptrP2) {
+						*ptrP2=0;
+						ptrP2++;
+						CHN = strtol(ptrP3, &ptrP3, 10);
+					}
+				}
+				if (POS>0 && Desc) {
+					size_t N = hdr->EVENT.N;
+					if (N_EVENT <= N) {
+						N_EVENT = biosig_set_number_of_events(hdr, max(16, N*2));
+					}
+					hdr->EVENT.POS[N] = POS;
+					hdr->EVENT.CHN[N] = CHN;
+					FreeTextEvent(hdr, N, Desc);   // sets hdr->EVENT.TYP[n]
+					hdr->EVENT.N = N+1;
+				}
+				curPos += len;
+			}
 			else if (tag==23) {
 				// manufacturer information: "Manufacturer^model^version number^serial number"
 				ifread(hdr->ID.Manufacturer._field,1,min(MAX_LENGTH_MANUF,len),hdr);
@@ -8877,7 +8929,12 @@ if (VERBOSE_LEVEL>7)
 					if (tag2==4) {
 						// SPR
 						if (len2>4) fprintf(stderr,"Warning MFER tag63-4 incorrect length %i>4\n",len2);
-						hdr->CHANNEL[chan].SPR = *(int64_t*) mfer_swap8b(buf, len2, SWAP);
+						int64_t SPR = *(int64_t*) mfer_swap8b(buf, len2, SWAP);
+						hdr->SPR = (chan==0) ? SPR : lcm(SPR, hdr->SPR);
+						hdr->CHANNEL[chan].SPR = SPR;
+
+if (VERBOSE_LEVEL>7) fprintf(stdout,"MFER: TLV %i %i %i %i %i %i %i %i %i\n",tag,len, chan, tag2,len2, buf[0], buf[1], (int)hdr->SPR, (int)hdr->CHANNEL[chan].SPR);
+
 					}
 					else if (tag2==9) {	//leadname
 						if (len2==2)
@@ -8889,18 +8946,83 @@ if (VERBOSE_LEVEL>7)
 						else
 							fprintf(stderr,"Warning MFER tag63-9 incorrect length %i>32\n",len2);
 					}
+					else if (tag2==10) {
+						// GDFTYP
+						if (len2!=1) fprintf(stderr,"warning MFER tag63-10 incorrect length %i!=1\n",len2, buf[0]);
+						if 	(buf[0]==0)	gdftyp=3; // int16
+						else if (buf[0]==1)	gdftyp=4; // uint16
+						else if (buf[0]==2)	gdftyp=5; // int32
+						else if (buf[0]==3)	gdftyp=2; // uint8
+						else if (buf[0]==4)	gdftyp=4; // bit16
+						else if (buf[0]==5)	gdftyp=1; // int8
+						else if (buf[0]==6)	gdftyp=6; // uint32
+						else if (buf[0]==7)	gdftyp=16; // float32
+						else if (buf[0]==8)	gdftyp=17; // float64
+						else if (buf[0]==9)	//gdftyp=2; // 8 bit AHA compression
+							fprintf(stdout,"Warning: MFER compressed format not supported\n");
+						else			gdftyp=3;
+
+						hdr->CHANNEL[chan].GDFTYP = gdftyp;
+if (VERBOSE_LEVEL>7) fprintf(stdout,"MFER: TLV %i %i %i %i %i %i %i\n",tag, len, chan, tag2, len2, buf[0], gdftyp);
+
+					}
 					else if (tag2==11) {	// sampling resolution
 						if (len2>6) fprintf(stderr,"Warning MFER tag63-11 incorrect length %i>6\n",len2);
 						double  fval;
 						fval = *(int64_t*) mfer_swap8b(buf+2, len2-2, SWAP);
 
-						fval *= pow(10.0, buf[1]);
+						fval *= pow(10.0, (int8_t)(buf[1]));
 						if (buf[0]==1)  // s
 							fval = 1.0/fval;
 
 						hdr->CHANNEL[chan].SPR = lround(hdr->SPR * fval / hdr->SampleRate);
+
+if (VERBOSE_LEVEL>7) fprintf(stdout,"MFER: TLV %i %i %i %i %i %i %i %g %i %g\n",tag,len, chan, tag2,len2, buf[0], buf[1], fval, (int)hdr->SPR, hdr->SampleRate);
+
 					}
 					else if (tag2==12) {	// sensitivity
+						// FIXME
+						fprintf(stdout,"MFER: change f channel specific scaling/sensitivity is not supported"); 
+					}
+
+					else if (tag2==13) {	// Offset
+						gdftyp = hdr->CHANNEL[chan].GDFTYP;
+						if      (gdftyp == 1) Off = ( int8_t)buf[0];
+						else if (gdftyp == 2) Off = (uint8_t)buf[0];
+						else if (SWAP) {
+							if      (gdftyp == 3) Off = ( int16_t)bswap_16(*( int16_t*)buf);
+							else if (gdftyp == 4) Off = (uint16_t)bswap_16(*(uint16_t*)buf);
+							else if (gdftyp == 5) Off = ( int32_t)bswap_32(*( int32_t*)buf);
+							else if (gdftyp == 6) Off = (uint32_t)bswap_32(*(uint32_t*)buf);
+							else if (gdftyp == 7) Off = ( int64_t)bswap_64(*( int64_t*)buf);
+							else if (gdftyp == 8) Off = (uint64_t)bswap_64(*(uint64_t*)buf);
+							else if (gdftyp ==16) {
+								*(uint32_t*)ptrbuf = bswap_32(*(uint32_t*)buf);
+								Off = *(float*)ptrbuf;
+							}
+							else if (gdftyp ==17) {
+								uint64_t u64 = bswap_64(*(uint64_t*)ptrbuf);
+								Off = *(double*)&u64;
+							}
+						}
+						else {
+							if      (gdftyp == 3) Off = *( int16_t*)buf;
+							else if (gdftyp == 4) Off = *(uint16_t*)buf;
+							else if (gdftyp == 5) Off = *( int32_t*)buf;
+							else if (gdftyp == 6) Off = *(uint32_t*)buf;
+							else if (gdftyp == 7) Off = *( int64_t*)buf;
+							else if (gdftyp == 8) Off = *(uint64_t*)buf;
+							else if (gdftyp ==16) Off = *(float*)buf;
+							else if (gdftyp ==17) Off = *(double*)buf;
+						}
+						hdr->CHANNEL[chan].Off = Off;
+						/* TODO
+							convert to Phys/Dig/Min/Max
+						*/
+					}
+
+					else if (tag2==18) {	// null value
+						// FIXME: needed for overflow detection
 						if (len2>6)
 							fprintf(stderr,"Warning MFER tag63-12 incorrect length %i>6\n", len2);
 						if (!MFER_PhysDimCodeTable[UnitCode])
@@ -8910,16 +9032,10 @@ if (VERBOSE_LEVEL>7)
 						double cal = *(int64_t*) mfer_swap8b(buf+2, len2-2, SWAP);
 						hdr->CHANNEL[chan].Cal = cal * pow(10.0,(int8_t)buf[1]);
 					}
-/*					else if (tag2==0x0c)	// block length
-					;
-*/
 					else {
-						ifseek(hdr,len2,SEEK_CUR);
-						curPos += len2;
 						if (VERBOSE_LEVEL==9)
-							fprintf(stdout,"tag=63-%i (len=%i) not supported\n",tag,len);
+							fprintf(stdout,"tag=63-%i (len=%i) not supported\n",tag2,len2);
 					}
-
 				}
 			}
 			else if (tag==64)     //0x40
@@ -8935,36 +9051,37 @@ if (VERBOSE_LEVEL>7)
 			else if (tag==65)     //0x41: patient event
 			{
 				// event table
+
+				// FIXME
 				curPos += ifread(buf,1,len,hdr);
 				if (len>2) {
-					hdr->EVENT.N++;
+					size_t N = hdr->EVENT.N;
+					if (N_EVENT <= N) {
+						N_EVENT = biosig_set_number_of_events(hdr, max(16, N*2));
+					}
 
-					if (VERBOSE_LEVEL>8)
+					if (VERBOSE_LEVEL > 7)
 						fprintf(stdout,"MFER-event: N=%i\n",hdr->EVENT.N);
 
-					hdr->EVENT.POS = (uint32_t*) realloc(hdr->EVENT.POS,hdr->EVENT.N*sizeof(*hdr->EVENT.POS));
-					hdr->EVENT.TYP = (uint16_t*) realloc(hdr->EVENT.TYP,hdr->EVENT.N*sizeof(*hdr->EVENT.TYP));
-					hdr->EVENT.DUR = (uint32_t*) realloc(hdr->EVENT.DUR,hdr->EVENT.N*sizeof(*hdr->EVENT.DUR));
-					hdr->EVENT.CHN = (uint16_t*) realloc(hdr->EVENT.CHN,hdr->EVENT.N*sizeof(*hdr->EVENT.CHN));
 #if (BIOSIG_VERSION >= 10500)
-					hdr->EVENT.TimeStamp = (gdf_time*)realloc(hdr->EVENT.TimeStamp, hdr->EVENT.N*sizeof(gdf_time));
-					hdr->EVENT.TimeStamp[hdr->EVENT.N] = 0;
+					hdr->EVENT.TimeStamp[N] = 0;
 #endif
 
-					hdr->EVENT.CHN[hdr->EVENT.N] = 0;
-					hdr->EVENT.DUR[hdr->EVENT.N] = 0;
+					hdr->EVENT.CHN[N] = 0;
+					hdr->EVENT.DUR[N] = 0;
 					if (SWAP) {
-						hdr->EVENT.TYP[hdr->EVENT.N] = bswap_16(*(uint16_t*)ptrbuf);
-						hdr->EVENT.POS[hdr->EVENT.N] = bswap_32(*(uint32_t*)(buf+2));   // 0-based indexing
+						hdr->EVENT.TYP[N] = bswap_16(*(uint16_t*)ptrbuf);
+						hdr->EVENT.POS[N] = bswap_32(*(uint32_t*)(buf+2));   // 0-based indexing
 						if (len>6)
-							hdr->EVENT.DUR[hdr->EVENT.N] = bswap_32(*(uint32_t*)(buf+6));
+							hdr->EVENT.DUR[N] = bswap_32(*(uint32_t*)(buf+6));
 					}
 					else {
-						hdr->EVENT.TYP[hdr->EVENT.N] = *(uint16_t*)ptrbuf;
-						hdr->EVENT.POS[hdr->EVENT.N] = *(uint32_t*)(buf+2);   // 0-based indexing
+						hdr->EVENT.TYP[N] = *(uint16_t*)ptrbuf;
+						hdr->EVENT.POS[N] = *(uint32_t*)(buf+2);   // 0-based indexing
 						if (len>6)
-							hdr->EVENT.DUR[hdr->EVENT.N] = *(uint32_t*)(buf+6);
+							hdr->EVENT.DUR[N] = *(uint32_t*)(buf+6);
 					}
+					hdr->EVENT.N = N+1;
 				}
 			}
 			else if (tag==66)     //0x42: NIPB, SpO2(value)
@@ -9070,7 +9187,7 @@ if (VERBOSE_LEVEL>2)
 		    	}
 
 		    	if (curPos != iftell(hdr))
-		    		fprintf(stdout,"positions differ %i %li \n",curPos,iftell(hdr));
+				fprintf(stdout,"positions differ %i %li \n",curPos,iftell(hdr));
 
 			/* TAG */
 			int sz=ifread(&tag,1,1,hdr);
@@ -9087,10 +9204,9 @@ if (VERBOSE_LEVEL>2)
 	 		if (!hc->PhysDimCode) hc->PhysDimCode = MFER_PhysDimCodeTable[UnitCode];
 	 		if (hc->Cal==1.0) hc->Cal = Cal;
 	 		hc->Off = Off * hc->Cal;
-	 		if (!hc->SPR) hc->SPR = hdr->SPR;
-	 		hc->GDFTYP = gdftyp;
-	 		if (gdftyp<16)
-	 			if (gdftyp & 0x01) {
+			if (!hc->SPR) hc->SPR = hdr->SPR;
+			if (hc->GDFTYP<16)
+				if (hc->GDFTYP & 0x01) {
 		 			hc->DigMax = ldexp( 1.0,GDFTYP_BITS[gdftyp]-1) - 1.0;
 		 			hc->DigMin = ldexp(-1.0,GDFTYP_BITS[gdftyp]-1);
 	 			}
@@ -9111,7 +9227,7 @@ if (VERBOSE_LEVEL>2)
 
 		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"[MFER] -V=%i NE=%i\n",VERBOSE_LEVEL,hdr->EVENT.N);
-//	 	hdr2ascii(hdr,stdout,4);
+//		hdr2ascii(hdr,stdout,4);
 	}
 
 	else if (hdr->TYPE==MIT) {
