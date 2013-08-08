@@ -105,6 +105,10 @@ char *getlogin (void);
 #  include <endian.h>
 #  include <byteswap.h>
 
+#elif defined(__CYGWIN__)
+#  include <endian.h>
+#  include <byteswap.h>
+
 #elif defined(__MINGW32__) 
    /* use local version because MINGW does not provide byteswap.h */
 #  define __BIG_ENDIAN		4321
@@ -159,7 +163,7 @@ char *getlogin (void);
 #  error Unknown platform
 #endif 
 
-#if defined(__MINGW32__) || defined(__sparc__) 
+#if defined(__MINGW32__) || defined(__sparc__)
 
 # ifndef bswap_16
 #  define bswap_16(x)   \
@@ -192,10 +196,6 @@ char *getlogin (void);
 
 #if !defined(__BIG_ENDIAN) && !defined(__LITTLE_ENDIAN) 
 #error  ENDIANITY is not known 
-#endif 
-
-#if !defined(bswap_16) || !defined(bswap_32) || !defined(bswap_64)
-#error SWAP operation not available 
 #endif 
 
 

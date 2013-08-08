@@ -239,8 +239,14 @@ STEPPING       := $(word 3, $(shell grep '\#define BIOSIG_PATCHLEVEL' biosig.h))
 BIOSIG_VERSION := ${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING}
 TODAY          := $(shell date +%Y%m%d)
 
-####### Output directory
+####### External directory
+ifeq (`ls -1 extern |wc -l`,1)
+  EXTERN  = extern
+else
+  EXTERN  = ../biosig4matlab/doc
+endif
 
+####### Output directory
 OBJ	      = ./obj
 INC	      = $(DESTDIR)/usr/include
 BIN	      = $(DESTDIR)/usr/bin
@@ -414,10 +420,10 @@ biosig.o win32/biosig.obj win64/biosig.obj: eventcodes.i eventcodegroups.i biosi
 
 physicalunits.o win32/physicalunits.obj win64/physicalunits.obj: units.i physicalunits.h 
 
-eventcodes.i eventcodegroups.i : extern/eventcodes.txt
+eventcodes.i eventcodegroups.i : $(EXTERN)/eventcodes.txt
 	gawk -f eventcodes.awk "$<"
 
-units.i : extern/units.csv
+units.i : $(EXTERN)/units.csv
 	awk -f units.awk "$<" > "$@"
 
 

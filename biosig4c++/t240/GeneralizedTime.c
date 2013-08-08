@@ -94,7 +94,6 @@ static long GMTOFF(struct tm a){
 	local_time = mktime(lt);
 	return (gmt_time - local_time);
 }
-#define	_EMULATE_TIMEGM
 
 #endif	/* __CYGWIN__ */
 
