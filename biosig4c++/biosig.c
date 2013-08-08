@@ -8874,6 +8874,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"MFER: TLV %i %i %i %i %g \n",tag,len,buf[0]
 				}
 				if (POS>0 && Desc) {
 					size_t N = hdr->EVENT.N;
+#ifdef CURRENTLY_NOT_AVAILABLE
+					// FIXME: biosig_set_number_of_events is currently part of biosig2 interface
 					if (N_EVENT <= N) {
 						N_EVENT = biosig_set_number_of_events(hdr, max(16, N*2));
 					}
@@ -8881,6 +8883,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"MFER: TLV %i %i %i %i %g \n",tag,len,buf[0]
 					hdr->EVENT.CHN[N] = CHN;
 					FreeTextEvent(hdr, N, Desc);   // sets hdr->EVENT.TYP[n]
 					hdr->EVENT.N = N+1;
+#endif //CURRENTLY_NOT_AVAILABLE
 				}
 				curPos += len;
 			}
@@ -9052,10 +9055,11 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"MFER: TLV %i %i %i %i %i %i %i %g %i %g\n",
 			{
 				// event table
 
-				// FIXME
 				curPos += ifread(buf,1,len,hdr);
 				if (len>2) {
 					size_t N = hdr->EVENT.N;
+#ifdef CURRENTLY_NOT_AVAILABLE
+				// FIXME: biosig_set_number_of_events is currently part of biosig2 interface
 					if (N_EVENT <= N) {
 						N_EVENT = biosig_set_number_of_events(hdr, max(16, N*2));
 					}
@@ -9082,6 +9086,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"MFER: TLV %i %i %i %i %i %i %i %g %i %g\n",
 							hdr->EVENT.DUR[N] = *(uint32_t*)(buf+6);
 					}
 					hdr->EVENT.N = N+1;
+#endif //CURRENTLY_NOT_AVAILABLE
 				}
 			}
 			else if (tag==66)     //0x42: NIPB, SpO2(value)
