@@ -152,6 +152,9 @@ double biosig_channel_get_samplerate(CHANNEL_TYPE *hc);
 size_t biosig_channel_get_samples_per_record(CHANNEL_TYPE *hc);
 int    biosig_channel_set_samplerate_and_samples_per_record(CHANNEL_TYPE *hc, size_t spr, double val);
 
+size_t biosig_channel_get_samples_per_record(CHANNEL_TYPE *hc);
+int 	biosig_channel_set_samples_per_record(CHANNEL_TYPE *hc, size_t spr);
+
 uint16_t biosig_channel_get_datatype(CHANNEL_TYPE *hc);
 int  biosig_channel_set_datatype(CHANNEL_TYPE *hc, uint16_t gdftyp);
 #define biosig_channel_set_datatype_to_int8(h)		biosig_channel_set_datatype(h,1)
