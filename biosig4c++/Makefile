@@ -240,7 +240,7 @@ BIOSIG_VERSION := ${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING}
 TODAY          := $(shell date +%Y%m%d)
 
 ####### External directory
-ifeq (`ls -1 extern |wc -l`,1)
+ifneq (`ls -l extern |wc -l`,1)
   EXTERN  = extern
 else
   EXTERN  = ../biosig4matlab/doc
