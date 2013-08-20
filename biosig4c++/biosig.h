@@ -1,5 +1,5 @@
 /*
-% $Id$
+
 % Copyright (C) 2005-2013 Alois Schloegl <alois.schloegl@gmail.com>
 % This file is part of the "BioSig for C/C++" repository
 % (biosig4c++) at http://biosig.sf.net/
@@ -40,22 +40,22 @@
 
 #define BIOSIG_VERSION_MAJOR 1
 #define BIOSIG_VERSION_MINOR 5
-#define BIOSIG_PATCHLEVEL 6
+#define BIOSIG_PATCHLEVEL 7
 // for backward compatibility 
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
 
 #if defined(_VCPP_DEF) || defined(_MSC_VER)
-#define __BYTE_ORDER  __LITTLE_ENDIAN
-typedef __int64 		ssize_t;
-typedef unsigned __int64	uint64_t;
-typedef __int64			int64_t;
-typedef unsigned long		uint32_t;
-typedef long			int32_t;
-typedef unsigned short		uint16_t;
-typedef short			int16_t;
-typedef unsigned char		uint8_t;
-typedef char			int8_t;
+    #define __BYTE_ORDER  __LITTLE_ENDIAN
+    typedef long   		ssize_t;
+    typedef unsigned __int64	uint64_t;
+    typedef __int64		int64_t;
+    typedef unsigned __int32	uint32_t;
+    typedef __int32		int32_t;
+    typedef unsigned __int16	uint16_t;
+    typedef __int16		int16_t;
+    typedef unsigned __int8	uint8_t;
+    typedef __int8		int8_t;
 #else
     #include <stdint.h>
 #endif
@@ -68,21 +68,30 @@ typedef char			int8_t;
 #define EXTERN_C
 #endif
 
+#pragma pack(push, 8)	        /* Matlab v7.3+ requires 8 byte alignment*/
+
 #ifdef __GNUC__
 #define ATT_ALI __attribute__ ((aligned (8)))	/* Matlab v7.3+ requires 8 byte alignment*/
 #define ATT_DEPREC __attribute__ ((deprecated))
 #else
 /* 
-	TODO (FIXME): 
 	not clear whether this alignment definition is equivalent to the one above:
 	This might be crucial for a mixed compiler environment 
 	e.g. libbiosig compiled with MinGW used in a MS VC++ project
 	Nevertheless, there are too many GNUC dependencies, so it probably will not 
 	compile with anything else but GNUC.
+
+        However, as we move to level 2 interface, this question becomes less important.
 */
-#pragma pack(8)	
+
 #define ATT_ALI
 #define ATT_DEPREC
+#endif
+
+#if defined(_MINGW32__) || defined(__CYGWIN__)
+#define ATT_MSSTRUCT __attribute__ ((ms_struct))
+#else
+#define ATT_MSSTRUCT
 #endif
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -286,7 +295,7 @@ typedef struct CHANNEL_STRUCT {
 	uint32_t	bi 		ATT_ALI;	/* start byte (byte index) of channel within data block */
 	uint32_t	bi8 		ATT_ALI;	/* start bit  (bit index) of channel within data block */
 	uint16_t 	GDFTYP 		ATT_ALI;	/* data type */
-} CHANNEL_TYPE	ATT_ALI;
+} CHANNEL_TYPE	ATT_ALI ATT_MSSTRUCT;
 
 
 /*
@@ -462,7 +471,7 @@ typedef struct HDR_STRUCT {
 	} SCP;
 #endif
 
-} HDRTYPE;
+} HDRTYPE ATT_MSSTRUCT;
 
 /*
 	This structure defines codes and groups of the event table
@@ -473,20 +482,22 @@ struct etd_t {
         uint16_t typ;		// used in HDR.EVENT.TYP
         uint16_t groupid;	// defines the group id as used in EventCodeGroups below
         const char* desc;	// name/description of event code // const decrease signifitiantly number of warning
-}; 
+} ATT_MSSTRUCT;
 // Groups of event codes 
 struct event_groups_t {
         uint16_t groupid;	
         const char* GroupDescription; // const decrease signifitiantly number of warning
-};  
+} ATT_MSSTRUCT;
 struct FileFormatStringTable_t {
 	enum FileFormat	fmt;
 	const char*	FileTypeString;
-};
+} ATT_MSSTRUCT;
 
 extern const struct etd_t ETD [];
 extern const struct event_groups_t EventCodeGroups [];
 extern const struct FileFormatStringTable_t FileFormatStringTable [];
+
+#pragma pack(pop)
 
 
 /****************************************************************************/
@@ -645,6 +656,10 @@ int 	serror2(HDRTYPE* hdr);
  *	is returned.
  --------------------------------------------------------------- */
 
+int 	biosig_check_error(HDRTYPE *hdr);
+/* 	returns error status but does not handle/reset it.
+ * 	it can be used for checking whether some error status has been set
+ --------------------------------------------------------------- */
 
 int 	sflush_gdf_event_table(HDRTYPE* hdr);
 /*	writes the event table of file hdr. hdr must define a file in GDF format
