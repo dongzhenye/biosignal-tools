@@ -13783,7 +13783,7 @@ char *biosig_get_errormsg(HDRTYPE *hdr) {
 	return strdup(hdr->AS.B4C_ERRMSG);
 };
 
-enum B4C_ERROR biosig_check_error(HDRTYPE *hdr) {
+int biosig_check_error(HDRTYPE *hdr) {
 	if (hdr==NULL) return B4C_NO_ERROR;
 	return hdr->AS.B4C_ERRNUM;
 };

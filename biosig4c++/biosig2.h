@@ -52,7 +52,7 @@ int biosig_set_filetype(HDRTYPE *hdr, enum FileFormat format);
 int biosig_set_flags(HDRTYPE *hdr, char compression, char ucal, char overflowdetection);
 
 // returns error message in memory allocated with strdup
-enum B4C_ERROR biosig_check_error(HDRTYPE *hdr);
+int biosig_check_error(HDRTYPE *hdr);
 char *biosig_get_errormsg(HDRTYPE *hdr);
 
 size_t biosig_get_number_of_channels(HDRTYPE *hdr);
