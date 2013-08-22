@@ -68,30 +68,28 @@
 #define EXTERN_C
 #endif
 
-#pragma pack(push, 8)	        /* Matlab v7.3+ requires 8 byte alignment*/
+/*
+ * pack structures to fullfil following requirements:
+ * (1) Matlab v7.3+ requires 8 byte alignment
+ * (2) in order to use mingw-compiled libbiosig with MS' VisualStudio,
+ *     the structurs must be packed in a MS compatible way.
+ */
+#pragma pack(push, 8)
 
+//* this is probably redundant to the #pragma pack(8) statement, its here to do it the gnu way, too. */
 #ifdef __GNUC__
-#define ATT_ALI __attribute__ ((aligned (8)))	/* Matlab v7.3+ requires 8 byte alignment*/
-#define ATT_DEPREC __attribute__ ((deprecated))
+  #define ATT_ALI __attribute__ ((aligned (8)))
+  #define ATT_DEPREC __attribute__ ((deprecated))
 #else
-/* 
-	not clear whether this alignment definition is equivalent to the one above:
-	This might be crucial for a mixed compiler environment 
-	e.g. libbiosig compiled with MinGW used in a MS VC++ project
-	Nevertheless, there are too many GNUC dependencies, so it probably will not 
-	compile with anything else but GNUC.
-
-        However, as we move to level 2 interface, this question becomes less important.
-*/
-
-#define ATT_ALI
-#define ATT_DEPREC
+  #define ATT_ALI
+  #define ATT_DEPREC
 #endif
 
 #if defined(_MINGW32__) || defined(__CYGWIN__)
-#define ATT_MSSTRUCT __attribute__ ((ms_struct))
+  #pragma ms_struct on
+  #define ATT_MSSTRUCT __attribute__ ((ms_struct))
 #else
-#define ATT_MSSTRUCT
+  #define ATT_MSSTRUCT
 #endif
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -497,7 +495,10 @@ extern const struct etd_t ETD [];
 extern const struct event_groups_t EventCodeGroups [];
 extern const struct FileFormatStringTable_t FileFormatStringTable [];
 
+
+/* reset structure packing to default settings */
 #pragma pack(pop)
+#pragma ms_struct reset
 
 
 /****************************************************************************/
