@@ -1,7 +1,6 @@
 /*
 
-    $Id$
-    Copyright (C) 2011 Alois Schloegl <alois.schloegl@gmail.com>
+    Copyright (C) 2011,2013 Alois Schloegl <alois.schloegl@gmail.com>
     This file is part of the "BioSig for C/C++" repository 
     (biosig4c++) at http://biosig.sf.net/ 
 
@@ -19,16 +18,18 @@
 #include <string.h>
 #include <time.h>
 
-#include "../biosig-dev.h"
+#include "../biosig.h"
+extern int VERBOSE_LEVEL; 	// used for debugging, variable is always defined
+
+#ifdef NDEBUG
+#define VERBOSE_LEVEL 0 	// turn off debugging information, but its only used without NDEBUG
+#endif
+
 #ifdef tmwtypes_h
   #if (MX_API_VER<=0x07020000)
     typedef int mwSize;
   #endif 
 #endif 
-
-//#define VERBOSE_LEVEL  9 
-//extern int VERBOSE_LEVEL;
-//#define DEBUG
 
 double getDouble(const mxArray *pm, size_t idx) {
 	size_t n = mxGetNumberOfElements(pm);

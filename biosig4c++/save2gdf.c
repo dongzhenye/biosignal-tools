@@ -126,18 +126,18 @@ int main(int argc, char **argv){
 	VERBOSE_LEVEL = VERBOSE; 
 #endif
 	}
-    	else if (!strncmpi(argv[k],"-SWEEP=",7))  {
+    	else if (!strncasecmp(argv[k],"-SWEEP=",7))  {
 	    	argsweep = argv[k]+6;
 
 	}
 
-	else if (!strcmpi(argv[k],"-CSV"))
+	else if (!strcasecmp(argv[k],"-CSV"))
 		FLAG_CSV = 1;
 
-	else if (!strcmpi(argv[k],"-JSON"))
+	else if (!strcasecmp(argv[k],"-JSON"))
 		FLAG_JSON = 1;
 
-	else if (!strcmpi(argv[k],"-DYGRAPH"))
+	else if (!strcasecmp(argv[k],"-DYGRAPH"))
 		FLAG_DYGRAPH = 1;
 
     	else if (!strncmp(argv[k],"-f=",3))  	{
@@ -601,7 +601,8 @@ int main(int argc, char **argv){
 		const char SEP=',';
 		FILE *fid = stdout;
 		if (dest != NULL) fid = fopen(dest,"wt+");
-		size_t k1,k2;
+		ssize_t k1;
+		size_t k2;
 		char flag = 0;
 		for (k2 = 0; k2 < hdr->NS; k2++) {
 			CHANNEL_TYPE *hc = hdr->CHANNEL+k2;
@@ -632,7 +633,8 @@ int main(int argc, char **argv){
 		fprintf(fid,"{\n\"Header\": ");
 		fprintf_hdr2json(fid, hdr);
 		fprintf(fid,",\n\"Data\": [ ");
-		size_t k1,k2;
+		ssize_t k1;
+		size_t k2;
 		for (k1=0; k1 < hdr->SPR * hdr->NRec; k1++) {
 			if (k1>0) fprintf(fid,",\n\t");
 			fprintf(fid,"[");
@@ -648,7 +650,6 @@ int main(int argc, char **argv){
 		for (k2=0; k2<hdr->NS; k2++) {
 			CHANNEL_TYPE *hc = hdr->CHANNEL+k2;
 			if (k2>0) fprintf(fid,", ");
-			size_t p = hdr->FLAG.ROW_BASED_CHANNELS ? hdr->data.size[0] * k1 + k2 : hdr->data.size[0] * k2 + k1 ;
 			fprintf(fid,"\"%s [%s]\"",hc->Label,PhysDim3(hc->PhysDimCode));
 		}
 		fprintf(fid,"]\n}\n");

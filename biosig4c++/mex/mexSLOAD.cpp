@@ -1,7 +1,6 @@
 /*
 
-    $Id$
-    Copyright (C) 2007,2008,2009,2010 Alois Schloegl <a.schloegl@ieee.org>
+    Copyright (C) 2007,2008,2009,2010,2013 Alois Schloegl <alois.schloegl@gmail.com>
     This file is part of the "BioSig for C/C++" repository 
     (biosig4c++) at http://biosig.sf.net/ 
 
@@ -17,7 +16,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../biosig-dev.h"
+#include "../biosig2.h"
+extern int VERBOSE_LEVEL; 	// used for debugging, variable is always defined
+
+#ifdef NDEBUG
+#define VERBOSE_LEVEL 0 	// turn off debugging information, but its only used without NDEBUG
+#endif
+
+
 #ifdef tmwtypes_h
   #if (MX_API_VER<=0x07020000)
     typedef int mwSize;
@@ -278,7 +284,7 @@ void mexFunction(
 //				FlagMXclass = mxSINGLE_CLASS;
 			else if (!strncmp(mxArrayToString(prhs[k]),"TARGETSEGMENT:",14))
 				TARGETSEGMENT = atoi(mxArrayToString(prhs[k])+14);
-			else if (!strcmpi(mxArrayToString(prhs[k]), "SWEEP") && (prhs[k+1] != NULL) && mxIsNumeric(prhs[k+1]))
+			else if (!strcasecmp(mxArrayToString(prhs[k]), "SWEEP") && (prhs[k+1] != NULL) && mxIsNumeric(prhs[k+1]))
 				argSweepSel = ++k;
 		}
 		else {
