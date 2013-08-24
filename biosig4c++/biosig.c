@@ -667,41 +667,18 @@ int is_nihonkohden_signature(char *str)
 #endif //ONLYGDF
 
 
-
-/*
-	compare first n characters of two strings, ignore case
- */
+#if (BIOSIG_VERSION < 10700)
 int strncmpi(const char* str1, const char* str2, size_t n)
 {
-	fprintf(stderr,"%s %i: use of function strncmpi() is deprecated - use instead strncasecmp()\n");
+	fprintf(stderr,"Warning from libbiosig: use of function strncmpi() is deprecated - use instead strncasecmp()\n");
 	return strncasecmp(str1,str2,n); 
 }
-
-/*
-	compare strings, ignore case
- */
 int strcmpi(const char* str1, const char* str2)
 {
-	fprintf(stderr,"%s %i: use of function strcmpi() is deprecated - use instead strcasecmp()\n");
+	fprintf(stderr,"Warning from libbiosig: use of function strcmpi() is deprecated - use instead strcasecmp()\n");
 	return strcasecmp(str1,str2); 
 }
-
-#if 0
-/*
-	compare strings, accept bit7=1
- */
-int strcmp8(const char* str1, const char* str2)
-{
-	unsigned int k=0;
-	int r;
-	r = str1[k] - str2[k];
-	while (r==0 && str1[k]!='\0' && str2[k]!='\0') {
-		k++;
-		r = str1[k] - str2[k];
-	}
-	return(r);
-}
-#endif 
+#endif
 
 /*
 	compare uint32_t

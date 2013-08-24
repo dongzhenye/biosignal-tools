@@ -507,10 +507,14 @@ extern const char *LEAD_ID_TABLE[];
 uint16_t CRCEvaluate(uint8_t* datablock, uint32_t datalength);
 int16_t CRCCheck(uint8_t* datablock, uint32_t datalength);
 
+#if (BIOSIG_VERSION < 10700)
+// this deprecated since Aug 2013, v1.5.7
 #ifndef _WIN32
 ATT_DEPREC int strcmpi(const char* str1, const char* str2); // use strcasecmp() instead
 #endif
 ATT_DEPREC int strncmpi(const char* str1, const char* str2, size_t n); // use strncasecmp() instead
+#endif
+
 int u32cmp(const void *a, const void *b); 
 
 void biosigERROR(HDRTYPE *hdr, enum B4C_ERROR errnum, const char *errmsg);
