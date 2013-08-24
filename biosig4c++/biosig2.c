@@ -1,6 +1,5 @@
 /*
 
-    $Id$
     Copyright (C) 2012,2013 Alois Schloegl <alois.schloegl@gmail.com>
     This file is part of the "BioSig for C/C++" repository
     (biosig4c++) at http://biosig.sf.net/
@@ -46,13 +45,82 @@ int biosig_set_filetype(HDRTYPE *hdr, enum FileFormat format) {
 	return 0;
 }
 
-int biosig_set_flags(HDRTYPE *hdr, char compression, char ucal, char overflowdetection) {
+#if (BIOSIG_VERSION < 10700)
+ATT_DEPREC int biosig_set_flags(HDRTYPE *hdr, char compression, char ucal, char overflowdetection) {
+	fprintf(stderr,"Warning libbiosig2: function biosig_set_flags() is deprecated, use biosig_(re)set_flag() instead\n");
 	if (hdr==NULL) return -1;
 	hdr->FLAG.UCAL = ucal;
 	hdr->FLAG.OVERFLOWDETECTION = overflowdetection;
 	hdr->FILE.COMPRESSION = compression;
 	return 0;
 }
+#endif
+
+int biosig_get_flag(HDRTYPE *hdr, unsigned flags) {
+	if (hdr==NULL) return -1;
+	return flags & ( \
+		(!!hdr->FLAG.OVERFLOWDETECTION) * (unsigned)BIOSIG_FLAG_OVERFLOWDETECTION \
+		+ (!!hdr->FLAG.UCAL) * (unsigned)BIOSIG_FLAG_UCAL \
+		+ (!!hdr->FILE.COMPRESSION) * (unsigned)BIOSIG_FLAG_COMPRESSION \
+		+ (!!hdr->FLAG.UCAL) * (unsigned)BIOSIG_FLAG_UCAL \
+		+ (!!hdr->FLAG.ROW_BASED_CHANNELS)* (unsigned)BIOSIG_FLAG_ROW_BASED_CHANNELS \
+		) ;
+}
+
+int biosig_set_flag(HDRTYPE *hdr, unsigned flags) {
+	if (hdr==NULL) return -1;
+	hdr->FLAG.UCAL               |= !!(flags & BIOSIG_FLAG_UCAL);
+	hdr->FLAG.OVERFLOWDETECTION  |= !!(flags & BIOSIG_FLAG_OVERFLOWDETECTION);
+	hdr->FILE.COMPRESSION        |= !!(flags & BIOSIG_FLAG_COMPRESSION);
+	hdr->FLAG.ROW_BASED_CHANNELS |= !!(flags & BIOSIG_FLAG_ROW_BASED_CHANNELS);
+	return 0;
+};
+
+int biosig_reset_flag(HDRTYPE *hdr, unsigned flags) {
+	if (hdr==NULL) return -1;
+	hdr->FLAG.UCAL               &= !(flags & BIOSIG_FLAG_UCAL);
+	hdr->FLAG.OVERFLOWDETECTION  &= !(flags & BIOSIG_FLAG_OVERFLOWDETECTION);
+	hdr->FILE.COMPRESSION        &= !(flags & BIOSIG_FLAG_COMPRESSION);
+	hdr->FLAG.ROW_BASED_CHANNELS &= !(flags & BIOSIG_FLAG_ROW_BASED_CHANNELS);
+	return 0;
+};
+
+int biosig_get_targetsegment(HDRTYPE *hdr) {
+	if (hdr==NULL) return -1;
+	return hdr->FLAG.TARGETSEGMENT;
+};
+
+const char* biosig_get_filename(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	return hdr->FileName;
+};
+float biosig_get_version(HDRTYPE *hdr) {
+	if (hdr==NULL) return NAN;
+	return hdr->VERSION;
+};
+
+
+int biosig_set_targetsegment(HDRTYPE *hdr, unsigned targetsegment) {
+	return biosig_set_segment_selection(hdr, 0, targetsegment);
+};
+int biosig_set_segment_selection(HDRTYPE *hdr, int k, uint32_t argSweepSel) {;
+	if (hdr==NULL) return -1;
+	if (k>5 || k<0) return -3;
+	if (k==0) {
+		if (argSweepSel > 127) {
+			fprintf(stderr,"Warning libbiosig2: biosig_set_targetsegment is larger than 127 (%i)\n", argSweepSel);
+			return -2;
+		}
+		hdr->FLAG.TARGETSEGMENT = argSweepSel;
+	}
+	else
+		hdr->AS.SegSel[k-1] = argSweepSel;
+	return 0;
+}
+uint32_t* biosig_get_segment_selection(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	return &(hdr->AS.SegSel);
+};
 
 size_t biosig_get_number_of_channels(HDRTYPE *hdr) {
 	if (hdr==NULL) return -1;
@@ -262,6 +330,14 @@ int biosig_set_birthdate(HDRTYPE *hdr, struct tm *T) {
 	return (ldexp(hdr->Patient.Birthday,-32)<100.0);
 }
 
+const char* biosig_get_patient_name(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	return hdr->Patient.Name;
+}
+const char* biosig_get_patient_id(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	return hdr->Patient.Id;
+}
 const char* biosig_get_recording_id(HDRTYPE *hdr) {
 	if (hdr==NULL) return NULL;
 	return hdr->ID.Recording;
@@ -287,6 +363,18 @@ const char* biosig_get_manufacturer_serial_number(HDRTYPE *hdr) {
 	return hdr->ID.Manufacturer.SerialNumber;
 }
 
+int biosig_set_patient_name(HDRTYPE *hdr, const char* name) {
+	if (hdr==NULL) return NULL;
+	strncpy(hdr->Patient.Name, name, MAX_LENGTH_NAME);
+	hdr->Patient.Name[MAX_LENGTH_NAME]=0;
+	return hdr->Patient.Name;
+}
+int biosig_set_patient_id(HDRTYPE *hdr, const char* id) {
+	if (hdr==NULL) return NULL;
+	strncpy(hdr->Patient.Id, id, MAX_LENGTH_PID);
+	hdr->Patient.Id[MAX_LENGTH_PID]=0;
+	return hdr->Patient.Id;
+}
 int biosig_set_recording_id(HDRTYPE *hdr, const char* rid) {
 	if (hdr==NULL) return -1;
 	strncpy(hdr->ID.Recording, rid, MAX_LENGTH_RID);
@@ -474,7 +562,7 @@ size_t biosig_channel_get_samples_per_record(CHANNEL_TYPE *hc) {
 	if (hc==NULL) return -1;
 	return hc->SPR;
 }
-int    biosig_channel_set_samples_per_record(CHANNEL_TYPE *hc, size_t spr)  {
+int	biosig_channel_set_samples_per_record(CHANNEL_TYPE *hc, size_t spr)  {
 	if (hc==NULL) return -1;
 	hc->SPR = spr;
 	return 0;

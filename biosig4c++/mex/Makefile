@@ -9,7 +9,7 @@
 
 ### modify directories according to your needs 
 INCOCTAVE = -I /usr/include/octave 
-MATLABDIR = /usr/local/MATLAB/R2010b/
+MATLABDIR = /usr/local/MATLAB/R2011b/
 # comment the following line if you use MATLAB on 32-bit operating system
 MEX_OPTION += -largeArrayDims
 # LIBEXT. Setting it to 'a' links statically, 'so' links dynamically
@@ -34,13 +34,7 @@ COPY          = cp
 ifeq ($(LIBEXT),so)
   LIBS        += -L.. -lbiosig
 else
-  LIBS        += ../libbiosig.$(LIBEXT)
-endif
-
-ifeq ($(LIBEXT),so)
-  LIBS        += -L.. -lbiosig
-else
-  LIBS        += ../libbiosig.$(LIBEXT)
+  LIBS        += ../libbiosig.$(LIBEXT)  -lz -lcholmod
 endif
 
 
@@ -63,8 +57,8 @@ ifndef MATLABDIR
 mex: mex4o
 else
 mex: mex4m mex4o
-  MEX        = $(MATLABDIR)mex
-  MEX_EXT   := $(shell $(MATLABDIR)mexext)
+  MEX        = $(MATLABDIR)bin/mex
+  MEX_EXT   := $(shell $(MATLABDIR)bin/mexext)
 endif
 
 # Octave - global install  (e.g. from debian package)

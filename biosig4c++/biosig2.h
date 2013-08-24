@@ -27,6 +27,11 @@
 // TODO: eventually biosig.h should not be removed
 #include "biosig.h"
 
+#define BIOSIG_FLAG_COMPRESSION        0x0001
+#define BIOSIG_FLAG_UCAL               0x0002
+#define BIOSIG_FLAG_OVERFLOWDETECTION  0x0004
+#define BIOSIG_FLAG_ROW_BASED_CHANNELS 0x0008
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -49,7 +54,20 @@ enum FileFormat biosig_get_filetype(HDRTYPE *hdr);
 int biosig_set_filetype(HDRTYPE *hdr, enum FileFormat format);
 #define biosig_check_filetype(a,b) (biosig_get_filetype(a)==b)
 
-int biosig_set_flags(HDRTYPE *hdr, char compression, char ucal, char overflowdetection);
+ATT_DEPREC int biosig_set_flags(HDRTYPE *hdr, char compression, char ucal, char overflowdetection);
+int biosig_get_flag(HDRTYPE *hdr, unsigned flags);
+int biosig_set_flag(HDRTYPE *hdr, unsigned flags);
+int biosig_reset_flag(HDRTYPE *hdr, unsigned flags);
+
+int biosig_set_targetsegment(HDRTYPE *hdr, unsigned targetsegment);
+int biosig_get_targetsegment(HDRTYPE *hdr);
+
+const char* biosig_get_filename(HDRTYPE *hdr);
+float biosig_get_version(HDRTYPE *hdr);
+
+int biosig_set_segment_selection(HDRTYPE *hdr, int k, uint32_t argSweepSel);
+uint32_t* biosig_get_segment_selection(HDRTYPE *hdr);
+
 
 // returns error message in memory allocated with strdup
 int biosig_check_error(HDRTYPE *hdr);
@@ -93,6 +111,9 @@ int biosig_set_startdatetime(HDRTYPE *hdr, struct tm *T);
 int biosig_get_birthdate(HDRTYPE *hdr, struct tm *T);
 int biosig_set_birthdate(HDRTYPE *hdr, struct tm *T);
 
+const char* biosig_get_patient_name(HDRTYPE *hdr);
+const char* biosig_get_patient_id(HDRTYPE *hdr);
+
 const char* biosig_get_recording_id(HDRTYPE *hdr);
 const char* biosig_get_technician(HDRTYPE *hdr);
 const char* biosig_get_manufacturer_name(HDRTYPE *hdr);
@@ -100,12 +121,16 @@ const char* biosig_get_manufacturer_model(HDRTYPE *hdr);
 const char* biosig_get_manufacturer_version(HDRTYPE *hdr);
 const char* biosig_get_manufacturer_serial_number(HDRTYPE *hdr);
 
+int biosig_set_patient_name(HDRTYPE *hdr, const char* rid);
+int biosig_set_patient_id(HDRTYPE *hdr, const char* rid);
 int biosig_set_recording_id(HDRTYPE *hdr, const char* rid);
 int biosig_set_technician(HDRTYPE *hdr, const char* rid);
 int biosig_set_manufacturer_name(HDRTYPE *hdr, const char* rid);
 int biosig_set_manufacturer_model(HDRTYPE *hdr, const char* rid);
 int biosig_set_manufacturer_version(HDRTYPE *hdr, const char* rid);
 int biosig_set_manufacturer_serial_number(HDRTYPE *hdr, const char* rid);
+
+
 
 /* =============================================================
 	setter and getter functions for accessing fields of CHANNEL_TYPE
@@ -153,7 +178,7 @@ size_t biosig_channel_get_samples_per_record(CHANNEL_TYPE *hc);
 int    biosig_channel_set_samplerate_and_samples_per_record(CHANNEL_TYPE *hc, size_t spr, double val);
 
 size_t biosig_channel_get_samples_per_record(CHANNEL_TYPE *hc);
-int 	biosig_channel_set_samples_per_record(CHANNEL_TYPE *hc, size_t spr);
+int    biosig_channel_set_samples_per_record(CHANNEL_TYPE *hc, size_t spr);
 
 uint16_t biosig_channel_get_datatype(CHANNEL_TYPE *hc);
 int  biosig_channel_set_datatype(CHANNEL_TYPE *hc, uint16_t gdftyp);
@@ -179,7 +204,7 @@ int  biosig_channel_set_datatype(CHANNEL_TYPE *hc, uint16_t gdftyp);
         DO NOT USE         DO NOT USE         DO NOT USE         DO NOT USE
 */
 
-ATT_DEPREC struct biosig_annotation_struct {       /* this structure is used for annotations */
+struct ATT_DEPREC biosig_annotation_struct {       /* this structure is used for annotations */
         size_t onset;                   /* onset time of the event, expressed in units of 100 nanoSeconds and relative to the starttime in the header */
         size_t duration;                /* duration time, this is a null-terminated ASCII text-string */
         const char *annotation; 	/* description of the event in UTF-8, this is a null terminated string */

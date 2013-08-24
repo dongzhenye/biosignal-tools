@@ -302,6 +302,32 @@ void mexFunction(
 		mexPrintf("110: input arguments checked\n");
 
 	hdr = constructHDR(0,0);
+
+#ifdef __LIBBIOSIG2_H__
+
+	unsigned flags = (!!FlagOverflowDetection)*BIOSIG_FLAG_OVERFLOWDETECTION + (!!FlagUCAL)*BIOSIG_FLAG_UCAL;
+#ifdef CHOLMOD_H
+	flags += (rr!=NULL)*BIOSIG_FLAG_ROW_BASED_CHANNELS;
+#else
+	biosig_reset_flag(hdr, BIOSIG_FLAG_ROW_BASED_CHANNELS);
+#endif
+	biosig_set_flag(hdr, flags);
+
+	biosig_set_targetsegment(hdr, TARGETSEGMENT);
+
+	// sweep selection for Heka format
+	if (argSweepSel>0) {
+		double *SZ     = (double*) mxGetData(prhs[argSweepSel]);
+		k = 0;
+		while (k < mxGetNumberOfElements(prhs[argSweepSel]) && k < 5) {
+			biosig_set_segment_selection(hdr, k+1, (uint32_t)SZ[k]);
+			k++;
+		}
+	}
+
+#else //__LIBBIOSIG2_H__
+
+
 	hdr->FLAG.OVERFLOWDETECTION = FlagOverflowDetection; 
 	hdr->FLAG.UCAL = FlagUCAL;
 #ifdef CHOLMOD_H
@@ -320,6 +346,10 @@ void mexFunction(
 			k++;
 		}
 	}
+
+
+#endif // __LIBBIOSIG2_H__ : TODO: below, nothing is converted to level-2 interface, yet
+
 
 	if (VERBOSE_LEVEL>7) 
 		mexPrintf("120: going to sopen\n");
@@ -340,7 +370,15 @@ void mexFunction(
 
 		const char* fields[]={"TYPE","VERSION","FileName","FLAG","ErrNum","ErrMsg"};
 		HDR = mxCreateStructMatrix(1, 1, 6, fields);
+#ifdef __LIBBIOSIG2_H__
+		mxSetField(HDR,0,"FileName",mxCreateString(biosig_get_filename(hdr)));
+		const char *FileTypeString = GetFileTypeString(biosig_get_filetype(hdr));
+		mxSetField(HDR,0,"VERSION",mxCreateDoubleScalar(biosig_get_version(hdr)));
+#else
 		mxSetField(HDR,0,"FileName",mxCreateString(hdr->FileName));
+		const char *FileTypeString = GetFileTypeString(hdr->TYPE);
+		mxSetField(HDR,0,"VERSION",mxCreateDoubleScalar(hdr->VERSION));
+#endif
 		mxArray *errnum = mxCreateNumericMatrix(1,1,mxUINT8_CLASS,mxREAL);
 		*(uint8_t*)mxGetData(errnum) = (uint8_t)status;
 		mxSetField(HDR,0,"ErrNum",errnum);
@@ -348,15 +386,10 @@ void mexFunction(
 #ifdef HAVE_OCTAVE
 		// handle bug in octave: mxCreateString(NULL) causes segmentation fault
 		// Octave 3.2.3 causes a seg-fault in mxCreateString(NULL)
-		 
-		{
-		const char *p = GetFileTypeString(hdr->TYPE);
-		if (p) mxSetField(HDR,0,"TYPE",mxCreateString(p));
-		}
-#else
-		mxSetField(HDR,0,"TYPE",mxCreateString(GetFileTypeString(hdr->TYPE)));
+		if (FileTypeString) FileTypeString="\0";
 #endif
-		mxSetField(HDR,0,"VERSION",mxCreateDoubleScalar(hdr->VERSION));
+		mxSetField(HDR,0,"TYPE",mxCreateString(FileTypeString));
+
 
 		char *msg = (char*)malloc(72+23+strlen(FileName)); // 72: max length of constant text, 23: max length of GetFileTypeString()
 		if (msg == NULL) 
@@ -365,11 +398,11 @@ void mexFunction(
 		    if (status==B4C_CANNOT_OPEN_FILE)
 			sprintf(msg,"Error mexSLOAD: file %s not found.\n",FileName);		/* Flawfinder: ignore *** sufficient memory is allocated above */
 		    else if (status==B4C_FORMAT_UNKNOWN)
-			sprintf(msg,"Error mexSLOAD: Cannot open file %s - format %s not known.\n",FileName,GetFileTypeString(hdr->TYPE));	/* Flawfinder: ignore *** sufficient memory is allocated above */
+			sprintf(msg,"Error mexSLOAD: Cannot open file %s - format %s not known.\n",FileName,FileTypeString);	/* Flawfinder: ignore *** sufficient memory is allocated above */
 		    else if (status==B4C_FORMAT_UNSUPPORTED)
-			sprintf(msg,"Error mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", FileName, GetFileTypeString(hdr->TYPE), hdr->AS.B4C_ERRMSG);	/* Flawfinder: ignore *** sufficient memory is allocated above */
+			sprintf(msg,"Error mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", FileName, FileTypeString, hdr->AS.B4C_ERRMSG);	/* Flawfinder: ignore *** sufficient memory is allocated above */
 		    else 	
-			sprintf(msg,"Error %i mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", status, FileName, GetFileTypeString(hdr->TYPE), hdr->AS.B4C_ERRMSG); 	/* Flawfinder: ignore *** sufficient memory is allocated above */
+			sprintf(msg,"Error %i mexSLOAD: Cannot open file %s - format %s not supported [%s].\n", status, FileName, FileTypeString, hdr->AS.B4C_ERRMSG); 	/* Flawfinder: ignore *** sufficient memory is allocated above */
 			
 		    mxSetField(HDR,0,"ErrMsg",mxCreateString(msg));
 		    free(msg);
@@ -701,14 +734,25 @@ void mexFunction(
 		for (numfields=0; patient_fields[numfields++] != 0; );
 		Patient = mxCreateStructMatrix(1, 1, --numfields, patient_fields);
 		const char *strarray[1];
-		if (hdr->Patient.Name) {
-			strarray[0] = hdr->Patient.Name; 
+#ifdef __LIBBIOSIG2_H__
+		strarray[0] = biosig_get_patient_name(hdr);
+		if (strarray[0]) {
 			mxSetField(Patient,0,"Name",mxCreateCharMatrixFromStrings(1,strarray));
 		}	
-		if (hdr->Patient.Id) {
-			strarray[0] = hdr->Patient.Id; 
+		strarray[0] = biosig_get_patient_id(hdr);
+		if (strarray[0]) {
 			mxSetField(Patient,0,"Id",mxCreateCharMatrixFromStrings(1,strarray));
 		}	
+#else
+		strarray[0] = hdr->Patient.Name;
+		if (strarray[0]) {
+			mxSetField(Patient,0,"Name",mxCreateCharMatrixFromStrings(1,strarray));
+		}
+		strarray[0] = hdr->Patient.Id;
+		if (strarray[0]) {
+			mxSetField(Patient,0,"Id",mxCreateCharMatrixFromStrings(1,strarray));
+		}
+#endif
 		mxSetField(Patient,0,"Handedness",mxCreateDoubleScalar(hdr->Patient.Handedness));
 
 		mxSetField(Patient,0,"Sex",mxCreateDoubleScalar(hdr->Patient.Sex));
@@ -731,23 +775,48 @@ void mexFunction(
 		const char *manufacturer_fields[] = {"Name","Model","Version","SerialNumber",NULL};
 		for (numfields=0; manufacturer_fields[numfields++] != 0; );
 		Manufacturer = mxCreateStructMatrix(1, 1, --numfields, manufacturer_fields);
-		if (hdr->ID.Manufacturer.Name) {
-			strarray[0] = hdr->ID.Manufacturer.Name;
+
+#ifdef __LIBBIOSIG2_H__
+		strarray[0] = biosig_get_manufacturer_name(hdr);
+		if (strarray[0]) {
 			mxSetField(Manufacturer,0,"Name",mxCreateCharMatrixFromStrings(1,strarray));
 		}	
-		if (hdr->ID.Manufacturer.Model) {
-			strarray[0] = hdr->ID.Manufacturer.Model;
+		strarray[0] = biosig_get_manufacturer_model(hdr);
+		if (strarray[0]) {
+			biosig_get_manufacturer_model(hdr);
 			mxSetField(Manufacturer,0,"Model",mxCreateCharMatrixFromStrings(1,strarray));
 		}	
-		if (hdr->ID.Manufacturer.Version) {
-			strarray[0] = hdr->ID.Manufacturer.Version;
+		strarray[0] = biosig_get_manufacturer_version(hdr);
+		if (strarray[0]) {
+			biosig_get_manufacturer_version(hdr);
 			mxSetField(Manufacturer,0,"Version",mxCreateCharMatrixFromStrings(1,strarray));
 		}	
-		if (hdr->ID.Manufacturer.SerialNumber) {
-			strarray[0] = hdr->ID.Manufacturer.SerialNumber;
+		strarray[0] = biosig_get_manufacturer_serial_number(hdr);
+		if (strarray[0]) {
 			mxSetField(Manufacturer,0,"SerialNumber",mxCreateCharMatrixFromStrings(1,strarray));
 		}
+#else
+		strarray[0] = hdr->ID.Manufacturer.Name;
+		if (strarray[0]) {
+			mxSetField(Manufacturer,0,"Name",mxCreateCharMatrixFromStrings(1,strarray));
+		}
+		strarray[0] = hdr->ID.Manufacturer.Model;
+		if (strarray[0]) {
+			biosig_get_manufacturer_model(hdr);
+			mxSetField(Manufacturer,0,"Model",mxCreateCharMatrixFromStrings(1,strarray));
+		}
+		strarray[0] = hdr->ID.Manufacturer.Version;
+		if (strarray[0]) {
+			biosig_get_manufacturer_version(hdr);
+			mxSetField(Manufacturer,0,"Version",mxCreateCharMatrixFromStrings(1,strarray));
+		}
+		strarray[0] = hdr->ID.Manufacturer.SerialNumber;
+		if (strarray[0]) {
+			mxSetField(Manufacturer,0,"SerialNumber",mxCreateCharMatrixFromStrings(1,strarray));
+		}
+#endif
 		mxSetField(HDR,0,"Manufacturer",Manufacturer);
+
 
 	if (VERBOSE_LEVEL>7) 
 		fprintf(stdout,"[148] going for SCLOSE\n");
