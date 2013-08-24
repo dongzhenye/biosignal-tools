@@ -673,13 +673,8 @@ int is_nihonkohden_signature(char *str)
  */
 int strncmpi(const char* str1, const char* str2, size_t n)
 {
-	size_t k=0;
-	char r=0;
-	while (r==0 && str1[k]!='\0' && str2[k]!='\0' && (k<n)) {
-		r = tolower(str1[k]) - tolower(str2[k]);
-		k++;
-	}
-	return(r);
+	fprintf(stderr,"%s %i: use of function strncmpi() is deprecated - use instead strncasecmp()\n");
+	return strncasecmp(str1,str2,n); 
 }
 
 /*
@@ -687,14 +682,8 @@ int strncmpi(const char* str1, const char* str2, size_t n)
  */
 int strcmpi(const char* str1, const char* str2)
 {
-	unsigned int k=0;
-	int r;
-	r = tolower(str1[k]) - tolower(str2[k]);
-	while (r==0 && str1[k]!='\0' && str2[k]!='\0') {
-		k++;
-		r = tolower(str1[k]) - tolower(str2[k]);
-	}
-	return(r);
+	fprintf(stderr,"%s %i: use of function strcmpi() is deprecated - use instead strcasecmp()\n");
+	return strcasecmp(str1,str2); 
 }
 
 #if 0
@@ -4635,7 +4624,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 						hc->PhysDimCode = PhysDimCode(str);
 					}
 				}
-				if (!strncmpi(hc->Label,"time",4)) {
+				if (!strncasecmp(hc->Label,"time",4)) {
 					TIMECHANNEL = k+1;
 					hc->OnOff   = 2;   // mark channel as containing the time axis
 				}
@@ -5802,27 +5791,27 @@ if (VERBOSE_LEVEL>8)
 			char *val = line+c1+c2;
 			if (!strncmp(line,"PatientId",9))
 				strncpy(hdr->Patient.Id,val,MAX_LENGTH_PID);
-			else if (!strncmpi(line,"Sex",3))
+			else if (!strncasecmp(line,"Sex",3))
 				hdr->Patient.Sex = 1*(toupper(val[0])=='M')+2*(toupper(val[0])=='F');
-			else if (!strncmpi(line,"medication",11))
+			else if (!strncasecmp(line,"medication",11))
 				hdr->Patient.Medication = val==NULL ? 1 : 2;
-			else if (!strncmpi(line,"diagnosis",10)) {
+			else if (!strncasecmp(line,"diagnosis",10)) {
 			}
-			else if (!strncmpi(line,"MontageRaw",9))
+			else if (!strncasecmp(line,"MontageRaw",9))
 				Label = val;
-			else if (!strncmpi(line,"Age",3))
+			else if (!strncasecmp(line,"Age",3))
 				age = atol(val);
-			else if (!strncmpi(line,"Date",c1))
+			else if (!strncasecmp(line,"Date",c1))
 				sscanf(val,"%02i/%02i/%02i",&t.tm_mon,&t.tm_mday,&t.tm_year);
-			else if (!strncmpi(line,"Time",c1))
+			else if (!strncasecmp(line,"Time",c1))
 				sscanf(val,"%02i:%02i:%02i",&t.tm_hour,&t.tm_min,&t.tm_sec);
-			else if (!strncmpi(line,"Rate",c1))
+			else if (!strncasecmp(line,"Rate",c1))
 				hdr->SampleRate = atol(val);
-			else if (!strncmpi(line,"NchanFile",9))
+			else if (!strncasecmp(line,"NchanFile",9))
 				hdr->NS = atol(val);
-			else if (!strncmpi(line,"UvPerBit",c1))
+			else if (!strncasecmp(line,"UvPerBit",c1))
 				cal = atof(val);
-			else if (!strncmpi(line,"[Events]",c1)) {
+			else if (!strncasecmp(line,"[Events]",c1)) {
 				// not implemented yet
 			}
 			else
@@ -14021,7 +14010,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout, "asprintf_hdr2json: count=%i\n", (int)c);
 // for backwards compatibility
 ATT_DEPREC int hdr2json( HDRTYPE *hdr, FILE *fid)  {
 	return fprintf_hdr2json(fid, hdr);
-} // deprecatedd since Oct 2012, v1.4.0
+} // deprecated since Oct 2012, v1.4.0
 #endif
 
 int fprintf_hdr2json(FILE *fid, HDRTYPE* hdr)

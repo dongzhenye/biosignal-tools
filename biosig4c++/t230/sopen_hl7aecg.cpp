@@ -333,9 +333,9 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 			if (H.Element()) {
 				LP = atof(H.FirstChild("LowPass").Element()->GetText());
 				HP = atof(H.FirstChild("HighPass").Element()->GetText());
-				if (!strcmpi("yes",H.FirstChild("Filter50Hz").Element()->GetText()))
+				if (!strcasecmp("yes",H.FirstChild("Filter50Hz").Element()->GetText()))
 					Notch = 50; 
-				else if (!strcmpi("yes",H.FirstChild("Filter60Hz").Element()->GetText()))
+				else if (!strcasecmp("yes",H.FirstChild("Filter60Hz").Element()->GetText()))
 					Notch = 60; 
 			}
 			
@@ -379,7 +379,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 
 				hc->LeadIdCode	= 0;
 				size_t j;
-				for (j=0; strcmpi(hc->Label, LEAD_ID_TABLE[j]) && LEAD_ID_TABLE[j][0]; j++) {}; 
+				for (j=0; strcasecmp(hc->Label, LEAD_ID_TABLE[j]) && LEAD_ID_TABLE[j][0]; j++) {}; 
 				if (LEAD_ID_TABLE[j][0])	
 					hc->LeadIdCode = j;
 

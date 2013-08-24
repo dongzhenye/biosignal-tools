@@ -90,24 +90,24 @@ int main (int argc, char *argv[]) {
 		fprintf(stdout,"prompt$:");		
 	     	cmd = fgets(clbuf,1000,stdin); 
 
-		if (!strncmpi(clbuf,"exit",4) || !strncmpi(clbuf,"bye",3)) {
+		if (!strncasecmp(clbuf,"exit",4) || !strncasecmp(clbuf,"bye",3)) {
 			fprintf(stdout,"\n%p>\n",cmd);
 			bscs_close(sd);
 			close(sd);
 			break; 
 		}		 			
-//		fprintf(stdout,"cmd=<%s> %i\n",cmd,strncmpi(cmd,"close",5));
+//		fprintf(stdout,"cmd=<%s> %i\n",cmd,strncasecmp(cmd,"close",5));
 		
 		if (cmd[0]=='!') 
 			system(cmd+1); 
-		else if (!strncmpi(cmd,"ow+c",4)) {
+		else if (!strncasecmp(cmd,"ow+c",4)) {
 			ID = 0; 
 			s=bscs_open(sd, &ID);
 			fprintf(stdout,"ow ID=%16Lx s=%i %08x\n",ID,s,s);
 			s=bscs_close(sd);
 			fprintf(stdout,"c ID=%16Lx s=%i %08x\n",ID,s,s);
 		}
-		else if (!strncmpi(cmd,"or+c",4)) {
+		else if (!strncasecmp(cmd,"or+c",4)) {
 			ID = l_endian_u64(0x233ab6dfc96f664fLL); 
 			s=bscs_open(sd, &ID);
 			fprintf(stdout,"or ID=%16Lx s=%i %08x\n",ID,s,s);
@@ -119,14 +119,14 @@ int main (int argc, char *argv[]) {
 			s=bscs_close(sd);
 			fprintf(stdout,"c ID=%16Lx s=%i %08x\n",ID,s,s);
 		}
-		else if (!strncmpi(cmd,"openr",5)) {
+		else if (!strncasecmp(cmd,"openr",5)) {
 			ID = l_endian_u64(0x233ab6dfc96f664fLL); 
 
 			ID = l_endian_u64(0x233ab6dfc96f664fLL); 
 			fprintf(stdout,"or ID=%16Lx s=%i %08x\n",ID,s,s);
 			s=bscs_open(sd, &ID);
 		}
-		else if (!strncmpi(cmd,"openw",5)) {
+		else if (!strncasecmp(cmd,"openw",5)) {
 			char *fn = cmd+5;
 			char *ix; 
 		     	while (isspace(fn[0])) fn++; 
@@ -140,49 +140,49 @@ int main (int argc, char *argv[]) {
 			s=bscs_open(sd, &ID);
 			fprintf(stdout,"openw: ID=%16Lx s=%i %08x\n",ID,s,s);
 		}
-		else if (!strncmpi(cmd,"sendhdr",7)) {
+		else if (!strncasecmp(cmd,"sendhdr",7)) {
 			s= bscs_send_hdr(sd, hdr);
 		}
-		else if (!strncmpi(cmd,"senddat",7)) {
+		else if (!strncasecmp(cmd,"senddat",7)) {
 			s= bscs_send_dat(sd, hdr->AS.rawdata, hdr->AS.bpb*hdr->AS.length);
 			fprintf(stdout,"sent dat %i\n",s);
 		}
-		else if (!strncmpi(cmd,"sendevt",7)) {
+		else if (!strncasecmp(cmd,"sendevt",7)) {
 			if (hdr->TYPE != GDF) hdrEVT2rawEVT(hdr); 
 			if (hdr->EVENT.N>0) s= bscs_send_evt(sd, hdr);
 		}
 		
-		else if (!strncmpi(cmd,"hdr",3)) {
+		else if (!strncasecmp(cmd,"hdr",3)) {
 			bscs_requ_hdr(sd,hdr);
 		}
-		else if (!strncmpi(cmd,"show1",5)) {
+		else if (!strncasecmp(cmd,"show1",5)) {
 			hdr2ascii(hdr,stdout,1);
 		}
-		else if (!strncmpi(cmd,"show2",5)) {
+		else if (!strncasecmp(cmd,"show2",5)) {
 			hdr2ascii(hdr,stdout,2);
 		}
-		else if (!strncmpi(cmd,"show3",5)) {
+		else if (!strncasecmp(cmd,"show3",5)) {
 			hdr2ascii(hdr,stdout,3);
 		}
-		else if (!strncmpi(cmd,"show4",5)) {
+		else if (!strncasecmp(cmd,"show4",5)) {
 			hdr2ascii(hdr,stdout,4);
 		}
-		else if (!strncmpi(cmd,"dat",3)) {
+		else if (!strncasecmp(cmd,"dat",3)) {
 			bscs_requ_dat(sd,0,hdr->NRec,hdr);
 		}
-		else if (!strncmpi(cmd,"evt",3)) {
+		else if (!strncasecmp(cmd,"evt",3)) {
 			bscs_requ_evt(sd,hdr);
 		}
-		else if (!strncmpi(cmd,"ow",2)) {
+		else if (!strncasecmp(cmd,"ow",2)) {
 			ID = 0; 
 			s=bscs_open(sd, &ID);
 			fprintf(stdout,"ow ID=%16Lx s=%i %08x\n",ID,s,s);
 		}
-		else if (!strncmpi(cmd,"close",5)) {
+		else if (!strncasecmp(cmd,"close",5)) {
 			s=bscs_close(sd);
 			fprintf(stdout,"oc ID=%16Lx s=%i %08x\n",ID,s,s);
 		}
-		else if (!strncmpi(cmd,"requ ",5)) {
+		else if (!strncasecmp(cmd,"requ ",5)) {
 			char *fn = cmd+5;
 			char *ix; 
 		     	while (isspace(fn[0])) fn++; 
@@ -210,7 +210,7 @@ fprintf(stdout,"16 %i\n",hdr->EVENT.N);
 			}	
 			bscs_close(sd);
 		}
-		else if (!strncmpi(cmd,"send ",5)) {
+		else if (!strncasecmp(cmd,"send ",5)) {
 			char *fn = cmd+5;
 			char *ix; 
 		     	while (isspace(fn[0])) fn++; 

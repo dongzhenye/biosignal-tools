@@ -1,7 +1,6 @@
 /*
-%
-% $Id$
-% Copyright (C) 2005,2006,2007,2008,2009,2011 Alois Schloegl <a.schloegl@ieee.org>
+
+% Copyright (C) 2005,2006,2007,2008,2009,2011,2013 Alois Schloegl <alois.schloegl@gmail.com>
 % This file is part of the "BioSig for C/C++" repository 
 % (biosig4c++) at http://biosig.sf.net/ 
 
@@ -509,9 +508,9 @@ uint16_t CRCEvaluate(uint8_t* datablock, uint32_t datalength);
 int16_t CRCCheck(uint8_t* datablock, uint32_t datalength);
 
 #ifndef _WIN32
-int strcmpi(const char* str1, const char* str2);
+ATT_DEPREC int strcmpi(const char* str1, const char* str2); // use strcasecmp() instead
 #endif
-int strncmpi(const char* str1, const char* str2, size_t n);
+ATT_DEPREC int strncmpi(const char* str1, const char* str2, size_t n); // use strncasecmp() instead
 int u32cmp(const void *a, const void *b); 
 
 void biosigERROR(HDRTYPE *hdr, enum B4C_ERROR errnum, const char *errmsg);
