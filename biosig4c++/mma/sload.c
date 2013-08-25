@@ -20,10 +20,15 @@
  */
 
 #include "mathlink.h"
-#include "../biosig.h"
+#include "../biosig2.h"
 #include <stdlib.h>
 
-#define VERBOSE_LEVEL 0
+extern int VERBOSE_LEVEL; 	// used for debugging, variable is always defined
+
+#ifdef NDEBUG
+#define VERBOSE_LEVEL 0 	// turn off debugging information, but its only used without NDEBUG
+#endif
+
 
 void sload(const char *fn, int *SZ, long SZlen) {
 
@@ -35,7 +40,11 @@ if (VERBOSE_LEVEL > 5)
 // contains [experiment,series,sweep,trace] numbers for selecting data. 
 	size_t k = 0;
 	while (k < SZlen && k < 5) { 
+#ifdef __LIBBIOSIG2_H__
+		biosig_set_segment_selection(hdr, k+1, SZ[k]);
+#else
 		hdr->AS.SegSel[k] = (uint32_t)SZ[k];
+#endif
 		k++;
 	}
 
@@ -48,12 +57,23 @@ if (VERBOSE_LEVEL > 5)
 		return;
 	}
 
+#ifdef __LIBBIOSIG2_H__
+	size_t numberChannels = biosig_get_number_of_channels(hdr);
+	size_t numberSamples = biosig_get_number_of_samples(hdr);
+	double samplerate = biosig_get_samplerate(hdr);
+	biosig_reset_flag(hdr, BIOSIG_FLAG_ROW_BASED_CHANNELS);
+#else
+	uint16_t numberChannels = hdr->NS;
+	size_t numberSamples = hdr->NRec * hdr->SPR
+	double samplerate = hdr->SampleRate;
+	hdr->FLAG.ROW_BASED_CHANNELS = 0;
+#endif
+
 if (VERBOSE_LEVEL > 5)
-	fprintf(stdout,"open filename <%s>NoOfChans=%i\n", fn, hdr->NS);
+	fprintf(stdout,"open filename <%s>NoOfChans=%i\n", fn, numberChannels);
 
 	// ********** read data ********************
-	hdr->FLAG.ROW_BASED_CHANNELS = 0;
-	sread(NULL, 0, hdr->NRec*hdr->SPR, hdr);
+	sread(NULL, 0, numberSamples, hdr);
 	if (serror2(hdr)) {
 		destructHDR(hdr);
 		fprintf(stdout,"Error reading data from file <%s>\n", fn);
@@ -65,18 +85,29 @@ if (VERBOSE_LEVEL > 5)
 #else
 	size_t sz[2];
 #endif
+
+#ifdef __LIBBIOSIG2_H__
+	biosig_data_type *data;
+	size_t rowcol[2];
+	biosig_get_datablock(hdr, &data, &rowcol[0], &rowcol[1]);
+	sz[0] = rowcol[1];
+	sz[1] = rowcol[0];
+#else
 	sz[0] = hdr->data.size[1];
 	sz[1] = hdr->data.size[0];
+	double *data = hdr->data.block;
+#endif
+
 	MLPutFunction(stdlink, "List", 3);
 		// write data matrix 
-		MLPutRealArray(stdlink, hdr->data.block, sz, NULL, 2);
+		MLPutRealArray(stdlink, data, sz, NULL, 2);
 
 		// generate and write time axis
-		double *t = (double*)malloc(hdr->NRec*hdr->SPR*sizeof(double));
-		for (k=0; k<hdr->NRec*hdr->SPR;) {
-			t[k] = (++k)/hdr->SampleRate;
+		double *t = (double*)malloc(numberSamples * sizeof(double));
+		for (k=0; k < numberSamples;) {
+			t[k] = (++k)/samplerate;
 		}
-		MLPutRealList(stdlink, t, hdr->NRec*hdr->SPR);
+		MLPutRealList(stdlink, t, numberSamples);
 		free(t); 
 
 		// generate and write header information in JSON format
@@ -86,9 +117,9 @@ if (VERBOSE_LEVEL > 5)
 		free(str);
 
 if (VERBOSE_LEVEL > 5) {
-	for (k=0;k<hdr->NS;k++)
-		fprintf(stdout,"%f ",hdr->data.block[k]);
-		fprintf(stdout,"\n\nopen filename <%s>@%p sz=[%i,%i]\n", fn, hdr->data.block, hdr->data.size[0], hdr->data.size[1]);
+	for (k=0; k<numberChannels; k++)
+		fprintf(stdout,"%f ",data[k]);
+	fprintf(stdout,"\n\nopen filename <%s>@%p sz=[%i,%i]\n", fn, data, sz[1],sz[0]);
 	}
 
 	// *********** close file *********************

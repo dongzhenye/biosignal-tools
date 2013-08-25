@@ -85,6 +85,7 @@ int biosig_set_number_of_samples(HDRTYPE *hdr, ssize_t nrec, ssize_t spr);
 #define biosig_set_number_of_records(h,n)             biosig_set_number_of_samples(h,n,-1)
 // ATT_DEPREC int biosig_set_number_of_segments(HDRTYPE *hdr, );
 
+int biosig_get_datablock(HDRTYPE *hdr, biosig_data_type **data, size_t *rows, size_t *columns);
 biosig_data_type* biosig_get_data(HDRTYPE *hdr, char flag);
 
 double biosig_get_samplerate(HDRTYPE *hdr);

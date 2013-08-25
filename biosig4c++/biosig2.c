@@ -198,6 +198,13 @@ int biosig_set_number_of_samples(HDRTYPE *hdr, ssize_t nrec, ssize_t spr) {
 }
 //ATT_DEPREC int biosig_set_number_of_segments(HDRTYPE *hdr, )
 
+int biosig_get_datablock(HDRTYPE *hdr, double **data, size_t *rows, size_t *columns ) {
+	if (hdr==NULL) return -1;
+	*data = hdr->data.block;
+	*rows = hdr->data.size[0];
+	*columns = hdr->data.size[1];
+	return 0;
+}
 biosig_data_type* biosig_get_data(HDRTYPE *hdr, char flag ) {
 	if (hdr==NULL) return NULL;
         hdr->FLAG.ROW_BASED_CHANNELS = flag;
