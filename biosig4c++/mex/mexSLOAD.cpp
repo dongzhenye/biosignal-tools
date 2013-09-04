@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../biosig2.h"
+#include "../biosig.h"
 extern int VERBOSE_LEVEL; 	// used for debugging, variable is always defined
 
 #ifdef NDEBUG
@@ -802,12 +802,10 @@ void mexFunction(
 		}
 		strarray[0] = hdr->ID.Manufacturer.Model;
 		if (strarray[0]) {
-			biosig_get_manufacturer_model(hdr);
 			mxSetField(Manufacturer,0,"Model",mxCreateCharMatrixFromStrings(1,strarray));
 		}
 		strarray[0] = hdr->ID.Manufacturer.Version;
 		if (strarray[0]) {
-			biosig_get_manufacturer_version(hdr);
 			mxSetField(Manufacturer,0,"Version",mxCreateCharMatrixFromStrings(1,strarray));
 		}
 		strarray[0] = hdr->ID.Manufacturer.SerialNumber;
