@@ -4570,7 +4570,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 			hc->Cal		= 1.0;
 			hc->Off		= 0.0;
 
-			//hc->Label[0]	= '\0';
+			//hc->Label[0]  = '\0';
 			hc->OnOff	= 1;
 			hc->LeadIdCode	= 0;
 			hc->Transducer[0] = '\0';
@@ -4590,11 +4590,11 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 			hc->SPR 	= 1;
 			hc->bi8	 	= k * GDFTYP_BITS[hc->GDFTYP];
 			hc->bi	 	= hc->bi8 / 8;
-			hdr->AS.bpb     = hc->bi;
+			hdr->AS.bpb    += GDFTYP_BITS[hc->GDFTYP]/8;
 
 			if (str != NULL) {
 				size_t len = strlen(str);
-				strncpy(hc->Label, str+1, len-2); // do not copy quotes
+				strncpy(hc->Label, str+2, len-2); // do not copy quotes
 
 				// extract physical units enclosed in parenthesis "Label (units)"
 				str = strchr(str,'(');
@@ -4620,9 +4620,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 		free(line);
 
 		/*
+			TODO:
 			 this marks that no data has been read, and
 			 hdr->SampleRate, hdr->NRec, are not defined
 		 */
+		biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "support for ATF files not complete");
+
 		hdr->AS.rawdata = NULL;
 	}
 
