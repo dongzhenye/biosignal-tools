@@ -1,0 +1,41 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id$
+
+PortSystem          1.0
+PortGroup           cmake 1.0
+
+name                biosig4c++
+version             1.5.6
+categories          science
+platforms           darwin
+license             GPL-3
+maintainers         gmx.de:christsc
+description         I/O library for biomedical data
+long_description    BioSig is a library for accessing files in several \
+                    biomedical data formats (including EDF, BDF, GDF, \
+                    BrainVision, BCI2000, CFWB, HL7aECG, SCP_ECG (EN1064), \
+                    MFER, ACQ, CNT(Neuroscan), DEMG, EGI, EEG1100, FAMOS, \
+                    SigmaPLpro, TMS32)
+homepage            http://biosig.sourceforge.net/index.html
+master_sites        sourceforge:biosig
+master_sites.mirror_subdir \
+                    /BioSig%20for%20C_C++/src
+distname            ${name}-${version}.src
+worksrcdir          ${name}-${version}
+checksums           rmd160  1a9398ff56790713892e4da350be7d7ff1e5a2bf \
+                    sha256  7843bad582fd22f5234549fe5216d2912589a2fc623d9e09f50778152db2a3ff
+
+depends_build       port:gawk
+depends_lib         port:SuiteSparse \
+                    port:zlib
+
+# SuiteSparse support is off until the patch gets released
+configure.args      -DUSE_SUITESPARSE=OFF \
+                    -DUSE_ZLIB=ON \
+                    -DCMAKE_C_FLAGS=-DMACPORTS \
+                    -DCMAKE_CXX_FLAGS=-DMACPORTS
+
+post-destroot {
+      xinstall -m 644 ${worksrcpath}/libbiosig.a ${destroot}${prefix}/lib
+      xinstall -m 644 ${worksrcpath}/biosig.h ${destroot}${prefix}/include
+}
