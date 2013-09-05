@@ -94,7 +94,11 @@ ATT_DEPREC const char *B4C_ERRMSG;
 
 #ifdef WITH_CHOLMOD
 #ifdef __APPLE__
-    #include <ufsparse/cholmod.h>
+    #ifdef MACPORTS
+        #include <cholmod.h>
+    #else
+        #include <ufsparse/cholmod.h>
+    #endif
 #else
     #include <suitesparse/cholmod.h>
 #endif
