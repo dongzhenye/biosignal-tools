@@ -68,9 +68,23 @@ if (WIN32)
   )
 endif ()
 
-add_library (biosig STATIC
+# Cannot have same name for static and shared library, 
+# so we'll correct that later on
+add_library (biosigstatic STATIC
   ${headers}
   ${sources}
 )
+set_target_properties(biosigstatic PROPERTIES OUTPUT_NAME biosig)
 
-add_dependencies (biosig eventcodes units)
+add_library (biosigshared SHARED
+  ${headers}
+  ${sources}
+)
+set_target_properties(biosigshared PROPERTIES OUTPUT_NAME biosig)
+
+add_dependencies (biosigstatic eventcodes units)
+add_dependencies (biosigshared eventcodes units)
+
+install (TARGETS biosigstatic DESTINATION lib)
+install (TARGETS biosigshared DESTINATION lib)
+install (FILES  biosig.h DESTINATION include)
