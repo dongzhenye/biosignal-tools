@@ -293,8 +293,11 @@ int sopen_matlab(HDRTYPE* hdr) {
 
 #ifdef WITH_FIFF
 int sopen_fiff_read(HDRTYPE* hdr) {
-	// TODO: implement FIFF support
-
+	/* TODO: implement FIFF support
+	        define all fields in hdr->....
+		currently only the first hdr->HeadLen bytes are stored in
+		hdr->AS.Header, all other fields still need to be defined.
+	*/
 	biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "FIFF not supported yet");
 	return 0;
 }

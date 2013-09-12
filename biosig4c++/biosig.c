@@ -8173,6 +8173,13 @@ if (VERBOSE_LEVEL>8)
 #endif
 	}
 
+#ifdef WITH_FIFF
+	else if (hdr->TYPE==FIFF) {
+		hdr->HeadLen = count;
+		sopen_fiff_read(hdr);
+	}
+#endif
+
     	else if (hdr->TYPE==HDF) {
 #ifdef WITH_HDF
                 if (sopen_hdf5(hdr) != 0) {
