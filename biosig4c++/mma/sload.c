@@ -1,6 +1,5 @@
 /*
-% $Id$
-% Copyright (C) 2010, 2011 Alois Schloegl <a.schloegl@ieee.org>
+% Copyright (C) 2010,2011,2013 Alois Schloegl <alois.schloegl@gmail.org>
 % This file is part of the "BioSig for C/C++" repository 
 % (biosig4c++) at http://biosig.sf.net/ 
 
@@ -20,13 +19,14 @@
  */
 
 #include "mathlink.h"
-#include "../biosig2.h"
-#include <stdlib.h>
+#include <biosig2.h>
 
 extern int VERBOSE_LEVEL; 	// used for debugging, variable is always defined
 
 #ifdef NDEBUG
 #define VERBOSE_LEVEL 0 	// turn off debugging information, but its only used without NDEBUG
+#else
+#include <stdlib.h>
 #endif
 
 
@@ -129,10 +129,7 @@ if (VERBOSE_LEVEL > 5) {
 }
 
 
-
 int main(int argc, char *argv[]) {
    return MLMain(argc, argv);
 }
-
-
 
