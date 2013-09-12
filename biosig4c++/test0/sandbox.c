@@ -291,6 +291,15 @@ int sopen_matlab(HDRTYPE* hdr) {
 #endif 
 
 
+#ifdef WITH_FIFF
+int sopen_fiff_read(HDRTYPE* hdr) {
+	// TODO: implement FIFF support
+
+	biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "FIFF not supported yet");
+	return 0;
+}
+#endif
+
 
 int sopen_unipro_read(HDRTYPE* hdr) {
 		hdr->FILE.LittleEndian = (__BYTE_ORDER == __LITTLE_ENDIAN);
@@ -619,6 +628,7 @@ int sopen_dicom_read(HDRTYPE* hdr) {
 	return(0);
 }
 #endif
+
 
 #ifdef WITH_PDP
 #include "../NONFREE/sopen_pdp_read.c"

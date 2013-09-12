@@ -123,15 +123,16 @@ extern "C" {
 int sopen_SCP_read     (HDRTYPE* hdr);
 int sopen_SCP_write    (HDRTYPE* hdr);
 int sopen_HL7aECG_read (HDRTYPE* hdr);
-void sopen_cfs_read    (HDRTYPE* hdr);
-void sopen_smr_read    (HDRTYPE* hdr);
 void sopen_HL7aECG_write(HDRTYPE* hdr);
 void sopen_abf_read    (HDRTYPE* hdr);
 void sopen_abf2_read   (HDRTYPE* hdr);
-void sopen_ibw_read    (HDRTYPE* hdr);
 void sopen_alpha_read  (HDRTYPE* hdr);
+void sopen_cfs_read    (HDRTYPE* hdr);
 void sopen_FAMOS_read  (HDRTYPE* hdr);
+void sopen_fiff_read   (HDRTYPE* hdr);
 int sclose_HL7aECG_write(HDRTYPE* hdr);
+void sopen_ibw_read    (HDRTYPE* hdr);
+void sopen_smr_read    (HDRTYPE* hdr);
 int sopen_trc_read   (HDRTYPE* hdr);
 int sopen_unipro_read   (HDRTYPE* hdr);
 #ifdef WITH_FEF
@@ -2271,7 +2272,15 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	else if (!memcmp(hdr->AS.Header,"\x4c\x00\x00\x00\x01\x14\x02\x00\x00\x00\x00\x00\xC0\x00\x00\x00\x00\x00\x46",20))
 	{	hdr->TYPE = MS_LNK; // Microsoft *.LNK format
 		hdr->FILE.LittleEndian = 1;
- 	}
+	}
+	else if ((hdr->HeadLen > 175) && (hdr->AS.Header[175] < 5))
+	{	hdr->TYPE = TRC; // Micromed *.TRC format
+		hdr->FILE.LittleEndian = 1;
+	}
+	else if (!strcasecmp(strrchr(hdr->FileName,'.'),".FIFF") || !strcasecmp(strrchr(hdr->FileName,'.'),".FIF")) {
+		hdr->TYPE = FIFF; // FIFF MEG format
+	}
+
 #endif //ONLYGDF
 
 	if (VERBOSE_LEVEL > 7) fprintf(stdout,"[228] %i %s %s \n",hdr->TYPE,GetFileTypeString(hdr->TYPE),hdr->FileName);
@@ -2332,6 +2341,7 @@ const struct FileFormatStringTable_t FileFormatStringTable[] = {
 	{ EXIF,    	"EXIF" },
 	{ FAMOS,    	"FAMOS" },
 	{ FEF,    	"FEF" },
+	{ FIFF,    	"FIFF" },
 	{ FITS,    	"FITS" },
 	{ FLAC,    	"FLAC" },
 	{ GDF,    	"GDF" },
