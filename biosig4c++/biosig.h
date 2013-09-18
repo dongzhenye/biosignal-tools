@@ -44,6 +44,8 @@
 // for backward compatibility 
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
+// biosigCHECK_VERSION returns true if BIOSIG_VERSION is at least a.b.c
+#define biosigCHECK_VERSION(a,b,c) (BIOSIG_VERSION >= ( 10000*(a) + 100*(b) + (c) ) )
 
 #if defined(_VCPP_DEF) || defined(_MSC_VER)
     #define __BYTE_ORDER  __LITTLE_ENDIAN

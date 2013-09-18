@@ -1986,6 +1986,11 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 		memcpy(tmp,hdr->AS.Header+8,8);
 		hdr->VERSION = (float)atol(tmp);
     	}
+	else if (!memcmp(hdr->AS.Header,   "\0\0\0\x64\0\0\0\x1f\0\0\0\x14\0\0\0\0\0\1",4) &&
+		 !memcmp(hdr->AS.Header+36,"\0\0\0\x65\0\0\0\3\0\0\0\4\0\0",14) &&
+		 !memcmp(hdr->AS.Header+56,"\0\0\0\x6a\0\0\0\3\0\0\0\4\0\0\0\0\xff\xff\xff\xff\0\0",22)
+		)
+		hdr->TYPE = FIFF;
     	else if (!memcmp(Header1,"fLaC",4))
 	    	hdr->TYPE = FLAC;
 #endif //ONLYGDF
@@ -2276,9 +2281,6 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	else if ((hdr->HeadLen > 175) && (hdr->AS.Header[175] < 5))
 	{	hdr->TYPE = TRC; // Micromed *.TRC format
 		hdr->FILE.LittleEndian = 1;
-	}
-	else if (!strcasecmp(strrchr(hdr->FileName,'.'),".FIFF") || !strcasecmp(strrchr(hdr->FileName,'.'),".FIF")) {
-		hdr->TYPE = FIFF; // FIFF MEG format
 	}
 
 #endif //ONLYGDF
@@ -8173,12 +8175,10 @@ if (VERBOSE_LEVEL>8)
 #endif
 	}
 
-#ifdef WITH_FIFF
 	else if (hdr->TYPE==FIFF) {
 		hdr->HeadLen = count;
 		sopen_fiff_read(hdr);
 	}
-#endif
 
     	else if (hdr->TYPE==HDF) {
 #ifdef WITH_HDF

@@ -291,17 +291,33 @@ int sopen_matlab(HDRTYPE* hdr) {
 #endif 
 
 
-#ifdef WITH_FIFF
 int sopen_fiff_read(HDRTYPE* hdr) {
 	/* TODO: implement FIFF support
 	        define all fields in hdr->....
 		currently only the first hdr->HeadLen bytes are stored in
 		hdr->AS.Header, all other fields still need to be defined.
 	*/
-	biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "FIFF not supported yet");
+	sizt_t k;
+
+	/* define basic header */
+	hdr->NS = 0;
+	// hdr->.... fill in all
+
+
+	/* define channel headers */
+	hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
+	for (k = 0; k < hdr->NS; k++) {
+		CHANNEL_TYPE *hc = hdr->CHANNEL + k;
+	}
+
+	/* define event table */
+	hdr->EVENT.N = reallocEventTable(hdr, 0);
+
+	/* report status header and return */
+	hdr2ascii(hdr,stdout,4);
+	biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "FIFF support not completed");
 	return 0;
 }
-#endif
 
 
 int sopen_unipro_read(HDRTYPE* hdr) {
