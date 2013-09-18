@@ -557,7 +557,7 @@ win64: mexw64
 #############################################################
 
 .PHONY : io.h libbiosig lib
-libbiosig lib: libbiosig.a libbiosig.so libbiosig2.a libbiosig2.so libgdf.a libgdf.so libphysicalunits.a libphysicalunits.so
+libbiosig lib: libbiosig.a libbiosig2.a libbiosig2.so libgdf.a libphysicalunits.a libphysicalunits.so
 
 t240/libcnsfef.a:
 #	$(MAKE) -C t240 regen		#
@@ -820,7 +820,7 @@ install: save2gdf libbiosig.a doc/save2gdf.1 install_libbiosig
 	install heka2itx 		$(BIN)
 	install save2aecg 		$(BIN)
 	install save2scp  		$(BIN)
-	-install bin/tt2trig  		$(BIN)
+	-install bin/ttl2trig  		$(BIN)
 	#install rec2bin  		$(BIN)
 	#install bin2rec  		$(BIN)
 	install -d			$(LIB) $(INC)
