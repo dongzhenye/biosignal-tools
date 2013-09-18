@@ -1,12 +1,10 @@
 /*
-
     sandbox is used for development and under constraction work
     The functions here are either under construction or experimental.
     The functions will be either fixed, then they are moved to another place;
     or the functions are discarded. Do not rely on the interface in this function
 
-    $Id$
-    Copyright (C) 2008,2009,2010,2011,2012 Alois Schloegl <alois.schloegl@gmail.com>
+    Copyright (C) 2008-2013 Alois Schloegl <alois.schloegl@gmail.com>
     This file is part of the "BioSig for C/C++" repository
     (biosig4c++) at http://biosig.sf.net/
 
@@ -22,8 +20,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
  */
 
 #include <assert.h>
@@ -297,12 +293,11 @@ int sopen_fiff_read(HDRTYPE* hdr) {
 		currently only the first hdr->HeadLen bytes are stored in
 		hdr->AS.Header, all other fields still need to be defined.
 	*/
-	sizt_t k;
+	size_t k;
 
 	/* define basic header */
 	hdr->NS = 0;
 	// hdr->.... fill in all
-
 
 	/* define channel headers */
 	hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
