@@ -73,7 +73,7 @@ uint32_t* biosig_get_segment_selection(HDRTYPE *hdr);
 int biosig_check_error(HDRTYPE *hdr);
 char *biosig_get_errormsg(HDRTYPE *hdr);
 
-size_t biosig_get_number_of_channels(HDRTYPE *hdr);
+long biosig_get_number_of_channels(HDRTYPE *hdr);
 size_t biosig_get_number_of_samples(HDRTYPE *hdr);
 ATT_DEPREC size_t biosig_get_number_of_samples_per_record(HDRTYPE *hdr);
 size_t biosig_get_number_of_records(HDRTYPE *hdr);
@@ -131,6 +131,8 @@ int biosig_set_manufacturer_model(HDRTYPE *hdr, const char* rid);
 int biosig_set_manufacturer_version(HDRTYPE *hdr, const char* rid);
 int biosig_set_manufacturer_serial_number(HDRTYPE *hdr, const char* rid);
 
+double biosig_get_channel_samplerate(HDRTYPE *hdr, int chan);
+int biosig_set_channel_samplerate_and_samples_per_record(HDRTYPE *hdr, int chan, ssize_t spr, double fs);
 
 
 /* =============================================================
@@ -174,9 +176,10 @@ int    biosig_channel_set_timing_offset(CHANNEL_TYPE *hc, double off);
 double biosig_channel_get_impedance(CHANNEL_TYPE *hc);
 int    biosig_channel_set_impedance(CHANNEL_TYPE *hc, double val);
 
+/*
 double biosig_channel_get_samplerate(CHANNEL_TYPE *hc);
-size_t biosig_channel_get_samples_per_record(CHANNEL_TYPE *hc);
 int    biosig_channel_set_samplerate_and_samples_per_record(CHANNEL_TYPE *hc, size_t spr, double val);
+*/
 
 size_t biosig_channel_get_samples_per_record(CHANNEL_TYPE *hc);
 int    biosig_channel_set_samples_per_record(CHANNEL_TYPE *hc, size_t spr);
@@ -194,6 +197,10 @@ int  biosig_channel_set_datatype(CHANNEL_TYPE *hc, uint16_t gdftyp);
 #define biosig_channel_set_datatype_to_float(h)		biosig_channel_set_datatype(h,16)
 #define biosig_channel_set_datatype_to_single(h)	biosig_channel_set_datatype(h,16)
 #define biosig_channel_set_datatype_to_double(h)	biosig_channel_set_datatype(h,17)
+
+const char *biosig_channel_get_transducer(CHANNEL_TYPE *hc);
+int biosig_channel_set_transducer(CHANNEL_TYPE *hc, const char *transducer);
+
 
 /*
         DO NOT USE         DO NOT USE         DO NOT USE         DO NOT USE

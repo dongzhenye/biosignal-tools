@@ -1,7 +1,6 @@
 # backup files
 *~
 # ignore precompiled files
-*.i
 # ignore object files
 *.o
 *.obj

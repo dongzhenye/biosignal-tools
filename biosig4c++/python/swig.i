@@ -137,7 +137,7 @@ typedef struct {
 	uint32_t 	SPR;		/* samples per block (when different sampling rates are used, this is the LCM(CHANNEL[..].SPR) */
 	uint32_t  	LOC[4];		/* location of recording according to RFC1876 */
 	uint16_t 	NS;		/* number of channels */
-	int16_t 	tzmin; 		/* time zone (minutes of difference to UTC */
+	int16_t 	tzmin; 		/* time zone (minutes east of UTC) */
 
 #ifdef CHOLMOD_H
 	cholmod_sparse  *Calib;                  /* re-referencing matrix */

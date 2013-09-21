@@ -489,16 +489,23 @@ win64/sigviewer.exe: win64/libbiosig.a win64/libbiosig.dll
 #	other language bindings (on Linux)
 #############################################################
 
-biosig4python : python/_biosig.so python/biosig.py
+biosig4python : python/_biosig.so python/biosig.py python/_biosig2.so python/biosig2.py
 
 python/biosig.py python/swig_wrap.cxx: python/swig.i
 	$(SWIG) -python  -I/usr/include/python$(PYTHONVER)/ -I$(NUMPY_INC) -o python/swig_wrap.cxx python/swig.i
 python/_biosig.so : python/swig_wrap.cxx  libbiosig.$(LIBEXT)
 	$(CXX) -c $(DEFINES) $(CXXFLAGS) -I$(PYTHON_INCPATH) -I$(NUMPY_INC) python/swig_wrap.cxx -o python/swig_wrap.o
-	$(CXX) -shared python/swig_wrap.o $(LFLAGS) $(LIBS) -l$(PYTHON_LIB) -o python/_biosig.so 	 
-python: libbiosig.$(LIBEXT) python/swig.i
+	$(CXX) -shared python/swig_wrap.o $(LFLAGS) $(LIBS) -l$(PYTHON_LIB) -o python/_biosig.so
+python/biosig2.py python/biosig2_wrap.cxx: python/biosig2.i
+	$(SWIG) -python  -I/usr/include/python$(PYTHONVER)/ -I$(NUMPY_INC) -o python/biosig2_wrap.cxx python/biosig2.i
+python/_biosig2.so : python/biosig2_wrap.cxx  libbiosig2.$(LIBEXT)
+	$(CXX) -c $(DEFINES) $(CXXFLAGS) -I$(PYTHON_INCPATH) -I$(NUMPY_INC) python/biosig2_wrap.cxx -o python/biosig2_wrap.o
+	$(CXX) -shared python/biosig2_wrap.o $(LFLAGS) $(LIBS) -L. -lbiosig2 -l$(PYTHON_LIB) -o python/_biosig2.so
+
+
+python: libbiosig.$(LIBEXT) libbiosig2.$(LIBEXT) python/swig.i python/biosig2.i
 	$(MAKE) -C python 
-	 
+
 
 java: libbiosig.$(LIBEXT) java/biosig.i
 	$(MAKE) -C java 
@@ -741,7 +748,7 @@ distclean:
 	-$(DELETE) $(IO_H_FILE64) $(IO_H_FILE)
 	-$(DELETE) t5.scp t6.scp save2gdf gztest test_scp_decode biosig_server biosig_client
 	-$(DELETE) t?.[bge]df* t?.hl7* t?.scp* t?.cfw* t?.gd1* t?.*.gz *.fil $(TEMP_DIR)t1.* $(DATA_DIR)t1.*
-	-$(DELETE) python/swig_wrap.* python/biosig.py* python/_biosig.so
+	-$(DELETE) python/swig_wrap.* python/biosig.py* python/_biosig.so python/biosig2.py* python/_biosig2.so
 	-$(DELETE) QMakefile
 	-$(DELETE) igor/libIgor.a
 	-$(DELETE) win32/*.a win32/*.lib win32/libbiosig.* win32/*.obj win32/*.exe
@@ -769,7 +776,7 @@ clean:
 	-$(DELETE) *.mex*
 	-$(DELETE) *.oct
 	-$(DELETE) $(TEMP_DIR)t1.*
-	-$(DELETE) python/biosig.py* _biosig.so
+	-$(DELETE) python/biosig.py* _biosig.so python/biosig2.py* _biosig2.so
 	-$(DELETE) python/swig_wrap.*
 	-$(DELETE) win32/*.exe win32/*.o* win32/*.lib win32/*.a
 	-$(DELETE) win64/*.exe win64/*.o* win64/*.lib win64/*.a

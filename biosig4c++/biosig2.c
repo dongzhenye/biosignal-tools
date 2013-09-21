@@ -122,9 +122,9 @@ uint32_t* biosig_get_segment_selection(HDRTYPE *hdr) {
 	return &(hdr->AS.SegSel);
 };
 
-size_t biosig_get_number_of_channels(HDRTYPE *hdr) {
+long biosig_get_number_of_channels(HDRTYPE *hdr) {
 	if (hdr==NULL) return -1;
-	size_t k,m;
+	long k,m;
 	for (k=0,m=0; k<hdr->NS; k++)
 		if (hdr->CHANNEL[k].OnOff==1) {
 			m++;
@@ -590,6 +590,21 @@ int  biosig_set_channel_samplerate_and_samples_per_record(HDRTYPE *hdr, int chan
 	return (hdr->SampleRate * hc->SPR != fs * hdr->SPR);
 }
 
+const char *biosig_channel_get_transducer(CHANNEL_TYPE *hc) {
+
+	if (hc==NULL) return(NULL);
+	return (hc->Transducer);
+}
+
+int biosig_channel_set_transducer(CHANNEL_TYPE *hc, const char *transducer) {
+
+	if (hc==NULL) return(-1);
+	strncpy(hc->Transducer, transducer, MAX_LENGTH_TRANSDUCER+1);
+
+	return (0);
+}
+
+
 
 
 /*
@@ -631,6 +646,21 @@ int biosig_lib_version(void) {
 	return (BIOSIG_VERSION);
 }
 
+biosig_handle_t biosig2_open_file_readonly(const char *path, int read_annotations) {
+/* 
+
+	on success returns handle. 
+*/
+	HDRTYPE *hdr = sopen(path,"r",NULL);
+	if (serror2(hdr)) {
+		destructHDR(hdr);
+		return(NULL);
+	}
+	if (read_annotations)
+	        sort_eventtable(hdr);
+	return(hdr);
+}
+
 int biosig_open_file_readonly(const char *path, int read_annotations) {
 /* 
 
@@ -649,6 +679,11 @@ int biosig_open_file_readonly(const char *path, int read_annotations) {
                 sort_eventtable(hdrlist[k].hdr);
 
 	return(k);
+}
+
+int biosig2_close_file(biosig_handle_t hdr) {
+	destructHDR(hdr);
+	return(0);
 }
 
 int biosig_close_file(int handle) {
@@ -746,6 +781,17 @@ int biosig_get_annotation(int handle, size_t n, struct biosig_annotation_struct 
 	annot->annotation = GetEventDescription(hdr, n);
 
 	return(0);
+}
+
+biosig_handle_t biosig2_open_file_writeonly(const char *path, enum FileFormat filetype, int number_of_signals) {
+
+        /* TODO: does not open file and write to file */
+	HDRTYPE *hdr = constructHDR(number_of_signals,0);
+        hdr->FLAG.UCAL = 0;
+        hdr->FLAG.OVERFLOWDETECTION = 0;
+        hdr->FILE.COMPRESSION = 0;
+
+	return(hdr); 
 }
 
 int biosig_open_file_writeonly(const char *path, enum FileFormat filetype, int number_of_signals) {
