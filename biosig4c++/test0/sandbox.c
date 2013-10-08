@@ -287,6 +287,138 @@ int sopen_matlab(HDRTYPE* hdr) {
 #endif 
 
 
+void sopen_axg_read(HDRTYPE* hdr) {
+
+		int32_t nCol;
+		switch ((int) hdr->VERSION) {
+		case 1:
+		case 2:
+			nCol         = bei32p(hdr->AS.Header+6);
+			hdr->HeadLen = 10;
+			break;
+		case 6:
+			nCol      = bei32p(hdr->AS.Header+8);
+			hdr->HeadLen = 12;
+		default: 
+			biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG with more the 16.7 traces are not supported");
+			return;
+		}
+
+	    	hdr->FILE.LittleEndian = 0;
+		uint32_t k; 
+		size_t count = hdr->HeadLen;
+		typeof(hdr->CHANNEL->GDFTYP) gdftyp;
+
+	        // result = AG_ReadFloatColumn( dataRefNum, fileFormat, columnNumber, &column );
+		switch ((int) hdr->VERSION) {
+		case 1:
+			gdftyp = 16;	// float
+			ifseek(hdr, hdr->HeadLen, SEEK_SET);
+			for (k = 0; k < nCol; k++) {
+				const int colHdrSize=84;
+				uint8_t colHdr[colHdrSize];
+			    	ifread(colHdr,1,colHdrSize,hdr);
+				uint32_t points = beu32p(colHdr);
+			    	ifseek(hdr, points * sizeof(float),SEEK_CUR);
+			}
+			break;
+		case 2: {
+			// k=0
+			gdftyp = 3;	// int16
+			const int colHdrSize = 92;
+			uint8_t colHdr[colHdrSize];
+		    	count  += ifread(colHdr,1,colHdrSize,hdr);
+			uint32_t points = beu32p(colHdr);
+			float firstsample = bef32p(colHdr+84);
+			hdr->SampleRate = 1.0/bef32p(colHdr+88);
+			for (k=1; k<nCol; k++) {
+				ifread(colHdr,1,colHdrSize,hdr);
+				points = beu32p(colHdr);
+				firstsample = bef32p(colHdr+84);
+				float Fs = 1.0/bef32p(colHdr+88);
+			    	ifseek(hdr, points * sizeof(int16_t),SEEK_CUR);
+			}
+			break;
+			}
+		case 6:
+			for (k=0; k < nCol; k++) {
+				const int colHdrSize=12;
+				uint8_t colHdr[colHdrSize];
+			    	ifread(colHdr,1,colHdrSize,hdr);
+				uint32_t points = beu32p(colHdr);
+				uint32_t datatype = beu32p(colHdr+4);
+				uint32_t titleLen = beu32p(colHdr+8);
+			    	ifseek(hdr, titleLen, SEEK_CUR);
+				/*
+				// The only types used for data file columns are...
+				//   ShortArrayType = 4     IntArrayType = 5
+				//   FloatArrayType = 6     DoubleArrayType = 7
+				//   SeriesArrayType = 9    ScaledShortArrayType = 10
+				*/
+				switch (datatype) {
+				case 4:
+				    	ifseek(hdr, points * sizeof(int16_t), SEEK_CUR);
+					break;
+				case 5: //int32
+				case 6: //float
+				    	ifseek(hdr, points * 4, SEEK_CUR);
+					break;
+				case 7:
+				    	ifseek(hdr, points * sizeof(double), SEEK_CUR);
+					break;
+				case 9: {
+					const int colHdrSize = 2*sizeof(double);
+					uint8_t colHdr[colHdrSize];
+				    	count  += ifread(colHdr, 1, colHdrSize, hdr);
+					double firstsample = bef64p(colHdr);
+					hdr->SampleRate = 1.0 / bef64p(colHdr+8);
+					break;
+					}
+				case 10:
+				    	ifseek(hdr, 2 * sizeof(double) + points * sizeof(int16_t), SEEK_CUR);
+					break;
+				default:
+					biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"error reading AXG: unsupported data type");
+				}
+			}
+			break;
+		default:
+			biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG version is not supported");
+		}
+
+		/* TODO 
+			read comments
+			read notes
+			complete header information
+			
+		*/
+
+/*
+		hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
+		CHANNEL_TYPE *hc;
+		for (k = 0; k < hdr->NS; k++) {
+			hc = hdr->CHANNEL + k;
+			// hc->PhysDimCode = 4256; // "V"
+			hc->PhysDimCode   = 0;
+			hc->Transducer[0] = 0; 
+			
+			hc->LeadIdCode = 0;
+			hc->SPR        = hdr->SPR;
+			hc->Cal        = 1.0;
+			hc->Off        = 0.0;
+			hc->OnOff      = 1;
+
+			hc->LeadIdCode = 0;
+			hc->Notch      = NAN;
+			hc->LowPass    = NAN;
+			hc->HighPass   = NAN;
+		}
+*/
+		biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG format not supported, yet.");
+
+}
+
+
 int sopen_fiff_read(HDRTYPE* hdr) {
 	/* TODO: implement FIFF support
 	        define all fields in hdr->....

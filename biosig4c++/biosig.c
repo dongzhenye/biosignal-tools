@@ -126,6 +126,7 @@ int sopen_HL7aECG_read (HDRTYPE* hdr);
 void sopen_HL7aECG_write(HDRTYPE* hdr);
 void sopen_abf_read    (HDRTYPE* hdr);
 void sopen_abf2_read   (HDRTYPE* hdr);
+void sopen_axg_read    (HDRTYPE* hdr);
 void sopen_alpha_read  (HDRTYPE* hdr);
 void sopen_cfs_read    (HDRTYPE* hdr);
 void sopen_FAMOS_read  (HDRTYPE* hdr);
@@ -1853,11 +1854,13 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	    	hdr->TYPE = ATES;
     	else if (!memcmp(Header1,"ATF\x09",4))
     	        hdr->TYPE = ATF;
-	else if (!memcmp(Header1,"AxGr\1\0",6) || !memcmp(Header1,"AxGr\2\0",6)) {
+	else if (!memcmp(Header1,"AxGr",4)) {
 		hdr->TYPE = AXG;
+		hdr->VERSION = bei16p(hdr->AS.Header+4);
 	}
-	else if (!memcmp(Header1,"axgx",4) || !memcmp(Header1,"axgx",4)) {
+	else if (!memcmp(Header1,"axgx",4)) {
 		hdr->TYPE = AXG;
+		hdr->VERSION = bei32p(hdr->AS.Header+4);
 	}
     	else if (!memcmp(Header1,"ADU1",4) || !memcmp(Header1,"ADU2",4)  )
     	        hdr->TYPE = Axona;
@@ -4860,22 +4863,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 	}
 
 	else if (hdr->TYPE==AXG) {
-		if (!memcmp(Header1,"AxGr\1\0",6) || !memcmp(Header1,"AxGr\2\0",6)) {
-			hdr->TYPE = AXG;
-			hdr->VERSION = lei16p(Header1+4);
-			hdr->NS      = lei32p(Header1+6);
-		}
-		else if (!memcmp(Header1,"axgx",4) || !memcmp(Header1,"axgx",4)) {
-			hdr->TYPE = AXG;
-			hdr->VERSION = lei32p(Header1+4);
-			int32_t NS   =  lei32p(Header1+8);
-			if (NS >= (1<<sizeof(hdr->NS)*8)) {
-				biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG with more the 65535 channels are not supported");
-				return hdr;
-			}
-			hdr->NS = NS;
-		}
-		biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG format not supported, yet.");
+		sopen_axg_read(hdr);
 	}
 
     	else if (hdr->TYPE==Axona) {
