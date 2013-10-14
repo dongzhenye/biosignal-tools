@@ -4546,8 +4546,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 		}
 
 		ifseek(hdr,0,SEEK_SET);
-		size_t ll = 512;
-		char *line = malloc(ll+1);
+		size_t ll;
+		char *line = NULL;
 		ssize_t nc;
 
 		// first line - skip: contains "ATF\t1.0" or alike
@@ -4556,6 +4556,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"ATF line <%s>\n",line);
 
 		// 2nd line: number of rows and colums
+		if (line!=NULL) { free(line); line=NULL; }  // allocate line buffer as needed
 		nc = getline(&line, &ll, hdr->FILE.FID);
 		char *str = line;
 		hdr->NRec = strtoul(str,&str,10);
@@ -4567,6 +4568,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"ATF line <%s>\n",line);
 
 		// 3rd line: channel label
+		if (line!=NULL) { free(line); line=NULL; }  // allocate line buffer as needed
 		nc  = getline(&line, &ll, hdr->FILE.FID);
 
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"ATF line <%s>\n",line);
@@ -4609,20 +4611,21 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 
 			if (str != NULL) {
 				size_t len = strlen(str);
-				strncpy(hc->Label, str+2, len-2); // do not copy quotes
+				strncpy(hc->Label, str+1, len-2); // do not copy quotes
 
 				// extract physical units enclosed in parenthesis "Label (units)"
-				str = strchr(str,'(');
+				str = strchr(str+1,'(');
 				if (str != NULL) {
 					char *str2 = strchr(str,')');
 					if (str2 != NULL) {
 						*str2 = 0;
-						hc->PhysDimCode = PhysDimCode(str);
+						hc->PhysDimCode = PhysDimCode(str+1);
 					}
 				}
 				if (!strncasecmp(hc->Label,"time",4)) {
 					TIMECHANNEL = k+1;
 					hc->OnOff   = 2;   // mark channel as containing the time axis
+					if (k==0) hdr->SampleRate /= PhysDimScale(hc->PhysDimCode);
 				}
 			}
 			// extract next label
@@ -4632,14 +4635,33 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 
 		}
 		hdr->HeadLen = iftell(hdr);
-		free(line);
+
+		// 4th line: 1st sample of time channel
+		if (line!=NULL) { free(line); line=NULL; }  // allocate line buffer as needed
+		nc  = getline(&line, &ll, hdr->FILE.FID);
+		double t1 = strtod(line, &str);
+
+		// 5th line: 2nd sample of time channel
+		if (line!=NULL) { free(line); line=NULL; }  // allocate line buffer as needed
+		nc  = getline(&line, &ll, hdr->FILE.FID);
+		double t2 = strtod(line, &str);
+
+		hdr->SampleRate /= (t2-t1);
+		if (line!=NULL) { free(line); line=NULL; }  // allocate line buffer as needed
+
+		/*
+		if ((size_t)(hdr->NRec * hdr->SPR) <= (ln+1) ) {
+			hdr->NRec = max(1024, ln*2);
+			hdr->AS.rawdata = realloc(hdr->AS.rawdata, hdr->NRec * hdr->SPR * hdr->AS.bpb);
+		}
 
 		/*
 			TODO:
 			 this marks that no data has been read, and
-			 hdr->SampleRate, hdr->NRec, are not defined
+			 hdr->SampleRate, are not defined
 		 */
-		biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "support for ATF files not complete");
+		//biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "support for ATF files not complete");
+
 
 		hdr->AS.rawdata = NULL;
 	}
@@ -11756,7 +11778,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 			hdr->AS.bpb8 = hdr->AS.bpb<<3;
 		}
 
-		if (VERBOSE_LEVEL>8)
+		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"GDFw h3\n");
 
 	}
