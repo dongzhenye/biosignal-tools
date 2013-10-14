@@ -473,7 +473,7 @@ int main(int argc, char **argv){
     	for (k=0; k<hdr->NS; k++)
     	if (hdr->CHANNEL[k].OnOff && hdr->CHANNEL[k].SPR) {
 
-		if (VERBOSE_LEVEL > 7) fprintf(stdout,"[204] #%i\n",k);
+		if (VERBOSE_LEVEL > 7) fprintf(stdout,"[204] #%i %i %i N=%i [%i,%i]\n",(int)k,(int)k2,(int)hdr->FLAG.ROW_BASED_CHANNELS,(int)N,(int)hdr->data.size[0],(int)(hdr->data.size[1]));
 	
 		double MaxValue;
 		double MinValue;
@@ -666,7 +666,7 @@ int main(int argc, char **argv){
 	if (VERBOSE_LEVEL>7) 
 		fprintf(stdout,"[211] z=%i sd=%i\n",hdr->FILE.COMPRESSION,hdr->FILE.Des);
 
-		hdr = sopen(tmp, "wb", hdr);
+		sopen(tmp, "wb", hdr);
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"returned from sopen-wb\n");
 
