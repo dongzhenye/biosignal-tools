@@ -40,7 +40,7 @@
 
 #define BIOSIG_VERSION_MAJOR 1
 #define BIOSIG_VERSION_MINOR 5
-#define BIOSIG_PATCHLEVEL 7
+#define BIOSIG_PATCHLEVEL 8
 // for backward compatibility 
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
@@ -304,8 +304,22 @@ typedef struct CHANNEL_STRUCT {
 typedef struct HDR_STRUCT {
 
 	char* 	        FileName ATT_ALI;       /* FileName - dynamically allocated, local copy of file name */
-	float 		VERSION  ATT_ALI;	/* GDF version number */
-	enum FileFormat TYPE 	 ATT_ALI; 	/* type of file format */
+
+	union {
+#ifndef VERSION
+	// workaround in case VERSION is already defined as macro, kept for backwards compatibility
+	float 		VERSION;		/* GDF version number */
+#endif
+	float 		Version;		/* GDF version number */
+	} ATT_ALI;
+
+	union {
+#ifndef TYPE
+	// workaround in case TYPE is already defined as macro, kept for backwards compatibility
+	enum FileFormat TYPE;		 	/* type of file format */
+#endif
+	enum FileFormat Type; 			/* type of file format */
+	} ATT_ALI;
 
 	struct {
 		size_t 			size[2] ATT_ALI; /* size {rows, columns} of data block	 */
