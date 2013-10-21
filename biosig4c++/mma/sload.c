@@ -29,17 +29,32 @@ extern int VERBOSE_LEVEL; 	// used for debugging, variable is always defined
 #include <stdlib.h>
 #endif
 
-
 void sload(const char *fn, int *SZ, long SZlen) {
+
+	uint16_t numberChannels;
+	size_t k=0;
+	size_t numberSamples;
+	double samplerate;
+	double *t;
+	char *str = NULL;
+#ifdef _WIN32
+	long int sz[2];
+#else
+	size_t sz[2];
+#endif
+	biosig_data_type *data;
+#ifdef __LIBBIOSIG2_H__
+	size_t rowcol[2];
+#endif
 
 	HDRTYPE *hdr = constructHDR(0,0);
 
 if (VERBOSE_LEVEL > 5)
 	fprintf(stdout,"=== start sload ===\n");
 
-// contains [experiment,series,sweep,trace] numbers for selecting data. 
-	size_t k = 0;
-	while (k < SZlen && k < 5) { 
+/* contains [experiment,series,sweep,trace] numbers for selecting data. */
+
+	while ((k < SZlen) && (k < 5)) {
 #ifdef __LIBBIOSIG2_H__
 		biosig_set_segment_selection(hdr, k+1, SZ[k]);
 #else
@@ -47,7 +62,6 @@ if (VERBOSE_LEVEL > 5)
 #endif
 		k++;
 	}
-
 
 	// ********* open file and read header ************
 	hdr = sopen(fn, "r", hdr);
@@ -58,14 +72,14 @@ if (VERBOSE_LEVEL > 5)
 	}
 
 #ifdef __LIBBIOSIG2_H__
-	size_t numberChannels = biosig_get_number_of_channels(hdr);
-	size_t numberSamples = biosig_get_number_of_samples(hdr);
-	double samplerate = biosig_get_samplerate(hdr);
+	numberChannels = biosig_get_number_of_channels(hdr);
+	numberSamples = biosig_get_number_of_samples(hdr);
+	samplerate = biosig_get_samplerate(hdr);
 	biosig_reset_flag(hdr, BIOSIG_FLAG_ROW_BASED_CHANNELS);
 #else
-	uint16_t numberChannels = hdr->NS;
-	size_t numberSamples = hdr->NRec * hdr->SPR
-	double samplerate = hdr->SampleRate;
+	numberChannels = hdr->NS;
+	numberSamples = hdr->NRec * hdr->SPR
+	samplerate = hdr->SampleRate;
 	hdr->FLAG.ROW_BASED_CHANNELS = 0;
 #endif
 
@@ -80,46 +94,37 @@ if (VERBOSE_LEVEL > 5)
 		return;
 	}
 
-#ifdef _WIN32
-	long int sz[2];
-#else
-	size_t sz[2];
-#endif
-
 #ifdef __LIBBIOSIG2_H__
-	biosig_data_type *data;
-	size_t rowcol[2];
 	biosig_get_datablock(hdr, &data, &rowcol[0], &rowcol[1]);
 	sz[0] = rowcol[1];
 	sz[1] = rowcol[0];
 #else
 	sz[0] = hdr->data.size[1];
 	sz[1] = hdr->data.size[0];
-	double *data = hdr->data.block;
+	data  = hdr->data.block;
 #endif
 
 	MLPutFunction(stdlink, "List", 3);
-		// write data matrix 
-		MLPutRealArray(stdlink, data, sz, NULL, 2);
+	// write data matrix
+	MLPutRealArray(stdlink, data, sz, NULL, 2);
 
-		// generate and write time axis
-		double *t = (double*)malloc(numberSamples * sizeof(double));
-		for (k=0; k < numberSamples;) {
-			t[k] = (++k)/samplerate;
-		}
-		MLPutRealList(stdlink, t, numberSamples);
-		free(t); 
+	// generate and write time axis
+	t = (double*)malloc(numberSamples * sizeof(double));
+	for (k=0; k < numberSamples;) {
+		t[k] = (++k)/samplerate;
+	}
+	MLPutRealList(stdlink, t, numberSamples);
+	free(t);
 
-		// generate and write header information in JSON format
-		char *str = NULL;
-		asprintf_hdr2json(&str, hdr);
-		MLPutString(stdlink, str);
-		free(str);
+	// generate and write header information in JSON format
+	asprintf_hdr2json(&str, hdr);
+	MLPutString(stdlink, str);
+	free(str);
 
 if (VERBOSE_LEVEL > 5) {
 	for (k=0; k<numberChannels; k++)
 		fprintf(stdout,"%f ",data[k]);
-	fprintf(stdout,"\n\nopen filename <%s>@%p sz=[%i,%i]\n", fn, data, sz[1],sz[0]);
+		fprintf(stdout,"\n\nopen filename <%s>@%p sz=[%i,%i]\n", fn, data, sz[1],sz[0]);
 	}
 
 	// *********** close file *********************
