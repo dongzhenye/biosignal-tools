@@ -787,28 +787,28 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 			fprintf(stdout,"[%i].phySz\t%i\n",k,lei16p(hdr->AS.Header+off+22));
 			fprintf(stdout,"[%i].maxData\t%i\n",k,lei16p(hdr->AS.Header+off+24));
 
-			fprintf(stdout,"[%i].comment\t<%s>\n",k,hdr->AS.Header+off+26+1);
+			fprintf(stdout,"[%i].comment\t<%s>\n",(int)k,hdr->AS.Header+off+26+1);
 
-			fprintf(stdout,"[%i].maxChanTime\t%i\t%i\t%i\n",k,lei32p(hdr->AS.Header+off+98),*(int32_t*)(hdr->AS.Header+off+98));
-			fprintf(stdout,"[%i].lChanDvd\t%i\n",k,lei32p(hdr->AS.Header+off+102));
-			fprintf(stdout,"[%i].phyChan\t%i\n",k,lei16p(hdr->AS.Header+off+106));
-			fprintf(stdout,"[%i].title\t<%s>\n",k,hdr->AS.Header+off+108+1);
-			fprintf(stdout,"[%i].idealRate\t%f\n",k,lef32p(hdr->AS.Header+off+118));
-			fprintf(stdout,"[%i].kind\t%i\n",k,*(hdr->AS.Header+off+122));
-			fprintf(stdout,"[%i].delSizeMSB\t%i\n",k,*(hdr->AS.Header+off+123));
+			fprintf(stdout,"[%i].maxChanTime\t%i\t%i\t%i\n",(int)k,lei32p(hdr->AS.Header+off+98),*(int32_t*)(hdr->AS.Header+off+98));
+			fprintf(stdout,"[%i].lChanDvd\t%i\n",(int)k,lei32p(hdr->AS.Header+off+102));
+			fprintf(stdout,"[%i].phyChan\t%i\n",(int)k,lei16p(hdr->AS.Header+off+106));
+			fprintf(stdout,"[%i].title\t<%s>\n",(int)k,hdr->AS.Header+off+108+1);
+			fprintf(stdout,"[%i].idealRate\t%f\n",(int)k,lef32p(hdr->AS.Header+off+118));
+			fprintf(stdout,"[%i].kind\t%i\n",(int)k,*(hdr->AS.Header+off+122));
+			fprintf(stdout,"[%i].delSizeMSB\t%i\n",(int)k,*(hdr->AS.Header+off+123));
 
 
-			fprintf(stdout,"[%i].v.adc.scale\t%f\n",k,lef32p(hdr->AS.Header+off+124));
-			fprintf(stdout,"[%i].v.adc.offset\t%f\n",k,lef32p(hdr->AS.Header+off+128));
+			fprintf(stdout,"[%i].v.adc.scale\t%f\n",(int)k,lef32p(hdr->AS.Header+off+124));
+			fprintf(stdout,"[%i].v.adc.offset\t%f\n",(int)k,lef32p(hdr->AS.Header+off+128));
 			char tmp[10]; tmp[6] = 0;	
 			memcpy(tmp, hdr->AS.Header+off+132, 6);
-			fprintf(stdout,"[%i].v.adc.units\t%s\n",  k, tmp+1);
-			fprintf(stdout,"[%i].v.adc.divide\t%i\n", k, lei16p(hdr->AS.Header+off+138));
+			fprintf(stdout,"[%i].v.adc.units\t%s\n",  (int)k, tmp+1);
+			fprintf(stdout,"[%i].v.adc.divide\t%i\n", (int)k, lei16p(hdr->AS.Header+off+138));
 
-			fprintf(stdout,"[%i].v.real.min\t%f\n", k, lef32p(hdr->AS.Header+off+124));
-			fprintf(stdout,"[%i].v.real.max\t%f\n", k, lef32p(hdr->AS.Header+off+128));
+			fprintf(stdout,"[%i].v.real.min\t%f\n", (int)k, lef32p(hdr->AS.Header+off+124));
+			fprintf(stdout,"[%i].v.real.max\t%f\n", (int)k, lef32p(hdr->AS.Header+off+128));
 	
-			fprintf(stdout,"[%i].v.event\t%0x\n", k, lef32p(hdr->AS.Header+off+124));
+			fprintf(stdout,"[%i].v.event\t%0x\n", (int)k, lef32p(hdr->AS.Header+off+124));
 		}
         }         
 

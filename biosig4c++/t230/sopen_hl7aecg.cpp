@@ -512,7 +512,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 						strncpy(hdr->ID.Recording+len+1,strtmp,l1+1);
 					} 
 					else 
-						fprintf(stdout,"Warning HL7aECG(read): length of Recording ID exceeds maximum length %i>%i\n",(int)len+1+l1,MAX_LENGTH_PID); 
+						fprintf(stdout,"Warning HL7aECG(read): length of Recording ID exceeds maximum length %i>%i\n",(int)(len+1+l1),MAX_LENGTH_PID);
 				}
 				else 
 					fprintf(stdout,"Warning HL7aECG(read): length of Recording ID exceeds maximum length %i>%i\n",(int)len,MAX_LENGTH_PID); 

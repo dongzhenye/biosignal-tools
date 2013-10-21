@@ -111,10 +111,10 @@ int ibwChecksum(int16_t *data, int flag_swap, int oldcksum, int numbytes) {
 	numbytes >>= 1;				// 2 bytes to a short -- ignore trailing odd byte.
 	if (flag_swap) {
 		while(numbytes-- > 0) 
-			oldcksum += bswap_16(*data++);
+			oldcksum += bswap_16(*(data++));
 	} else {
 		while(numbytes-- > 0)
-			oldcksum += *data++;
+			oldcksum += *(data++);
 	}
 	return oldcksum&0xffff;
 }
@@ -548,8 +548,8 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 		hc->OnOff  = 1;
 		hc->DigMin = digmin;
 		hc->DigMax = digmax;
-		hc->PhysMax = digmax*hc->Cal+hc->Off;
-		hc->PhysMin = digmin*hc->Cal+hc->Off;
+		hc->PhysMax = digmax * hc->Cal + hc->Off;
+		hc->PhysMin = digmin * hc->Cal + hc->Off;
 		hc->LeadIdCode = 0;
 		hc->bi = bpb;
 		hc->Transducer[0] = 0;

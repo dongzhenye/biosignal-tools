@@ -37,7 +37,7 @@
 #undef WITH_GDCM
 
 
-extern "C" int sopen_dicom_read(HDRTYPE* hdr) {
+EXTERN_C int sopen_dicom_read(HDRTYPE* hdr) {
 	fprintf(stdout,"DCMTK is used to read dicom files.\n");
 
 }

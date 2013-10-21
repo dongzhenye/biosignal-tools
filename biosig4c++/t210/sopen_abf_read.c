@@ -434,43 +434,43 @@ EXTERN_C void sopen_abf2_read(HDRTYPE* hdr) {
 
 			fprintf(stdout,"ProtocolSection.uBlockIndex: \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, ProtocolSection.uBlockIndex)));
 			fprintf(stdout,"ProtocolSection.uBytes:      \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, ProtocolSection.uBytes)));
-			fprintf(stdout,"ProtocolSection.llNumEntries:\t%li\n",lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, ProtocolSection.llNumEntries)));
+			fprintf(stdout,"ProtocolSection.llNumEntries:\t%i\n",(int)lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, ProtocolSection.llNumEntries)));
 
 			fprintf(stdout,"ADCSection.uBlockIndex: \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, ADCSection.uBlockIndex)));
 			fprintf(stdout,"ADCSection.uBytes:      \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, ADCSection.uBytes)));
-			fprintf(stdout,"ADCSection.llNumEntries:\t%li\n",lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, ADCSection.llNumEntries)));
+			fprintf(stdout,"ADCSection.llNumEntries:\t%i\n",(int)lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, ADCSection.llNumEntries)));
 
 			fprintf(stdout,"DACSection.uBlockIndex: \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, DACSection.uBlockIndex)));
 			fprintf(stdout,"DACSection.uBytes:      \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, DACSection.uBytes)));
-			fprintf(stdout,"DACSection.llNumEntries:\t%li\n",lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, DACSection.llNumEntries)));
+			fprintf(stdout,"DACSection.llNumEntries:\t%i\n",(int)lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, DACSection.llNumEntries)));
 
 			fprintf(stdout,"EpochSection.uBlockIndex: \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, EpochSection.uBlockIndex)));
 			fprintf(stdout,"EpochSection.uBytes:      \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, EpochSection.uBytes)));
-			fprintf(stdout,"EpochSection.llNumEntries:\t%li\n",lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, EpochSection.llNumEntries)));
+			fprintf(stdout,"EpochSection.llNumEntries:\t%i\n",(int)lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, EpochSection.llNumEntries)));
 
 			fprintf(stdout,"ADCPerDACSection.uBlockIndex: \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, ADCPerDACSection.uBlockIndex)));
 			fprintf(stdout,"ADCPerDACSection.uBytes:      \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, ADCPerDACSection.uBytes)));
-			fprintf(stdout,"ADCPerDACSection.llNumEntries:\t%li\n",lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, ADCPerDACSection.llNumEntries)));
+			fprintf(stdout,"ADCPerDACSection.llNumEntries:\t%i\n",(int)lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, ADCPerDACSection.llNumEntries)));
 
 			fprintf(stdout,"EpochPerDACSection.uBlockIndex: \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, EpochPerDACSection.uBlockIndex)));
 			fprintf(stdout,"EpochPerDACSection.uBytes:      \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, EpochPerDACSection.uBytes)));
-			fprintf(stdout,"EpochPerDACSection.llNumEntries:\t%li\n",lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, EpochPerDACSection.llNumEntries)));
+			fprintf(stdout,"EpochPerDACSection.llNumEntries:\t%i\n",(int)lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, EpochPerDACSection.llNumEntries)));
 
 			fprintf(stdout,"UserListSection.uBlockIndex: \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, UserListSection.uBlockIndex)));
 			fprintf(stdout,"UserListSection.uBytes:      \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, UserListSection.uBytes)));
-			fprintf(stdout,"UserListSection.llNumEntries:\t%li\n",lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, UserListSection.llNumEntries)));
+			fprintf(stdout,"UserListSection.llNumEntries:\t%i\n",(int)lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, UserListSection.llNumEntries)));
 
 			fprintf(stdout,"StatsRegionSection.uBlockIndex: \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, StatsRegionSection.uBlockIndex)));
 			fprintf(stdout,"StatsRegionSection.uBytes:      \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, StatsRegionSection.uBytes)));
-			fprintf(stdout,"StatsRegionSection.llNumEntries:\t%li\n",lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, StatsRegionSection.llNumEntries)));
+			fprintf(stdout,"StatsRegionSection.llNumEntries:\t%i\n",(int)lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, StatsRegionSection.llNumEntries)));
 
 			fprintf(stdout,"MathSection.uBlockIndex: \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, MathSection.uBlockIndex)));
 			fprintf(stdout,"MathSection.uBytes:      \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, MathSection.uBytes)));
-			fprintf(stdout,"MathSection.llNumEntries:\t%li\n",lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, MathSection.llNumEntries)));
+			fprintf(stdout,"MathSection.llNumEntries:\t%i\n",(int)lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, MathSection.llNumEntries)));
 
 			fprintf(stdout,"StringsSection.uBlockIndex:\t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, StringsSection.uBlockIndex)));
 			fprintf(stdout,"StringsSection.uBytes:     \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, StringsSection.uBytes)));
-			fprintf(stdout,"StringsSection.llNumEntries:\t%li\n",lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, StringsSection.llNumEntries)));
+			fprintf(stdout,"StringsSection.llNumEntries:\t%i\n",(int)lei64p(hdr->AS.Header + offsetof(struct ABF_FileInfo, StringsSection.llNumEntries)));
 
 			fprintf(stdout,"DataSection.uBlockIndex: \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, DataSection.uBlockIndex)));
 			fprintf(stdout,"DataSection.uBytes:      \t%i\n",leu32p(hdr->AS.Header + offsetof(struct ABF_FileInfo, DataSection.uBytes)));
