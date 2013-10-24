@@ -18,15 +18,14 @@
 
  */
 
+#include <stdlib.h>
 #include "mathlink.h"
 #include <biosig2.h>
-
-extern int VERBOSE_LEVEL; 	// used for debugging, variable is always defined
 
 #ifdef NDEBUG
 #define VERBOSE_LEVEL 0 	// turn off debugging information, but its only used without NDEBUG
 #else
-#include <stdlib.h>
+extern int VERBOSE_LEVEL; 	// used for debugging, variable is always defined
 #endif
 
 void sload(const char *fn, int *SZ, long SZlen) {

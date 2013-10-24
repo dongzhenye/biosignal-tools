@@ -34,7 +34,7 @@ CADDSDIR  = ${MLINKDIR}../SystemFiles/Links/MathLink/DeveloperKit/${SYS}/Compile
 INCDIR    = -I${CADDSDIR} -I${MLINKDIR}../SystemFiles/IncludeFiles/C/
 LIBDIR    = ${CADDSDIR}
 
-EXTRALIBS = -lm -lpthread -lrt -lstdc++ $(LDLIBS) # Set these with appropriate libs for your system.
+EXTRALIBS = -lm -lrt -lstdc++ $(LDLIBS) # Set these with appropriate libs for your system.
 
 MPREP     = ${CADDSDIR}/mprep
 
@@ -53,8 +53,8 @@ sloadtm.c: sload.tm
 sload: sload.o sloadtm.o
 	${CC} sloadtm.o sload.o -lbiosig2 -L${LIBDIR} -l${MLLIB} ${EXTRALIBS} -o "$@"
 	# copy to users directory if available
-	#-cp $@ ~/K/Software/MathematicaTools/mma/
-	#-cp $@ ~/K/Software/MathematicaTools/mma/sload-$(shell date +%Y%m%d)
+	#-cp "$@" ~/K/Software/MathematicaTools/
+	#-cp "$@" ~/K/Software/MathematicaTools/sload-$(shell date +%Y%m%d)
 
 
 ###########################################
@@ -66,24 +66,24 @@ CADDSDIRwin  = ${MLINKDIR}../SystemFiles/Links/MathLink/DeveloperKit/${SYSwin}/C
 INCDIRwin    = -I${CADDSDIRwin}/include  -I${MLINKDIR}../SystemFiles/IncludeFiles/C/
 LIBDIRwin    = ${CADDSDIRwin}/lib
 
-EXTRALIBSwin = -lgdi32 -lm -lpthread -lstdc++ -lws2_32 $(LDLIBS) # Set these with appropriate libs for your system.
+EXTRALIBSwin = -lgdi32 -lm -lstdc++ -lws2_32 $(LDLIBS) # Set these with appropriate libs for your system.
 
 MPREPwin     = ${CADDSDIRwin}/bin/mprep.exe
 
 sloadtm.win32.c : sload.tm
-	wine ${MPREPwin} $? -o "$@"
+	wine ${MPREPwin} "$<" -o "$@"
 	sed -i 's# __DATE__# ",__DATE__," ",__TIME__,"#' "$@"
 
 sload.obj : sload.c
-	${CCw32} -c ${INCDIRwin} $< -o "$@"
+	${CCw32} -c ${INCDIRwin} "$<" -o "$@"
 sloadtm.obj : sloadtm.win32.c
-	${CCw32} -c ${INCDIRwin} $< -o "$@"
+	${CCw32} -c ${INCDIRwin} "$<" -o "$@"
 
 sload.exe : sload.obj sloadtm.obj
 	${CCw32} sload.obj sloadtm.obj -static-libgcc -static-libstdc++ -lbiosig2 -lssp -L${LIBDIRwin} -l${MLLIBwin} ${EXTRALIBSwin} -o "$@"
 	# copy to users directory if available
-	#-cp $@ ~/K/Software/MathematicaTools/mma/
-	#-cp $@ ~/K/Software/MathematicaTools/mma/sload-$(shell date +%Y%m%d).exe
+	#-cp "$@" ~/K/Software/MathematicaTools/
+	#-cp "$@" ~/K/Software/MathematicaTools/sload-$(shell date +%Y%m%d).exe
 
 
 ###########################################
@@ -98,7 +98,7 @@ LIBDIRwin64   = ${CADDSDIRwin64}/lib
 MPREPwin64    = ${CADDSDIRwin64}/bin/mprep.exe
 
 sloadtm.win64.c : sload.tm
-	wine ${MPREPwin} $? -o "$@"   ## use 32bit mprep.exe because wine can not handle the 64bit mprep.exe
+	wine ${MPREPwin} "$<" -o "$@"   ## use 32bit mprep.exe because wine can not handle the 64bit mprep.exe
 	sed -i 's# __DATE__# ",__DATE__," ",__TIME__,"#' "$@"
 
 sload.w64.obj : sload.c
@@ -109,8 +109,8 @@ sloadtm.w64.obj : sloadtm.win64.c
 sload.w64.exe : sload.w64.obj sloadtm.w64.obj
 	${CCw64} sload.w64.obj sloadtm.w64.obj -static-libgcc -static-libstdc++  -lbiosig2 -lssp -L${LIBDIRwin64} -l${MLLIBwin64} ${EXTRALIBSwin} -o "$@"
 	# copy to users directory if available
-	#-cp $@ ~/K/Software/MathematicaTools/mma/
-	#-cp $@ ~/K/Software/MathematicaTools/mma/sload-$(shell date +%Y%m%d).win64.exe
+	#-cp "$@" ~/K/Software/MathematicaTools/
+	#-cp "$@" ~/K/Software/MathematicaTools/sload-$(shell date +%Y%m%d).win64.exe
 
 	
 ###########################################
