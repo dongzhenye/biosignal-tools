@@ -8231,7 +8231,7 @@ if (VERBOSE_LEVEL>8)
 
 		typeof(hdr->SPR) SPR = 0, spr = 0;
 		typeof(hdr->NS)  ns  = 0;
-		int chanNo=0, PrevChanNo=0, sweepNo=0, PrevSweepNo=0;
+		int chanNo=0, PrevChanNo=0, sweepNo=0, PrevSweepNo=-1;
     		hdr->SPR = 0;
     		hdr->NRec= 0;
 
@@ -8265,8 +8265,10 @@ if (VERBOSE_LEVEL>8)
 	    		}
 	    		else if (!strncmp(line,"END",3)) {
 	    			flagData = 0;
-                                if ((SPR!=0) && (SPR != spr))
+                                if ((SPR!=0) && (SPR != spr)) {
 					flagSupported = 0;
+					if (VERBOSE_LEVEL>7) fprintf(stdout,"[%s%i] ITX (not supported): %i, %i \n",__FILE__,__LINE__, SPR, spr);
+				}
 				else
 					SPR = spr;
 
@@ -8317,8 +8319,10 @@ if (VERBOSE_LEVEL>8)
 	    				if (p2!=NULL) *p2=0;
 					if (hdr->CHANNEL[ns].PhysDimCode == 0)
 		    				hdr->CHANNEL[ns].PhysDimCode = PhysDimCode(p);
-					else if (hdr->CHANNEL[ns].PhysDimCode != PhysDimCode(p))
+					else if (hdr->CHANNEL[ns].PhysDimCode != PhysDimCode(p)) {
 						flagSupported = 0;	// physical units do not match
+	if  (VERBOSE_LEVEL>7) fprintf(stdout,"[%s:%i] ITX (not supported): %i, %i,<%s> \n",__FILE__,__LINE__, hdr->CHANNEL[ns].PhysDimCode,PhysDimCode(p),p);
+					}
 	    			}
 	    		}
 	    		else if (!strncmp(line,"WAVES",5)) {
@@ -8331,14 +8335,14 @@ if (VERBOSE_LEVEL>8)
 				ns = 0; 
 				sweepNo = 0; 
 				if (p != NULL) {
-					chanNo  = atoi(p+1); 
+					chanNo  = strtol(p+1, NULL, 10);
 					if (chanNo > 0)
 						ns = chanNo - 1; // if decoding fails, assume there is only a single channel 					
 
 					p[0] = 0;
 					p = strrchr(line,'_'); 
 					if (p != NULL) {
-						sweepNo = atoi(p+1); 
+						sweepNo = strtol(p+1, NULL, 10);
 						p[0] = 0;
 					}
 				}
@@ -8349,7 +8353,9 @@ if (VERBOSE_LEVEL>8)
                         fprintf(stdout,"[765]<%s>#%i: %i/%i\n",line,(int)ns,(int)spr,(int)hdr->SPR);
 
 				flagSupported &= (ns==0) || (chanNo == PrevChanNo+1); 	// reset flag if channel number does not increment by one.
-				flagSupported &= (ns==0 && sweepNo==PrevSweepNo+1) || (sweepNo == PrevSweepNo); 	// reset flag if sweep number does not increment by one when chanNo==0.
+				flagSupported &= (PrevSweepNo < 0) || (ns==0 && sweepNo==PrevSweepNo+1) || (sweepNo == PrevSweepNo); 	// reset flag if sweep number does not increment by one when chanNo==0.
+
+	if  (VERBOSE_LEVEL>7 && !flagSupported) fprintf(stdout,"[%s: %i] ITX (not supported): %i, %i, %i, %i, %i\n",__FILE__,__LINE__, ns, chanNo, PrevChanNo,sweepNo,PrevSweepNo);
 
 				if (ns >= hdr->NS) {
 					hdr->NS = ns+1;
@@ -8391,7 +8397,7 @@ if (VERBOSE_LEVEL>8)
 	    	}
 
                 if (VERBOSE_LEVEL>7)
-                        fprintf(stdout,"[751] scaning %s,v%4.2f format \n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
+                        fprintf(stdout,"[751] scaning %s,v%4.2f format (supported: %i)\n",GetFileTypeString(hdr->TYPE),hdr->VERSION,flagSupported);
 
 		if (!flagSupported) {
 			biosigERROR(hdr, hdr->AS.B4C_ERRNUM,
@@ -8400,7 +8406,7 @@ if (VERBOSE_LEVEL>8)
 		}
 
                 if (VERBOSE_LEVEL>7)
-                        fprintf(stdout,"[781] [%i,%i,%i] = %i\n",(int)hdr->NS,(int)hdr->SPR,(int)hdr->NRec,(int)hdr->NRec*hdr->SPR*hdr->NS);
+                        fprintf(stdout,"[781] [%i,%i,%i] = %i, %i\n",(int)hdr->NS,(int)hdr->SPR,(int)hdr->NRec,(int)hdr->NRec*hdr->SPR*hdr->NS, (int)hdr->AS.bpb);
 
 		hdr->EVENT.N = hdr->NRec - 1;
 		hdr->EVENT.SampleRate = hdr->SampleRate;
@@ -8420,8 +8426,8 @@ if (VERBOSE_LEVEL>8)
 			hdr->CHANNEL[ns].bi  = sizeof(double)*ns;
 		}
 
-       	double *data = (double*)realloc(hdr->AS.rawdata,hdr->NRec*hdr->SPR*hdr->NS*sizeof(double));
-        hdr->FILE.LittleEndian = (__BYTE_ORDER == __LITTLE_ENDIAN);   // no swapping
+		double *data = (double*)realloc(hdr->AS.rawdata,hdr->NRec*hdr->SPR*hdr->NS*sizeof(double));
+		hdr->FILE.LittleEndian = (__BYTE_ORDER == __LITTLE_ENDIAN);   // no swapping
 		hdr->AS.rawdata = (uint8_t*) data;
 
 		/*
@@ -8460,12 +8466,12 @@ if (VERBOSE_LEVEL>8)
 				char *p;
 				p = strrchr(line,'_'); 
 				if (p != NULL) {
-					chanNo  = atoi(p+1); 
+					chanNo  = strtol(p+1,NULL,10);
 					if (chanNo > 0) chanNo--; 	// if decoding fails, assume there is only a single channel. 
 					p[0] = 0;
 					p = strrchr(line,'_'); 
 					if (p!=NULL) {
-						sweepNo = atoi(p+1); 
+						sweepNo = strtol(p+1,NULL,10);
 						p[0] = 0;
 					}
 					if (sweepNo > 0) sweepNo--; 	// if decoding fails, assume there is only a single sweep 					
@@ -12461,7 +12467,6 @@ size_t sread_raw(size_t start, size_t length, HDRTYPE* hdr, char flag) {
 
 		if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"sread-raw: 224 %i\n",hdr->AS.bpb);
-
 
 		// allocate AS.rawdata
 		void *tmpptr = realloc(hdr->AS.rawdata, hdr->AS.bpb*nelem);
