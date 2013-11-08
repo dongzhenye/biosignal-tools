@@ -51,9 +51,9 @@ if ~BIOSIG_GLOBAL.ISLOADED_XYZ;
         
         Code = repmat(NaN, 200, 1); Phi = Code; Theta = Code;
         while ~isempty(s),
-        	[t,s] = strtok(s,[10,13]);
-                if ~length(t)
-                elseif ~strncmp(t,'#',1)    
+		[t,s] = strtok(s,[10,13,0]);
+		if ~length(t)
+		elseif ~strncmp(t,'#',1)
                 	ix3 = strfind(t,'MDC_ECG_LEAD_');
                 	if isempty(ix3)
                 		ix3 = length(t)+1;
@@ -78,7 +78,7 @@ if ~BIOSIG_GLOBAL.ISLOADED_XYZ;
 
         % extract table information       
         while ~isempty(t)
-                [x,t] = strtok(t,[10,13]);
+                [x,t] = strtok(t,[10,13,0]);
                 if isempty(x)
                 elseif strncmp(x,'#',1)
                 else
