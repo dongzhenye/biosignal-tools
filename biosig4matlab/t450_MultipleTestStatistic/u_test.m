@@ -47,7 +47,7 @@
 
 function [pval, z] = u_test (x, y, alt)
 
-  if ((nargin < 2) | (nargin > 3))
+  if ((nargin < 2) || (nargin > 3))
     print_usage ();
   end
 
@@ -72,7 +72,7 @@ function [pval, z] = u_test (x, y, alt)
   if (~ ischar (alt))
     error('u_test: alt must be a string');
   end
-  if (strcmp (alt, '~=') | strcmp (alt, '<>'))
+  if (strcmp (alt, '~=') || strcmp (alt, '<>'))
     pval = 2 * min (cdf, 1 - cdf);
   elseif (strcmp (alt, '>'))
     pval = cdf;
