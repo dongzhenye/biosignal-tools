@@ -25,18 +25,21 @@ function d = signal_deconvolution(r,t,fs,highpass,lowpass)
 %     detection of spontaneous synaptic currents in vitro and in vivo.
 %     Biophysical Journal Volume 103 October 2012 1–11.
 
-%  $Id$
-%  Copyright (C) 2012 by Alois Schloegl, IST Austria <alois.schloegl@ist.ac.at>	
+%  Copyright (C) 2012,2013 by Alois Schloegl, IST Austria <alois.schloegl@ist.ac.at>
 %  This is part of the BIOSIG-toolbox http://biosig.sf.net/
 
 
 %% check filter settings - input arguments
-if numel(highpass)==2, 
+if nargin>4
+    if numel(highpass)==2,
 	B = highpass;
-else
+    else
 	B = [lowpass, highpass]; 
-end; 
-B = [min(B),max(B)]; 
+    end;
+    B = [min(B),max(B)];
+else
+    B = [];
+end;
 
 %% transform into frequency domain 
 H = fft(t,size(r,1));
@@ -47,11 +50,17 @@ D = R./H;
 
 %% filter in frequency domain
 f = [0:size(r,1)-1] * fs / size(r,1);
-if 0,
-    %% rectangular window 
-    D( f<B(1) | ( B(2) < f & f < fs-B(2) ) | fs-B(1) < f ) = 0; 
-else 
-    %% Gaussian window 
+if isempty(B),
+	;
+elseif 0,
+    %% rectangular window in interval [B(1),B(2)]
+    D(f < B(1) | B(2) < f) = 0;
+    D = D*2;
+elseif 1,
+    %% rectangular window in intervals [B(1),B(2)] and [fs-B(2),fs-B(1)]
+    D( f<B(1) | ( B(2) < f & f < (fs-B(2)) ) | (fs-B(1)) < f ) = 0;
+else
+    %% Gaussian window
     w = 1/sqrt(2*pi*B(2)/fs) * exp (-0.5*min([f;fs-f]/B(2),[],1).^2);
     w( f<B(1) | fs-B(1) < f ) = 0; 
     D = fs*w(:).*D;
