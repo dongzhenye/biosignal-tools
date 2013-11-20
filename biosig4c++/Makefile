@@ -85,6 +85,12 @@ ifeq (,$(TARGET))
 	LD      := ld
 	AR      := ar crs
 	PREFIX  := /usr/bin/
+else ifeq (intel,$(TARGET))
+	CC      := /opt/intel/bin/icc
+	CXX     := /opt/intel/bin/icc
+	LD      := /opt/intel/bin/xild
+	AR      := /opt/intel/bin/xiar crs
+	PREFIX  := /usr/bin/
 else 
 	PREFIX  := $(dir $(shell which $(TARGET)-gcc))
 	CC      := $(TARGET)-gcc
@@ -123,6 +129,7 @@ DEFINES      += -D=WITHOUT_NETWORK
 #DEFINES      += -D=WITH_LIBXML2 
 DEFINES      += -D=WITH_FEF 
 #DEFINES      += -D=WITH_PDP
+#DEFINES      += -D=WITH_DCMTK
 #DEFINES      += -D=WITH_DICOM
 #DEFINES      += -D=WITH_GDCM
 #DEFINES      += -D=WITH_GSL
@@ -168,6 +175,9 @@ ifneq (,$(findstring WITH_CURL, $(DEFINES)))
 endif
 ifneq (,$(findstring WITH_HDF, $(DEFINES)))
   LDLIBS     += -lhdf5
+endif
+ifneq (,$(findstring WITH_DCMTK, $(DEFINES)))
+  LDLIBS     += -ldcmdata -loflog -lofstd
 endif
 ifneq (,$(findstring WITH_MATIO, $(DEFINES)))
   LDLIBS     += -lmatio
