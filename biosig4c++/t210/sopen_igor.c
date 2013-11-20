@@ -572,6 +572,292 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 	
 }
 
+void sopen_itx_read (HDRTYPE* hdr) {
+#define IGOR_MAXLENLINE 400
+
+		char line[IGOR_MAXLENLINE+1];
+		char flagData = 0;
+		char flagSupported = 1;
+
+	        if (VERBOSE_LEVEL>7)
+                        fprintf(stdout,"[701] start reading %s,v%4.2f format (%i)\n",GetFileTypeString(hdr->TYPE),hdr->VERSION,ifeof(hdr));
+
+		typeof(hdr->SPR) SPR = 0, spr = 0;
+		typeof(hdr->NS)  ns  = 0;
+		int chanNo=0, PrevChanNo=0, sweepNo=0, PrevSweepNo=-1;
+		hdr->SPR = 0;
+		hdr->NRec= 0;
+
+		/*
+			checks the structure of the file and extracts formating information
+		*/
+
+		ifseek(hdr,0,SEEK_SET);
+		int c = ifgetc(hdr);  //  read first character
+		while (!ifeof(hdr)) {
+
+	        if (VERBOSE_LEVEL>8)
+                        fprintf(stdout,"[721] start reading %s,v%4.2f format (%i)\n",GetFileTypeString(hdr->TYPE),hdr->VERSION,(int)iftell(hdr));
+
+			int i = 0;
+			while ( (c != -1) &&  (c != 10) &&  (c != 13) && (i < IGOR_MAXLENLINE) ) {
+				// terminate when any line break occurs
+				line[i++] = c;
+				c = ifgetc(hdr);
+			};
+			line[i] = 0;
+			while (isspace(c)) c = ifgetc(hdr); 	// keep first non-space character of next line in buffer
+
+	        if (VERBOSE_LEVEL>8)
+                        fprintf(stdout,"\t[723] <%s> (%i)\n",line,(int)iftell(hdr));
+
+			if (!strncmp(line,"BEGIN",5)) {
+				flagData = 1;
+				spr = 0;
+				hdr->CHANNEL[ns].bi = SPR*sizeof(double);
+			}
+			else if (!strncmp(line,"END",3)) {
+				flagData = 0;
+                                if ((SPR!=0) && (SPR != spr)) {
+					flagSupported = 0;
+					if (VERBOSE_LEVEL>7) fprintf(stdout,"[%s%i] ITX (not supported): %i, %i \n",__FILE__,__LINE__, SPR, spr);
+				}
+				else
+					SPR = spr;
+
+				PrevChanNo  = chanNo;
+				PrevSweepNo = sweepNo;
+				if (ns==0) hdr->SPR += SPR;
+			}
+
+			else if (!strncmp(line,"X SetScale/P x",14)) {
+				/*
+				This line seems to have inconsistant formating, some times an comma is following the first 14 bytes, some times no comma is found.
+				here are some examples
+				X SetScale/P x, 0.000000000E+00,  5.000000000E-05,"s", AP101222bp_1_63_1_2
+				X SetScale/P x 0,5e-05,"s", f0ch1w1_1_0to0_Co_TCh; SetScale y 0,1e-09,"A", f0ch1w1_1_0to0_Co_TCh
+				*/
+
+				double TOffset = atof(strtok(line+15,","));
+				if (isnan(hdr->CHANNEL[ns].TOffset))
+					hdr->CHANNEL[ns].TOffset = TOffset;
+				else if (fabs(hdr->CHANNEL[ns].TOffset - TOffset) > 1e-12)
+					fprintf(stderr,"Warning TOffsets in channel #%i do not match (%f,%f)", ns, hdr->CHANNEL[ns].TOffset, TOffset);
+
+				double dur = atof(strtok(NULL,","));
+				char *p = strchr(line,'"');
+				if (p != NULL) {
+					p++;
+					char *p2 = strchr(p,'"');
+					if (p2 != NULL) *p2=0;
+					dur *= PhysDimScale(PhysDimCode(p));
+				}
+
+				double div = spr / (hdr->SampleRate * dur);
+				if (ns==0) {
+					hdr->SampleRate = 1.0 / dur;
+				}
+				else if (hdr->SampleRate == 1.0 / dur)
+					;
+				else if (div == floor(div)) {
+					hdr->SampleRate *= div;
+				}
+			}
+
+			else if (!strncmp(line,"X SetScale y,",13)) {
+				char *p = strchr(line,'"');
+				if (p!=NULL) {
+					p++;
+					char *p2 = strchr(p,'"');
+					if (p2!=NULL) *p2=0;
+					if (hdr->CHANNEL[ns].PhysDimCode == 0)
+						hdr->CHANNEL[ns].PhysDimCode = PhysDimCode(p);
+					else if (hdr->CHANNEL[ns].PhysDimCode != PhysDimCode(p)) {
+						flagSupported = 0;	// physical units do not match
+	if  (VERBOSE_LEVEL>7) fprintf(stdout,"[%s:%i] ITX (not supported): %i, %i,<%s> \n",__FILE__,__LINE__, hdr->CHANNEL[ns].PhysDimCode,PhysDimCode(p),p);
+					}
+				}
+			}
+			else if (!strncmp(line,"WAVES",5)) {
+
+               if (VERBOSE_LEVEL>7)
+                        fprintf(stdout,"[761]<%s>#%i: %i/%i\n",line,(int)ns,(int)spr,(int)hdr->SPR);
+
+				char *p;
+				p = strrchr(line,'_');
+				ns = 0;
+				sweepNo = 0;
+				if (p != NULL) {
+					chanNo  = strtol(p+1, NULL, 10);
+					if (chanNo > 0)
+						ns = chanNo - 1; // if decoding fails, assume there is only a single channel
+
+					p[0] = 0;
+
+					p = strrchr(line,'_');
+					if (p != NULL) {
+						sweepNo = strtol(p+1, NULL, 10);
+						p[0] = 0;
+					}
+				}
+				if (sweepNo == 0) hdr->NRec = 1; // if decoding fails, assume there is only a single sweep
+				else if (sweepNo > hdr->NRec) hdr->NRec = sweepNo;
+
+               if (VERBOSE_LEVEL>7)
+                        fprintf(stdout,"[765]<%s>#%i: %i/%i\n",line,(int)ns,(int)spr,(int)hdr->SPR);
+
+				flagSupported &= (ns==0) || (chanNo == PrevChanNo+1); 	// reset flag if channel number does not increment by one.
+				flagSupported &= (PrevSweepNo < 0) || (ns==0 && sweepNo==PrevSweepNo+1) || (sweepNo == PrevSweepNo); 	// reset flag if sweep number does not increment by one when chanNo==0.
+
+	if  (VERBOSE_LEVEL>7 && !flagSupported) fprintf(stdout,"[%s: %i] ITX (not supported): %i, %i, %i, %i, %i\n",__FILE__,__LINE__, ns, chanNo, PrevChanNo,sweepNo,PrevSweepNo);
+
+				if (ns >= hdr->NS) {
+					hdr->NS = ns+1;
+					hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
+				}
+
+               if (VERBOSE_LEVEL>7)
+                        fprintf(stdout,"[767]<%s>#%i: %i/%i\n",line,(int)ns,(int)spr,(int)hdr->SPR);
+
+				CHANNEL_TYPE* hc = hdr->CHANNEL + ns;
+				strncpy(hc->Label, line+6, MAX_LENGTH_LABEL);
+
+               if (VERBOSE_LEVEL>7)
+                        fprintf(stdout,"[769]<%s>#%i: %i/%i\n",line,(int)ns,(int)spr,(int)hdr->SPR);
+
+				hc->OnOff    = 1;
+				hc->GDFTYP   = 17;
+				hc->DigMax   = (double)(int16_t)(0x7fff);
+				hc->DigMin   = (double)(int16_t)(0x8000);
+				hc->LeadIdCode = 0;
+
+				hc->Cal      = 1.0;
+				hc->Off      = 0.0;
+				hc->Transducer[0] = '\0';
+				hc->LowPass  = NAN;
+				hc->HighPass = NAN;
+				hc->TOffset  = NAN;
+				hc->PhysMax  = hc->Cal * hc->DigMax;
+				hc->PhysMin  = hc->Cal * hc->DigMin;
+				hc->PhysDimCode = 0;
+
+				// decode channel number and sweep number
+                if (VERBOSE_LEVEL>7)
+                        fprintf(stdout,"[776]<%s>#%i: %i/%i\n",line,(int)ns,(int)spr,(int)hdr->SPR);
+
+			}
+			else if (flagData)
+				spr++;
+		}
+
+                if (VERBOSE_LEVEL>7)
+                        fprintf(stdout,"[751] scaning %s,v%4.2f format (supported: %i)\n",GetFileTypeString(hdr->TYPE),hdr->VERSION,flagSupported);
+
+		if (!flagSupported) {
+			biosigERROR(hdr, hdr->AS.B4C_ERRNUM,
+ "This ITX format is not supported. Possible reasons: not generated by Heka-Patchmaster, corrupted, physical units do not match between sweeos, or do not fullfil some other requirements");
+			return(hdr);
+		}
+
+                if (VERBOSE_LEVEL>7)
+                        fprintf(stdout,"[781] [%i,%i,%i] = %i, %i\n",(int)hdr->NS,(int)hdr->SPR,(int)hdr->NRec,(int)hdr->NRec*hdr->SPR*hdr->NS, (int)hdr->AS.bpb);
+
+		hdr->EVENT.N = hdr->NRec - 1;
+		hdr->EVENT.SampleRate = hdr->SampleRate;
+		hdr->EVENT.POS = (uint32_t*) realloc(hdr->EVENT.POS,hdr->EVENT.N*sizeof(*hdr->EVENT.POS));
+		hdr->EVENT.TYP = (uint16_t*) realloc(hdr->EVENT.TYP,hdr->EVENT.N*sizeof(*hdr->EVENT.TYP));
+#if (BIOSIG_VERSION >= 10500)
+		hdr->EVENT.TimeStamp = (gdf_time*)realloc(hdr->EVENT.TimeStamp, hdr->EVENT.N*sizeof(gdf_time));
+#endif
+
+		hdr->NRec = hdr->SPR;
+		hdr->SPR  = 1;
+		hdr->AS.first  = 0;
+		hdr->AS.length = hdr->NRec;
+		hdr->AS.bpb = sizeof(double)*hdr->NS;
+		for (ns=0; ns<hdr->NS; ns++) {
+			hdr->CHANNEL[ns].SPR = hdr->SPR;
+			hdr->CHANNEL[ns].bi  = sizeof(double)*ns;
+		}
+
+		double *data = (double*)realloc(hdr->AS.rawdata,hdr->NRec*hdr->SPR*hdr->NS*sizeof(double));
+		hdr->FILE.LittleEndian = (__BYTE_ORDER == __LITTLE_ENDIAN);   // no swapping
+		hdr->AS.rawdata = (uint8_t*) data;
+
+		/*
+			reads and converts data into biosig structure
+		*/
+
+		spr = 0;SPR = 0;
+		ifseek(hdr, 0, SEEK_SET);
+		c = ifgetc(hdr);	// read first character
+		while (!ifeof(hdr)) {
+			int i = 0;
+			while ( (c != -1) &&  (c != 10) &&  (c != 13) && (i < IGOR_MAXLENLINE) ) {
+				// terminate when any line break occurs
+				line[i++] = c;
+				c = ifgetc(hdr);
+			};
+			line[i] = 0;
+			while (isspace(c)) c = ifgetc(hdr); 	// keep first non-space character of next line in buffer
+
+			if (!strncmp(line,"BEGIN",5)) {
+				flagData = 1;
+				spr = 0;
+			}
+			else if (!strncmp(line,"END",3)) {
+				flagData = 0;
+				if (chanNo+1 == hdr->NS) SPR += spr;
+			}
+			else if (!strncmp(line,"X SetScale y,",13)) {
+				//ns++;
+			}
+			else if (!strncmp(line,"WAVES",5)) {
+				// decode channel number and sweep number
+
+				chanNo = 0;
+				sweepNo= 0;
+				char *p;
+				p = strrchr(line,'_');
+				if (p != NULL) {
+					chanNo  = strtol(p+1,NULL,10);
+					if (chanNo > 0) chanNo--; 	// if decoding fails, assume there is only a single channel.
+					p[0] = 0;
+					p = strrchr(line,'_');
+					if (p!=NULL) {
+						sweepNo = strtol(p+1,NULL,10);
+						p[0] = 0;
+					}
+					if (sweepNo > 0) sweepNo--; 	// if decoding fails, assume there is only a single sweep
+				}
+				spr = 0;
+				if (sweepNo > 0 && chanNo==0) {
+					hdr->EVENT.POS[sweepNo-1] = SPR;
+					hdr->EVENT.TYP[sweepNo-1] = 0x7ffe;
+#if (BIOSIG_VERSION >= 10500)
+					hdr->EVENT.TimeStamp[sweepNo-1] = 0;
+#endif
+				}
+			}
+			else if (flagData) {
+				double val = atof(line);
+				data[hdr->NS*(SPR + spr) + chanNo] = val;
+				spr++;
+			}
+		}
+
+                if (VERBOSE_LEVEL>7)
+			fprintf(stdout,"[791] reading %s,v%4.2f format finished \n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
+
+		hdr->SPR   = 1;
+		hdr->NRec *= hdr->SPR;
+		hdr->AS.first  = 0;
+		hdr->AS.length = hdr->NRec;
+		hdr->AS.bpb = sizeof(double)*hdr->NS;
+#undef IGOR_MAXLENLINE
+
+}
+
 
 #ifdef __cplusplus
 }
