@@ -40,7 +40,7 @@
 
 #define BIOSIG_VERSION_MAJOR 1
 #define BIOSIG_VERSION_MINOR 5
-#define BIOSIG_PATCHLEVEL 8
+#define BIOSIG_PATCHLEVEL 9
 // for backward compatibility 
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
@@ -677,6 +677,12 @@ int 	biosig_check_error(HDRTYPE *hdr);
 /* 	returns error status but does not handle/reset it.
  * 	it can be used for checking whether some error status has been set
  --------------------------------------------------------------- */
+char*   biosig_get_errormsg(HDRTYPE *hdr);
+/* 	returns error message but does not reset it.
+ * 	memory for the error message is allocated and need to be freed
+ *      by the calling application
+ --------------------------------------------------------------- */
+
 
 int 	sflush_gdf_event_table(HDRTYPE* hdr);
 /*	writes the event table of file hdr. hdr must define a file in GDF format
