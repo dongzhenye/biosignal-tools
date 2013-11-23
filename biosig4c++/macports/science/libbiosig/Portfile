@@ -40,4 +40,5 @@ configure.ldflags-append \
 post-destroot {
       xinstall -m 644 ${worksrcpath}/libbiosig.a ${destroot}${prefix}/lib
       xinstall -m 644 ${worksrcpath}/biosig.h ${destroot}${prefix}/include
+      system "install_name_tool -id ${prefix}/lib/libbiosig.dylib ${destroot}${prefix}/lib/libbiosig.dylib"
 }
