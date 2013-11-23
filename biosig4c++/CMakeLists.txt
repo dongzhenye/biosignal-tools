@@ -72,6 +72,11 @@ add_library (biosigshared SHARED
   ${sources}
 )
 set_target_properties(biosigshared PROPERTIES OUTPUT_NAME biosig)
+if (APPLE)
+  set_target_properties(biosigshared PROPERTIES
+     INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib"
+     )
+endif ()
 
 add_dependencies (biosigstatic eventcodes units)
 add_dependencies (biosigshared eventcodes units)
@@ -79,7 +84,7 @@ add_dependencies (biosigshared eventcodes units)
 if (USE_ZLIB)
   add_definitions (-D=WITH_ZLIB)
   find_package( ZLIB REQUIRED )
-  if ( ZLIB_FOUND )
+    if ( ZLIB_FOUND )
       include_directories( ${ZLIB_INCLUDE_DIRS} )
       target_link_libraries( biosigstatic ${ZLIB_LIBRARIES} )
       target_link_libraries( biosigshared ${ZLIB_LIBRARIES} )
@@ -91,7 +96,6 @@ if (USE_SUITESPARSE)
 endif ()
 
 add_definitions (-D=WITHOUT_NETWORK)
-
 
 install (TARGETS biosigstatic DESTINATION lib)
 install (TARGETS biosigshared DESTINATION lib)
