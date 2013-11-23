@@ -4,8 +4,8 @@
 PortSystem          1.0
 PortGroup           cmake 1.0
 
-name                biosig4c++
-version             1.5.6
+name                libbiosig
+version             1.5.8
 categories          science
 platforms           darwin
 license             GPL-3
@@ -20,10 +20,10 @@ homepage            http://biosig.sourceforge.net/index.html
 master_sites        sourceforge:biosig
 master_sites.mirror_subdir \
                     /BioSig%20for%20C_C++/src
-distname            ${name}-${version}.src
-worksrcdir          ${name}-${version}
-checksums           rmd160  1a9398ff56790713892e4da350be7d7ff1e5a2bf \
-                    sha256  7843bad582fd22f5234549fe5216d2912589a2fc623d9e09f50778152db2a3ff
+distname            biosig4c++-${version}.src
+worksrcdir          biosig4c++-${version}
+checksums           rmd160  abdaa205158aec121cd3a65516010e0db804311d \
+                    sha256  c15d446085fb14d9316305cf17ea4fd59ccd34b240bef4cd8fabbb200189bed3
 
 depends_build       port:gawk
 depends_lib         port:SuiteSparse \
@@ -34,6 +34,8 @@ configure.args      -DUSE_SUITESPARSE=OFF \
                     -DUSE_ZLIB=ON \
                     -DCMAKE_C_FLAGS=-DMACPORTS \
                     -DCMAKE_CXX_FLAGS=-DMACPORTS
+configure.ldflags-append \
+                    -lz
 
 post-destroot {
       xinstall -m 644 ${worksrcpath}/libbiosig.a ${destroot}${prefix}/lib
