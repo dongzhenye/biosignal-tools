@@ -9,15 +9,6 @@ set (libbiosig_VERSION_MAJOR 1)
 set (libbiosig_VERSION_MINOR 5)
 set (libbiosig_VERSION_PATCH 0)
 
-if (USE_ZLIB)
-  add_definitions (-D=WITH_ZLIB)
-endif ()
-if (USE_SUITESPARSE)
-  add_definitions (-D=WITH_CHOLMOD)
-endif ()
-
-add_definitions (-D=WITHOUT_NETWORK)
-
 find_program (GAWK NAMES gawk)
 
 add_custom_target (eventcodes
@@ -84,6 +75,23 @@ set_target_properties(biosigshared PROPERTIES OUTPUT_NAME biosig)
 
 add_dependencies (biosigstatic eventcodes units)
 add_dependencies (biosigshared eventcodes units)
+
+if (USE_ZLIB)
+  add_definitions (-D=WITH_ZLIB)
+  find_package( ZLIB REQUIRED )
+  if ( ZLIB_FOUND )
+      include_directories( ${ZLIB_INCLUDE_DIRS} )
+      target_link_libraries( biosigstatic ${ZLIB_LIBRARIES} )
+      target_link_libraries( biosigshared ${ZLIB_LIBRARIES} )
+  endif( ZLIB_FOUND )
+endif ()
+
+if (USE_SUITESPARSE)
+  add_definitions (-D=WITH_CHOLMOD)
+endif ()
+
+add_definitions (-D=WITHOUT_NETWORK)
+
 
 install (TARGETS biosigstatic DESTINATION lib)
 install (TARGETS biosigshared DESTINATION lib)
