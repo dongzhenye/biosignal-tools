@@ -2051,6 +2051,8 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 		hdr->FILE.LittleEndian = (__BYTE_ORDER == __BIG_ENDIAN);
 		hdr->VERSION = bswap_16(*(int16_t*)Header1);
 	}
+	else if (!memcmp(Header1,"ANN  1.0",8))
+		hdr->TYPE = ISHNE;
     	else if (!memcmp(Header1,"ISHNE1.0",8))
 	    	hdr->TYPE = ISHNE;
     	else if (!memcmp(Header1,"@  MFER ",8))
@@ -8226,13 +8228,16 @@ if (VERBOSE_LEVEL>8)
 
     	else if (hdr->TYPE==ISHNE) {
 
+		char flagANN = !strncmp(hdr->AS.Header,"ANN",3);
+
 		fprintf(stderr,"Warning SOPEN(ISHNE): support for ISHNE format is experimental\n");
 
                    // unknown, generic, X,Y,Z, I-VF, V1-V6, ES, AS, AI
     	        uint16_t Table1[] = {0,0,16,17,18,1,2,87,88,89,90,3,4,5,6,7,8,131,132,133};
     	        size_t len;
     	        struct tm  t;
-		hdr->HeadLen = 522 + lei32p(hdr->AS.Header+10);
+
+		hdr->HeadLen = lei32p(hdr->AS.Header+22);
                 if (count < hdr->HeadLen) {
 		    	hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen);
 		    	count  += ifread(hdr->AS.Header+count,1,hdr->HeadLen-count,hdr);
@@ -8248,13 +8253,19 @@ if (VERBOSE_LEVEL>8)
 			}
                 }	
 		//int offsetVarHdr = lei32p(hdr->AS.Header+18);
-		int offsetData = lei32p(hdr->AS.Header+22);
 		hdr->VERSION = (float)lei16p(hdr->AS.Header+26);
 
 		if (!hdr->FLAG.ANONYMOUS) {
-			len = min(80,MAX_LENGTH_NAME);
-			strncpy(hdr->Patient.Name, (char*)(hdr->AS.Header+28), len);
-			hdr->Patient.Name[len] = 0;
+			len = min(40, MAX_LENGTH_NAME);
+			char *s = (char*)(hdr->AS.Header+28);
+			int len1 = min(40, strlen(s));
+			strncpy(hdr->Patient.Name, s, len1);
+			hdr->Patient.Name[len] = ' ';
+
+			s = (char*)(hdr->AS.Header+68);
+			int len2 = min(strlen(s), MAX_LENGTH_NAME-len-1);
+			strncpy(hdr->Patient.Name+len1+1, s, len2);
+			hdr->Patient.Name[len1+len2+1] = 0;
 		}
                 len = min(20, MAX_LENGTH_PID);
 		strncpy(hdr->Patient.Id, (char*)(hdr->AS.Header+108), len);
@@ -8263,15 +8274,9 @@ if (VERBOSE_LEVEL>8)
                 hdr->Patient.Sex = lei16p(hdr->AS.Header+128);
                 // Race = lei16p(hdr->AS.Header+128);
 
-/*
-		TODO: 
-		decoding of Birthday and Recording Date is very exeripmental, the current solution is based on reverse engineering of a single file
-		The decoding used previously did not work of that specific file (S1123.ecg). 
-		If anyone has an official documentation of the format, or can test this part, it would be very helpful. 
-*/
-                t.tm_mday  = lei16p(hdr->AS.Header + 138);
-                t.tm_mon   = lei16p(hdr->AS.Header + 140) - 1;
-                t.tm_year  = lei16p(hdr->AS.Header + 142) - 1900;
+                t.tm_mday  = lei16p(hdr->AS.Header + 132);
+                t.tm_mon   = lei16p(hdr->AS.Header + 134) - 1;
+                t.tm_year  = lei16p(hdr->AS.Header + 136) - 1900;
                 t.tm_hour  = 12;
                 t.tm_min   = 0;
                 t.tm_sec   = 0;
@@ -8280,22 +8285,80 @@ if (VERBOSE_LEVEL>8)
                 	fprintf(stdout,"SOPEN(ISNHE): Birthday: %04i-%02i-%02i %02i:%02i:%02i\n",t.tm_year,t.tm_mon,t.tm_mday,t.tm_hour,t.tm_min,t.tm_sec);
                 	fprintf(stdout,"SOPEN(ISNHE): @%p %x %x %x %x %x %x\n",hdr->AS.Header,hdr->AS.Header[132],hdr->AS.Header[133],hdr->AS.Header[134],hdr->AS.Header[135],hdr->AS.Header[136],hdr->AS.Header[137]);
                 }	
-                hdr->Patient.Birthday = tm_time2gdf_time(&t);
+		if (t.tm_mday>0 && t.tm_mon>=0 && t.tm_year>=0)
+	                hdr->Patient.Birthday = tm_time2gdf_time(&t);
 
-                t.tm_mday  = leu16p(hdr->AS.Header+144);
-                t.tm_mon   = leu16p(hdr->AS.Header+146)-1;
-                t.tm_year  = leu16p(hdr->AS.Header+148)-1900;
-                t.tm_hour  = lei16p(hdr->AS.Header + 150);
-                t.tm_min   = lei16p(hdr->AS.Header + 152);
-                t.tm_sec   = lei16p(hdr->AS.Header + 154);
+		t.tm_mday  = leu16p(hdr->AS.Header + 138);
+		t.tm_mon   = leu16p(hdr->AS.Header + 140)-1;
+		t.tm_year  = leu16p(hdr->AS.Header + 142)-1900;
+
+		t.tm_hour  = leu16p(hdr->AS.Header + 150);
+		t.tm_min   = leu16p(hdr->AS.Header + 152);
+		t.tm_sec   = leu16p(hdr->AS.Header + 154);
                 hdr->T0    = tm_time2gdf_time(&t);
 
                 hdr->NS    = lei16p(hdr->AS.Header + 156);
+		hdr->AS.bpb= hdr->NS * 2;
 		hdr->SPR   = 1;
-		hdr->NRec  = lei32p(hdr->AS.Header+14)/hdr->NS;
-                hdr->AS.bpb = hdr->NS*2;
                 hdr->SampleRate = lei16p(hdr->AS.Header + 272);
                 hdr->Patient.Impairment.Heart = lei16p(hdr->AS.Header+230) ? 3 : 0;    // Pacemaker
+		{
+			struct stat FileBuf;
+			stat(hdr->FileName,&FileBuf);
+			hdr->FILE.size = FileBuf.st_size;
+		}
+		if (flagANN) {
+			hdr->NRec=0;
+			hdr->EVENT.N = (hdr->FILE.size - hdr->HeadLen)/4;
+			hdr->EVENT.TYP = (typeof(hdr->EVENT.TYP)) realloc(hdr->EVENT.TYP, hdr->EVENT.N * sizeof(*hdr->EVENT.TYP));
+			hdr->EVENT.POS = (typeof(hdr->EVENT.POS)) realloc(hdr->EVENT.POS, hdr->EVENT.N * sizeof(*hdr->EVENT.POS));
+
+                        /* define user specified events according to ECG Annotation format of http://thew-project.org/THEWFileFormat.htm */
+			hdr->EVENT.CodeDesc = (typeof(hdr->EVENT.CodeDesc)) realloc(hdr->EVENT.CodeDesc,10*sizeof(*hdr->EVENT.CodeDesc));
+			hdr->EVENT.CodeDesc[0]="";
+			hdr->EVENT.CodeDesc[1]="Normal beat";
+			hdr->EVENT.CodeDesc[2]="Premature ventricular contraction";
+			hdr->EVENT.CodeDesc[3]="Supraventricular premature or ectopic beat";
+			hdr->EVENT.CodeDesc[4]="Calibration Pulse";
+			hdr->EVENT.CodeDesc[5]="Bundle branch block beat";
+			hdr->EVENT.CodeDesc[6]="Pace";
+			hdr->EVENT.CodeDesc[7]="Artfact";
+			hdr->EVENT.CodeDesc[8]="Unknown";
+			hdr->EVENT.CodeDesc[9]="NULL";
+			hdr->EVENT.LenCodeDesc = 9;
+
+			uint8_t evt[4];
+			ifseek(hdr, lei32p(hdr->AS.Header+22), SEEK_SET);
+			size_t N = 0, pos=0;
+			while (!ifeof(hdr)) {
+				if (!ifread(evt, 1, 4, hdr)) break;
+
+				uint16_t typ = 8;
+				switch ((char)(evt[0])) {
+				case 'N': typ = 1; break;
+				case 'V': typ = 2; break;
+				case 'S': typ = 3; break;
+				case 'C': typ = 4; break;
+				case 'B': typ = 5; break;
+				case 'P': typ = 6; break;
+				case 'X': typ = 7; break;
+				case '!': typ = 0x7ffe; break;
+				case 'U': typ = 8; break;
+				default: continue;
+				}
+				pos += leu16p(evt+2);
+				hdr->EVENT.POS[N] = pos;
+				hdr->EVENT.TYP[N] = typ;
+				N++;
+			}
+			hdr->EVENT.N = N;
+		}
+		else {
+			hdr->EVENT.N = 0;
+			hdr->NRec = min(leu32p(hdr->AS.Header+14),
+				(hdr->FILE.size - hdr->HeadLen)/hdr->AS.bpb );
+		}
+
 		hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
 		for (k=0; k < hdr->NS; k++) {
 			CHANNEL_TYPE* hc = hdr->CHANNEL+k;
@@ -8324,7 +8387,7 @@ if (VERBOSE_LEVEL>8)
 	    		hc->bi       = k*2;
 	    		strcpy(hc->Label, LEAD_ID_TABLE[hc->LeadIdCode]);
 		}
-    		ifseek(hdr,offsetData,SEEK_SET);
+		ifseek(hdr, lei32p(hdr->AS.Header+22), SEEK_SET);
     		hdr->FILE.POS = 0;
 	}
 
