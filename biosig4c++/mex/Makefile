@@ -41,6 +41,9 @@ endif
 win32 win mexw32: mexSLOAD.mexw32 mexSOPEN.mexw32 mexSSAVE.mexw32
 win64 mexw64: mexSLOAD.mexw64 mexSOPEN.mexw64 mexSSAVE.mexw64
 all: mex4m mex4o win32 win64
+mexSOPEN.cpp : mexSLOAD.cpp
+	echo "#define mexSOPEN" > mexSOPEN.cpp
+	cat mexSLOAD.cpp >> mexSOPEN.cpp
 
 clean:
 	-$(RM) *.o *.obj *.o64 core octave-core *.oct *~ *.mex* 
@@ -87,11 +90,7 @@ mexSOPEN: mexSOPEN.$(MEX_EXT)
 %.$(MEX_EXT): %.cpp Makefile ../libbiosig.$(LIBEXT) Makefile
 	$(MEX) $(MEX_OPTION) $(DEFINES) "$<" $(LFLAGS) $(LIBS)
 	-$(COPY) $@ ../../biosig4matlab/t200_FileAccess/
-mexSOPEN.$(MEX_EXT): mexSLOAD.cpp ../libbiosig.$(LIBEXT) Makefile
-	$(MEX) $(MEX_OPTION) -DmexSOPEN $(DEFINES) mexSLOAD.cpp $(LIBS) -output mexSOPEN
-	-$(COPY) mexSOPEN.$(MEX_EXT) ../../biosig4matlab/t200_FileAccess/
 endif
-
 
 
 ### MEX-files for Octave
@@ -99,18 +98,13 @@ mex4o:  mexSLOAD.mex mexSOPEN.mex mexSSAVE.mex
 %.mex:  %.cpp ../libbiosig.$(LIBEXT) Makefile
 	$(OCT)  $(DEFINES) -v -g --mex "$<" $(LIBS)
 	-$(COPY) $@ ../../biosig4matlab/t200_FileAccess/
-mexSOPEN.mex:  mexSLOAD.cpp ../libbiosig.$(LIBEXT) Makefile
-	$(OCT) -D=mexSOPEN $(DEFINES) -v -g --mex mexSLOAD.cpp $(LIBS) -o mexSOPEN.mex
-	-$(COPY) mexSOPEN.mex ../../biosig4matlab/t200_FileAccess/
 #physicalunits.mex:  physicalunits.cpp libbiosig.$(LIBEXT)
 #	$(OCT) -v -g --mex physicalunits.cpp $(LFLAGS) $(LIBS)
 
-oct:  mexSLOAD.oct
-mexSLOAD.oct:  mexSLOAD.cpp ../libbiosig.$(LIBEXT) Makefile
-	$(OCT)  $(DEFINES) mexSLOAD.cpp $(LIBS)
-	$(OCT) -D=mexSOPEN $(DEFINES) mexSLOAD.cpp $(LFLAGS) $(LIBS) -o mexSOPEN.oct
-	-$(COPY) mexSOPEN.oct ../../biosig4matlab/t200_FileAccess/
-	-$(COPY) mexSOPEN.oct ../../biosig4matlab/t200_FileAccess/
+oct:  mexSLOAD.oct mexSOPEN.oct mexSSAVE.oct
+%.oct:  %.cpp ../libbiosig.$(LIBEXT) Makefile
+	$(OCT)  $(DEFINES) "$<" $(LIBS)
+	-$(COPY) "$@" ../../biosig4matlab/t200_FileAccess/
 
 
 #########################################################
@@ -120,9 +114,6 @@ mexSLOAD.oct:  mexSLOAD.cpp ../libbiosig.$(LIBEXT) Makefile
 	$(CROSS)-$(CXX) -c -DMATLAB_MEX_FILE $(DEFINES) -x c++ -o "$@" -I$(W32MAT_INC) -O2 -DMX_COMPAT_32 "$<" 
 %.obj: %.c
 	$(CROSS)-$(CXX) -c -DMATLAB_MEX_FILE $(DEFINES) -x c++ -o "$@" -I$(W32MAT_INC) -O2 -DMX_COMPAT_32 "$<" 
-
-mexSOPEN.obj: mexSLOAD.cpp
-	$(CROSS)-$(CXX) -c -DMATLAB_MEX_FILE -D=mexSOPEN $(DEFINES) -x c++ -o "$@" -I$(W32MAT_INC) -O2 -DMX_COMPAT_32 "$<" 
 
 %.mexw32: %.obj
 	$(CROSS)-$(CXX) -shared $(GNUMEX)/mex.def -o "$@" -L$(GNUMEX) -s "$<" -llibmx -llibmex -lbiosig -lssp $(LDLIBS) -lws2_32
@@ -135,9 +126,6 @@ mexSOPEN.obj: mexSLOAD.cpp
 	$(CROSS64)-$(CXX) -c -DMATLAB_MEX_FILE $(DEFINES) -x c++ -o "$@" -I$(W64MAT_INC) -O2 "$<" 
 %.o64: %.c
 	$(CROSS64)-$(CXX) -c -DMATLAB_MEX_FILE $(DEFINES) -x c++ -o "$@" -I$(W64MAT_INC) -O2 "$<" 
-
-mexSOPEN.o64: mexSLOAD.cpp
-	$(CROSS64)-$(CXX) -c -DMATLAB_MEX_FILE -D=mexSOPEN $(DEFINES) -x c++ -o $@ -I$(W64MAT_INC) -O2 "$<" 
 
 %.mexw64: %.o64
 	$(CROSS64)-$(CXX) -shared $(GNUMEX64)/mex.def -o "$@" -L$(GNUMEX64) -s "$<" -llibmx -llibmex -lbiosig -lssp $(LDLIBS) -lws2_32
