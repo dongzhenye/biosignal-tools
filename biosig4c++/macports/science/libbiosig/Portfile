@@ -5,7 +5,7 @@ PortSystem          1.0
 PortGroup           cmake 1.0
 
 name                libbiosig
-version             1.5.8
+version             1.5.9
 categories          science
 platforms           darwin
 license             GPL-3
@@ -22,23 +22,17 @@ master_sites.mirror_subdir \
                     /BioSig%20for%20C_C++/src
 distname            biosig4c++-${version}.src
 worksrcdir          biosig4c++-${version}
-checksums           rmd160  abdaa205158aec121cd3a65516010e0db804311d \
-                    sha256  c15d446085fb14d9316305cf17ea4fd59ccd34b240bef4cd8fabbb200189bed3
+checksums           rmd160  68943041e13f9bb79fddee1b4feebbf53ec11444 \
+                    sha256  a711a7b36b12c0ff1aec2bccdd21f7a01e1a83130b8d636daa3a6538b1fa715a
 
 depends_build       port:gawk
 depends_lib         port:SuiteSparse \
                     port:zlib
 
 # SuiteSparse support is off until the patch gets released
-configure.args      -DUSE_SUITESPARSE=OFF \
+configure.args      -DUSE_SUITESPARSE=ON \
                     -DUSE_ZLIB=ON \
                     -DCMAKE_C_FLAGS=-DMACPORTS \
                     -DCMAKE_CXX_FLAGS=-DMACPORTS
 configure.ldflags-append \
-                    -lz
-
-post-destroot {
-      xinstall -m 644 ${worksrcpath}/libbiosig.a ${destroot}${prefix}/lib
-      xinstall -m 644 ${worksrcpath}/biosig.h ${destroot}${prefix}/include
-      system "install_name_tool -id ${prefix}/lib/libbiosig.dylib ${destroot}${prefix}/lib/libbiosig.dylib"
-}
+                    -lz -lcholmod
