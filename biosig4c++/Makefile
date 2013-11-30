@@ -13,7 +13,7 @@
 ## make mex4m      - makes mexSLOAD, mexSOPEN for Matlab (requires Matlab, mex -setup must be configured)
 ## make mexw32     - makes mexSLOAD.mexw32, mexSOPEN.mexw32 (requires that mingw32, gnumex libraries from Matlab/Win32)
 ## make mexw64     - makes mexSLOAD.mexw64, mexSOPEN.mexw64 (requires that mce-w32, gnumex libraries from Matlab/Win64)
-## make mex        - mex4o and mex4m combined
+## make mex        - mex4o, mex4m, mexw32, mexw64 combined
 ## make libbiosig  - makes libbiosig
 ## make biosig4python - makes python interface (requires Python)
 ## make biosig4java - makes Java interface (experimental)
@@ -52,7 +52,7 @@ LIBEXT        = a
 
 ### User-specified options: its likely you want to change this
 # settings for cross compiler: tested with MXE and mce-w64 with make suitesparse zlib qt ; 
-CROSS   = $(HOME)/src/mxe/usr/bin/i686-pc-mingw32
+CROSS   = $(HOME)/src/mxe.github.schloegl/usr/bin/i686-pc-mingw32
 ## local MXE
 ifeq "$(wildcard $(CROSS)-gcc)" ""
 CROSS   = $(HOME)/src/mxe/usr/bin/i686-pc-mingw32
@@ -64,7 +64,7 @@ ifeq "$(wildcard $(CROSS)-gcc)" ""
 CROSS         = /usr/local/src/mxe/usr/bin/i686-pc-mingw32
 endif
 
-CROSS64       = $(HOME)/src/mxe/usr/bin/x86_64-w64-mingw32
+CROSS64       = $(HOME)/src/mxe.github.schloegl/usr/bin/x86_64-w64-mingw32
 ifeq "$(wildcard $(CROSS64)-gcc)" ""
 CROSS64       = $(shell pwd)/../mce-w64/usr/bin/x86_64-static-mingw32
 endif
@@ -677,17 +677,52 @@ win64mma: mma/sload.tm mma/sload.c
 #############################################################
 #	MEX-files for Octave and Matlab
 #############################################################
-mex mex4m mex4o oct: mex/Makefile mex/mexSLOAD.cpp mex/mexSSAVE.cpp
-	$(MAKE) -C mex DEFINES='$(DEFINES)' CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" OCTAVE_VERSION=$(OCTAVE_VERSION) MATLABDIR=$(MATLABDIR) $@
-	-cp mex/*.mex* ../biosig4matlab/t200_FileAccess/
 
-mexw32: mex/Makefile mex/mexSLOAD.cpp mex/mexSSAVE.cpp win32/io.h
-	$(MAKE) -C mex DEFINES='$(DEFINES)' CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
-	-cp mex/*.mexw32 ../biosig4matlab/t200_FileAccess/
-	
-mexw64: mex/Makefile mex/mexSLOAD.cpp mex/mexSSAVE.cpp win64/io.h
-	$(MAKE) -C mex DEFINES='$(DEFINES)' CROSS=$(CROSS) CROSS64=$(CROSS64) LDLIBS="$(LDLIBS)" $(@F)
-	-cp mex/*.mexw64 ../biosig4matlab/t200_FileAccess/
+# include directory for Win32-Matlab include
+W32MAT_INC = $(HOME)/bin/win32/Matlab/R2010b/extern/include/ -I../win32
+W64MAT_INC = $(HOME)/bin/win64/Matlab/R2010b/extern/include/ -I../win64
+# path to GNUMEX libraries, available from here http://sourceforge.net/projects/gnumex/
+GNUMEX   = $(HOME)/bin/win32/gnumex
+GNUMEX64 = $(HOME)/bin/win64/gnumex
+
+mex/mexSOPEN.cpp : mex/mexSLOAD.cpp
+	echo "#define mexSOPEN" > mex/mexSOPEN.cpp
+	cat mex/mexSLOAD.cpp >> mex/mexSOPEN.cpp
+
+MEX_OBJECTS = mex/mexSLOAD.cpp mex/mexSOPEN.cpp mex/mexSSAVE.cpp
+
+mex4o: $(patsubst mex/%.cpp, mex/%.mex, $(MEX_OBJECTS))
+oct: $(patsubst mex/%.cpp, mex/%.oct, $(MEX_OBJECTS))
+mexw32: $(patsubst mex/%.cpp, mex/%.mexw32, $(MEX_OBJECTS))
+mexw64: $(patsubst mex/%.cpp, mex/%.mexw64, $(MEX_OBJECTS))
+
+ifdef MEX_EXT
+mex: mex4o mex4m mexw32 mexw64
+mex4m: $(patsubst mex/%.cpp, mex/%.$(MEX_EXT), $(MEX_OBJECTS))
+mex/%.$(MEX_EXT): mex/%.cpp Makefile
+	$(MEX) $(MEX_OPTION) $(DEFINES) "$<" libbiosig.a $(LFLAGS) $(LIBS) -o "$@"
+	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
+else
+mex: mex4o mexw32 mexw64
+endif
+
+mex/%.mex: mex/%.cpp Makefile
+	$(OCT) $(DEFINES) -v -g --mex "$<" libbiosig.a $(LIBS) -o "$@"
+	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
+
+mex/%.oct: mex/%.cpp Makefile
+	$(OCT) $(DEFINES) "$<" libbiosig.a $(LIBS) -o "$@"
+	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
+
+mex/%.mexw32: mex/%.cpp Makefile
+	$(CROSS)-$(CXX) -shared $(GNUMEX)/mex.def -DMATLAB_MEX_FILE $(DEFINES) -x c++  \
+		-I$(W32MAT_INC) -O2 -o "$@" -L$(GNUMEX) -s "$<" -llibmx -llibmex -lbiosig -lssp $(LDLIBS) -lws2_32
+	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
+
+mex/%.mexw64: mex/%.cpp Makefile
+	$(CROSS64)-$(CXX) -shared $(GNUMEX64)/mex.def -DMATLAB_MEX_FILE $(DEFINES) -x c++  \
+		-I$(W64MAT_INC) -O2 -o "$@" -L$(GNUMEX64) -s "$<" -llibmx -llibmex -lbiosig -lssp $(LDLIBS) -lws2_32
+	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
 
 #############################################################
 #	SigViewer
@@ -764,6 +799,7 @@ distclean:
 	-$(DELETE) win32/*.a win32/*.lib win32/libbiosig.* win32/*.obj win32/*.exe
 	-$(DELETE) win64/*.a win64/*.lib win64/libbiosig.* win64/*.obj win64/*.exe
 	-$(DELETE) -rf win32/zlib
+	-$(DELETE) mex/*.o mex/*.obj mex/*.o64 mex/core mex/octave-core mex/*.oct mex/*~ mex/*.mex* 
 	-$(MAKE) -C java clean
 	-$(MAKE) -C matlab clean
 	-$(MAKE) -C mma clean
@@ -771,7 +807,6 @@ distclean:
 	-$(MAKE) -C perl clean
 	-$(MAKE) -C ruby clean
 	-$(MAKE) -C tcl clean
-	-$(MAKE) -C mex clean
 
 clean:
 	-$(DELETE) *~
@@ -794,6 +829,7 @@ clean:
 	-$(DELETE) t240/libcnsfef.a
 	-$(DELETE) t240/libbiosig.*
 	-$(DELETE) pdp2gdf
+	-$(DELETE) mex/*.o mex/*.obj mex/*.o64 mex/core mex/octave-core mex/*.oct mex/*~ mex/*.mex* 
 	-$(MAKE) -C java clean
 	-$(MAKE) -C matlab clean
 	-$(MAKE) -C mma clean
@@ -801,7 +837,6 @@ clean:
 	-$(MAKE) -C perl clean
 	-$(MAKE) -C ruby clean
 	-$(MAKE) -C tcl clean
-	-$(MAKE) -C mex clean
 
 install_sigviewer: sigviewer
 	install $(PathToSigViewer)/bin/release/sigviewer $(BIN)
