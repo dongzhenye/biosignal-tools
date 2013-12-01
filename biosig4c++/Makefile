@@ -106,7 +106,6 @@ else
 		IO_H_FILE2 = io.h
 	        LIBS    += -liberty -lssp -lws2_32
 	endif
-	CROSS   = $(HOME)/src/mce-w64/usr/bin/$(TARGET)
 endif
 
 DEFINES_ALL   = -D=NDEBUG
@@ -715,12 +714,13 @@ mex/%.oct: mex/%.cpp Makefile
 	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
 
 mex/%.mexw32: mex/%.cpp Makefile
-	$(CROSS)-$(CXX) -shared $(GNUMEX)/mex.def -DMATLAB_MEX_FILE $(DEFINES) -x c++  \
+	## $(CROSS)-g++ is used instead of $(CXX), so it can be called from biosig as well as mxe. 
+	$(CROSS)-g++ -shared $(GNUMEX)/mex.def -DMATLAB_MEX_FILE $(DEFINES) -x c++  \
 		-I$(W32MAT_INC) -O2 -o "$@" -L$(GNUMEX) -s "$<" -llibmx -llibmex -lbiosig -lssp $(LDLIBS) -lws2_32
 	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
 
 mex/%.mexw64: mex/%.cpp Makefile
-	$(CROSS64)-$(CXX) -shared $(GNUMEX64)/mex.def -DMATLAB_MEX_FILE $(DEFINES) -x c++  \
+	$(CROSS64)-g++ -shared $(GNUMEX64)/mex.def -DMATLAB_MEX_FILE $(DEFINES) -x c++  \
 		-I$(W64MAT_INC) -O2 -o "$@" -L$(GNUMEX64) -s "$<" -llibmx -llibmex -lbiosig -lssp $(LDLIBS) -lws2_32
 	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
 
