@@ -320,9 +320,9 @@ int biosig_get_startdatetime(HDRTYPE *hdr, struct tm *T) {
 	gdf_time2tm_time_r(hdr->T0, T);
 	return (ldexp(hdr->T0,-32)<100.0);
 }
-int biosig_set_startdatetime(HDRTYPE *hdr, struct tm *T) {
+int biosig_set_startdatetime(HDRTYPE *hdr, struct tm T) {
 	if (hdr==NULL) return -1;
-	hdr->T0 = tm_time2gdf_time(T);
+	hdr->T0 = tm_time2gdf_time(&T);
 	return (ldexp(hdr->T0,-32)<100.0);
 }
 
@@ -331,9 +331,9 @@ int biosig_get_birthdate(HDRTYPE *hdr, struct tm *T) {
 	gdf_time2tm_time_r(hdr->Patient.Birthday, T);
 	return (ldexp(hdr->Patient.Birthday,-32)<100.0);
 }
-int biosig_set_birthdate(HDRTYPE *hdr, struct tm *T) {
+int biosig_set_birthdate(HDRTYPE *hdr, struct tm T) {
 	if (hdr==NULL) return -1;
-	hdr->Patient.Birthday = tm_time2gdf_time(T);
+	hdr->Patient.Birthday = tm_time2gdf_time(&T);
 	return (ldexp(hdr->Patient.Birthday,-32)<100.0);
 }
 
