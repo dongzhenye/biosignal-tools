@@ -869,11 +869,13 @@ end;
                         if ~HDR.EVENT.SampleRate, % ... is not defined in GDF 1.24 or earlier
                                 HDR.EVENT.SampleRate = HDR.SampleRate; 
                         end;
+
                         [HDR.EVENT.POS,c1] = fread(HDR.FILE.FID,[EVENT.N,1],'uint32');
                         [HDR.EVENT.TYP,c2] = fread(HDR.FILE.FID,[EVENT.N,1],'uint16');
 
                         if bitand(EVENT.Version, 3)==1,
-                                if any([c1,c2]~=EVENT.N)
+                                if any([c1,c2]~=EVENT.N) && any([c1/4,c2/2]~=EVENT.N)
+					%% 2nd test (after &&) is needed because of a incompatiblity or bug in Octave
                                         fprintf(2,'\nERROR SOPEN (GDF): Eventtable corrupted in file %s\n',HDR.FileName);
                                 end
                         elseif bitand(EVENT.Version, 3)==3,
@@ -881,7 +883,8 @@ end;
                                 fidpos = ftell(HDR.FILE.FID);
                                 [HDR.EVENT.DUR,c4] = fread(HDR.FILE.FID,[EVENT.N,1],'uint32');
                         	%[EVENT.N,HDR.FILE.size,HDR.AS.EVENTTABLEPOS+8+EVENT.N*12]
-                                if any([c1,c2,c3,c4]~=EVENT.N),
+                                if any([c1,c2,c3,c4]~=EVENT.N) && any([c1/4, c2/2, c3/2, c4/4]~=EVENT.N),
+					%% 2nd test (after &&) is needed because of a incompatiblity or bug in Octave
                                         fprintf(2,'\nERROR SOPEN (GDF): Eventtable corrupted in file %s\n',HDR.FileName);
                                 end;
                                 % read non-equidistant sampling
