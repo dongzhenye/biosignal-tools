@@ -279,6 +279,7 @@ SOURCES      += biosig.c \
 		t240/sopen_fef_read.c \
 		test0/sandbox.c \
 		xgethostname.c \
+		gdftime.c \
 		physicalunits.c \
 		biosig-network.c \
 		save2gdf.c \
@@ -305,6 +306,7 @@ OBJECTS      += \
 		sopen_scp_write.o \
 		sopen_hl7aecg.o \
 		biosig-network.o \
+		gdftime.o \
 		physicalunits.o \
 		sandbox.o \
 		xgethostname.o
@@ -322,6 +324,7 @@ MinGWOBJECTS  = \
 		win32/sopen_scp_write.obj \
 		win32/sopen_hl7aecg.obj \
 		win32/biosig-network.obj \
+		win32/gdftime.obj \
 		win32/physicalunits.obj \
 		win32/sandbox.obj \
 		win32/xgethostname.obj
@@ -573,7 +576,7 @@ win64: mexw64
 #############################################################
 
 .PHONY : io.h libbiosig lib
-libbiosig lib: libbiosig.a libbiosig2.a libbiosig2.so libgdf.a libphysicalunits.a libphysicalunits.so
+libbiosig lib: libbiosig.a libbiosig2.a libbiosig2.so libgdf.a libgdftime.a libgdftime.so libphysicalunits.a libphysicalunits.so
 
 t240/libcnsfef.a:
 #	$(MAKE) -C t240 regen		#
@@ -598,7 +601,17 @@ libgdf.so: gdf.o
 	$(CC) -shared -fPIC -Wl,-rpath,. -Wl,-soname,"$@".${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
 		-o "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$<"
 	/sbin/ldconfig -n .
-	#ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$@".${MAJOR_VERSION}.${MINOR_VERSION}
+	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION} "$@"
+
+libgdftime.a: gdftime.o
+	-$(DELETE) "$@"
+	$(AR) "$@" "$<"
+libgdftime.def: gdftime.o
+	$(CC) -o libgdftime.dll -s -shared -fPIC "$@" -Wl,--subsystem,windows,--output-def,libgdftime.def,--out-implib,libgdftime.dll.a
+libgdftime.so: gdftime.o
+	$(CC) -shared -fPIC -Wl,-rpath,. -Wl,-soname,"$@".${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
+		-o "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$<"
+	/sbin/ldconfig -n .
 	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION} "$@"
 
 
@@ -851,6 +864,7 @@ install_octave: mexSLOAD.mex
 
 install_libbiosig.a: libbiosig.a libbiosig2.a libphysicalunits.a
 	install biosig.h    		$(INC)
+	install gdftime.h    		$(INC)
 	install biosig-dev.h    	$(INC)
 	install physicalunits.h    	$(INC)
 	install libbiosig.a		$(LIB)
@@ -898,6 +912,7 @@ uninstall remove:
 	-$(DELETE) $(INC)/biosig.h
 	-$(DELETE) $(INC)/biosig-dev.h
 	-$(DELETE) $(INC)/biosig2.h
+	-$(DELETE) $(INC)/gdftime.h
 	-$(DELETE) $(INC)/physicalunits.h
 	-$(DELETE) $(LIB)/libbiosig.*
 	-$(DELETE) $(LIB)/libbiosig2.*
