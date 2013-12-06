@@ -439,12 +439,15 @@ eventcodes.i eventcodegroups.i : $(EXTERN)/eventcodes.txt
 units.i : $(EXTERN)/units.csv
 	awk -f units.awk "$<" > "$@"
 
+11073-10101-AnnexB.i : $(EXTERN)/11073-10102-AnnexB.txt
+	awk -f annotatedECG.awk "$<" > "$@"
+
 
 #############################################################
 #	Compilation: exceptions, explicit rules
 #############################################################
 
-gdf.o: biosig.c biosig-dev.h biosig.h eventcodes.i units.i
+gdf.o: biosig.c biosig-dev.h biosig.h eventcodes.i units.i 11073-10101-AnnexB.i
 	$(CC) -c -D=ONLYGDF -D=WITHOUT_NETWORK $(DEFINES_ALL) $(CFLAGS) $(INCPATH) -o "$@" "$<"
 
 #getlogin_r.o: win32/getlogin_r.c
@@ -598,10 +601,10 @@ libgdf.def: gdf.o getlogin.o
 	$(CXX) -s -shared -fPIC -o libgdf.dll gdf.o getlogin.o $(LIBS) -L. -lphysicalunits -Wl,--subsystem,windows,--output-def,libgdf.def,--out-implib,libgdf.dll.a
 
 libgdf.so: gdf.o
-	$(CC) -shared -fPIC -Wl,-rpath,. -Wl,-soname,"$@".${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
-		-o "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$<"
+	$(CC) -shared -fPIC -Wl,-rpath,. -Wl,-soname,$@.${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
+		-o $@.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$<"
 	/sbin/ldconfig -n .
-	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION} "$@"
+	ln -sf $@.${MAJOR_VERSION}.${MINOR_VERSION} "$@"
 
 libgdftime.a: gdftime.o
 	-$(DELETE) "$@"
@@ -609,10 +612,10 @@ libgdftime.a: gdftime.o
 libgdftime.def: gdftime.o
 	$(CC) -o libgdftime.dll -s -shared -fPIC "$@" -Wl,--subsystem,windows,--output-def,libgdftime.def,--out-implib,libgdftime.dll.a
 libgdftime.so: gdftime.o
-	$(CC) -shared -fPIC -Wl,-rpath,. -Wl,-soname,"$@".${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
-		-o "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$<"
+	$(CC) -shared -fPIC -Wl,-rpath,. -Wl,-soname,$@.${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
+		-o $@.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $<
 	/sbin/ldconfig -n .
-	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION} "$@"
+	ln -sf $@.${MAJOR_VERSION}.${MINOR_VERSION} $@
 
 
 libbiosig.a: $(OBJECTS) t240/libcnsfef.a libbiosig.pc
@@ -624,10 +627,10 @@ libbiosig.def: $(OBJECTS) t240/libcnsfef.a libbiosig.pc
 
 
 libbiosig.so: $(OBJECTS) t240/libcnsfef.a libbiosig.pc
-	$(CXX) -shared -fPIC -Wl,-rpath,. -Wl,-soname,"$@".${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
-		-o "$@".${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(OBJECTS) t240/*.o
+	$(CXX) -shared -fPIC -Wl,-rpath,. -Wl,-soname,$@.${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
+		-o $@.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(OBJECTS) t240/*.o
 	/sbin/ldconfig -n .
-	ln -sf "$@".${MAJOR_VERSION}.${MINOR_VERSION} "$@"
+	ln -sf $@.${MAJOR_VERSION}.${MINOR_VERSION} $@
 
 
 libbiosig.pc :
