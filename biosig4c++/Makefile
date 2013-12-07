@@ -429,7 +429,7 @@ win64/%.obj: win32/%.c
 #	eventcodes and units: conversion from ascii to C code
 #############################################################
 
-biosig.o win32/biosig.obj win64/biosig.obj: eventcodes.i eventcodegroups.i biosig.c biosig.h biosig-dev.h
+biosig.o win32/biosig.obj win64/biosig.obj: eventcodes.i eventcodegroups.i 11073-10101-AnnexB.i biosig.c biosig.h biosig-dev.h
 
 physicalunits.o win32/physicalunits.obj win64/physicalunits.obj: units.i physicalunits.h 
 
