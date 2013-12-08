@@ -28,6 +28,7 @@ set (headers
   XMLParser/tinyxml.h
   XMLParser/tinystr.h
   biosig.h
+  gdftime.h
   physicalunits.h
 )
 
@@ -48,6 +49,7 @@ set (sources
   XMLParser/tinyxmlerror.cpp
   XMLParser/tinyxmlparser.cpp 
   biosig.c
+  gdftime.c
   physicalunits.c
 )
 
@@ -100,3 +102,4 @@ add_definitions (-D=WITHOUT_NETWORK)
 install (TARGETS biosigstatic DESTINATION lib)
 install (TARGETS biosigshared DESTINATION lib)
 install (FILES  biosig.h DESTINATION include)
+install (FILES  gdftime.h DESTINATION include)
