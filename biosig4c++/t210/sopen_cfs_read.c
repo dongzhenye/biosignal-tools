@@ -106,6 +106,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n
 		double xPhysDimScale[100];		// CFS is limited to 99 channels
 		typeof(hdr->NS) NS = hdr->NS;
 		uint8_t k;
+		uint32_t bpb=0;
 		for (k = 0; k < hdr->NS; k++) {
 			CHANNEL_TYPE *hc = hdr->CHANNEL + k;
 			/*
@@ -135,6 +136,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n
 				hc->OnOff = 0;
 				NS--;
 			}
+			hc->bi = bpb;
+			bpb += GDFTYP_BITS[hc->GDFTYP]>>3;	// per single sample
 			hc->Impedance = NAN;
 			hc->TOffset  = NAN;
 			hc->LowPass  = NAN;
@@ -142,6 +145,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n
 			hc->Notch    = NAN;
 if (VERBOSE_LEVEL>7) fprintf(stdout,"Channel #%i: [%s](%i/%i) <%s>/<%s> ByteSpace%i,Next#%i\n",k+1, H2 + 1 + k*H2LEN, dataType, H2[43], H2 + 23 + k*H2LEN, H2 + 33 + k*H2LEN, leu16p(H2+44+k*H2LEN), leu16p(H2+46+k*H2LEN));
 		}
+		hdr->AS.bpb = bpb;
 
 		size_t datapos = H1LEN + H2LEN*hdr->NS;
 
@@ -208,7 +212,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* Data Section variable information
 
 			size_t p3 = H1LEN + H2LEN*hdr->NS + (n+d)*36 + off + 42;
 
-			fprintf(stdout,"#%2i [%i:%i] %i<%s>\n",m,typ,off,pos,desc);
 			//if (flag_FPulse && !strcmp(desc, "Spare")) continue;
 
 			switch (typ) {
@@ -270,14 +273,27 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n[DS#%3i] 0x%x 0x%x [0x%x 0x%x szChanData=
 
 				CHANNEL_TYPE *hc = hdr->CHANNEL + k;
 
-				hc->bi      = leu32p(pos);
-				hc->SPR     = leu32p(pos+4);
-				hc->Cal     = lef32p(pos+8);
-				hc->Off     = lef32p(pos+12);
-				double Xcal = lef32p(pos+16);
-				double Xoff = lef32p(pos+20);// unused
+				uint32_t bi  = leu32p(pos);
+				uint32_t xspr = leu32p(pos+4);
+				float Cal    = lef32p(pos+8);
+				float Off    = lef32p(pos+12);
+				double Xcal  = lef32p(pos+16);
+				double Xoff  = lef32p(pos+20);// unused
+				if (m > 0) {
+					if ( (hc->SPR != xspr)
+					  || (hc->Cal != Cal)
+					  || (hc->Off != Off)
+					   )
+					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: channel properties changes between segments - this is not supported yet.\n");
+				}
+				else {
+					hc->SPR = xspr;
+					hc->Cal = Cal;
+					hc->Off = Off;
+				}
 
-if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x%g %g %g\n",m,k,spr,(int)SPR,hc->SPR,hc->Cal,hc->Off,hc->bi,xPhysDimScale[k], Xcal, Xoff);
+
+if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 408: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x%g %g %g\n",m,k,spr,(int)SPR,hc->SPR,hc->Cal,hc->Off,hc->bi,xPhysDimScale[k], Xcal, Xoff);
 
 				double Fs = 1.0 / (xPhysDimScale[k] * Xcal);
 				if ( (hc->OnOff == 0) || (Xcal == 0.0) ) {
@@ -294,6 +310,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 				if (hc->OnOff && (spr < hc->SPR)) 
 					spr = hc->SPR;
 				sz  += hc->SPR * GDFTYP_BITS[hc->GDFTYP] >> 3;
+				assert(hc->bi == bpb);
 				bpb += GDFTYP_BITS[hc->GDFTYP]>>3;	// per single sample
 				hdr->AS.length += hc->SPR;
 				
@@ -301,16 +318,18 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 
 			SPR += spr;
 			SZ  += sz;
+			if (hdr->AS.bpb != bpb)
+				biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: channel properties changes between segments - this is not supported yet.\n");
 		}
 
 		/*
-		The previous and the next loop have been split, in oder to avoid
+		The previous and the next loop have been split, in order to avoid
 		multiple reallocations. Multiple reallocations seem to be a major
 		issue for performance problems of Windows (a 50 MB file with 480 sweeps took 50 s to load).
 		However, the two loops might contain some redundant operations.
 		*/
 		hdr->AS.flag_collapsed_rawdata = 0;
-		void *ptr = realloc(hdr->AS.rawdata, hdr->NS * SPR * sizeof(double));
+		void *ptr = realloc(hdr->AS.rawdata, hdr->AS.bpb * SPR);
 		if (!ptr) {
 			biosigERROR(hdr,B4C_MEMORY_ALLOCATION_FAILED, "CFS: memory allocation failed in line __LINE__");
 		}
@@ -332,10 +351,12 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 
 				CHANNEL_TYPE *hc = hdr->CHANNEL + k;
 
-				hc->bi      = leu32p(pos);
+				uint32_t bi = leu32p(pos);
 				hc->SPR     = leu32p(pos+4);
+/*
 				hc->Cal     = lef32p(pos+8);
 				hc->Off     = lef32p(pos+12);
+*/
 				double Xcal = lef32p(pos+16);
 				double Xoff = lef32p(pos+20);// unused
 
@@ -356,6 +377,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 				if (hc->OnOff && (spr < hc->SPR))
 					spr = hc->SPR;
 				sz  += hc->SPR * GDFTYP_BITS[hc->GDFTYP] >> 3;
+				hc->bi = bpb;
 				bpb += GDFTYP_BITS[hc->GDFTYP]>>3;	// per single sample
 				hdr->AS.length += hc->SPR;
 
@@ -370,10 +392,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 				hdr->AS.first = 0;
 				uint8_t ns = 0; 
 				for (k = 0; k < hdr->NS; k++) {
+					uint8_t *pos = hdr->AS.Header + datapos + 30 + 24 * k;
 					CHANNEL_TYPE *hc = hdr->CHANNEL + k;
-					
 
-					uint32_t memoffset = + hc->bi;
+					uint32_t memoffset = leu32p(pos);
 					uint8_t *srcaddr = hdr->AS.Header + leu32p(hdr->AS.Header+datapos + 4) ;
 					//uint16_t byteSpace = leu16p(H2+44 + k*H2LEN);
 					int16_t stride = leu16p(H2+44 + k*H2LEN);
@@ -382,28 +404,45 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 					//uint8_t  dataKind  = H2[43 + k*H2LEN];		// equidistant, Subsidiary or Matrix data 
 					//uint16_t stride = leu16p(H2+44 + k*H2LEN);		// byteSpace
 					uint16_t next      = leu16p(H2+46 + k*H2LEN);
-					hc->GDFTYP = dataType < 5 ? dataType+1 : dataType+11;
+					uint16_t gdftyp    = dataType < 5 ? dataType+1 : dataType+11;
 		
-if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 412 #%i %i %i %i: %i @%p %i\n", k, hc->SPR, hc->GDFTYP, stride, memoffset, srcaddr, leu32p(hdr->AS.Header+datapos + 4) + leu32p(hdr->AS.Header + datapos + 30 + 24 * k));
+if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 412 #%i %i %i %i %i: %i @%p %i\n", k, hc->SPR, gdftyp,hc->GDFTYP, stride, memoffset, srcaddr, leu32p(hdr->AS.Header+datapos + 4) + leu32p(hdr->AS.Header + datapos + 30 + 24 * k));
+					if (gdftyp != hc->GDFTYP) {
+						biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: data type changes between segments - this is not supported yet.");
+					}
 
 					size_t k2;
 					for (k2 = 0; k2 < hc->SPR; k2++) {
-						uint8_t *ptr = srcaddr + hc->bi + k2*stride;
+						uint8_t *ptr = srcaddr + memoffset + k2*stride;
+
+if (VERBOSE_LEVEL>8) fprintf(stdout,"512 %i %i %i %i %i \n",(int)stride,(int)hc->bi,(int)SPR,(int)k2,(int)hdr->AS.bpb);
+
+						uint8_t *dest = hdr->AS.rawdata + hc->bi + (SPR + k2) * hdr->AS.bpb;
 						double val;
 						
-						switch (hc->GDFTYP) {
+						switch (gdftyp) {
 						// reorder for performance reasons - more frequent gdftyp's come first
-						case 3:  val = lei16p(ptr); break;
-						case 4:  val = leu16p(ptr); break;
-						case 16: val = lef32p(ptr); break;
-						case 17: val = lef64p(ptr); break;
-						case 0:  val = *(   char*) ptr; break;
-						case 1:  val = *( int8_t*) ptr; break;
-						case 2:  val = *(uint8_t*) ptr; break;
-						case 5:  val = lei32p(ptr); break;
-						case 6:  val = leu32p(ptr); break;
-						case 7:  val = lei64p(ptr); break;
-						case 8:  val = leu64p(ptr); break;
+						case 3:  //val = lei16p(ptr);
+						case 4:  //val = leu16p(ptr);
+							memcpy(dest, ptr, 2);
+							break;
+						case 16: //val = lef32p(ptr);
+							memcpy(dest, ptr, 4);
+							break;
+						case 7:  //val = lei64p(ptr);
+						case 8:  //val = leu64p(ptr);
+						case 17: //val = lef64p(ptr);
+							memcpy(dest, ptr, 8);
+							break;
+						case 0:  //val = *(   char*) ptr;
+						case 1:  //val = *( int8_t*) ptr;
+						case 2:  //val = *(uint8_t*) ptr;
+							*dest = *ptr;
+							break;
+						case 5:  val = lei32p(ptr);
+						case 6:  //val = leu32p(ptr);
+							memcpy(dest, ptr, 4);
+							break;
 						default:
 							val = NAN;
 							biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: invalid data type");
@@ -411,7 +450,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 412 #%i %i %i %i: %i @%p %i\n", k, hc->
 
 					   	if (hc->OnOff) {
 							/* TODO: channels with less samples are currently ignored - resampling or ignoring the channel ? */
-							*(double*) (hdr->AS.rawdata + k * sizeof(double) + (SPR + k2) * hdr->NS * sizeof(double)) = val * hc->Cal + hc->Off;
+//							*(double*) (hdr->AS.rawdata + (k + (SPR + k2)*hdr->NS) * sizeof(double)) = val * hc->Cal + hc->Off;
 							continue;
 					   	}
 						
@@ -459,17 +498,16 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 419: SPR=%i=%i NRec=%i  @%p\n",(int)SPR
 			hdr->FLAG.UCAL = 1;
 			hdr->SPR       = 1;
 			hdr->NRec      = SPR;
-			hdr->AS.bpb    = hdr->NS * sizeof(double);
 			hdr->AS.length = SPR;
 
+			size_t bpb = 0; 
 			for (k = 0; k < hdr->NS; k++) {
 				CHANNEL_TYPE *hc = hdr->CHANNEL + k;
-				hc->GDFTYP  = 17;	// double
-				hc->bi      = sizeof(double)*k;
+				assert(hc->bi==bpb);
+				bpb        += GDFTYP_BITS[hc->GDFTYP] >> 3;
 				hc->SPR     = hdr->SPR;
-				hc->Cal     = 1.0;
-				hc->Off     = 0.0;
 			}
+			assert(hdr->AS.bpb==bpb);
 		}
 
 if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr->SPR,(int)hdr->NRec);
@@ -507,7 +545,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			hdr->CHANNEL[k].PhysMax = hdr->CHANNEL[k].DigMax * hdr->CHANNEL[k].Cal + hdr->CHANNEL[k].Off;
 			hdr->CHANNEL[k].PhysMin = hdr->CHANNEL[k].DigMin * hdr->CHANNEL[k].Cal + hdr->CHANNEL[k].Off;
 		}
-		hdr->FLAG.UCAL = 0;
+		hdr->FLAG.UCAL = 1;
 
 #undef H1LEN
 }
