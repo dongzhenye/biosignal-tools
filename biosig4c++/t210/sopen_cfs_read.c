@@ -41,10 +41,12 @@ EXTERN_C void sopen_cfs_read(HDRTYPE* hdr) {
 		HDRTYPE *hdr	// defines the HDR structure accoring to "biosig.h"
 */
 
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s:%i sopen_cfs_read started - %i bytes already loaded\n",__FILE__,__LINE__,hdr->HeadLen);
 
 #define H1LEN (8+14+4+8+8+2+2+2+2+2+4+2+2+74+4+40)
 
 		size_t count = hdr->HeadLen; 
+		char flag_FPulse = 0;    // indicates whether data was recorded using FPulse
 
 #define CFS_NEW		// this flag allows to switch back to old version 
 
@@ -77,6 +79,8 @@ EXTERN_C void sopen_cfs_read(HDRTYPE* hdr) {
 			char strtmp[9];
 			memcpy(strtmp, hdr->AS.Header+0x1a, 8);
 			strtmp[8] = 0; // terminating null character
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s:%i sopen_cfs_read started [%s]\n",__FILE__,__LINE__,strtmp);
+
 			t.tm_hour = atoi(strtok(strtmp,":/"));
 			t.tm_min  = atoi(strtok(NULL,":/"));
 			t.tm_sec  = atoi(strtok(NULL,":/"));
@@ -143,13 +147,16 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"Channel #%i: [%s](%i/%i) <%s>/<%s> ByteSpac
 
 		/* file variable information */
 		// n*36 bytes
-if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* file variable information *********\n");
+if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* file variable information (n=%i) *********\n", n);
 		for (k = 0; k < n; k++) {
 			int i=-1; double f=NAN;
 			size_t pos = datapos + k*36;
+			char   *desc = (char*)(hdr->AS.Header+pos+1);
 			uint16_t typ = leu16p(hdr->AS.Header+pos+22);
 			char   *unit = (char*)(hdr->AS.Header+pos+25);
 			uint16_t off = leu16p(hdr->AS.Header+pos+34);
+
+			if (flag_FPulse && !strcmp(desc, "Spare")) continue;
 
 			size_t p3 = H1LEN + H2LEN*hdr->NS + (n+d)*36 + off + 42;
 
@@ -162,21 +169,25 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* file variable information *******
 			case 5: f = lef32p(hdr->AS.Header+p3); break;
 			case 6: f = lef64p(hdr->AS.Header+p3); break;
 			}
-if (VERBOSE_LEVEL>8) 	{
-			fprintf(stdout,"[%i:] ",typ);
+if (VERBOSE_LEVEL>7) 	{
+			fprintf(stdout,"#%2i [%i:%i] <%s>",k,typ,off,desc);
 			if (typ<1) ;
-			else if (typ<5) fprintf(stdout,"%d",i);
-			else if (typ<7) fprintf(stdout,"%g",f);
-			else if (typ==7) fprintf(stdout,"%s",hdr->AS.Header+p3+1);
-			fprintf(stdout,"%s\n",unit+1);
+			else if (typ<5) fprintf(stdout,"[%d] ",i);
+			else if (typ<7) fprintf(stdout,"[%g] ",f);
+			else if (typ==7) fprintf(stdout,"<%s> ",hdr->AS.Header+p3+1);
+			fprintf(stdout,"[%s]\n",unit);
 			}
 else if (VERBOSE_LEVEL>7)
 			{
-			if (typ==7) fprintf(stdout,"[%i:] %s %s",typ, hdr->AS.Header+p3+1,unit);
+			if (typ==7) fprintf(stdout,"#%2i [%i:] <%s> <%s> <%s>\n",k,typ,desc, hdr->AS.Header+p3+1,unit);
+			}
+
+			if (k==0) {
+				flag_FPulse = !strcmp(unit,"FPulse");
 			}
 		}
 
-if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* Data Section variable information *********\n");
+if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* Data Section variable information (n=%i,%i)*********\n", d,NumberOfDataSections);
 		datapos = LastDataSectionHeaderOffset; //H1LEN + H2LEN*hdr->NS + n*36;
 		// reverse order of data sections
 		uint32_t *DATAPOS = (uint32_t*)malloc(sizeof(uint32_t)*NumberOfDataSections);
@@ -189,12 +200,16 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* Data Section variable information
 
 		for (m = 0; m < NumberOfDataSections; m++ ) {
 			int i=-1; double f=NAN;
-			size_t pos = DATAPOS[m];
+			size_t pos   = DATAPOS[m];
+			char   *desc = (char*)(hdr->AS.Header+pos+1);
 			uint16_t typ = leu16p(hdr->AS.Header+pos+22);
 			char   *unit = (char*)(hdr->AS.Header+pos+25);
 			uint16_t off = leu16p(hdr->AS.Header+pos+34);
 
 			size_t p3 = H1LEN + H2LEN*hdr->NS + (n+d)*36 + off + 42;
+
+			fprintf(stdout,"#%2i [%i:%i] %i<%s>\n",m,typ,off,pos,desc);
+			//if (flag_FPulse && !strcmp(desc, "Spare")) continue;
 
 			switch (typ) {
 			case 0:
@@ -206,15 +221,15 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* Data Section variable information
 			case 6: f = lef64p(hdr->AS.Header+p3); break;
 			}
 if (VERBOSE_LEVEL>8) 	{
-			fprintf(stdout,"[%i:] ",typ);
-			if (typ<5) fprintf(stdout,"%d",i);
-			else if (typ<7) fprintf(stdout,"%g",f);
-			else if (typ==7) fprintf(stdout,"%s",hdr->AS.Header+p3+1);
-			fprintf(stdout,"%s\n",unit+1);
+			fprintf(stdout,"#%2i [%i:%i] <%s>",m,typ,off,desc);
+			if (typ<5) fprintf(stdout,"[%d] ",i);
+			else if (typ<7) fprintf(stdout,"[%g] ",f);
+			else if (typ==7) fprintf(stdout,"<%s>",hdr->AS.Header+p3+1);
+			fprintf(stdout,"%s\n",unit);
 			}
 else if (VERBOSE_LEVEL>7)
 			{
-			if (typ==7) fprintf(stdout,"[%i:] %s %s",typ, hdr->AS.Header+p3+1,unit);
+			if (typ==7) fprintf(stdout,"#%2i [%i:] <%s> <%s> <%s>\n",m,typ,desc, hdr->AS.Header+p3+1,unit);
 			}
 		}
 
