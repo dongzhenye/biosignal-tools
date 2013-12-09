@@ -335,7 +335,7 @@ const struct event_groups_t EventCodeGroups [] = {
 
 // Nomenclature Annotated ECG according to 11073-10102 Annex B, Table B.1
 const struct NomenclatureAnnotatedECG_t NomAnnotatedECG[] = {
-#include "11073-10101-AnnexB.i"
+#include "11073-10102-AnnexB.i"
 	{-1, -1, -1, ""}
 };
 

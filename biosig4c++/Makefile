@@ -429,7 +429,7 @@ win64/%.obj: win32/%.c
 #	eventcodes and units: conversion from ascii to C code
 #############################################################
 
-biosig.o win32/biosig.obj win64/biosig.obj: eventcodes.i eventcodegroups.i 11073-10101-AnnexB.i biosig.c biosig.h biosig-dev.h
+biosig.o win32/biosig.obj win64/biosig.obj: eventcodes.i eventcodegroups.i 11073-10102-AnnexB.i biosig.c biosig.h biosig-dev.h
 
 physicalunits.o win32/physicalunits.obj win64/physicalunits.obj: units.i physicalunits.h 
 
@@ -439,7 +439,7 @@ eventcodes.i eventcodegroups.i : $(EXTERN)/eventcodes.txt
 units.i : $(EXTERN)/units.csv
 	awk -f units.awk "$<" > "$@"
 
-11073-10101-AnnexB.i : $(EXTERN)/11073-10102-AnnexB.txt
+11073-10102-AnnexB.i : $(EXTERN)/11073-10102-AnnexB.txt
 	awk -f annotatedECG.awk "$<" > "$@"
 
 
@@ -447,7 +447,7 @@ units.i : $(EXTERN)/units.csv
 #	Compilation: exceptions, explicit rules
 #############################################################
 
-gdf.o: biosig.c biosig-dev.h biosig.h eventcodes.i units.i 11073-10101-AnnexB.i
+gdf.o: biosig.c biosig-dev.h biosig.h eventcodes.i units.i 11073-10102-AnnexB.i
 	$(CC) -c -D=ONLYGDF -D=WITHOUT_NETWORK $(DEFINES_ALL) $(CFLAGS) $(INCPATH) -o "$@" "$<"
 
 #getlogin_r.o: win32/getlogin_r.c
@@ -714,18 +714,18 @@ mexw64: $(patsubst mex/%.cpp, mex/%.mexw64, $(MEX_OBJECTS))
 ifdef MEX_EXT
 mex: mex4o mex4m mexw32 mexw64
 mex4m: $(patsubst mex/%.cpp, mex/%.$(MEX_EXT), $(MEX_OBJECTS))
-mex/%.$(MEX_EXT): mex/%.cpp Makefile
+mex/%.$(MEX_EXT): mex/%.cpp Makefile libbiosig.a
 	$(MEX) $(MEX_OPTION) $(DEFINES) "$<" libbiosig.a $(LFLAGS) $(LIBS) -o "$@"
 	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
 else
 mex: mex4o mexw32 mexw64
 endif
 
-mex/%.mex: mex/%.cpp Makefile
+mex/%.mex: mex/%.cpp Makefile libbiosig.a
 	$(OCT) $(DEFINES) -v -g --mex "$<" libbiosig.a $(LIBS) -o "$@"
 	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
 
-mex/%.oct: mex/%.cpp Makefile
+mex/%.oct: mex/%.cpp Makefile libbiosig.a
 	$(OCT) $(DEFINES) "$<" libbiosig.a $(LIBS) -o "$@"
 	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
 
