@@ -10,7 +10,12 @@
 % DEMO8   % overflow detection based on [1]
 % DEMO9   % AAR-based HRV analysis
 % DEMO10  % Demonstrates deconvolution method on spontaneous synaptic currents [2]
-% 
+% SLOPE_ESTIMATION: quantifies the error on slope estimation caused by 
+%         different noise sources (see [3] for details).  
+% SIMULATE_EPSP  generates a large number sweeps of EPSP data using
+%         different models, and parameters for validation of Stimfit model
+%         fitting algorithms [3] 
+
 % REFERENCES: 
 % [1] A. Schlögl, B. Kemp, T. Penzel, D. Kunz, S.-L. Himanen,A. Värri, G. Dorffner, G. Pfurtscheller.
 %   Quality Control of polysomnographic Sleep Data by Histogram and Entropy Analysis. 
@@ -21,10 +26,15 @@
 %  A deconvolution-based method with high sensitivity and temporal
 %  resolution for detection of spontaneous synaptic currents in vitro and
 %  in vivo.
+% [3] Segundo J Guzman , Alois Schlögl and Christoph Schmidt-Hieber
+%     Stimfit: quantifying electrophysiological datwith Python
+%     Frontiers in Neuroinformatics. (submitted)
+%
+%
+%
 
 
-% $Id$
-% Copyright (C) 2003-2005, 2008,2012 by Alois Schloegl <alois.schloegl@gmail.com>	
+% Copyright (C) 2013 by Alois Schloegl <alois.schloegl@ist.ac.at>	
 % This is part of the BIOSIG-toolbox http://biosig.sf.net/
 
 % This library is free software; you can redistribute it and/or
