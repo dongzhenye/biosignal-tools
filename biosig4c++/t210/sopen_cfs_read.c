@@ -162,7 +162,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* file variable information (n=%i) 
 
 			if (flag_FPulse && !strcmp(desc, "Spare")) continue;
 
-			size_t p3 = H1LEN + H2LEN*hdr->NS + (n+d)*36 + off + 42;
+			/*
+			   H1LEN 	General Header
+			   H2LEN*NS 	Channel Information a 48 byte
+			   n*36		File Variable information a 36 byte
+			   d*36		DS Variable information
+			*/
+			size_t p3 = H1LEN + H2LEN*hdr->NS + (n+d+2)*36 + off;
 
 			switch (typ) {
 			case 0:
@@ -173,7 +179,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* file variable information (n=%i) 
 			case 5: f = lef32p(hdr->AS.Header+p3); break;
 			case 6: f = lef64p(hdr->AS.Header+p3); break;
 			}
-if (VERBOSE_LEVEL>7) 	{
+if (VERBOSE_LEVEL>8) 	{
 			fprintf(stdout,"#%2i [%i:%i] <%s>",k,typ,off,desc);
 			if (typ<1) ;
 			else if (typ<5) fprintf(stdout,"[%d] ",i);
@@ -184,6 +190,15 @@ if (VERBOSE_LEVEL>7) 	{
 else if (VERBOSE_LEVEL>7)
 			{
 			if (typ==7) fprintf(stdout,"#%2i [%i:] <%s> <%s> <%s>\n",k,typ,desc, hdr->AS.Header+p3+1,unit);
+			}
+
+			if ((typ==7) && !strncmp(desc,"Script",6)) {
+				char *scriptline=hdr->AS.Header+p3+1;
+				int len2000 = (hdr->AS.bci2000==NULL ? 0 : strlen(hdr->AS.bci2000));
+				if (VERBOSE_LEVEL>3) fprintf(stdout,"%s\n",scriptline);
+				hdr->AS.bci2000=realloc(hdr->AS.bci2000, len2000 + strlen(scriptline)+2);
+				strcat(hdr->AS.bci2000,scriptline);
+				strcat(hdr->AS.bci2000,"\n");
 			}
 
 			if (k==0) {
@@ -199,41 +214,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* Data Section variable information
 		uint16_t m;
 		for (m = NumberOfDataSections; 0 < m; ) {
 			DATAPOS[--m] = datapos;
-			datapos = leu32p(hdr->AS.Header + datapos);
-		}
-
-		for (m = 0; m < NumberOfDataSections; m++ ) {
-			int i=-1; double f=NAN;
-			size_t pos   = DATAPOS[m];
-			char   *desc = (char*)(hdr->AS.Header+pos+1);
-			uint16_t typ = leu16p(hdr->AS.Header+pos+22);
-			char   *unit = (char*)(hdr->AS.Header+pos+25);
-			uint16_t off = leu16p(hdr->AS.Header+pos+34);
-
-			size_t p3 = H1LEN + H2LEN*hdr->NS + (n+d)*36 + off + 42;
-
-			//if (flag_FPulse && !strcmp(desc, "Spare")) continue;
-
-			switch (typ) {
-			case 0:
-			case 1: i = hdr->AS.Header[p3]; break;
-			case 2: i = lei16p(hdr->AS.Header+p3); break;
-			case 3: i = leu16p(hdr->AS.Header+p3); break;
-			case 4: i = lei32p(hdr->AS.Header+p3); break;
-			case 5: f = lef32p(hdr->AS.Header+p3); break;
-			case 6: f = lef64p(hdr->AS.Header+p3); break;
-			}
-if (VERBOSE_LEVEL>8) 	{
-			fprintf(stdout,"#%2i [%i:%i] <%s>",m,typ,off,desc);
-			if (typ<5) fprintf(stdout,"[%d] ",i);
-			else if (typ<7) fprintf(stdout,"[%g] ",f);
-			else if (typ==7) fprintf(stdout,"<%s>",hdr->AS.Header+p3+1);
-			fprintf(stdout,"%s\n",unit);
-			}
-else if (VERBOSE_LEVEL>7)
-			{
-			if (typ==7) fprintf(stdout,"#%2i [%i:] <%s> <%s> <%s>\n",m,typ,desc, hdr->AS.Header+p3+1,unit);
-			}
+			datapos      = leu32p(hdr->AS.Header + datapos);
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s:%i sopen_cfs_read started: section %d pos %u 0x%x\n",__FILE__,__LINE__,m,datapos,datapos);
 		}
 
 		if (hdr->AS.SegSel[0] > NumberOfDataSections) {
@@ -258,6 +240,20 @@ else if (VERBOSE_LEVEL>7)
 			}
 
 			datapos = DATAPOS[m];
+
+			for (k = 0; k < d; k++) {
+				size_t pos   = DATAPOS[m] + 30 + 24 * hdr->NS + k * 36;
+				char   *desc = (char*)(hdr->AS.Header+pos+1);
+				uint16_t typ = leu16p(hdr->AS.Header+pos+22);
+				char   *unit = (char*)(hdr->AS.Header+pos+25);
+				uint16_t off = leu16p(hdr->AS.Header+pos+34);
+
+				//size_t p3 = H1LEN + H2LEN*hdr->NS + (n+d)*36 + off + 42;
+				size_t p3 = hdr->AS.Header + pos;// + 30 + 24 * hdr->NS + m * 36;
+
+//if (VERBOSE_LEVEL>7) fprintf(stdout,"%s:%i sopen_cfs_read started: section %d/%d pos %u 0x%4x %d d<%s> u<%s>\n",__FILE__,__LINE__,(int)k,(int)m,(int)pos,(int)pos,off,desc,unit);
+			}
+
 			if (!leu32p(hdr->AS.Header+datapos+8)) continue; 	// empty segment
 
 if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* DATA SECTION --%03i-- %i *********\n",m,flag_ChanInfoChanged);
@@ -500,7 +496,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 419: SPR=%i=%i NRec=%i  @%p\n",(int)SPR
 			hdr->NRec      = SPR;
 			hdr->AS.length = SPR;
 
-			size_t bpb = 0; 
+			size_t bpb = 0;
 			for (k = 0; k < hdr->NS; k++) {
 				CHANNEL_TYPE *hc = hdr->CHANNEL + k;
 				assert(hc->bi==bpb);

@@ -410,7 +410,10 @@ typedef struct HDR_STRUCT {
 		size_t		first;		/* first block loaded in buffer - this is equivalent to hdr->FILE.POS */
 		size_t		length;		/* number of block(s) loaded in buffer */
 		uint8_t*	auxBUF;  	/* auxillary buffer - used for storing EVENT.CodeDesc, MIT FMT infor, alpha:rawdata header */
-		char*		bci2000;
+		union {
+		char*		bci2000;	/* application specific free text field */
+		char*		fpulse;	
+		};
 		uint32_t	SegSel[5];	/* segment selection in a hirachical data formats, e.g. sweeps in HEKA/PatchMaster format */
 		enum B4C_ERROR	B4C_ERRNUM;	/* error code */
 		char		flag_collapsed_rawdata; /* 0 if rawdata contain obsolete channels, too. 	*/
