@@ -154,7 +154,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"Channel #%i: [%s](%i/%i) <%s>/<%s> ByteSpac
 if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* file variable information (n=%i) *********\n", n);
 		for (k = 0; k < n; k++) {
 			int i=-1; double f=NAN;
-			size_t pos = datapos + k*36;
+			size_t pos   = datapos + k*36;
 			char   *desc = (char*)(hdr->AS.Header+pos+1);
 			uint16_t typ = leu16p(hdr->AS.Header+pos+22);
 			char   *unit = (char*)(hdr->AS.Header+pos+25);
@@ -169,7 +169,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* file variable information (n=%i) 
 			   d*36		DS Variable information
 			*/
 			size_t p3 = H1LEN + H2LEN*hdr->NS + (n+d+2)*36 + off;
-
+			/***** file variable k *****/
 			switch (typ) {
 			case 0:
 			case 1: i = hdr->AS.Header[p3]; break;
@@ -182,9 +182,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* file variable information (n=%i) 
 if (VERBOSE_LEVEL>8) 	{
 			fprintf(stdout,"#%2i [%i:%i] <%s>",k,typ,off,desc);
 			if (typ<1) ;
-			else if (typ<5) fprintf(stdout,"[%d] ",i);
-			else if (typ<7) fprintf(stdout,"[%g] ",f);
-			else if (typ==7) fprintf(stdout,"<%s> ",hdr->AS.Header+p3+1);
+			else if (typ<5) fprintf(stdout,"[%d]",i);
+			else if (typ<7) fprintf(stdout,"[%g]",f);
+			else if (typ==7) fprintf(stdout,"[%s]",hdr->AS.Header+p3+1);
 			fprintf(stdout,"[%s]\n",unit);
 			}
 else if (VERBOSE_LEVEL>7)
@@ -242,16 +242,37 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"%s:%i sopen_cfs_read started: section %d po
 			datapos = DATAPOS[m];
 
 			for (k = 0; k < d; k++) {
-				size_t pos   = DATAPOS[m] + 30 + 24 * hdr->NS + k * 36;
+				/***** DS variable k information *****/
+				int i=-1; double f=NAN;
+				size_t pos = H1LEN + H2LEN*hdr->NS + (n+k+1)*36;
 				char   *desc = (char*)(hdr->AS.Header+pos+1);
 				uint16_t typ = leu16p(hdr->AS.Header+pos+22);
 				char   *unit = (char*)(hdr->AS.Header+pos+25);
 				uint16_t off = leu16p(hdr->AS.Header+pos+34);
 
-				//size_t p3 = H1LEN + H2LEN*hdr->NS + (n+d)*36 + off + 42;
-				size_t p3 = hdr->AS.Header + pos;// + 30 + 24 * hdr->NS + m * 36;
+				if (flag_FPulse && !strcmp(desc, "Spare")) continue;
 
-//if (VERBOSE_LEVEL>7) fprintf(stdout,"%s:%i sopen_cfs_read started: section %d/%d pos %u 0x%4x %d d<%s> u<%s>\n",__FILE__,__LINE__,(int)k,(int)m,(int)pos,(int)pos,off,desc,unit);
+				/***** data section variable k *****/
+				size_t p3   = DATAPOS[m] + 30 + 24 * hdr->NS + off;
+
+				switch (typ) {
+				case 0:
+				case 1: i = hdr->AS.Header[p3]; break;
+				case 2: i = lei16p(hdr->AS.Header+p3); break;
+				case 3: i = leu16p(hdr->AS.Header+p3); break;
+				case 4: i = lei32p(hdr->AS.Header+p3); break;
+				case 5: f = lef32p(hdr->AS.Header+p3); break;
+				case 6: f = lef64p(hdr->AS.Header+p3); break;
+				}
+
+if (VERBOSE_LEVEL>7) 		{
+				fprintf(stdout,"#%2i [%i:%i] <%s>",k,typ,off,desc);
+				if (typ<1) ;
+				else if (typ<5) fprintf(stdout,"[%d]",i);
+				else if (typ<7) fprintf(stdout,"[%g]",f);
+				else if (typ==7) fprintf(stdout,"[%s]",hdr->AS.Header+p3+1);
+				fprintf(stdout,"[%s]\n",unit);
+				}
 			}
 
 			if (!leu32p(hdr->AS.Header+datapos+8)) continue; 	// empty segment
