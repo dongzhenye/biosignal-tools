@@ -4199,7 +4199,7 @@ else if (!strncmp(MODE,"r",1)) {
 			hc->SPR     	= atol(strncpy(tmp, Header2 + 8*k + 216*hdr->NS, 8));
 			hc->GDFTYP  	= ((hdr->TYPE != BDF) ? 3 : 255+24);
 			hc->OnOff   	= 1;
-			hdr->SPR 	= lcm(hdr->SPR, hc->SPR);
+
 			hc->bi 		= hdr->AS.bpb;
 			hc->bi8     	= BitsPerBlock;
 			size_t nbits 	= GDFTYP_BITS[hc->GDFTYP]*(size_t)hc->SPR;
@@ -4246,6 +4246,10 @@ else if (!strncmp(MODE,"r",1)) {
 			if ((hdr->TYPE==BDF) && !strcmp(hc->Label,"Status")) {
 				hc->OnOff = 0;
 				StatusChannel = k+1;
+			}
+			if (hc->OnOff) {
+				// common sampling rate is based only on date channels but not annotation channels
+				hdr->SPR = lcm(hdr->SPR, hc->SPR);
 			}
 
 			if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 219] #%i/%i/%i\n",(int)k,hdr->NS,hdr->SPR);
