@@ -167,6 +167,9 @@
 # - WFDB/MIT-BIH http://www.physionet.org/physiotools/wfdb/lib/ecgcodes.h
 # - SCP-ECG http://www.centc251.org/TCmeet/doclist/TCdoc02/N02-015-prEN1064.pdf
 # - FEF/Vital/11073 p.83
+# IHSNE binary annotation segment file
+#   http://thew-project.org/THEWFileFormat.htm
+#   http://thew-project.org/papers/ishneAnn.pdf
 # Unification is desired
 #
 # see also 0x2000-0x22ff: 
