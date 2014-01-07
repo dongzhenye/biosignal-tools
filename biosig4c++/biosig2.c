@@ -369,6 +369,10 @@ const char* biosig_get_manufacturer_serial_number(HDRTYPE *hdr) {
 	if (hdr==NULL) return NULL;
 	return hdr->ID.Manufacturer.SerialNumber;
 }
+const char* biosig_get_application_specific_information(HDRTYPE *hdr) {
+	if (hdr==NULL) return NULL;
+	return hdr->AS.bci2000;
+}
 
 int biosig_set_patient_name(HDRTYPE *hdr, const char* name) {
 	if (hdr==NULL) return NULL;
@@ -411,6 +415,11 @@ int biosig_set_manufacturer_version(HDRTYPE *hdr, const char* rid) {
 int biosig_set_manufacturer_serial_number(HDRTYPE *hdr, const char* rid) {
 	if (hdr==NULL) return -1;
 	hdr->ID.Manufacturer.SerialNumber = rid;
+	return 0;
+}
+int biosig_set_application_specific_information(HDRTYPE *hdr, const char* appinfo) {
+	if (hdr==NULL) return -1;
+	hdr->AS.bci2000 = appinfo;
 	return 0;
 }
 

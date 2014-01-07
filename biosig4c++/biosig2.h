@@ -121,6 +121,7 @@ const char* biosig_get_manufacturer_name(HDRTYPE *hdr);
 const char* biosig_get_manufacturer_model(HDRTYPE *hdr);
 const char* biosig_get_manufacturer_version(HDRTYPE *hdr);
 const char* biosig_get_manufacturer_serial_number(HDRTYPE *hdr);
+const char* biosig_get_application_specific_information(HDRTYPE *hdr);
 
 int biosig_set_patient_name(HDRTYPE *hdr, const char* rid);
 int biosig_set_patient_id(HDRTYPE *hdr, const char* rid);
@@ -130,6 +131,7 @@ int biosig_set_manufacturer_name(HDRTYPE *hdr, const char* rid);
 int biosig_set_manufacturer_model(HDRTYPE *hdr, const char* rid);
 int biosig_set_manufacturer_version(HDRTYPE *hdr, const char* rid);
 int biosig_set_manufacturer_serial_number(HDRTYPE *hdr, const char* rid);
+int biosig_set_application_specific_information(HDRTYPE *hdr, const char* appinfo);
 
 double biosig_get_channel_samplerate(HDRTYPE *hdr, int chan);
 int biosig_set_channel_samplerate_and_samples_per_record(HDRTYPE *hdr, int chan, ssize_t spr, double fs);
