@@ -193,12 +193,15 @@ else if (VERBOSE_LEVEL>7)
 			}
 
 			if ((typ==7) && !strncmp(desc,"Script",6)) {
-				char *scriptline=hdr->AS.Header+p3+1;
-				int len2000 = (hdr->AS.bci2000==NULL ? 0 : strlen(hdr->AS.bci2000));
-				if (VERBOSE_LEVEL>3) fprintf(stdout,"%s\n",scriptline);
-				hdr->AS.bci2000=realloc(hdr->AS.bci2000, len2000 + strlen(scriptline)+2);
-				strcat(hdr->AS.bci2000,scriptline);
-				strcat(hdr->AS.bci2000,"\n");
+				char *scriptline=(char*)hdr->AS.Header+p3+1;
+				if (hdr->AS.bci2000==NULL) {
+					hdr->AS.bci2000=malloc(strlen(scriptline) + 3);
+					strcpy(hdr->AS.bci2000, scriptline);
+				}
+				else {
+					hdr->AS.bci2000=realloc(hdr->AS.bci2000, strlen(hdr->AS.bci2000) + strlen(scriptline) + 3);
+					strcat(hdr->AS.bci2000, scriptline);
+				}
 			}
 
 			if (k==0) {
