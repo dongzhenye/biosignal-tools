@@ -471,7 +471,7 @@ struct NomenclatureAnnotatedECG_t {
 	uint16_t part;
 	uint16_t code10;
 	uint32_t cf_code10;
-	char refid[];
+	const char *refid;
 } ATT_MSSTRUCT;
 
 extern const struct etd_t ETD [];
