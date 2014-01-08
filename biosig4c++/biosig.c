@@ -13928,9 +13928,14 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 		fprintf(fid,"\tStartOfRecording: (%.6f) %s",ldexp(hdr->T0,-32),asctime(T0));
 		fprintf(fid,"\tTimezone        : %+i min\n\n", hdr->tzmin);
 		if (hdr->AS.bci2000 != NULL) {
+		   if (VERBOSE < 4) {
 			size_t c = min(39,strcspn(hdr->AS.bci2000,"\xa\xd"));
 			strncpy(tmp, hdr->AS.bci2000, c); tmp[c]=0;
 			fprintf(fid,"BCI2000 [%i]\t\t: <%s...>\n",(int)strlen(hdr->AS.bci2000),tmp);
+		   }
+		   else {
+			fprintf(fid,"BCI2000 [%i]:\n%s\n",(int)strlen(hdr->AS.bci2000),hdr->AS.bci2000);
+		   }
 		}
 		fprintf(fid,"bpb=%i\n",hdr->AS.bpb);
 		fprintf(fid,"row-based=%i\n",hdr->FLAG.ROW_BASED_CHANNELS);
