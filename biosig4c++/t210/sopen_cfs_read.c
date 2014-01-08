@@ -194,6 +194,18 @@ else if (VERBOSE_LEVEL>7)
 
 			if ((typ==7) && !strncmp(desc,"Script",6)) {
 				char *scriptline=(char*)hdr->AS.Header+p3+1;
+				assert(hdr->AS.Header[p3]==strlen(scriptline));
+				assert(hdr->AS.Header[p3+1+hdr->AS.Header[p3]]==0);
+
+				// replace '\r' <CR> with '\n' <NEWLINE> in scriptline
+				while (*scriptline) {
+					switch (*scriptline) {
+					case '\r': *scriptline='\n';
+					}
+					scriptline++;
+				}
+
+				scriptline=(char*)hdr->AS.Header+p3+1;
 				if (hdr->AS.bci2000==NULL) {
 					hdr->AS.bci2000=malloc(strlen(scriptline) + 3);
 					strcpy(hdr->AS.bci2000, scriptline);
