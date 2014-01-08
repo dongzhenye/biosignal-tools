@@ -147,11 +147,16 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"Channel #%i: [%s](%i/%i) <%s>/<%s> ByteSpac
 		}
 		hdr->AS.bpb = bpb;
 
+
 		size_t datapos = H1LEN + H2LEN*hdr->NS;
 
-		/* file variable information */
-		// n*36 bytes
+		/* file variable information :
+		   will be extracted as application specific information
+		   // n*36 bytes
+                 */
 if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* file variable information (n=%i) *********\n", n);
+		hdr->AS.bci2000= realloc(hdr->AS.bci2000, 3);
+		hdr->AS.bci2000[0]='\0';
 		for (k = 0; k < n; k++) {
 			int i=-1; double f=NAN;
 			size_t pos   = datapos + k*36;
@@ -160,7 +165,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* file variable information (n=%i) 
 			char   *unit = (char*)(hdr->AS.Header+pos+25);
 			uint16_t off = leu16p(hdr->AS.Header+pos+34);
 
-			if (flag_FPulse && !strcmp(desc, "Spare")) continue;
+//			if (flag_FPulse && !strcmp(desc, "Spare")) continue;
 
 			/*
 			   H1LEN 	General Header
@@ -194,28 +199,29 @@ else if (VERBOSE_LEVEL>7)
 
 			if ((typ==7) && !strncmp(desc,"Script",6)) {
 				char *scriptline=(char*)hdr->AS.Header+p3+1;
-				assert(hdr->AS.Header[p3]==strlen(scriptline));
-				assert(hdr->AS.Header[p3+1+hdr->AS.Header[p3]]==0);
+				if (!strncmp(desc,"ScriptBlock",11)) {
+					// only the script block is extracted
+					assert(hdr->AS.Header[p3]==strlen(scriptline));
+					assert(hdr->AS.Header[p3+1+hdr->AS.Header[p3]]==0);
 
-				// replace '\r' <CR> with '\n' <NEWLINE> in scriptline
-				while (*scriptline) {
-					switch (*scriptline) {
-					case '\r': *scriptline='\n';
+					// replace '\r' <CR> with '\n' <NEWLINE> in scriptline
+					while (*scriptline) {
+						switch (*scriptline) {
+						case '\r': *scriptline='\n';
+						}
+						scriptline++;
 					}
-					scriptline++;
-				}
 
-				scriptline=(char*)hdr->AS.Header+p3+1;
-				if (hdr->AS.bci2000==NULL) {
-					hdr->AS.bci2000=malloc(strlen(scriptline) + 3);
-					strcpy(hdr->AS.bci2000, scriptline);
-				}
-				else {
-					hdr->AS.bci2000=realloc(hdr->AS.bci2000, strlen(hdr->AS.bci2000) + strlen(scriptline) + 3);
+					scriptline=(char*)hdr->AS.Header+p3+1;
+					hdr->AS.bci2000=realloc(hdr->AS.bci2000, strlen(hdr->AS.bci2000) + strlen(scriptline) + 1);
 					strcat(hdr->AS.bci2000, scriptline);
 				}
+				else if (!strncmp(desc,"Scriptline",10)) {
+					hdr->AS.bci2000=realloc(hdr->AS.bci2000, strlen(hdr->AS.bci2000) + strlen(scriptline) + 3);
+					strcat(hdr->AS.bci2000, scriptline);
+					strcat(hdr->AS.bci2000, "\n");
+				}
 			}
-
 			if (k==0) {
 				flag_FPulse = !strcmp(unit,"FPulse");
 			}
