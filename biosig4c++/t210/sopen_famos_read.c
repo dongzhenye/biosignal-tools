@@ -282,7 +282,7 @@ EXTERN_C void sopen_FAMOS_read(HDRTYPE* hdr) {
 
 				if (CHAN==0) 
 					hdr->SampleRate = Fs; 
-				else if (OnOff && (abs(hdr->SampleRate - Fs)>1e-9*Fs)) {
+				else if (OnOff && (fabs(hdr->SampleRate - Fs)>1e-9*Fs)) {
 					fprintf(stdout,"ERR2: %i %f %f\n",CHAN,hdr->SampleRate, Fs);
 //					biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "FAMOS: multiple sampling rates not supported");
 				} 
