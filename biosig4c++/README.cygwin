@@ -1,0 +1,16 @@
+BioSig/libbiosig can be install on cygwin, mostly without and specific issues. 
+If bindings (mexSLOAD, mexSSAVE, etc) for Octave 3.6.4 should compiled, 
+the file mex.h need to be patched with 
+    mex/cygwin-octave364.patch
+
+
+REQUIREMENTS
+	g++
+	gcc
+	gawk
+
+Compiling for Octave (make mex4o) requires also 
+	octave
+	gnuplot
+	patch
+

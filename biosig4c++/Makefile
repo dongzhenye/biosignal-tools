@@ -181,6 +181,12 @@ endif
 ifneq (,$(findstring WITH_MATIO, $(DEFINES)))
   LDLIBS     += -lmatio
 endif
+ifneq (,$(findstring stack-protector, $(CFLAGS)))
+ifneq (,$(findstring CYGWIN, $(shell uname)))
+  LDLIBS     += -lssp
+endif 
+endif
+
 LIBS         += $(LDLIBS)
 
 DELETE        = rm -f

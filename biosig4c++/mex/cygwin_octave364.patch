@@ -1,0 +1,20 @@
+--- /usr/include/octave-3.6.4/octave/mex.h.orig	2014-01-10 12:17:09.668140800 +0100
++++ /usr/include/octave-3.6.4/octave/mex.h	2014-01-10 12:18:07.926966100 +0100
+@@ -64,6 +64,8 @@
+ 
+ #define mxMAXNAME 64
+ 
++#include "mexproto.h"
++
+ #if defined (__cplusplus)
+ extern "C" {
+ #endif
+@@ -74,8 +76,6 @@
+ void mexFunction (int nlhs, mxArray* plhs[], int nrhs, const mxArray *prhs[]);
+ #endif
+ 
+-#include "mexproto.h"
+-
+ /* V4 floating point routines renamed in V5.  */
+ #define mexIsNaN mxIsNaN
+ #define mexIsFinite mxIsFinite
