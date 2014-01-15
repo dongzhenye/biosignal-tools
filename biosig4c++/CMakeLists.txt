@@ -23,6 +23,12 @@ add_custom_target (units
   DEPENDS units.awk extern/units.csv
 )
 
+add_custom_target (annexb
+  COMMAND ${GAWK} -f annotatedECG.awk extern/11073-10102-AnnexB.txt > "11073-10102-AnnexB.i"
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  DEPENDS annotatedECG.awk extern/11073-10102-AnnexB.txt
+)
+
 set (headers
   t210/abfheadr.h
   XMLParser/tinyxml.h
@@ -80,8 +86,8 @@ if (APPLE)
      )
 endif ()
 
-add_dependencies (biosigstatic eventcodes units)
-add_dependencies (biosigshared eventcodes units)
+add_dependencies (biosigstatic eventcodes units annexb)
+add_dependencies (biosigshared eventcodes units annexb)
 
 if (USE_ZLIB)
   add_definitions (-D=WITH_ZLIB)
