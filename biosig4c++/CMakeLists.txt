@@ -67,6 +67,14 @@ if (WIN32)
   )
 endif ()
 
+if (APPLE)
+  list (APPEND sources
+    win32/getdelim.c
+    win32/getline.c
+    win32/getlogin.c
+  )
+endif ()
+
 # Cannot have same name for static and shared library, 
 # so we'll correct that later on
 add_library (biosigstatic STATIC
