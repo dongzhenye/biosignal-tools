@@ -30,10 +30,6 @@ depends_build-append \
                     port:gawk
 depends_lib         port:SuiteSparse \
                     port:zlib
-platform darwin 10 {
-    depends_lib-append \
-                    port:gettext
-}
 
 # SuiteSparse support is off until the patch gets released
 configure.args      -DUSE_SUITESPARSE=ON \
@@ -42,7 +38,3 @@ configure.args      -DUSE_SUITESPARSE=ON \
                     -DCMAKE_CXX_FLAGS=-DMACPORTS
 configure.ldflags-append \
                     -lz -lcholmod
-platform darwin 10 {
-    configure.ldflags-append \
-                    -lgettext
-}
