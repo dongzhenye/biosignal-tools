@@ -7,7 +7,7 @@ option (USE_SUITESPARSE "Add support for automatic re-referencing." OFF)
 # Version number
 set (libbiosig_VERSION_MAJOR 1)
 set (libbiosig_VERSION_MINOR 5)
-set (libbiosig_VERSION_PATCH 0)
+set (libbiosig_VERSION_PATCH 10)
 
 find_program (GAWK NAMES gawk)
 
@@ -54,9 +54,6 @@ set (sources
   XMLParser/tinyxml.cpp
   XMLParser/tinyxmlerror.cpp
   XMLParser/tinyxmlparser.cpp 
-  win32/getdelim.c
-  win32/getline.c
-  win32/getlogin.c
   biosig.c
   gdftime.c
   physicalunits.c
@@ -64,9 +61,9 @@ set (sources
 
 if (WIN32)
   list (APPEND sources
-    # win32/getdelim.c
-    # win32/getline.c
-    # win32/getlogin.c
+    win32/getdelim.c
+    win32/getline.c
+    win32/getlogin.c
   )
 endif ()
 
