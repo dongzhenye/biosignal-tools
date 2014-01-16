@@ -6,6 +6,7 @@ PortGroup           cmake 1.0
 
 name                libbiosig
 version             1.5.10
+revision            1
 categories          science
 platforms           darwin
 license             GPL-3
@@ -22,14 +23,14 @@ master_sites.mirror_subdir \
                     /BioSig%20for%20C_C++/src
 patch_sites         http://www.stimfit.org/
 distname            biosig4c++-${version}.src
-patchfiles          biosig-macports.patch
+patchfiles          biosig-macports-v2.patch
 worksrcdir          biosig4c++-${version}
 checksums           ${distname}${extract.suffix} \
                         rmd160  2cd5b3c431fe8bd2cc3128fee3c378097f25fcd0 \
                         sha256  53472928c0ae409de6b4e9a6006f33f3bcdfb72462b1661bf8f42a7eef98877c \
-                    biosig-macports.patch \
-                        rmd160  b0ee44bc532a001b2cece62ed0cef3d0d0c81f3e \
-                        sha256  d8cd7befe06d16e66e5979e5ea947a18d7737005a4a9477599b9816b3ce68435
+                    biosig-macports-v2.patch \
+                        rmd160  a64fdc4954dd9f56b39c5eeb783b8771ffb830c4 \
+                        sha256  bca9d27bf6167f8ec6499cca65c319b7bf701eb8325f6049155b37e13af79828
 
 depends_build       port:gawk
 depends_lib         port:SuiteSparse \
