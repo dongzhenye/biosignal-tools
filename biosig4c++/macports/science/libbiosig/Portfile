@@ -6,7 +6,6 @@ PortGroup           cmake 1.0
 
 name                libbiosig
 version             1.5.10
-revision            1
 categories          science
 platforms           darwin
 license             GPL-3
@@ -21,20 +20,20 @@ homepage            http://biosig.sourceforge.net/index.html
 master_sites        sourceforge:biosig
 master_sites.mirror_subdir \
                     /BioSig%20for%20C_C++/src
-patch_sites         http://www.stimfit.org/
 distname            biosig4c++-${version}.src
-patchfiles          biosig-macports-v2.patch
+patchfiles          patch-CMakeLists.txt.diff
 worksrcdir          biosig4c++-${version}
-checksums           ${distname}${extract.suffix} \
-                        rmd160  2cd5b3c431fe8bd2cc3128fee3c378097f25fcd0 \
-                        sha256  53472928c0ae409de6b4e9a6006f33f3bcdfb72462b1661bf8f42a7eef98877c \
-                    biosig-macports-v2.patch \
-                        rmd160  a64fdc4954dd9f56b39c5eeb783b8771ffb830c4 \
-                        sha256  bca9d27bf6167f8ec6499cca65c319b7bf701eb8325f6049155b37e13af79828
+checksums           rmd160  2cd5b3c431fe8bd2cc3128fee3c378097f25fcd0 \
+                    sha256  53472928c0ae409de6b4e9a6006f33f3bcdfb72462b1661bf8f42a7eef98877c \
 
-depends_build       port:gawk
+depends_build-append \
+                    port:gawk
 depends_lib         port:SuiteSparse \
                     port:zlib
+platform darwin 10 {
+    depends_lib-append \
+                    port:gettext
+}
 
 # SuiteSparse support is off until the patch gets released
 configure.args      -DUSE_SUITESPARSE=ON \
@@ -43,3 +42,7 @@ configure.args      -DUSE_SUITESPARSE=ON \
                     -DCMAKE_CXX_FLAGS=-DMACPORTS
 configure.ldflags-append \
                     -lz -lcholmod
+platform darwin 10 {
+    configure.ldflags-append \
+                    -lgettext
+}
