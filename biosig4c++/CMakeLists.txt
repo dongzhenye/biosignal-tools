@@ -54,6 +54,9 @@ set (sources
   XMLParser/tinyxml.cpp
   XMLParser/tinyxmlerror.cpp
   XMLParser/tinyxmlparser.cpp 
+  win32/getdelim.c
+  win32/getline.c
+  win32/getlogin.c
   biosig.c
   gdftime.c
   physicalunits.c
@@ -61,9 +64,9 @@ set (sources
 
 if (WIN32)
   list (APPEND sources
-    win32/getdelim.c
-    win32/getline.c
-    win32/getlogin.c
+    # win32/getdelim.c
+    # win32/getline.c
+    # win32/getlogin.c
   )
 endif ()
 
