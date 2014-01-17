@@ -16,9 +16,11 @@
 
 /* Written by Simon Josefsson. */
 
+#if !defined(__linux__) && !defined(__OpenBSD__) && !(defined(__APPLE__) && __DARWIN_C_LEVEL >= 200809L)
+
 #include <stdio.h>
-#ifdef MACPORTS
-#include <unistd.h>
+#if defined(__APPLE__) && __DARWIN_C_LEVEL < 200809L
+    #include <unistd.h>
 #endif
 
 ssize_t
@@ -26,3 +28,4 @@ getline (char **lineptr, size_t *n, FILE *stream)
 {
   return getdelim (lineptr, n, '\n', stream);
 }
+#endif

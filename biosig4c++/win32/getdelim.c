@@ -19,6 +19,8 @@
 
 /* Don't use __attribute__ __nonnull__ in this compilation unit.  Otherwise gcc
    optimizes away the lineptr == NULL || n == NULL || fp == NULL tests below.  */
+#if !defined(__linux__) && !defined(__OpenBSD__) && !(defined(__APPLE__) && __DARWIN_C_LEVEL >= 200809L)
+
 #define _GL_ARG_NONNULL(params)
 
 #include <stdio.h>
@@ -27,8 +29,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <errno.h>
-#ifdef MACPORTS
-#include <unistd.h>
+#if defined(__APPLE__) && __DARWIN_C_LEVEL < 200809L
+    #include <unistd.h>
 #endif
 
 #ifndef SSIZE_MAX
@@ -134,3 +136,4 @@ getdelim (char **lineptr, size_t *n, int delimiter, FILE *fp)
 
   return result;
 }
+#endif

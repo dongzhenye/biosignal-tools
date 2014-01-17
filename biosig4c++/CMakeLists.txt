@@ -71,7 +71,6 @@ if (APPLE)
   list (APPEND sources
     win32/getdelim.c
     win32/getline.c
-    win32/getlogin.c
   )
 endif ()
 
