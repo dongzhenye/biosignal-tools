@@ -29,6 +29,10 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <iconv.h>
+#include <errno.h>
+
+
 #include "../biosig-dev.h"
 
 #include "structures.h"
@@ -314,6 +318,81 @@ void deallocEN1064(en1064_t en1064) {
 	en1064.Section4.beat = NULL;
 }
 
+#if _ICONV_H
+	#include <iconv.h>
+
+/*
+	decode_scp_text converts SCP text strings into UTF-8 strings
+*/
+int decode_scp_text(uint8_t LanguageSupportCode, size_t *inbytesleft, char **input, size_t *outbytesleft, char **output) {
+
+	if (output==NULL) return -1;
+	if (input==NULL) return -1;
+
+	iconv_t cd;
+	if ((LanguageSupportCode & 0x01) == 0)
+		cd = iconv_open ("UTF-8", "ASCII");
+
+	else if ((LanguageSupportCode & 0x03) == 1)
+		cd = iconv_open ("UTF-8", "ISO8859-1");
+
+	else if (LanguageSupportCode == 0x03)
+		cd = iconv_open ("UTF-8", "ISO8859-2");
+
+	else if (LanguageSupportCode == 0x0b)
+		cd = iconv_open ("UTF-8", "ISO8859-4");
+
+	else if (LanguageSupportCode == 0x13)
+		cd = iconv_open ("UTF-8", "ISO8859-5");
+
+	else if (LanguageSupportCode == 0x1b)
+		cd = iconv_open ("UTF-8", "ISO8859-6");
+
+	else if (LanguageSupportCode == 0x23)
+		cd = iconv_open ("UTF-8", "ISO8859-7");
+
+	else if (LanguageSupportCode == 0x2b)
+		cd = iconv_open ("UTF-8", "ISO8859-8");
+
+	else if (LanguageSupportCode == 0x33)
+		cd = iconv_open ("UTF-8", "ISO8859-11");
+
+	else if (LanguageSupportCode == 0x3b)
+		cd = iconv_open ("UTF-8", "ISO8859-15");
+
+	else if (LanguageSupportCode == 0x07)
+		cd = iconv_open ("UTF-8", "ISO-10646");
+
+	else if (LanguageSupportCode == 0x0f)
+		cd = iconv_open ("UTF-8", "EUC-JISX0213");
+	else if (LanguageSupportCode == 0x17)
+		cd = iconv_open ("UTF-8", "EUC-JISX0213");
+	else if (LanguageSupportCode == 0x1f)
+		cd = iconv_open ("UTF-8", "EUC-JISX0213");
+
+	else if (LanguageSupportCode == 0x27)
+		cd = iconv_open ("UTF-8", "GB2312");
+
+	else if (LanguageSupportCode == 0x2F)
+		cd = iconv_open ("UTF-8", "EUC-KR");
+
+	else
+		return -1;
+
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: input=<%s>\n",__FILE__,__LINE__,*input);
+
+	iconv(cd, input, inbytesleft, output, outbytesleft);
+	int errsv = errno;
+
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: output=<%s>\n",__FILE__,__LINE__,*output);
+
+	return (iconv_close(cd) || errsv);
+}
+
+#endif
+
+
+
 EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 /*
 	this function is a stub or placeholder and need to be defined in order to be useful. 
@@ -370,6 +449,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 	aECG->Section1.Tag14.VERSION = 0; // acquiring.protocol_revision_number
 	aECG->Section1.Tag15.VERSION = 0; // analyzing.protocol_revision_number
+	aECG->Section1.Tag14.LANG_SUPP_CODE = 0;
 	aECG->FLAG.HUFFMAN   = 0;
 	aECG->FLAG.DIFF      = 0;
 	aECG->FLAG.REF_BEAT  = 0;
@@ -535,11 +615,13 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			break;
 				}
 				if (tag==0) {
+					// TODO: convert to UTF8
 					if (!hdr->FLAG.ANONYMOUS)
 						strncpy(hdr->Patient.Name, (char*)(PtrCurSect+curSectPos),min(len1,MAX_LENGTH_NAME));
 				}
 				else if (tag==1) {
 //					hdr->Patient.FirstName = (char*)(PtrCurSect+curSectPos);
+					// TODO: convert to UTF8
 				}
 				else if (tag==2) {
 					if (len1 > MAX_LENGTH_PID) {
@@ -547,6 +629,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 						fprintf(stdout,"Warning SCP(read): length of Patient Id (section1 tag2) exceeds %i>%i\n",len1,MAX_LENGTH_PID); 
 #endif
 					}
+					// TODO: convert to UTF8
 					strncpy(hdr->Patient.Id,(char*)(PtrCurSect+curSectPos),min(len1,MAX_LENGTH_PID));
 					hdr->Patient.Id[MAX_LENGTH_PID] = 0;
 					
@@ -554,6 +637,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 						hdr->Patient.Id[0] = 0;
 				}
 				else if (tag==3) {
+					// TODO: convert to UTF8
 				}
 				else if (tag==4) {
 				}
@@ -581,6 +665,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				else if (tag==9) {
 				}
 				else if (tag==10) {
+					// TODO: convert to UTF8
 				}
 				else if (tag==11) {
 					aECG->systolicBloodPressure  = leu16p(PtrCurSect+curSectPos);
@@ -589,9 +674,12 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					aECG->diastolicBloodPressure = leu16p(PtrCurSect+curSectPos);
 				}
 				else if (tag==13) {
+					// TODO: convert to UTF8
 					aECG->Diagnosis = (char*)(PtrCurSect+curSectPos);
 				}
 				else if (tag==14) {
+					/* Acquiring Device ID Number */
+					// TODO: convert to UTF8
 #ifndef ANDROID
 					if (len1>85)
 						fprintf(stderr,"Warning SCP(r): length of tag14 %i>40\n",len1);
@@ -649,13 +737,26 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					tmp += strlen((char*)(PtrCurSect+curSectPos+36+tmp+1)); 
 					aECG->Section1.Tag14.ACQ_DEV_MANUF  = (char*)(PtrCurSect+curSectPos+36+tmp+1);	// tag 14, byte 38 (ACQ_DEV_MANUF has to be "Manufacturer")
 					
+
+					if (aECG->Section1.Tag14.LANG_SUPP_CODE & 0x01) {
+#if _ICONV_H
+						fprintf(stdout, "Warning SCP-ECG: decoding of text strings not ready yet");
+#else
+						biosigERROR(hdr, B4C_CHAR_ENCODING_UNSUPPORTED, "SCP-SCP: Non-ASCII text string language - conversion not supported");
+#endif
+					}
+
 					
 				}
 				else if (tag==15) {
+					/* Analyzing Device ID Number */
+					// TODO: convert to UTF8
 					//memcpy(hdr->aECG->Section1.tag15,PtrCurSect+curSectPos,40);
 					aECG->Section1.Tag15.VERSION     = *(PtrCurSect+curSectPos+14);
 				}
 				else if (tag==16) {
+					/* Acquiring Institution Description */
+					// TODO: convert to UTF8
 					// hdr->ID.Hospital = strndup(PtrCurSect+curSectPos+14,len1);
 					hdr->ID.Hospital = malloc(len1);
 					if (hdr->ID.Hospital) {
@@ -664,23 +765,34 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					}
 				}
 				else if (tag==17) {
+					/* Analyzing Institution Description */
+					// TODO: convert to UTF8
 				}
 				else if (tag==18) {
+					/* Acquiring Institution Description */
+					// TODO: convert to UTF8
 				}
 				else if (tag==19) {
+					/* Analyzing Institution Description */
+					// TODO: convert to UTF8
 				}
 				else if (tag==20) {
+					// TODO: convert to UTF8
 					aECG->ReferringPhysician = (char*)(PtrCurSect+curSectPos);
 				}
 				else if (tag==21) {
+					// TODO: convert to UTF8
 					aECG->MedicationDrugs = (char*)(PtrCurSect+curSectPos);
 				}
 				else if (tag==22) {
+					// TODO: convert to UTF8
 					hdr->ID.Technician = (char*)realloc(hdr->ID.Technician,len1+1);
 					memcpy(hdr->ID.Technician,(char*)(PtrCurSect+curSectPos),len1);
 					hdr->ID.Technician[len1] = 0;
 				}
 				else if (tag==23) {
+					/* Room Description */
+					// TODO: convert to UTF8
 				}
 				else if (tag==24) {
 					aECG->EmergencyLevel = *(PtrCurSect+curSectPos);
@@ -713,10 +825,16 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 						Notch = 50.0; 	// notch 50Hz
 				}
 				else if (tag==30) {
+					/* Free Text Field */
+					// TODO: convert to UTF8
 				}
 				else if (tag==31) {
+					/* ECG Sequence Number */
+					// TODO: convert to UTF8
 				}
 				else if (tag==32) {
+					/* History Diagnostic Codes */
+					// TODO: convert to UTF8
 					if (PtrCurSect[curSectPos]==0) {
 						unsigned k=1;
 						for (; k < len1; k++) {
@@ -732,8 +850,12 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					}
 				}
 				else if (tag==33) {
+					/* Electrode Configuration Code */
+					// TODO: convert to UTF8
 				}
 				else if (tag==34) {
+					/* DateTimeZone */
+					// TODO: convert to UTF8
 					int16_t tzmin = lei16p(PtrCurSect+curSectPos);
 					if (tzmin != 0x7fff) {
 						if (abs(tzmin)<=780)
@@ -742,6 +864,10 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 							fprintf(stderr,"Warning SOPEN(SCP-READ): invalid time zone (Section 1, Tag34)\n");
 					}
 					//fprintf(stdout,"SOPEN(SCP-READ): tzmin = %i %x \n",tzmin,tzmin);
+				}
+				else if (tag==35) {
+					/* Free Text Medical History */
+					// TODO: convert to UTF8
 				}
 				else {
 				}
@@ -1162,6 +1288,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 		/**** SECTION 8 ****/
 		else if (curSect==8)  {
+			// TODO: convert to UTF8
 #if (BIOSIG_VERSION >= 10500)
 			hdr->SCP.Section8Length = leu32p(PtrCurSect+4)-curSectPos;
 			hdr->SCP.Section8 = PtrCurSect+curSectPos;
@@ -1187,6 +1314,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 		/**** SECTION 9 ****/
 		else if (curSect==9)  {
+			// TODO: convert to UTF8
 #if (BIOSIG_VERSION >= 10500)
 			hdr->SCP.Section9Length = leu32p(PtrCurSect+4)-curSectPos;
 			hdr->SCP.Section9 = PtrCurSect+curSectPos;
@@ -1206,6 +1334,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 		/**** SECTION 11 ****/
 		else if (curSect==11)  {
+			// TODO: convert to UTF8
  			if(len<curSectPos+9) continue; //Something is very wrong
 #if (BIOSIG_VERSION >= 10500)
 			/*
