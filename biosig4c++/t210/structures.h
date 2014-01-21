@@ -1,5 +1,6 @@
 /*
 ---------------------------------------------------------------------------
+Copyright (C) 2014  Alois Schloegl
 Copyright (C) 2003  Eugenio Cervesato & Giorgio De Odorico.
 Developed at the Associazione per la Ricerca in Cardiologia - Pordenone - Italy.
 
@@ -24,6 +25,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define __STRUCTURES_H__
 #include <time.h>
 
+/*
+// obsolete definition
 #define int_S	int8_t
 #define int_M	int16_t
 #define int_L	int32_t
@@ -33,6 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define dec_S	float
 #define dec_M	double
 #define dec_L	long double
+ */
 #define str	char
 
 #define bool char
@@ -43,52 +47,52 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 struct alfabetic
 {
-	U_int_M number;
+	uint16_t number;
 	const char *sentence;
 };
 
 struct numeric
 {
-	U_int_M value;
-	U_int_S unit;
-} ;
+	uint16_t value;
+	uint8_t unit;
+};
 
 struct section_header
 {
-	U_int_M CRC;
-	U_int_M ID;
-	U_int_L length;
-	U_int_S version;
-	U_int_S protocol_version;
+	uint16_t CRC;
+	uint16_t ID;
+	uint32_t length;
+	uint8_t version;
+	uint8_t protocol_version;
 	char *word;
 };
 
 struct file_header
 {
-	U_int_M CRC;
-	U_int_L length;
+	uint16_t CRC;
+	uint32_t length;
 };
 
 struct pointer_section
 {
-	U_int_L index;
-	U_int_M ID;
-	U_int_L length;
+	uint32_t index;
+	uint16_t ID;
+	uint32_t length;
 };
 
 struct device_info
 {
-	U_int_M institution_number;
-	U_int_M department_number;
-	U_int_M ID;
-	U_int_S type;
-	U_int_S manifacturer;
+	uint16_t institution_number;
+	uint16_t department_number;
+	uint16_t ID;
+	uint8_t type;
+	uint8_t manifacturer;
 	char 	*model_description;
-	U_int_S protocol_revision_number;
-	U_int_S category;
-	U_int_S language;
-	U_int_S capability[4];
-	U_int_S AC;
+	uint8_t protocol_revision_number;
+	uint8_t category;
+	uint8_t language;
+	uint8_t capability[4];
+	uint8_t AC;
 	char	*analysing_program_revision_number;
 	char	*serial_number_device;
 	char	*device_system_software;
@@ -98,16 +102,16 @@ struct device_info
 
 struct info_drug
 {
-	U_int_S table;
-	U_int_S classes;
-	U_int_S drug_code;
-	U_int_M length; 
+	uint8_t table;
+	uint8_t classes;
+	uint8_t drug_code;
+	uint16_t length;
 };	
 
 struct Time_Zone
 {
-	int_M offset;
-	U_int_M index;
+	int16_t offset;
+	uint16_t index;
 	const char *description;
 };
 
@@ -121,19 +125,19 @@ struct demographic
         time_t   date_birth2;    // by E.C. feb 2006
 	struct numeric  height;
 	struct numeric  weight;
-	U_int_S  sex;
-	U_int_S  race;
-	U_int_M  systolic_pressure;
-	U_int_M  diastolic_pressure;
+	uint8_t  sex;
+	uint8_t  race;
+	uint16_t  systolic_pressure;
+	uint16_t  diastolic_pressure;
 };
 
 struct clinic
 {
-	U_int_M	number_drug;
+	uint16_t	number_drug;
 	struct info_drug	*drug;
 	char		*text_drug;
 
-	U_int_M	number_diagnose;
+	uint16_t	number_diagnose;
 	struct numeric	*diagnose;
 	char		*text_diagnose;
 
@@ -141,14 +145,14 @@ struct clinic
 	char 		*latest_confirming_physician;
 	char 		*technician_description;
 
-	U_int_M	number_text;
+	uint16_t	number_text;
 	struct numeric	*free_text;
 	char		*text_free_text;
 
-	U_int_M	number_hystory;
+	uint16_t	number_hystory;
 	struct numeric	*medical_hystory;
 
-	U_int_M	number_free_hystory;
+	uint16_t	number_free_hystory;
 	struct numeric	*free_medical_hystory;
 	char		*text_free_medical_hystory;
 };
@@ -162,16 +166,16 @@ struct descriptive
 	char 		*acquiring_department;
 	char 		*analyzing_department;
 	char 		*room;
-	U_int_S 	stat_code;
+	uint8_t 	stat_code;
 };
 
 struct device
 {
         time_t    date_acquisition2;       // by E.C. feb 2006
         time_t    time_acquisition2;       // by E.C. feb 2006
-	U_int_M   baseline_filter;
-	U_int_M   lowpass_filter;
-	U_int_S   other_filter[4];
+	uint16_t   baseline_filter;
+	uint16_t   lowpass_filter;
+	uint8_t   other_filter[4];
 	char 	  *sequence_number;
 	struct numeric   electrode_configuration;
 	struct Time_Zone TZ;
@@ -179,161 +183,161 @@ struct device
 
 struct table_H
 {
-	U_int_S bit_prefix;
-	U_int_S bit_code;
-	U_int_S TMS;
-	int_M	 base_value;
-	U_int_L base_code;
+	uint8_t bit_prefix;
+	uint8_t bit_code;
+	uint8_t TMS;
+	int16_t	 base_value;
+	uint32_t base_code;
 };
 
 struct f_lead
 {
-	U_int_S number;
+	uint8_t number;
 	bool 	 subtraction;
 	bool 	 all_simultaneously;
-	U_int_S number_simultaneously;
+	uint8_t number_simultaneously;
 };
 
 struct lead
 {
-	U_int_S ID;
-	U_int_L start;
-	U_int_L end;
+	uint8_t ID;
+	uint32_t start;
+	uint32_t end;
 };
 
 struct Subtraction_Zone
 {
-	U_int_M beat_type;
-	U_int_L SB;
-	U_int_L fc;
-	U_int_L SE;
+	uint16_t beat_type;
+	uint32_t SB;
+	uint32_t fc;
+	uint32_t SE;
 };
 
 struct Protected_Area
 {
-	U_int_L QB;
-	U_int_L QE;
+	uint32_t QB;
+	uint32_t QE;
 };
 
 struct f_BdR0
 {
-	U_int_M length;
-	U_int_M fcM;
-	U_int_M AVM;
-	U_int_M STM;
-	U_int_M number_samples;
-	U_int_S encoding;
+	uint16_t length;
+	uint16_t fcM;
+	uint16_t AVM;
+	uint16_t STM;
+	uint16_t number_samples;
+	uint8_t encoding;
 };
 
 struct f_Res
 {
-	U_int_M AVM;
-	U_int_M STM;
-	U_int_M number;
-	U_int_M number_samples;
-	U_int_S encoding;
+	uint16_t AVM;
+	uint16_t STM;
+	uint16_t number;
+	uint16_t number_samples;
+	uint8_t encoding;
 	bool bimodal;
-	U_int_S decimation_factor;
+	uint8_t decimation_factor;
 };
 
 struct spike
 {
-	U_int_M time;
-	int_M amplitude;
-	U_int_S type;
-	U_int_S source;
-	U_int_S index;
-	U_int_M pulse_width;
+	uint16_t time;
+	int16_t amplitude;
+	uint8_t type;
+	uint8_t source;
+	uint8_t index;
+	uint16_t pulse_width;
 };
 
 struct global_measurement
 {
-	U_int_S number;
-	U_int_M number_QRS;
-	U_int_S number_spike;
-	U_int_M average_RR;
-	U_int_M average_PP;
-	U_int_M ventricular_rate;
-	U_int_M atrial_rate;
-	U_int_M QT_corrected;
-	U_int_S formula_type;
-	U_int_M number_tag;
+	uint8_t number;
+	uint16_t number_QRS;
+	uint8_t number_spike;
+	uint16_t average_RR;
+	uint16_t average_PP;
+	uint16_t ventricular_rate;
+	uint16_t atrial_rate;
+	uint16_t QT_corrected;
+	uint8_t formula_type;
+	uint16_t number_tag;
 };
 
 struct additional_measurement
 {
-	U_int_S ID;
-	U_int_S byte[5];
+	uint8_t ID;
+	uint8_t byte[5];
 };
 
 struct BdR_measurement
 {
-	U_int_M P_onset;
-	U_int_M P_offset;
-	U_int_M QRS_onset;
-	U_int_M QRS_offset;
-	U_int_M T_offset;
-	int_M P_axis;
-	int_M QRS_axis;
-	int_M T_axis;
+	uint16_t P_onset;
+	uint16_t P_offset;
+	uint16_t QRS_onset;
+	uint16_t QRS_offset;
+	uint16_t T_offset;
+	int16_t P_axis;
+	int16_t QRS_axis;
+	int16_t T_axis;
 };
 
 struct info
 {
-	U_int_S type;
+	uint8_t type;
 	char *date;
 	char *time;
-	U_int_S number;
+	uint8_t number;
 };
 
 struct header_lead_measurement
 {
-	U_int_M number_lead;
-	U_int_M number_lead_measurement;
+	uint16_t number_lead;
+	uint16_t number_lead_measurement;
 };
 
 struct lead_measurement_block
 {
-	U_int_M ID;
-	int_M P_duration;
-	int_M PR_interval;
-	int_M QRS_duration;
-	int_M QT_interval;
-	int_M Q_duration;
-	int_M R_duration;
-	int_M S_duration;
-	int_M R1_duration;
-	int_M S1_duration;
-	int_M Q_amplitude;
-	int_M R_amplitude;
-	int_M S_amplitude;
-	int_M R1_amplitude;
-	int_M S1_amplitude;
-	int_M J_point_amplitude;
-	int_M Pp_amplitude;
-	int_M Pm_amplitude;
-	int_M Tp_amplitude;
-	int_M Tm_amplitude;
-	int_M ST_slope;
-	int_M P_morphology;
-	int_M T_morphology;
-	int_M iso_electric_segment_onset_QRS;
-	int_M iso_electric_segment_offset_QRS;
-	int_M intrinsicoid_deflection;
-	U_int_M quality_recording[8];
-	int_M ST_amplitude_Jplus20;
-	int_M ST_amplitude_Jplus60;
-	int_M ST_amplitude_Jplus80;
-	int_M ST_amplitude_JplusRR16;
-	int_M ST_amplitude_JplusRR8;
+	uint16_t ID;
+	int16_t P_duration;
+	int16_t PR_interval;
+	int16_t QRS_duration;
+	int16_t QT_interval;
+	int16_t Q_duration;
+	int16_t R_duration;
+	int16_t S_duration;
+	int16_t R1_duration;
+	int16_t S1_duration;
+	int16_t Q_amplitude;
+	int16_t R_amplitude;
+	int16_t S_amplitude;
+	int16_t R1_amplitude;
+	int16_t S1_amplitude;
+	int16_t J_point_amplitude;
+	int16_t Pp_amplitude;
+	int16_t Pm_amplitude;
+	int16_t Tp_amplitude;
+	int16_t Tm_amplitude;
+	int16_t ST_slope;
+	int16_t P_morphology;
+	int16_t T_morphology;
+	int16_t iso_electric_segment_onset_QRS;
+	int16_t iso_electric_segment_offset_QRS;
+	int16_t intrinsicoid_deflection;
+	uint16_t quality_recording[8];
+	int16_t ST_amplitude_Jplus20;
+	int16_t ST_amplitude_Jplus60;
+	int16_t ST_amplitude_Jplus80;
+	int16_t ST_amplitude_JplusRR16;
+	int16_t ST_amplitude_JplusRR8;
 };
 
 struct statement_coded
 {
-	U_int_S sequence_number;
-	U_int_M length;
-	U_int_S type;
-	U_int_M number_field;
+	uint8_t sequence_number;
+	uint16_t length;
+	uint8_t type;
+	uint16_t number_field;
 };
 
 //_____________________________________
@@ -342,7 +346,7 @@ struct statement_coded
 struct DATA_DECODE
 {
 	struct table_H *t_Huffman;
-	U_int_M *flag_Huffman;
+	uint16_t *flag_Huffman;
 
 	struct lead *data_lead;
 	struct f_lead flag_lead;
@@ -351,16 +355,16 @@ struct DATA_DECODE
 	struct Subtraction_Zone *data_subtraction;
 
 	struct f_BdR0 flag_BdR0;
-	U_int_M *length_BdR0;
-	U_int_S *samples_BdR0;
-	int_L *Median;
+	uint16_t *length_BdR0;
+	uint8_t *samples_BdR0;
+	int32_t *Median;
 
 	struct f_Res flag_Res;
-	U_int_M *length_Res;
-	U_int_S *samples_Res;
-	int_L *Residual;
+	uint16_t *length_Res;
+	uint8_t *samples_Res;
+	int32_t *Residual;
 
-	int_L *Reconstructed;
+	int32_t *Reconstructed;
 };
 
 struct TREE_NODE
@@ -368,7 +372,7 @@ struct TREE_NODE
 {
 	struct TREE_NODE *next_0;
 	struct TREE_NODE *next_1;
-	int_M row;
+	int16_t row;
 };
 
 //_____________________________________
@@ -378,7 +382,7 @@ struct DATA_RECORD
 {
 	struct global_measurement data_global;
 	struct spike *data_spike;
-	U_int_S *type_BdR;
+	uint8_t *type_BdR;
 	struct BdR_measurement *data_BdR;
 	struct additional_measurement *data_additional;
 
