@@ -76,7 +76,7 @@ struct file_header
 struct pointer_section
 {
 	uint32_t index;
-	uint16_t ID;
+	 int16_t ID;
 	uint32_t length;
 };
 
