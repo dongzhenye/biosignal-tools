@@ -319,8 +319,6 @@ void deallocEN1064(en1064_t en1064) {
 }
 
 #if _ICONV_H
-	#include <iconv.h>
-
 /*
 	decode_scp_text converts SCP text strings into UTF-8 strings
 */
@@ -363,18 +361,19 @@ int decode_scp_text(uint8_t LanguageSupportCode, size_t *inbytesleft, char **inp
 	else if (LanguageSupportCode == 0x07)
 		cd = iconv_open ("UTF-8", "ISO-10646");
 
-	else if (LanguageSupportCode == 0x0f)
+	else if (LanguageSupportCode == 0x0f)	// JIS X 0201-1976 (Japanese)
 		cd = iconv_open ("UTF-8", "EUC-JISX0213");
-	else if (LanguageSupportCode == 0x17)
+	else if (LanguageSupportCode == 0x17)	// JIS X 0208-1997 (Japanese)
 		cd = iconv_open ("UTF-8", "EUC-JISX0213");
-	else if (LanguageSupportCode == 0x1f)
+	else if (LanguageSupportCode == 0x1f)	// JIS X 0212-1990 (Japanese)
 		cd = iconv_open ("UTF-8", "EUC-JISX0213");
 
 	else if (LanguageSupportCode == 0x27)
 		cd = iconv_open ("UTF-8", "GB2312");
 
-	else if (LanguageSupportCode == 0x2F)
+	else if (LanguageSupportCode == 0x2F)  // KS C5601-1987 (Korean)
 		cd = iconv_open ("UTF-8", "EUC-KR");
+
 
 	else
 		return -1;
@@ -527,7 +526,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 	section[0].index  = 6+16;
 	int K;
 	for (K=1; K<_NUM_SECTION; K++) {
-		section[K].ID	  = K;
+		section[K].ID	  = -1;
 		section[K].length = 0;
 		section[K].index  = 0;
 	}
@@ -536,10 +535,43 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		// this is needed because fields are not always sorted
 		curSect = leu32p(ptr+6+16+K*10);
 		if (curSect < _NUM_SECTION) {
+			if (section[curSect].ID >= 0) {
+				biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "SCP Section must not be defined twice");
+				return -1;
+			}
 			section[curSect].ID 	= curSect;
 			section[curSect].length = leu32p(ptr+6+16+K*10+2);
 			section[curSect].index  = leu32p(ptr+6+16+K*10+6)-1;
 		}
+	}
+
+	if (section[1].length) {
+		/**** identify language support code - scan through section 1 for tag 14, byte 17 ****/
+		K = 1;
+		curSect           = section[K].ID;
+		len		  = section[K].length;
+		sectionStart 	  = section[K].index;
+
+		PtrCurSect = ptr+sectionStart;
+		crc 	   = leu16p(PtrCurSect);
+		uint16_t tmpcrc = CRCEvaluate((uint8_t*)(PtrCurSect+2),len-2);
+		uint8_t versionSection  = *(ptr+sectionStart+8);
+		uint8_t versionProtocol = *(ptr+sectionStart+9);
+		// future versions might not need to do this, because language encoding is fixed (i.e. known).
+
+			uint32_t len1;
+			curSectPos = 16;
+			while (curSectPos<=len) {
+				tag = *(PtrCurSect+curSectPos);
+				len1 = leu16p(PtrCurSect+curSectPos+1);
+				curSectPos += 3;
+			if (curSectPos+len1 > len) break;
+				if (tag==14) {
+					aECG->Section1.Tag14.LANG_SUPP_CODE  = *(PtrCurSect+curSectPos+16);	// tag 14, byte 16 (LANG_SUPP_CODE has to be 0x00 => Ascii only, 
+					break;
+				}
+				curSectPos += len1;
+			}
 	}
 
 	for (K=1; K<NSections; K++)	{
@@ -563,6 +595,8 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		PtrCurSect = ptr+sectionStart;
 		crc 	   = leu16p(PtrCurSect);
 		uint16_t tmpcrc = CRCEvaluate((uint8_t*)(PtrCurSect+2),len-2); 
+		uint8_t versionSection  = *(ptr+sectionStart+8);
+		uint8_t versionProtocol = *(ptr+sectionStart+9);
 #ifndef ANDROID
 		if ((crc != 0xffff) && (crc != tmpcrc))
 			fprintf(stderr,"Warning SOPEN(SCP-READ): faulty CRC in section %i: crc=%x, %x\n" ,curSect,crc,tmpcrc);
@@ -570,10 +604,6 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			fprintf(stderr,"Warning SOPEN(SCP-READ): Current Section No does not match field in sections (%i %i)\n",curSect,leu16p(PtrCurSect+2)); 
 		if (len != leu32p(PtrCurSect+4))
 			fprintf(stderr,"Warning SOPEN(SCP-READ): length field in pointer section (%i) does not match length field in sections (%i %i)\n",K,len,leu32p(PtrCurSect+4)); 
-#endif
-		uint8_t versionSection  = *(ptr+sectionStart+8);
-		uint8_t versionProtocol = *(ptr+sectionStart+9);
-#ifndef ANDROID
 		if (versionSection != 13 && versionSection != 20)
 			fprintf(stderr,"Warning SOPEN(SCP-READ): Version of section %i is not 13 or 20 but %i. This is not tested.\n", curSect, versionSection);
 		if (versionProtocol != 13 && versionProtocol != 20)
@@ -933,14 +963,12 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		{
 			hdr->NS = *(PtrCurSect+curSectPos);
 			aECG->FLAG.REF_BEAT = (*(PtrCurSect+curSectPos+1) & 0x01);
-			en1064.FLAG.REF_BEAT = (*(PtrCurSect+curSectPos+1) & 0x01);
 			en1064.Section3.flags = *(PtrCurSect+curSectPos+1);
-			if (en1064.FLAG.REF_BEAT && !section[4].length) {
+			if (aECG->FLAG.REF_BEAT && !section[4].length) {
 #ifndef ANDROID
 				fprintf(stderr,"Warning (SCP): Reference Beat but no Section 4\n");
 #endif
 				aECG->FLAG.REF_BEAT  = 0;
-				en1064.FLAG.REF_BEAT = 0;
 			}
 #ifndef ANDROID
 			if (!(en1064.Section3.flags & 0x04) || ((en1064.Section3.flags>>3) != hdr->NS))
@@ -997,7 +1025,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				en1064.Section4.SPR += en1064.Section4.beat[i].QE-en1064.Section4.beat[i].QB-1;
 			}
 			if (en1064.Section4.len_ms==0) {
-				en1064.FLAG.REF_BEAT = 0;
+				aECG->FLAG.REF_BEAT  = 0;
 			}
 		}
 
@@ -1022,7 +1050,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			}
 
 			en1064.Section5.datablock = NULL;
-			if (en1064.FLAG.REF_BEAT) {
+			if (aECG->FLAG.REF_BEAT) {
 				en1064.Section5.datablock = (int32_t*)malloc(4 * hdr->NS * en1064.Section5.Length);
 
 				Ptr2datablock           = (PtrCurSect+curSectPos+6+2*hdr->NS);
@@ -1142,7 +1170,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 						data[ix] += 2*data[ix-1] - data[ix-2];
 				}
 #ifndef WITHOUT_SCP_DECODE
-				if (aECG->FLAG.BIMODAL || en1064.FLAG.REF_BEAT) {
+				if (aECG->FLAG.BIMODAL || aECG->FLAG.REF_BEAT) {
 //				if (aECG->FLAG.BIMODAL) {
 //				if (aECG->FLAG.REF_BEAT {
 					/*	this is experimental work
@@ -1174,7 +1202,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					} while (k2 && (k1>0));
 				}
 
-				if (en1064.FLAG.REF_BEAT) {
+				if (aECG->FLAG.REF_BEAT) {
 					/* Add reference beats */
 					// ### FIXME ###
 					for (k1 = 0; k1 < en1064.Section4.N; k1++) {
@@ -1317,7 +1345,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			// TODO: convert to UTF8
 #if (BIOSIG_VERSION >= 10500)
 			hdr->SCP.Section9Length = leu32p(PtrCurSect+4)-curSectPos;
-			hdr->SCP.Section9 = PtrCurSect+curSectPos;
+			hdr->SCP.Section9       = PtrCurSect+curSectPos;
 #else
 			aECG->Section9.StartPtr = (char*)(PtrCurSect+curSectPos);
 			aECG->Section9.Length   = len;
