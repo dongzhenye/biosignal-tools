@@ -126,7 +126,7 @@ DEFINES      += -D=WITHOUT_NETWORK
 #DEFINES      += -D=WITH_HDF
 #DEFINES      += -D=WITH_MATIO
 #DEFINES      += -D=WITH_LIBXML2 
-DEFINES      += -D=WITH_FEF 
+DEFINES      += -D=WITH_FEF
 #DEFINES      += -D=WITH_PDP
 #DEFINES      += -D=WITH_DCMTK
 #DEFINES      += -D=WITH_DICOM
@@ -611,15 +611,15 @@ libgdftime.so: gdftime.o
 	/sbin/ldconfig -n .
 	ln -sf $@.${MAJOR_VERSION}.${MINOR_VERSION} $@
 
-libgdf.a: gdf.o getlogin.o libgdftime.a
+libgdf.a: gdf.o getlogin.o gdftime.o physicalunits.o
 	-$(DELETE) "$@"
-	$(AR) "$@" "$<"
-libgdf.def: gdf.o getlogin.o
-	$(CXX) -s -shared -fPIC -o libgdf.dll gdf.o getlogin.o $(LIBS) -L. -lphysicalunits -lgdftime -Wl,--subsystem,windows,--output-def,libgdf.def,--out-implib,libgdf.dll.a
+	$(AR) "$@" gdf.o getlogin.o gdftime.o physicalunits.o
+libgdf.def: gdf.o getlogin.o gdftime.o physicalunits.o
+	$(CXX) -s -shared -fPIC -o libgdf.dll gdf.o getlogin.o gdftime.o physicalunits.o $(LIBS) -Wl,--subsystem,windows,--output-def,libgdf.def,--out-implib,libgdf.dll.a
 
-libgdf.so: gdf.o gdftime.o
+libgdf.so: gdf.o gdftime.o physicalunits.o
 	$(CC) -shared -fPIC -Wl,-rpath,. -Wl,-soname,$@.${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
-		-o $@.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} "$<"
+		-o $@.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} gdf.o getlogin.o gdftime.o physicalunits.o
 	/sbin/ldconfig -n .
 	ln -sf $@.${MAJOR_VERSION}.${MINOR_VERSION} "$@"
 
