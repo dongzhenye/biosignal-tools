@@ -1,6 +1,6 @@
 /*
     $Id: scp-decode.cpp,v 1.24 2008-07-12 20:46:58 schloegl Exp $
-   Copyright (C) 2011 Alois Schloegl <alois.schloegl@gmail.com>
+   Copyright (C) 2011,2014 Alois Schloegl <alois.schloegl@gmail.com>
    Copyright (C) 2011 Stoyan Mihaylov
    This function is part of the "BioSig for C/C++" repository 
     (biosig4c++) at http://biosig.sf.net/ 
@@ -119,48 +119,48 @@ using namespace std;
 HDRTYPE* in;
 
 //---------------------------------------------------------------------------
-static U_int_L _COUNT_BYTE=1UL;                  // counter of bytes read
-static U_int_L _DIM_FILE;                      // file length in byte
-static const U_int_S _NUM_SECTION=12U;     // sections over 11 are not considered
+static uint32_t _COUNT_BYTE=1UL;                  // counter of bytes read
+static uint32_t _DIM_FILE;                      // file length in byte
+static const uint8_t _NUM_SECTION=12U;     // sections over 11 are not considered
 
 //______________________________________________________________________________
 //                      section 2
-U_int_S         Input_Bit(U_int_S*,U_int_M&,U_int_M,U_int_S&,bool&);
-int_M           Input_Bits(U_int_S*,U_int_M&,U_int_M,U_int_S&,U_int_S,bool&);
-void            decompress(TREE_NODE*,int_M*,U_int_S&,U_int_M&,int_L*,U_int_M,U_int_M&,table_H*,U_int_M*,U_int_M&);
+uint8_t         Input_Bit(uint8_t*,uint16_t&,uint16_t,uint8_t&,bool&);
+int16_t         Input_Bits(uint8_t*,uint16_t&,uint16_t,uint8_t&,uint8_t,bool&);
+void            decompress(TREE_NODE*,int16_t*,uint8_t&,uint16_t&,int32_t*,uint16_t,uint16_t&,table_H*,uint16_t*,uint16_t&);
 void            Tree_Destroy(TREE_NODE*);
-TREE_NODE       *Tree_Create(TREE_NODE*,U_int_M,table_H*,U_int_M);
-void            Huffman(int_L*,U_int_M*,U_int_S*,U_int_M&,U_int_M,table_H*,U_int_M*);
+TREE_NODE       *Tree_Create(TREE_NODE*,uint16_t,table_H*,uint16_t);
+void            Huffman(int32_t*,uint16_t*,uint8_t*,uint16_t&,uint16_t,table_H*,uint16_t*);
 void            InitHuffman(table_H*);                          //inizialize default Huffman table
 
 //______________________________________________________________________________
 //                      sections 3, 4, 5 and 6
 template<class t1>
-void            Differences(int_L*,t1,U_int_S);
-void            Multiply(int_L*,U_int_L,U_int_M);
-void            Interpolate(int_L*,int_L*,f_lead,lead*,f_Res,Protected_Area*,U_int_L);
-void            ExecFilter(int_L*,int_L*,U_int_L&,U_int_M);
-void            DoFilter(int_L*,int_L*,f_Res,f_lead,lead*,Protected_Area*,Subtraction_Zone*);
-void            DoAdd(int_L*,int_L*,f_Res,int_L*,f_BdR0,Subtraction_Zone*,f_lead,lead*);
-void            Opt_Filter(int_L*, int_L*, f_Res, f_lead, lead*, Protected_Area*);
+void            Differences(int32_t*,t1,uint8_t);
+void            Multiply(int32_t*,uint32_t,uint16_t);
+void            Interpolate(int32_t*,int32_t*,f_lead,lead*,f_Res,Protected_Area*,uint32_t);
+void            ExecFilter(int32_t*,int32_t*,uint32_t&,uint16_t);
+void            DoFilter(int32_t*,int32_t*,f_Res,f_lead,lead*,Protected_Area*,Subtraction_Zone*);
+void            DoAdd(int32_t*,int32_t*,f_Res,int32_t*,f_BdR0,Subtraction_Zone*,f_lead,lead*);
+void            Opt_Filter(int32_t*, int32_t*, f_Res, f_lead, lead*, Protected_Area*);
 
 //______________________________________________________________________________
 //                             INTERNAL FUNCTIONS
-char*           ReadString(char*,U_int_M);                          //read a string
-char            *FindString(char*,U_int_M);                         // calculate the length of a string and write it down
-int_M           Look(alfabetic*,U_int_M,U_int_M,U_int_M);      //look at a number in alfabetic and give the position of the array
+char*           ReadString(char*,uint16_t);                          //read a string
+char            *FindString(char*,uint16_t);                         // calculate the length of a string and write it down
+int16_t         Look(alfabetic*,uint16_t,uint16_t,uint16_t);      //look at a number in alfabetic and give the position of the array
 
 //______________________________________________________________________________
 template<class t1>
 void            ReadByte(t1&);         //read a byte from stream
-void            Skip(U_int_M);        //skip some bytes
+void            Skip(uint16_t);        //skip some bytes
 
 //______________________________________________________________________________
-U_int_M         ReadCRC();                             //read first 6 bytes of the file
-bool            Check_CRC(U_int_M,U_int_L,U_int_L);     // CRC check
+uint16_t        ReadCRC();                             //read first 6 bytes of the file
+bool            Check_CRC(uint16_t,uint32_t,uint32_t);     // CRC check
 //______________________________________________________________________________
 
-U_int_L         ID_section(U_int_L, int_S &version);              //read section ID header
+uint32_t        ID_section(uint32_t, int8_t &version);              //read section ID header
 void            sectionsOptional(pointer_section*,DATA_DECODE &,DATA_RECORD&,DATA_INFO&);       //handles optional sections
 
 #ifdef WITH_OBSOLETE_PARTS
@@ -177,10 +177,10 @@ void            section_1_6(demographic&);
 void            section_1_7(demographic&);
 void            section_1_8(demographic&);
 void            section_1_9(demographic&);
-void            section_1_10(clinic&,U_int_M&);
+void            section_1_10(clinic&,uint16_t&);
 void            section_1_11(demographic&);
 void            section_1_12(demographic&);
-void            section_1_13(clinic&,U_int_M&);
+void            section_1_13(clinic&,uint16_t&);
 void            section_1_14(descriptive&);
 void            section_1_15(descriptive&);
 void            section_1_16(descriptive&);
@@ -197,22 +197,22 @@ void            section_1_26(device&);
 void            section_1_27(device&);
 void            section_1_28(device&);
 void            section_1_29(device&);
-void            section_1_30(clinic&,U_int_M&);
+void            section_1_30(clinic&,uint16_t&);
 void            section_1_31(device&);
-void            section_1_32(clinic&,U_int_M&, int_S version);
+void            section_1_32(clinic&,uint16_t&, int8_t version);
 void            section_1_33(device&);
 void            section_1_34(device&);
-void            section_1_35(clinic&,U_int_M&);
+void            section_1_35(clinic&,uint16_t&);
 void            section_1_();                                   //skip tags of the manufacturer of the section 1
 void            section_1_255();                                //read tag 255 of section 1
-void            section_7(pointer_section,DATA_RECORD&, int_S version); //read section 7
+void            section_7(pointer_section,DATA_RECORD&, int8_t version); //read section 7
 void            section_8(pointer_section,DATA_INFO&);          //read section 8
-void            section_10(pointer_section,DATA_RECORD&, int_S version); //read section 10
+void            section_10(pointer_section,DATA_RECORD&, int8_t version); //read section 10
 void            section_11(pointer_section,DATA_INFO&);         //read section 11
 #endif
 void            section_2(pointer_section,DATA_DECODE&);        //read section 2
-void            section_3(pointer_section,DATA_DECODE&, int_S version); //read section 3
-void            section_4(pointer_section,DATA_DECODE&, int_S version); //read section 4
+void            section_3(pointer_section,DATA_DECODE&, int8_t version); //read section 3
+void            section_4(pointer_section,DATA_DECODE&, int8_t version); //read section 4
 bool            section_5(pointer_section,DATA_DECODE&,bool);   //read section 5
 void            section_6(pointer_section,DATA_DECODE&,bool);   //read section 6
 
@@ -256,18 +256,18 @@ void ReadByte(t1 &number)
 //read the requested number of bytes and
 //convert in decimal, taking into account that the first byte is the LSB.
 //the sign of the number is kept
-	U_int_S *num, dim=sizeof(t1);
-	U_int_S mask=0xFF;
+	uint8_t *num, dim=sizeof(t1);
+	uint8_t mask=0xFF;
 
 
-	if(dim!=0 && (num=(U_int_S*)mymalloc(dim))==NULL)
+	if(dim!=0 && (num=(uint8_t*)mymalloc(dim))==NULL)
 	{
 		B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
 		B4C_ERRMSG = "SCP-DECODE: Not enough memory";
 		return; 
 	}
 	ifread(num,dim,1,in);
-	// *num = *(U_int_S*)(in->AS.Header+_COUNT_BYTE);
+	// *num = *(uint8_t*)(in->AS.Header+_COUNT_BYTE);
 	number=0;
 	_COUNT_BYTE+=dim;
 
@@ -344,8 +344,8 @@ EXTERN_C void sopen_SCP_clean(struct DATA_DECODE *decode, struct DATA_RECORD *re
 //There is serious problem if we try to transfer whole structures between c and c++. I am not sure were exactly it is, but using pointers - solve it. extern C is not enough. Stoyan
 EXTERN_C int scp_decode(HDRTYPE* hdr, pointer_section *section, struct DATA_DECODE *decode, struct DATA_RECORD *info_recording, struct DATA_INFO *info_textual, bool add_filter)
 {
-	U_int_M CRC;
-	U_int_L pos;
+	uint16_t CRC;
+	uint32_t pos;
 	if (hdr->FILE.OPEN) {
 		ifseek(hdr,0,SEEK_SET);
 	}
@@ -397,7 +397,7 @@ EXTERN_C int scp_decode(HDRTYPE* hdr, pointer_section *section, struct DATA_DECO
 
 #ifdef WITH_OBSOLETE_PARTS
 //------------------------------STRINGS----------------------------------------
-char *ReadString(char *temp_string, U_int_M num)
+char *ReadString(char *temp_string, uint16_t num)
 //read a string from the stream.
 //the first extracted byte is written for fist.
 //each byte read from the stream is first "transformed" in char.
@@ -421,10 +421,10 @@ char *ReadString(char *temp_string, U_int_M num)
 	return temp_string;
 }//end ReadString
 
-int_M Look(alfabetic *code_, U_int_M a, U_int_M b, U_int_M key_)
+int16_t Look(alfabetic *code_, uint16_t a, uint16_t b, uint16_t key_)
 // look num in code_.number and give the element position
 {
-	U_int_M middle=(a+b)/2U;
+	uint16_t middle=(a+b)/2U;
 
 	if(code_[middle].number==key_)
 		return middle;
@@ -436,14 +436,14 @@ int_M Look(alfabetic *code_, U_int_M a, U_int_M b, U_int_M key_)
 		return Look(code_,a,middle-1,key_);
 }//end Look
 
-char *FindString(char *temp_string,U_int_M max)
+char *FindString(char *temp_string,uint16_t max)
 //read bytes until NULL
 //Stoyan - there were memory leaks
 {
 	if(temp_string)
 		free(temp_string);
 	char c;
-	U_int_M num=0;
+	uint16_t num=0;
 	//fpos_t
 	long filepos;
 
@@ -480,7 +480,7 @@ char *FindString(char *temp_string,U_int_M max)
 }//end FindString
 #endif
 
-void Skip(U_int_M num)
+void Skip(uint16_t num)
 //skip num bytes from the stream
 {
 	if(num>0U)
@@ -539,7 +539,7 @@ void InitHuffman(table_H *riga)
               10, 26, 1,  0, 1023, 1023,
 */
 
-	U_int_S i;
+	uint8_t i;
 
 	i= 0U;  riga[i].bit_prefix= 1U; riga[i].bit_code= 1U; riga[i].TMS=1U; riga[i].base_value= 0; riga[i].base_code=   0UL;
 	i= 1U;  riga[i].bit_prefix= 3U; riga[i].bit_code= 3U; riga[i].TMS=1U; riga[i].base_value= 1; riga[i].base_code=   1UL;
@@ -565,17 +565,17 @@ void InitHuffman(table_H *riga)
 //______________________________________________________________________________
 //                           handle sections
 
-U_int_M ReadCRC()
+uint16_t ReadCRC()
 // read the CRC of the entire file or of a section and convert it to decimal.
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 
 	return dim;
 }//end ReadCRC
 
-bool Check_CRC(U_int_M CRC, U_int_L pos, U_int_L length)
+bool Check_CRC(uint16_t CRC, uint32_t pos, uint32_t length)
 /* CRC check starting from pos for Length
 
 Remark: all computations are in byte.
@@ -610,9 +610,9 @@ a zero CRC if the data was correctly received.
 
 */
 {
-	U_int_L i;
-	U_int_S A, B;
-	U_int_S CRCLO, CRCHI;
+	uint32_t i;
+	uint8_t A, B;
+	uint8_t CRCLO, CRCHI;
 
 	CRCLO=0xFF;
 	CRCHI=0xFF;
@@ -648,11 +648,11 @@ a zero CRC if the data was correctly received.
 	}
 }//end Check_CRC
 
-U_int_L ID_section(U_int_L pos, int_S &version)
+uint32_t ID_section(uint32_t pos, int8_t &version)
 //read section Header
 {
-	U_int_L dim;
-	U_int_M CRC;
+	uint32_t dim;
+	uint16_t CRC;
 
 	CRC=ReadCRC();
 	Skip(2U);
@@ -669,7 +669,7 @@ U_int_L ID_section(U_int_L pos, int_S &version)
 void sectionsOptional(pointer_section *section, DATA_DECODE &block1, DATA_RECORD &block2, DATA_INFO &block3)
 //handles optional sections
 {
-	U_int_S i=0, bimodal;
+	uint8_t i=0, bimodal;
 //initialization
 	block1.t_Huffman=NULL;
 	block1.flag_Huffman=NULL;
@@ -794,10 +794,10 @@ void section_0(pointer_section *info, int size_max)
 // section 0
 //build info_sections with ID, offset and length of each section
 {
-	U_int_L pos, dim, ini;
-	U_int_M ind;
-	U_int_S i;
-	int_S version;
+	uint32_t pos, dim, ini;
+	uint16_t ind;
+	uint8_t i;
+	int8_t version;
 
 	ifseek(in,6L,0);
 	pos=ID_section(7L, version)+7L; //length + offset
@@ -930,10 +930,10 @@ void Init_S1(DATA_INFO &inf)
 void section_1(pointer_section info_sections, DATA_INFO &inf)
 // section 1
 {
-	U_int_S tag;
-	U_int_L num=info_sections.length+_COUNT_BYTE;
-	U_int_M dim=0U;
-	int_S version;
+	uint8_t tag;
+	uint32_t num=info_sections.length+_COUNT_BYTE;
+	uint16_t dim=0U;
+	int8_t version;
 
 	_COUNT_BYTE=info_sections.index;
 	ifseek(in,info_sections.index-1,0);
@@ -1061,7 +1061,7 @@ void section_1(pointer_section info_sections, DATA_INFO &inf)
 void section_1_0(demographic &ana)
 // section 1 tag 0
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	ana.last_name=ReadString(ana.last_name,dim);
@@ -1070,7 +1070,7 @@ void section_1_0(demographic &ana)
 void section_1_1(demographic &ana)
 // section 1 tag 1
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	ana.first_name=ReadString(ana.first_name,dim);
@@ -1079,7 +1079,7 @@ void section_1_1(demographic &ana)
 void section_1_2(demographic &ana)
 //section 1 tag 2
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	ana.ID=ReadString(ana.ID,dim);
@@ -1088,7 +1088,7 @@ void section_1_2(demographic &ana)
 void section_1_3(demographic &ana)
 // section 1 tag 3
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	ana.second_last_name=ReadString(ana.second_last_name,dim);
@@ -1097,7 +1097,7 @@ void section_1_3(demographic &ana)
 void section_1_4(demographic &ana)
 // section 1 tag 4
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	ReadByte(ana.age.value);
@@ -1109,10 +1109,10 @@ void section_1_4(demographic &ana)
 void section_1_5(demographic &ana)
 // section 1 tag 5
 {
-	U_int_M dim;
+	uint16_t dim;
 
-	U_int_S m, g;
-	U_int_M a;
+	uint8_t m, g;
+	uint16_t a;
 
 	ReadByte(dim);
 	ReadByte(a);
@@ -1134,7 +1134,7 @@ void section_1_5(demographic &ana)
 void section_1_6(demographic &ana)
 // section 1 tag 6
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	ReadByte(ana.height.value);
@@ -1146,7 +1146,7 @@ void section_1_6(demographic &ana)
 void section_1_7(demographic &ana)
 // section 1 tag 7
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	ReadByte(ana.weight.value);
@@ -1158,7 +1158,7 @@ void section_1_7(demographic &ana)
 void section_1_8(demographic &ana)
 // section 1 tag 8
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	ReadByte(ana.sex);
@@ -1169,7 +1169,7 @@ void section_1_8(demographic &ana)
 void section_1_9(demographic &ana)
 // section 1 tag 9
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	ReadByte(ana.race);
@@ -1177,13 +1177,13 @@ void section_1_9(demographic &ana)
 		ana.race=0;
 }//end section_1_9
 
-void section_1_10(clinic &cli, U_int_M &dim)
+void section_1_10(clinic &cli, uint16_t &dim)
 // section 1 tag 10
 {
-	U_int_M val;
-	U_int_S code_;
+	uint16_t val;
+	uint8_t code_;
 	char *temp_string=NULL, *pos_char;
-	int_M pos;
+	int16_t pos;
 
 	ReadByte(val);
 	/*
@@ -1243,7 +1243,7 @@ void section_1_10(clinic &cli, U_int_M &dim)
 void section_1_11(demographic &ana)
 // section 1 tag 11
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	if(dim)
@@ -1255,7 +1255,7 @@ void section_1_11(demographic &ana)
 void section_1_12(demographic &ana)
 // section 1 tag 12
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	if(dim)
@@ -1264,10 +1264,10 @@ void section_1_12(demographic &ana)
 		ana.diastolic_pressure=0;
 }//end section_1_12
 
-void section_1_13(clinic &cli, U_int_M &dim)
+void section_1_13(clinic &cli, uint16_t &dim)
 // section 1 tag 13
 {
-	U_int_M val;
+	uint16_t val;
 	char *temp_string=NULL, *pos_char;
 
 	ReadByte(val);
@@ -1301,9 +1301,9 @@ void section_1_13(clinic &cli, U_int_M &dim)
 void section_1_14(descriptive &des)
 // section 1 tag 14
 {
-	U_int_M dim, dim_to_skip;
-	U_int_S i, mask, code_;
-	int_M pos;
+	uint16_t dim, dim_to_skip;
+	uint8_t i, mask, code_;
+	int16_t pos;
 	//fpos_t filepos, filepos_iniz;
 	long filepos, filepos_iniz;
 
@@ -1384,9 +1384,9 @@ void section_1_14(descriptive &des)
 void section_1_15(descriptive &des)
 // section 1 tag 15
 {
-	U_int_M dim;
-	U_int_S i, mask, code_;
-	int_M pos;
+	uint16_t dim;
+	uint8_t i, mask, code_;
+	int16_t pos;
 	//fpos_t filepos;
 	long filepos;
 
@@ -1460,7 +1460,7 @@ void section_1_15(descriptive &des)
 void section_1_16(descriptive &des)
 // section 1 tag 16
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	des.acquiring_institution=ReadString(des.acquiring_institution,dim);
@@ -1469,7 +1469,7 @@ void section_1_16(descriptive &des)
 void section_1_17(descriptive &des)
 // section 1 tag 17
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	des.analyzing_institution=ReadString(des.analyzing_institution,dim);
@@ -1478,7 +1478,7 @@ void section_1_17(descriptive &des)
 void section_1_18(descriptive &des)
 // section 1 tag 18
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	des.acquiring_department=ReadString(des.acquiring_department,dim);
@@ -1487,7 +1487,7 @@ void section_1_18(descriptive &des)
 void section_1_19(descriptive &des)
 // section 1 tag 19
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	des.analyzing_department=ReadString(des.analyzing_department,dim);
@@ -1496,7 +1496,7 @@ void section_1_19(descriptive &des)
 void section_1_20(clinic &cli)
 // section 1 tag 20
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	cli.referring_physician=ReadString(cli.referring_physician,dim);
@@ -1505,7 +1505,7 @@ void section_1_20(clinic &cli)
 void section_1_21(clinic &cli)
 // section 1 tag 21
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	cli.latest_confirming_physician=ReadString(cli.latest_confirming_physician,dim);
@@ -1514,7 +1514,7 @@ void section_1_21(clinic &cli)
 void section_1_22(clinic &cli)
 // section 1 tag 22
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	cli.technician_description=ReadString(cli.technician_description,dim);
@@ -1523,7 +1523,7 @@ void section_1_22(clinic &cli)
 void section_1_23(descriptive &des)
 // section 1 tag 23
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	des.room=ReadString(des.room,dim);
@@ -1532,7 +1532,7 @@ void section_1_23(descriptive &des)
 void section_1_24(descriptive &des)
 // section 1 tag 24
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	ReadByte(des.stat_code);
@@ -1541,9 +1541,9 @@ void section_1_24(descriptive &des)
 void section_1_25(device &dev)
 // section 1 tag 25
 {
-	U_int_M dim;
-	U_int_S m, g;
-	U_int_M a;
+	uint16_t dim;
+	uint8_t m, g;
+	uint16_t a;
 
 	ReadByte(dim);
 	ReadByte(a);
@@ -1565,8 +1565,8 @@ void section_1_25(device &dev)
 void section_1_26(device &dev)
 // section 1 tag 26
 {
-	U_int_M dim;
-	U_int_S h, m, s;
+	uint16_t dim;
+	uint8_t h, m, s;
 
 	ReadByte(dim);
 	ReadByte(h);
@@ -1579,7 +1579,7 @@ void section_1_26(device &dev)
 void section_1_27(device &dev)
 // section 1 tag 27
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	ReadByte(dev.baseline_filter);
@@ -1588,7 +1588,7 @@ void section_1_27(device &dev)
 void section_1_28(device &dev)
 // section 1 tag 28
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	ReadByte(dev.lowpass_filter);
@@ -1597,8 +1597,8 @@ void section_1_28(device &dev)
 void section_1_29(device &dev)
 // section 1 tag 29
 {
-	U_int_M dim;
-	U_int_S mask=0x1, val, i, max=4, ris=0;
+	uint16_t dim;
+	uint8_t mask=0x1, val, i, max=4, ris=0;
 
 	ReadByte(dim);
 	ReadByte(val);
@@ -1615,10 +1615,10 @@ void section_1_29(device &dev)
 	while (--w) ReadByte(val);        // by E.C. may 2004 CARDIOLINE 1.0
 }//end section_1_29
 
-void section_1_30(clinic &cli, U_int_M &dim)
+void section_1_30(clinic &cli, uint16_t &dim)
 // section 1 tag 30
 {
-	U_int_M val;
+	uint16_t val;
 	char *temp_string=0, *pos_char;
 
 	ReadByte(val);
@@ -1652,7 +1652,7 @@ void section_1_30(clinic &cli, U_int_M &dim)
 void section_1_31(device &dev)
 // section 1 tag 31
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	if(dim)
@@ -1663,12 +1663,12 @@ void section_1_31(device &dev)
 	}
 }//end section_1_31
 
-void section_1_32(clinic &cli, U_int_M &dim, int_S version)
+void section_1_32(clinic &cli, uint16_t &dim, int8_t version)
 // section 1 tag 32
 {
-	U_int_M val;
-	U_int_S pos;
-	int_M ris;
+	uint16_t val;
+	uint8_t pos;
+	int16_t ris;
 
 	ReadByte(val);
 	if(val)
@@ -1700,8 +1700,8 @@ void section_1_32(clinic &cli, U_int_M &dim, int_S version)
 void section_1_33(device &dev)
 // section 1 tag 33
 {
-	U_int_M dim;
-	U_int_S pos;
+	uint16_t dim;
+	uint8_t pos;
 
 	ReadByte(dim);
 	ReadByte(pos);
@@ -1718,7 +1718,7 @@ void section_1_33(device &dev)
 void section_1_34(device &dev)
 // section 1 tag 34
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	ReadByte(dev.TZ.offset); //complemented if negative
@@ -1731,10 +1731,10 @@ void section_1_34(device &dev)
 	}
 }//end section_1_34
 
-void section_1_35(clinic &cli, U_int_M &dim)
+void section_1_35(clinic &cli, uint16_t &dim)
 // section 1 tag 35
 {
-	U_int_M val;
+	uint16_t val;
 	char *temp_string=NULL, *pos_char;
 
 	ReadByte(val);
@@ -1768,7 +1768,7 @@ void section_1_35(clinic &cli, U_int_M &dim)
 void section_1_()
 // section 1 tag 36..254 are manufacturer specifics and are not utilized
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 	Skip(dim);
@@ -1777,7 +1777,7 @@ void section_1_()
 void section_1_255()
 // section 1 tag 255
 {
-	U_int_M dim;
+	uint16_t dim;
 
 	ReadByte(dim);
 }//end section_1_255
@@ -1791,10 +1791,10 @@ void section_2(pointer_section info_sections,DATA_DECODE &data)
 //build Huffman tables if included in the file; if none then use del default one
 //cannot read the dummy Huffman table
 {
-	U_int_M nt, i, j, ns=0, pos, dim;
+	uint16_t nt, i, j, ns=0, pos, dim;
 	//fpos_t filepos;
 	long filepos;
-	int_S version;
+	int8_t version;
 
 	_COUNT_BYTE=info_sections.index;
 	ifseek(in,info_sections.index-1,0);
@@ -1804,7 +1804,7 @@ void section_2(pointer_section info_sections,DATA_DECODE &data)
 	ReadByte(nt);
 	if(nt!=19999U)
 	{
-		if((data.flag_Huffman=(U_int_M*)mymalloc(sizeof(U_int_M)*(nt+1)))==NULL)
+		if((data.flag_Huffman=(uint16_t*)mymalloc(sizeof(uint16_t)*(nt+1)))==NULL)
 		{
 			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
 			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
@@ -1848,7 +1848,7 @@ void section_2(pointer_section info_sections,DATA_DECODE &data)
 	}
 	else
 	{
-		if((data.flag_Huffman=(U_int_M*)mymalloc(sizeof(U_int_M)*2))==NULL)
+		if((data.flag_Huffman=(uint16_t*)mymalloc(sizeof(uint16_t)*2))==NULL)
 		{
 			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
 			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
@@ -1870,10 +1870,10 @@ void section_2(pointer_section info_sections,DATA_DECODE &data)
 //                              section 3
 //______________________________________________________________________________
 
-void section_3(pointer_section info_sections,DATA_DECODE &data, int_S version)
+void section_3(pointer_section info_sections,DATA_DECODE &data, int8_t version)
 {
-	U_int_S val, mask=0x1, i;
-	int_S version_loc;
+	uint8_t val, mask=0x1, i;
+	int8_t version_loc;
 
 	_COUNT_BYTE=info_sections.index;
 	ifseek(in,info_sections.index-1,0);
@@ -1915,10 +1915,10 @@ void section_3(pointer_section info_sections,DATA_DECODE &data, int_S version)
 //                              section 4
 //______________________________________________________________________________
 
-void section_4(pointer_section info_sections,DATA_DECODE &data,int_S version)
+void section_4(pointer_section info_sections,DATA_DECODE &data,int8_t version)
 {
-	U_int_M i;
-	int_S version_loc;
+	uint16_t i;
+	int8_t version_loc;
 
 	_COUNT_BYTE=info_sections.index;
 	ifseek(in,info_sections.index-1,0);
@@ -1968,10 +1968,10 @@ void section_4(pointer_section info_sections,DATA_DECODE &data,int_S version)
 
 bool section_5(pointer_section info_sections,DATA_DECODE &data, bool sez2)
 {
-	U_int_M i;
-	U_int_L t, dim;
-	U_int_M value;
-	int_S version;
+	uint16_t i;
+	uint32_t t, dim;
+	uint16_t value;
+	int8_t version;
 
 	_COUNT_BYTE=info_sections.index;
 	ifseek(in,info_sections.index-1,0);
@@ -1983,7 +1983,7 @@ bool section_5(pointer_section info_sections,DATA_DECODE &data, bool sez2)
 	if(data.flag_BdR0.encoding>2)
 		data.flag_BdR0.encoding=0;
 	Skip(1);
-	if(data.flag_lead.number!=0 && (data.length_BdR0=(U_int_M*)mymalloc(sizeof(U_int_M)*data.flag_lead.number))==NULL)
+	if(data.flag_lead.number!=0 && (data.length_BdR0=(uint16_t*)mymalloc(sizeof(uint16_t)*data.flag_lead.number))==NULL)
 	{
 			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
 			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
@@ -1998,28 +1998,28 @@ bool section_5(pointer_section info_sections,DATA_DECODE &data, bool sez2)
         if (data.flag_BdR0.length==0) return false;      // by E.C. 12/09/2007
 	if(sez2)
 	{
-		data.flag_BdR0.number_samples=(U_int_L)data.flag_BdR0.length*1000L/(U_int_L)data.flag_BdR0.STM;           //number di campioni per elettrodo
-		dim*=sizeof(U_int_S);
-		if(dim!=0 && (data.samples_BdR0=(U_int_S*)mymalloc(dim))==NULL)
+		data.flag_BdR0.number_samples=(uint32_t)data.flag_BdR0.length*1000L/(uint32_t)data.flag_BdR0.STM;           //number di campioni per elettrodo
+		dim*=sizeof(uint8_t);
+		if(dim!=0 && (data.samples_BdR0=(uint8_t*)mymalloc(dim))==NULL)
 		{
 			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
 			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
 			return false; 
 		}
-		ifread(data.samples_BdR0,sizeof(U_int_S),dim,in);
+		ifread(data.samples_BdR0,sizeof(uint8_t),dim,in);
 	}
 	else
 	{
-		data.flag_BdR0.number_samples=dim/(sizeof(int_M)*data.flag_lead.number);       //number of samples per lead
+		data.flag_BdR0.number_samples=dim/(sizeof(int16_t)*data.flag_lead.number);       //number of samples per lead
 		dim>>=1;
-		dim*=sizeof(int_L);
-		if(dim!=0 && (data.Median=(int_L*)mymalloc(dim))==NULL)
+		dim*=sizeof(int32_t);
+		if(dim!=0 && (data.Median=(int32_t*)mymalloc(dim))==NULL)
 		{
 			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
 			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
 			return false; 
 		}
-		dim/=sizeof(int_L);
+		dim/=sizeof(int32_t);
 		for(t=0;t<dim;t++)
 		{
 			ReadByte(value);
@@ -2037,10 +2037,10 @@ bool section_5(pointer_section info_sections,DATA_DECODE &data, bool sez2)
 
 void section_6(pointer_section info_sections,DATA_DECODE &data, bool sez2)
 {
-	U_int_M i;
-	U_int_L t, dim;
-	U_int_M value;
-	int_S version;
+	uint16_t i;
+	uint32_t t, dim;
+	uint16_t value;
+	int8_t version;
 
 	_COUNT_BYTE=info_sections.index;
 	ifseek(in,info_sections.index-1,0);
@@ -2052,7 +2052,7 @@ void section_6(pointer_section info_sections,DATA_DECODE &data, bool sez2)
 	if(data.flag_Res.encoding>2)
 		data.flag_Res.encoding=0;
 	Skip(1);
-	if(data.flag_lead.number!=0 && (data.length_Res=(U_int_M*)mymalloc(sizeof(U_int_M)*data.flag_lead.number))==NULL)
+	if(data.flag_lead.number!=0 && (data.length_Res=(uint16_t*)mymalloc(sizeof(uint16_t)*data.flag_lead.number))==NULL)
 	{
 			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
 			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
@@ -2067,26 +2067,26 @@ void section_6(pointer_section info_sections,DATA_DECODE &data, bool sez2)
 	if(sez2)
 	{
 		data.flag_Res.number_samples=data.data_lead[1].end-data.data_lead[1].start+1; //number of samples after interpolation
-		dim*=sizeof(U_int_S);
-		if(dim!=0 && (data.samples_Res=(U_int_S*)mymalloc(dim))==NULL)
+		dim*=sizeof(uint8_t);
+		if(dim!=0 && (data.samples_Res=(uint8_t*)mymalloc(dim))==NULL)
 		{
 			B4C_ERRNUM = B4C_INSUFFICIENT_MEMORY;
 			B4C_ERRMSG = "SCP-DECODE: Not enough memory";
 			return; 
 		}
-		ifread(data.samples_Res,sizeof(U_int_S),dim,in);
+		ifread(data.samples_Res,sizeof(uint8_t),dim,in);
 	}
 	else
 	{
-		data.flag_Res.number_samples=dim/(sizeof(int_M)*data.flag_lead.number);       //number of samples per lead
+		data.flag_Res.number_samples=dim/(sizeof(int16_t)*data.flag_lead.number);       //number of samples per lead
 		dim>>=1;
-		dim*=sizeof(int_L);
-		if(dim!=0 && (data.Residual=(int_L*)mymalloc(dim))==NULL)
+		dim*=sizeof(int32_t);
+		if(dim!=0 && (data.Residual=(int32_t*)mymalloc(dim))==NULL)
 		{
 			fprintf(stderr,"Not enough memory");  // no, exit //
 			exit(2);
 		}
-		dim/=sizeof(int_L);
+		dim/=sizeof(int32_t);
 		for(t=0;t<dim;t++)
 		{
 			ReadByte(value);
@@ -2103,14 +2103,14 @@ void section_6(pointer_section info_sections,DATA_DECODE &data, bool sez2)
 //                              section 7
 //______________________________________________________________________________
 
-void section_7(pointer_section info_sections ,DATA_RECORD &data, int_S version)
+void section_7(pointer_section info_sections ,DATA_RECORD &data, int8_t version)
 {
-	U_int_M i, j, dim;
-	U_int_S lung;
+	uint16_t i, j, dim;
+	uint8_t lung;
 	//fpos_t filepos;
 	long filepos;
-	int_S version_loc;
-	U_int_L length_eval;
+	int8_t version_loc;
+	uint32_t length_eval;
 
 	_COUNT_BYTE=info_sections.index;
 	ifseek(in,info_sections.index-1,0);
@@ -2191,7 +2191,7 @@ void section_7(pointer_section info_sections ,DATA_RECORD &data, int_S version)
 			fprintf(stderr,"Error: Cannot extract these data!!!");
 			exit(2);                                      //necessary for ESAOTE and CARDIOLINE test files
 		} 
-		if(data.data_global.number_QRS!=0 && (data.type_BdR=(U_int_S*)mymalloc(sizeof(U_int_S)*data.data_global.number_QRS))==NULL)
+		if(data.data_global.number_QRS!=0 && (data.type_BdR=(uint8_t*)mymalloc(sizeof(uint8_t)*data.data_global.number_QRS))==NULL)
 		{
 			fprintf(stderr,"Not enough memory");  // no, exit //
 			exit(2);
@@ -2247,12 +2247,12 @@ void section_7(pointer_section info_sections ,DATA_RECORD &data, int_S version)
 
 void section_8(pointer_section info_sections,DATA_INFO &data)
 {
-	U_int_S m, g, h, s, i;
-	U_int_M a, dim;
+	uint8_t m, g, h, s, i;
+	uint16_t a, dim;
 	char *c;
 	//fpos_t filepos;
 	long filepos;
-	int_S version;
+	int8_t version;
 
 	_COUNT_BYTE=info_sections.index;
 	ifseek(in,info_sections.index-1,0);
@@ -2324,11 +2324,11 @@ void section_8(pointer_section info_sections,DATA_INFO &data)
 //                              section 10
 //______________________________________________________________________________
 
-void section_10(pointer_section info_sections, DATA_RECORD &data, int_S version)
+void section_10(pointer_section info_sections, DATA_RECORD &data, int8_t version)
 {
-	U_int_M dim, n1, n2, i, j, k, id, val, mask;
-	int_M skip;
-	int_S version_loc;
+	uint16_t dim, n1, n2, i, j, k, id, val, mask;
+	int16_t skip;
+	int8_t version_loc;
 
 	_COUNT_BYTE=info_sections.index;
 	ifseek(in,info_sections.index-1,0);
@@ -2467,12 +2467,12 @@ void section_11(pointer_section info_sections,DATA_INFO &data)
 	in the test files I found only 1 diagnostic statement per expression, ending with a NULL.
 */
 {
-	U_int_S m, g, h, s, i, j;
-	U_int_M a, dim;
+	uint8_t m, g, h, s, i, j;
+	uint16_t a, dim;
 	char *temp_string=0, *punt, c;
 	//fpos_t filepos;
 	long filepos;
-	int_S version;
+	int8_t version;
 
 	_COUNT_BYTE=info_sections.index;
 	ifseek(in,info_sections.index-1,0);
@@ -2574,9 +2574,9 @@ void section_11(pointer_section info_sections,DATA_INFO &data)
 
 //______________________________________________________________________________
 //                      MULTIPLICATION BY AVM
-void Multiply(int_L *dati, U_int_L num, U_int_M AVM)
+void Multiply(int32_t *dati, uint32_t num, uint16_t AVM)
 {
-	U_int_L i;
+	uint32_t i;
 
 
 	for(i=0;i<num;i++)
@@ -2586,10 +2586,10 @@ void Multiply(int_L *dati, U_int_L num, U_int_M AVM)
 //______________________________________________________________________________
 //                      FIRST AND SECOND DIFFERENCES
 template<class t1>
-void Differences(int_L *dati, t1 flag, U_int_S num)
+void Differences(int32_t *dati, t1 flag, uint8_t num)
 {
-	U_int_S i;
-	U_int_M j;
+	uint8_t i;
+	uint16_t j;
 
 	for(i=0;i<num;i++)
 		for(j=flag.encoding;j<flag.number_samples;j++)
@@ -2612,11 +2612,11 @@ void Tree_Destroy(TREE_NODE *radix)
 	return;
 }
 
-TREE_NODE *Tree_Create(TREE_NODE *tree, U_int_M n_of_struct, table_H *table, U_int_M pos)
+TREE_NODE *Tree_Create(TREE_NODE *tree, uint16_t n_of_struct, table_H *table, uint16_t pos)
 //build a tree
 {
-	U_int_S i,j;
-	U_int_L mask;
+	uint8_t i,j;
+	uint32_t mask;
 	TREE_NODE *temp;
 
 	//build the root
@@ -2673,9 +2673,9 @@ TREE_NODE *Tree_Create(TREE_NODE *tree, U_int_M n_of_struct, table_H *table, U_i
 	return tree;
 }//end Tree_Create
 
-U_int_S Input_Bit(U_int_S *raw, U_int_M &pos, U_int_M max, U_int_S &mask, bool &err)
+uint8_t Input_Bit(uint8_t *raw, uint16_t &pos, uint16_t max, uint8_t &mask, bool &err)
 {
-	U_int_S value;
+	uint8_t value;
 
 	if(pos==max)
 	{
@@ -2694,10 +2694,10 @@ U_int_S Input_Bit(U_int_S *raw, U_int_M &pos, U_int_M max, U_int_S &mask, bool &
 	return( value ? 1 : 0 );
 }//end Input_Bit
 
-int_M Input_Bits(U_int_S *raw, U_int_M &pos, U_int_M max, U_int_S &mask, U_int_S bit_count, bool &err)
+int16_t Input_Bits(uint8_t *raw, uint16_t &pos, uint16_t max, uint8_t &mask, uint8_t bit_count, bool &err)
 {
-	U_int_M temp;
-	int_M value;
+	uint16_t temp;
+	int16_t value;
 
 	if(pos==max)
 	{
@@ -2732,14 +2732,14 @@ int_M Input_Bits(U_int_S *raw, U_int_M &pos, U_int_M max, U_int_S &mask, U_int_S
 	return value;
 }//end InputBits
 
-void decompress(TREE_NODE *tree, U_int_S *raw_in, U_int_M &pos_in, U_int_M max_in, int_L *raw_out, U_int_M &pos_out, U_int_M &max_out, table_H *table ,U_int_M *flag, U_int_M &pos_tH)
+void decompress(TREE_NODE *tree, uint8_t *raw_in, uint16_t &pos_in, uint16_t max_in, int32_t *raw_out, uint16_t &pos_out, uint16_t &max_out, table_H *table ,uint16_t *flag, uint16_t &pos_tH)
 {
-	U_int_M i, j;
-	U_int_S nbits;
+	uint16_t i, j;
+	uint8_t nbits;
 	TREE_NODE *temp;
-	U_int_S mask=0x80;
+	uint8_t mask=0x80;
 	bool err;
-	U_int_M maxIN=max_in+pos_in;
+	uint16_t maxIN=max_in+pos_in;
 
 	j=0;
 	while(pos_in<maxIN)    //check number of bytes
@@ -2814,11 +2814,11 @@ void decompress(TREE_NODE *tree, U_int_S *raw_in, U_int_M &pos_in, U_int_M max_i
 
 //data.data_BdR0 , data.length_BdR0 , data.samples_BdR0 , data.flag_BdR0.number_samples , data.flag_lead.number , data.t_Huffman , data.flag_Huffman
 //out_data       , length           , in_data           , n_samples                     , n_lead                , t_Huffman      , flag_Huffman
-void Huffman(int_L *out_data, U_int_M *length, U_int_S *in_data, U_int_M &n_samples, U_int_M n_lead, table_H *t_Huffman, U_int_M *flag_Huffman)
+void Huffman(int32_t *out_data, uint16_t *length, uint8_t *in_data, uint16_t &n_samples, uint16_t n_lead, table_H *t_Huffman, uint16_t *flag_Huffman)
 {
 	TREE_NODE *tree = NULL;
-	U_int_M pos_in, pos_out, pos_tH;
-	U_int_S i;
+	uint16_t pos_in, pos_out, pos_tH;
+	uint8_t i;
 
 	pos_in=0;
 	pos_out=0;
@@ -2839,10 +2839,10 @@ void Huffman(int_L *out_data, U_int_M *length, U_int_S *in_data, U_int_M &n_samp
 
 void Decode_Data(pointer_section *section, DATA_DECODE &data, bool &add_filter)
 {
-	U_int_L t;
-	U_int_L dim_B, dim_R, dim_R_, number_samples_;
+	uint32_t t;
+	uint32_t dim_B, dim_R, dim_R_, number_samples_;
 
-	int_L *dati_Res_ = NULL;
+	int32_t *dati_Res_ = NULL;
 	if(!data.flag_Huffman){//Or we will get crash 
 		return;
 	}
@@ -2851,8 +2851,8 @@ void Decode_Data(pointer_section *section, DATA_DECODE &data, bool &add_filter)
 	{
 		if(section[2].length && data.flag_Huffman[0])
 		{
-			dim_B=data.flag_BdR0.number_samples*sizeof(int_L)*data.flag_lead.number;   //whole number of bytes
-			if(dim_B!=0 && (data.Median=(int_L*)mymalloc(dim_B))==NULL)
+			dim_B=data.flag_BdR0.number_samples*sizeof(int32_t)*data.flag_lead.number;   //whole number of bytes
+			if(dim_B!=0 && (data.Median=(int32_t*)mymalloc(dim_B))==NULL)
 			{
 				fprintf(stderr,"Not enough memory");  // no, exit //
 				exit(2);
@@ -2863,7 +2863,7 @@ void Decode_Data(pointer_section *section, DATA_DECODE &data, bool &add_filter)
 		}
 		else
 		{
-			dim_B=data.flag_BdR0.number_samples*sizeof(int_M)*data.flag_lead.number;   //number of samples of all leads
+			dim_B=data.flag_BdR0.number_samples*sizeof(int16_t)*data.flag_lead.number;   //number of samples of all leads
 			//they shuld be equal!!!
 		}
 		free(data.length_BdR0);
@@ -2877,9 +2877,9 @@ void Decode_Data(pointer_section *section, DATA_DECODE &data, bool &add_filter)
 	//Decode rhythm data
 	if(section[6].length)
 	{
-		dim_R_=data.flag_Res.number_samples*data.flag_lead.number*sizeof(int_L);	//whole number of bytes
+		dim_R_=data.flag_Res.number_samples*data.flag_lead.number*sizeof(int32_t);	//whole number of bytes
 		number_samples_=data.flag_Res.number_samples;                //number of samples per lead after interpolation
-		if(dim_R_!=0 && (data.Residual=(int_L*)mymalloc(dim_R_))==NULL)
+		if(dim_R_!=0 && (data.Residual=(int32_t*)mymalloc(dim_R_))==NULL)
 		{
 			fprintf(stderr,"Not enough memory");  // no, exit //
 			exit(2);
@@ -2887,7 +2887,7 @@ void Decode_Data(pointer_section *section, DATA_DECODE &data, bool &add_filter)
 		if(section[2].length && data.flag_Huffman[0])
 			Huffman(data.Residual,data.length_Res,data.samples_Res,data.flag_Res.number_samples,data.flag_lead.number,data.t_Huffman,data.flag_Huffman);
 
-		dim_R=data.flag_Res.number_samples*sizeof(int_L)*data.flag_lead.number;   //number of bytes of all leads before interpolation (also, data.flag_Res.number_samples has been changed to the number of samples from HUffman)
+		dim_R=data.flag_Res.number_samples*sizeof(int32_t)*data.flag_lead.number;   //number of bytes of all leads before interpolation (also, data.flag_Res.number_samples has been changed to the number of samples from HUffman)
 		free(data.samples_Res);
 		free(data.length_Res);
 		data.samples_Res=NULL;
@@ -2906,22 +2906,22 @@ void Decode_Data(pointer_section *section, DATA_DECODE &data, bool &add_filter)
 			//exec interpolation
 			if(data.flag_Res.decimation_factor>1)                // by E.C. 19.02.2004  (i.e. to open pd3471)
 			{
-//dim_R = number of bytes of decimated signal (4 bytes (int_L) )
+//dim_R = number of bytes of decimated signal (4 bytes (int32_t) )
 //data.flag_Res.number_samples = samples of the decimated signal
-//dim_R_ = number of bytes of the reconstructed signal (4 bytes (int_L) )
+//dim_R_ = number of bytes of the reconstructed signal (4 bytes (int32_t) )
 //number_samples_ = samples of the reconstructed signal
 
 				data.flag_Res.number_samples=number_samples_;     //number of samples per lead
-				number_samples_=dim_R/(sizeof(int_L)*data.flag_lead.number);
+				number_samples_=dim_R/(sizeof(int32_t)*data.flag_lead.number);
 				dim_R=dim_R_;
-				dim_R_=(dim_R/sizeof(int_L))*sizeof(dec_S)*2;
+				dim_R_=(dim_R/sizeof(int32_t))*sizeof(float)*2;
 
-//dim_R_ = number of bytes of decimated signal (4 bytes (int_L) )
+//dim_R_ = number of bytes of decimated signal (4 bytes (int32_t) )
 //number_samples_ = samples of the decimated signal
-//dim_R = number of bytes of the reconstructed signal (4 bytes (int_L) )
+//dim_R = number of bytes of the reconstructed signal (4 bytes (int32_t) )
 //data.flag_Res.number_samples = samples of the reconstructed signal
 
-				if(dim_R_!=0 && (dati_Res_=(int_L*)mymalloc(dim_R_))==NULL)
+				if(dim_R_!=0 && (dati_Res_=(int32_t*)mymalloc(dim_R_))==NULL)
 				{
 					fprintf(stderr,"Not enough memory");  // no, exit //
 					exit(2);
@@ -2938,13 +2938,13 @@ void Decode_Data(pointer_section *section, DATA_DECODE &data, bool &add_filter)
 	doing the memory allocation in sopen_scp_read does it correctly. 
 	Number of files with SegFaults is reduced by 3.  
 	
-		if(dim_R!=0 && (data.Reconstructed=(int_L*)mymalloc(dim_R))==NULL)
+		if(dim_R!=0 && (data.Reconstructed=(int32_t*)mymalloc(dim_R))==NULL)
 		{
 			fprintf(stderr,"Not enough memory");  // no, exit //
 			exit(2);
 		}
 */
-		unsigned dim_RR=dim_R/sizeof(int_L);       // by E.C. 15.10.2003   This to correct a trivial error
+		unsigned dim_RR=dim_R/sizeof(int32_t);       // by E.C. 15.10.2003   This to correct a trivial error
 		for(t=0;t<dim_RR;t++)                 // of array overflow!!
 			data.Reconstructed[t]=data.Residual[t];   // by E.C. 19.02.2004: first copy rhythm then add the reference beat
 
@@ -2973,7 +2973,7 @@ void Decode_Data(pointer_section *section, DATA_DECODE &data, bool &add_filter)
 //                      sections 3, 4, 5, and 6
 //                  dati_Res_ ,data.Residual     ,dim_R   ,data.flag_lead.number  ,data.flag_Res, data.data_lead ,data.data_protected)
 
-void Interpolate(int_L *raw_out, int_L *raw_in, f_lead flag_L, lead *marker_A, f_Res flag, Protected_Area *marker_Z, U_int_L sample_Huff)
+void Interpolate(int32_t *raw_out, int32_t *raw_in, f_lead flag_L, lead *marker_A, f_Res flag, Protected_Area *marker_Z, uint32_t sample_Huff)
 //dim_out  = n byte in raw_out
 //dim_in   =    "      raw_in
 //marker_Z = no-subtraction zones
@@ -3009,15 +3009,15 @@ void Interpolate(int_L *raw_out, int_L *raw_in, f_lead flag_L, lead *marker_A, f
         in these situations samples are copied as they are.
 */
 {
-	U_int_M a, b;          //interpolation range
+	uint16_t a, b;          //interpolation range
 	float v;               //interpolation value
-	U_int_S j;             //working variable
-	U_int_M dim;           //number of samples (to skip) into a protected zone
-	U_int_M mINS, mCOPY;   //number of samples to insert, copy
-	int_M num;             //number of samples to interpolate
-	U_int_L pos_in, pos_out;
-	U_int_M nz;            //index of protected zones, i.e. index of QRS
-	U_int_S ne;            //index of lead
+	uint8_t j;             //working variable
+	uint16_t dim;           //number of samples (to skip) into a protected zone
+	uint16_t mINS, mCOPY;   //number of samples to insert, copy
+	int16_t num;             //number of samples to interpolate
+	uint32_t pos_in, pos_out;
+	uint16_t nz;            //index of protected zones, i.e. index of QRS
+	uint8_t ne;            //index of lead
 
 	pos_in=0;
 	pos_out=0;
@@ -3092,11 +3092,11 @@ void Interpolate(int_L *raw_out, int_L *raw_in, f_lead flag_L, lead *marker_A, f
 	}//for ne
 }//end Interpolate
 
-void ExecFilter(int_L *raw_in, int_L *raw_out, U_int_L &pos, U_int_M dim)
+void ExecFilter(int32_t *raw_in, int32_t *raw_out, uint32_t &pos, uint16_t dim)
 //filter from pos for dim samples
 {
-	int_L v;               //value
-	U_int_M i;
+	int32_t v;               //value
+	uint16_t i;
 
 	if (dim>0)
 	{
@@ -3120,16 +3120,16 @@ void ExecFilter(int_L *raw_in, int_L *raw_out, U_int_L &pos, U_int_M dim)
 		raw_out[pos]=raw_in[pos];  pos++; }
 }//end ExecFilter
 
-void DoFilter(int_L *raw_out, int_L *raw_in, f_Res flag, f_lead flag_L, lead *marker_A, Protected_Area *marker_P, Subtraction_Zone *marker_S)
+void DoFilter(int32_t *raw_out, int32_t *raw_in, f_Res flag, f_lead flag_L, lead *marker_A, Protected_Area *marker_P, Subtraction_Zone *marker_S)
 //filter low-pass outside the proteced zones (marker_Z) for each lead (marker_A)
 // but taking into account transients at the boundaries of the subtraction zones (marker_S)
 //It's included rounding.
 {
-	U_int_M a, b=0;         //interval
-	int_M num;
-	U_int_L pos;
-	U_int_M nz;
-	U_int_S ne;            //index of lead
+	uint16_t a, b=0;         //interval
+	int16_t num;
+	uint32_t pos;
+	uint16_t nz;
+	uint8_t ne;            //index of lead
 
 	pos=0;                               // by E.C. 19.02.2004  function redefined such as Interpolate()
 	for(ne=0;ne<flag_L.number;ne++)      // loop on leads
@@ -3194,13 +3194,13 @@ void DoFilter(int_L *raw_out, int_L *raw_in, f_Res flag, f_lead flag_L, lead *ma
 	}  // for ne/ng
 }//end DoFilter
 
-void DoAdd(int_L *raw_out, int_L *raw_R, f_Res flag_R, int_L *raw_B, f_BdR0 flag_B, Subtraction_Zone *marker_S, f_lead flag_L, lead *marker_A)
+void DoAdd(int32_t *raw_out, int32_t *raw_R, f_Res flag_R, int32_t *raw_B, f_BdR0 flag_B, Subtraction_Zone *marker_S, f_lead flag_L, lead *marker_A)
 //add BdR0 with the rhythm data for all leads
 {
-	U_int_M pos_B;
-	U_int_L pos_R, pos_out;
-	U_int_M ns, a , b, num;
-	U_int_S ne;            //index of leads
+	uint16_t pos_B;
+	uint32_t pos_R, pos_out;
+	uint16_t ns, a , b, num;
+	uint8_t ne;            //index of leads
 
 	pos_R=0;                             // by E.C. 19.02.2004  add reference beat to rhythm
 	for(ne=0;ne<flag_L.number;ne++)      //  loop on lead
@@ -3224,17 +3224,17 @@ void DoAdd(int_L *raw_out, int_L *raw_R, f_Res flag_R, int_L *raw_B, f_BdR0 flag
 			}//end for/if
 }//end DoAdd
 
-void Opt_Filter(int_L *raw_out, int_L *raw_in, f_Res flag, f_lead flag_L, lead *marker_A, Protected_Area *marker_P)
+void Opt_Filter(int32_t *raw_out, int32_t *raw_in, f_Res flag, f_lead flag_L, lead *marker_A, Protected_Area *marker_P)
 // by E.C. 25.02.2004
 // do an extra low-pass filter outside protected zones (marker_P)
 // in the range of the signal (marker_A) for each lead
 // this is simpler than DoFilter()
 {
-	U_int_M a, b=0;         //interval for filtering
-	int_M num;
-	U_int_L pos;
-	U_int_M nz;
-	U_int_S ne;            //lead index
+	uint16_t a, b=0;         //interval for filtering
+	int16_t num;
+	uint32_t pos;
+	uint16_t nz;
+	uint8_t ne;            //lead index
 
 	pos=0;
 	for(ne=0;ne<flag_L.number;ne++)      // loop on leads
