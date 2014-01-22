@@ -2,6 +2,16 @@
 # obtained from  IEEE Std 11073-10102-2012 
 # Health informatics—Point-of-care medical device communication
 # Part 10102: Nomenclature—Annotated ECG
+#
+# This table is also part of the specification of
+# the BioSig project http://biosig.sf.net/
+#
+# BioSig is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public
+# License as published by the Free Software Foundation; either
+# Version 3 of the License, or (at your option) any later version.
+#
+#
 #PART	CODE10	CF_CODE10	REFID
 0	0	0	MDC_ECG_LEAD_CONFIG
 0	1	1	MDC_ECG_LEAD_I
