@@ -321,11 +321,10 @@ void deallocEN1064(en1064_t en1064) {
 #if _ICONV_H
 /*
 	decode_scp_text converts SCP text strings into UTF-8 strings
+	The table of language support code has been obtained from
+	EN1064:2005+A1:2007, p.30.
 */
-int decode_scp_text(uint8_t LanguageSupportCode, size_t *inbytesleft, char **input, size_t *outbytesleft, char **output) {
-
-	if (output==NULL) return -1;
-	if (input==NULL) return -1;
+int decode_scp_text(uint8_t LanguageSupportCode, size_t inbytesleft, char *input, size_t outbytesleft, char *output) {
 
 	iconv_t cd;
 	if ((LanguageSupportCode & 0x01) == 0)
@@ -361,29 +360,27 @@ int decode_scp_text(uint8_t LanguageSupportCode, size_t *inbytesleft, char **inp
 	else if (LanguageSupportCode == 0x07)
 		cd = iconv_open ("UTF-8", "ISO-10646");
 
-	else if (LanguageSupportCode == 0x0f)	// JIS X 0201-1976 (Japanese)
+	else if (LanguageSupportCode == 0x0f)	// JIS X 0201-1976 (Japanese) - does not match exactly
 		cd = iconv_open ("UTF-8", "EUC-JISX0213");
-	else if (LanguageSupportCode == 0x17)	// JIS X 0208-1997 (Japanese)
+	else if (LanguageSupportCode == 0x17)	// JIS X 0208-1997 (Japanese) - does not match exactly
 		cd = iconv_open ("UTF-8", "EUC-JISX0213");
-	else if (LanguageSupportCode == 0x1f)	// JIS X 0212-1990 (Japanese)
+	else if (LanguageSupportCode == 0x1f)	// JIS X 0212-1990 (Japanese) - does not match exactly
 		cd = iconv_open ("UTF-8", "EUC-JISX0213");
 
 	else if (LanguageSupportCode == 0x27)
 		cd = iconv_open ("UTF-8", "GB2312");
 
-	else if (LanguageSupportCode == 0x2F)  // KS C5601-1987 (Korean)
+	else if (LanguageSupportCode == 0x2F)  // KS C5601-1987 (Korean) - does not match exactly
 		cd = iconv_open ("UTF-8", "EUC-KR");
-
-
 	else
 		return -1;
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: input=<%s>\n",__FILE__,__LINE__,*input);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: input=<%s>\n",__FILE__,__LINE__, input);
 
-	iconv(cd, input, inbytesleft, output, outbytesleft);
+	iconv(cd, &input, &inbytesleft, &output, &outbytesleft);
 	int errsv = errno;
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: output=<%s>\n",__FILE__,__LINE__,*output);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: output=<%s>\n",__FILE__,__LINE__, output);
 
 	return (iconv_close(cd) || errsv);
 }
@@ -568,6 +565,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			if (curSectPos+len1 > len) break;
 				if (tag==14) {
 					aECG->Section1.Tag14.LANG_SUPP_CODE  = *(PtrCurSect+curSectPos+16);	// tag 14, byte 16 (LANG_SUPP_CODE has to be 0x00 => Ascii only, 
+					if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i) Language Support Code is 0x%x\n",__FILE__,__LINE__,aECG->Section1.Tag14.LANG_SUPP_CODE);
 					break;
 				}
 				curSectPos += len1;
@@ -634,7 +632,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			while ((curSectPos<=len) && (*(PtrCurSect+curSectPos) < 255)) {
 				tag = *(PtrCurSect+curSectPos);
 				len1 = leu16p(PtrCurSect+curSectPos+1);
-				if (VERBOSE_LEVEL>8)
+				if (VERBOSE_LEVEL > 7)
 					fprintf(stdout,"SCP(r): Section 1 Tag %i Len %i\n",tag,len1); 
 
 				curSectPos += 3;
@@ -645,13 +643,23 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			break;
 				}
 				if (tag==0) {
-					// TODO: convert to UTF8
-					if (!hdr->FLAG.ANONYMOUS)
-						strncpy(hdr->Patient.Name, (char*)(PtrCurSect+curSectPos),min(len1,MAX_LENGTH_NAME));
+					// convert to UTF8
+					if (!hdr->FLAG.ANONYMOUS) {
+						// strncpy(hdr->Patient.Name, (char*)(PtrCurSect+curSectPos),min(len1,MAX_LENGTH_NAME));
+						 // convert to UTF8
+						decode_scp_text(aECG->Section1.Tag14.LANG_SUPP_CODE, len1, PtrCurSect+curSectPos, MAX_LENGTH_NAME, hdr->Patient.Name);
+					}
 				}
 				else if (tag==1) {
-//					hdr->Patient.FirstName = (char*)(PtrCurSect+curSectPos);
-					// TODO: convert to UTF8
+					if (!hdr->FLAG.ANONYMOUS) {
+						size_t len = strlen(hdr->Patient.Name);
+						if (len+3 < MAX_LENGTH_NAME) {
+							strcat(hdr->Patient.Name,", ");
+							len+=2;
+							// convert to UTF8
+							decode_scp_text(aECG->Section1.Tag14.LANG_SUPP_CODE, len1, PtrCurSect+curSectPos, MAX_LENGTH_NAME-len+1, hdr->Patient.Name+len);
+						}
+					}
 				}
 				else if (tag==2) {
 					if (len1 > MAX_LENGTH_PID) {
@@ -659,15 +667,23 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 						fprintf(stdout,"Warning SCP(read): length of Patient Id (section1 tag2) exceeds %i>%i\n",len1,MAX_LENGTH_PID); 
 #endif
 					}
-					// TODO: convert to UTF8
-					strncpy(hdr->Patient.Id,(char*)(PtrCurSect+curSectPos),min(len1,MAX_LENGTH_PID));
+					// convert to UTF8
+					decode_scp_text(aECG->Section1.Tag14.LANG_SUPP_CODE, len1, PtrCurSect+curSectPos, MAX_LENGTH_PID, hdr->Patient.Id);
 					hdr->Patient.Id[MAX_LENGTH_PID] = 0;
 					
 					if (!strcmp(hdr->Patient.Id,"UNKNOWN"))
 						hdr->Patient.Id[0] = 0;
 				}
 				else if (tag==3) {
-					// TODO: convert to UTF8
+					if (!hdr->FLAG.ANONYMOUS) {
+						size_t len = strlen(hdr->Patient.Name);
+						if (len+2 < MAX_LENGTH_NAME) {
+							strcat(hdr->Patient.Name," ");
+							len+=1;
+							// convert to UTF8
+							decode_scp_text(aECG->Section1.Tag14.LANG_SUPP_CODE, len1, PtrCurSect+curSectPos, MAX_LENGTH_NAME-len+1, hdr->Patient.Name+len);
+						}
+					}
 				}
 				else if (tag==4) {
 				}
@@ -786,12 +802,12 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				}
 				else if (tag==16) {
 					/* Acquiring Institution Description */
-					// TODO: convert to UTF8
-					// hdr->ID.Hospital = strndup(PtrCurSect+curSectPos+14,len1);
-					hdr->ID.Hospital = malloc(len1);
+					size_t outlen = len1*2+1;
+					hdr->ID.Hospital = malloc(outlen);
 					if (hdr->ID.Hospital) {
-						hdr->ID.Hospital[len1] = 0;
-						memcpy(hdr->ID.Hospital, PtrCurSect+curSectPos+14, len1);
+						// convert to UTF8
+						decode_scp_text(aECG->Section1.Tag14.LANG_SUPP_CODE, len1, PtrCurSect+curSectPos, outlen, hdr->ID.Hospital);
+						hdr->ID.Hospital[outlen] = 0;
 					}
 				}
 				else if (tag==17) {
@@ -815,10 +831,13 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					aECG->MedicationDrugs = (char*)(PtrCurSect+curSectPos);
 				}
 				else if (tag==22) {
-					// TODO: convert to UTF8
-					hdr->ID.Technician = (char*)realloc(hdr->ID.Technician,len1+1);
-					memcpy(hdr->ID.Technician,(char*)(PtrCurSect+curSectPos),len1);
-					hdr->ID.Technician[len1] = 0;
+					size_t outlen = len1*2+1;
+					hdr->ID.Technician = malloc(outlen);
+					if (hdr->ID.Technician) {
+						// convert to UTF8
+						decode_scp_text(aECG->Section1.Tag14.LANG_SUPP_CODE, len1, PtrCurSect+curSectPos, outlen, hdr->ID.Technician);
+						hdr->ID.Technician[outlen] = 0;
+					}
 				}
 				else if (tag==23) {
 					/* Room Description */
