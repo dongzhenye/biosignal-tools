@@ -30,7 +30,8 @@ checksums           rmd160  2cd5b3c431fe8bd2cc3128fee3c378097f25fcd0 \
 depends_build-append \
                     port:gawk
 depends_lib         port:SuiteSparse \
-                    port:zlib
+                    port:zlib \
+                    port:libiconv
 
 configure.args      -DUSE_SUITESPARSE=ON \
                     -DUSE_ZLIB=ON \
@@ -39,4 +40,4 @@ configure.args      -DUSE_SUITESPARSE=ON \
                     -DCMAKE_C_FLAGS=-DMACPORTS \
                     -DCMAKE_CXX_FLAGS=-DMACPORTS
 configure.ldflags-append \
-                    -lcholmod
+                    -lcholmod -liconv
