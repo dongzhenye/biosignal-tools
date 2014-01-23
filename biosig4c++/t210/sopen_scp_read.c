@@ -318,7 +318,7 @@ void deallocEN1064(en1064_t en1064) {
 	en1064.Section4.beat = NULL;
 }
 
-#if _ICONV_H
+#if defined(_ICONV_H) || defined (_LIBICONV_H)
 /*
 	decode_scp_text converts SCP text strings into UTF-8 strings
 	The table of language support code has been obtained from
