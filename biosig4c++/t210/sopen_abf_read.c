@@ -31,9 +31,9 @@
 
 #include "../biosig-dev.h"
 
-#define ABFLONG uint32_t
+#define ABFLONG int32_t
 #include "axon_structs.h"	// ABF2
-#include "abfheadr.h"	// ABF1
+#include "abfheadr.h"		// ABF1
 
 
 /*
@@ -46,38 +46,44 @@ EXTERN_C void sread_atf(HDRTYPE* hdr) {
 	if (VERBOSE_LEVEL>6) fprintf(stdout,"SREAD ATF [%i,%i]\n",(unsigned)hdr->NRec, (unsigned)hdr->SPR);
 
 	if (hdr->AS.rawdata != NULL) return;
-	if (hdr->NRec * hdr->SPR > 0)
+	//if (hdr->NRec * hdr->SPR > 0)
 		hdr->AS.rawdata = malloc(hdr->NRec * hdr->SPR * hdr->AS.bpb);
 
 	ifseek(hdr, hdr->HeadLen, SEEK_SET);
 
-	size_t ll  = 512;
-	char *line = malloc(ll+1);
+	size_t ll;
+	char *line = NULL;
 
 	if (VERBOSE_LEVEL>6) fprintf(stdout,"SREAD ATF\n");
 
 	size_t ln = 0;
 	while (~ifeof(hdr)) {
+		if (line!=NULL) { free(line); line=NULL; }  // allocate line buffer as needed
 		ssize_t nc = getline(&line, &ll, hdr->FILE.FID);
 		if (nc < 0) break;
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"SREAD ATF  %i\t<%s>\n",(unsigned)ln,line );
+		if (VERBOSE_LEVEL>8) fprintf(stdout,"SREAD ATF 2 %i\t<%s>\n",(unsigned)ln,line );
 
-		if ((size_t)(hdr->NRec * hdr->SPR) <= (ln+1) ) {
+		if ((hdr->NRec * hdr->SPR) <= (ln+1) ) {
 			hdr->NRec = max(1024, ln*2);
 			hdr->AS.rawdata = realloc(hdr->AS.rawdata, hdr->NRec * hdr->SPR * hdr->AS.bpb);
 		}
+
+		if (VERBOSE_LEVEL>8) fprintf(stdout,"SREAD ATF 4 %i\t<%s>\n",(unsigned)ln,line );
 
 		char *str = strtok(line,"\t");
 		typeof(hdr->NS) k;
 		for (k = 0; k < hdr->NS; k++) {
 			*(double*)(hdr->AS.rawdata + ln*hdr->AS.bpb + hdr->CHANNEL[k].bi) = strtod(str, &str);
 			// extract next value
-			str = strtok(NULL,"\t");
+			//str = strtok(NULL,"\t");
 		}
+		if (VERBOSE_LEVEL>8) fprintf(stdout,"SREAD ATF 6 %i\t<%s>\n",(unsigned)ln,line );
+
 		ln++;
 	}
 	free(line);
+	ifclose(hdr);
 
 	hdr->NRec = ln;
 	hdr->AS.first  = 0;
@@ -110,7 +116,7 @@ EXTERN_C void sopen_abf_read(HDRTYPE* hdr) {
 		{
 			struct tm t;
 			uint32_t u = leu32p(hdr->AS.Header + offsetof(struct ABFFileHeader, lFileStartDate));
-				t.tm_year = u / 10000 - 1900;
+			t.tm_year = u / 10000 - 1900;
 			t.tm_mon  = (u % 10000)/100 - 1;
 			t.tm_mday = (u % 100);
 			u = leu32p(hdr->AS.Header + offsetof(struct ABFFileHeader, lFileStartTime));
@@ -179,6 +185,7 @@ EXTERN_C void sopen_abf_read(HDRTYPE* hdr) {
 
 			fprintf(stdout,"\nchannel_count_acquired:\t%i\n",lei16p(hdr->AS.Header + offsetof(struct ABFFileHeader, channel_count_acquired)));
 			fprintf(stdout,"nADCNumChannels:\t%i\n",lei16p(hdr->AS.Header + offsetof(struct ABFFileHeader, nADCNumChannels)));
+			fprintf(stdout,"fADCSampleInterval:\t%f\n",lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fADCSampleInterval)));
 			fprintf(stdout,"nDigitalDACChannel:\t%i\n",lei16p(hdr->AS.Header + offsetof(struct ABFFileHeader, nDigitalDACChannel)));
 			fprintf(stdout,"nOperationMode:\t%i\n",lei16p(hdr->AS.Header + offsetof(struct ABFFileHeader, nOperationMode)));
 			fprintf(stdout,"nDigitalEnable:\t%i\n",lei16p(hdr->AS.Header + offsetof(struct ABFFileHeader, nDigitalEnable)));
@@ -203,6 +210,8 @@ EXTERN_C void sopen_abf_read(HDRTYPE* hdr) {
 			fprintf(stdout,"fTriggerThreshold:\t%f\n",lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fTriggerThreshold)));
 
 		}
+
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"sopen_abf_read 201\n");
 
 		hdr->NS = lei16p(hdr->AS.Header + offsetof(struct ABFFileHeader, nADCNumChannels));
 		if (lei16p(hdr->AS.Header + offsetof(struct ABFFileHeader, nDigitalEnable)))
@@ -384,7 +393,7 @@ EXTERN_C void sopen_abf2_read(HDRTYPE* hdr) {
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"sopen_abf2_read 101\n");
 
-	biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "ABF2 format currently not supported"); return;
+//	biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "ABF2 format currently not supported"); return;
 
 		fprintf(stdout,"Warning ABF2 v%4.2f: implementation is not complete!\n", hdr->VERSION);
 
@@ -407,6 +416,7 @@ EXTERN_C void sopen_abf2_read(HDRTYPE* hdr) {
 			hdr->T0 = tm_time2gdf_time(&t);
 		}
 
+		hdr->SPR = 1;
 		uint16_t gdftyp = 3;
 		switch (lei16p(hdr->AS.Header + offsetof(struct ABFFileHeader, nDataFormat))) {
 		case 0: gdftyp = 3; break;
@@ -512,9 +522,11 @@ EXTERN_C void sopen_abf2_read(HDRTYPE* hdr) {
 		float fDACRange = lef32p(hdr->AS.auxBUF + offsetof(struct ABF_ProtocolInfo, fDACRange));
 		int32_t lADCResolution = lei32p(hdr->AS.auxBUF + offsetof(struct ABF_ProtocolInfo, lADCResolution));
 		int32_t lDACResolution = lei32p(hdr->AS.auxBUF + offsetof(struct ABF_ProtocolInfo, lDACResolution));
+		hdr->SampleRate =  1e6 / lef32p(hdr->AS.auxBUF + offsetof(struct ABF_ProtocolInfo, fADCSequenceInterval));
 
 		if (VERBOSE_LEVEL>7) {
 			fprintf(stdout,"nOperationMode:\t%i\n", lei16p(hdr->AS.auxBUF + offsetof(struct ABF_ProtocolInfo, nOperationMode)));
+			fprintf(stdout,"fADCSequenceInterval:\t%g\n", lef32p(hdr->AS.auxBUF + offsetof(struct ABF_ProtocolInfo, fADCSequenceInterval)));
 			fprintf(stdout,"fSecondsPerRun:\t%g\n", lef32p(hdr->AS.auxBUF + offsetof(struct ABF_ProtocolInfo, fSecondsPerRun)));
 			fprintf(stdout,"fSecondsPerRun:\t%g\n", lef32p(hdr->AS.auxBUF + offsetof(struct ABF_ProtocolInfo, fSecondsPerRun)));
 			fprintf(stdout,"lNumSamplesPerEpisode:\t%i\n", lei32p(hdr->AS.auxBUF + offsetof(struct ABF_ProtocolInfo, lNumSamplesPerEpisode)));
@@ -555,7 +567,7 @@ EXTERN_C void sopen_abf2_read(HDRTYPE* hdr) {
 			hc->HighPass = lef32p(hdr->AS.auxBUF + S.uBytes*k + offsetof(struct ABF_ADCInfo, fSignalHighpassFilter));
 			hc->GDFTYP   = gdftyp;
 			hc->SPR      = hdr->SPR;
-			hc->bi       = k*GDFTYP_BITS[gdftyp]/8;
+			hc->bi       = k*GDFTYP_BITS[gdftyp] / 8;
 
 /*
 			strncpy(hc->Label, (char*)hdr->AS.Header + offsetof(struct ABFFileHeader, sADCChannelName) + k*ABF_ADCNAMELEN, min(ABF_ADCNAMELEN,MAX_LENGTH_LABEL));
@@ -607,6 +619,7 @@ if (VERBOSE_LEVEL>7) {
 		readABF2block(hdr->AS.Header + offsetof(struct ABF_FileInfo, SynchArraySection), hdr, &S);
 		readABF2block(hdr->AS.Header + offsetof(struct ABF_FileInfo, AnnotationSection), hdr, &S);
 		readABF2block(hdr->AS.Header + offsetof(struct ABF_FileInfo, StatsSection), hdr, &S);
+
 
 /*
 		hdr->NS = lei16p(hdr->AS.Header + offsetof(struct ABFFileHeader, nADCNumChannels));
