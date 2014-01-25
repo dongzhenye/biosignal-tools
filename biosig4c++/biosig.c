@@ -10979,7 +10979,7 @@ if (VERBOSE_LEVEL>2)
 			int k1;
 			if (!strncmp(hdr->CHANNEL[k].Label, "MDC_ECG_LEAD_", 13)) {
 				// MDC_ECG_LEAD_*  - ignore case  //
-				for (k1=0; strcmpi(hdr->CHANNEL[k].Label+13,LEAD_ID_TABLE[k1]) && LEAD_ID_TABLE[k1][0]; k1++) {};
+				for (k1=0; strcasecmp(hdr->CHANNEL[k].Label+13,LEAD_ID_TABLE[k1]) && LEAD_ID_TABLE[k1][0]; k1++) {};
 				if (LEAD_ID_TABLE[k1][0])
 					hdr->CHANNEL[k].LeadIdCode = k1;
 			}
@@ -13867,7 +13867,7 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 		T0 = gdf_time2tm_time(hdr->T0);
 		char tmp[60];
 		strftime(tmp, 59, "%x %X %Z", T0);
-		fprintf(fid,"\tStartOfRecording: %s\n",tmp);
+		fprintf(fid,"\tStartOfRecording: %s\nbci2000: %p\n",tmp,hdr->AS.bci2000);
 		return(0);
 	}
 
