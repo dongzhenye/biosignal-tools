@@ -533,7 +533,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 419: SPR=%i=%i NRec=%i  @%p\n",(int)SPR
 			hdr->SPR = 0; 	
 		}
 		else  {
-			hdr->FLAG.UCAL = 1;
 			hdr->SPR       = 1;
 			hdr->NRec      = SPR;
 			hdr->AS.length = SPR;
@@ -583,7 +582,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 			hdr->CHANNEL[k].PhysMax = hdr->CHANNEL[k].DigMax * hdr->CHANNEL[k].Cal + hdr->CHANNEL[k].Off;
 			hdr->CHANNEL[k].PhysMin = hdr->CHANNEL[k].DigMin * hdr->CHANNEL[k].Cal + hdr->CHANNEL[k].Off;
 		}
-		hdr->FLAG.UCAL = 1;
 
 #undef H1LEN
 }
