@@ -104,7 +104,7 @@ else
 		## exclude conflicting definition of sopen from mingw's io.h
 		CFLAGS  += -I.
 		IO_H_FILE2 = io.h
-	        LIBS    += -liberty -lssp -lws2_32
+	        LIBS    += -liconv -liberty -lssp -lws2_32
 	endif
 endif
 
@@ -192,7 +192,7 @@ LIBS         += $(LDLIBS)
 DELETE        = rm -f
 COPY          = cp -f
 DATA_DIR      = data/
-DATA_DIR_CFS  = $(HOME)/Q/data/test/CFS/
+DATA_DIR_CFS  = $(HOME)/L/data/test/CFS/
 TEMP_DIR      = test/
 SED           = sed
 VERBOSE	     := -V0
@@ -876,11 +876,13 @@ install_libbiosig.a: libbiosig.a libbiosig2.a libphysicalunits.a
 	install gdftime.h    		$(INC)
 	install biosig-dev.h    	$(INC)
 	install physicalunits.h    	$(INC)
+	install gdftime.h    		$(INC)
 	install libbiosig.a		$(LIB)
 	install libbiosig.pc		$(LIB)/pkgconfig/
 	install libphysicalunits.a 	$(LIB)
 	install biosig2.h    		$(INC)
 	install libbiosig2.a		$(LIB)
+	install libgdftime.a		$(LIB)
 
 install_libbiosig: libbiosig2.so libphysicalunits.so  install_libbiosig.a
 	# do not install libbiosig.so, only static version should be installed
@@ -904,7 +906,7 @@ install: save2gdf libbiosig.a doc/save2gdf.1 install_libbiosig
 	install -d			$(LIB) $(INC)
 	install biosig.h    		$(INC)
 	install physicalunits.h    	$(INC)
-	install libbiosig.a libphysicalunits.a	$(LIB)
+	install libbiosig.a libphysicalunits.a libgdftime.a $(LIB)
 	mkdir -p  			$(DESTDIR)/usr/share/man/man1
 	install doc/*.1  		$(DESTDIR)/usr/share/man/man1
 	#install libbiosig.man 		$(DESTDIR)/usr/share/
@@ -929,6 +931,7 @@ uninstall remove:
 	-$(DELETE) $(LIB)/libbiosig.*
 	-$(DELETE) $(LIB)/libbiosig2.*
 	-$(DELETE) $(LIB)/libphysicalunits.*
+	-$(DELETE) $(LIB)/libgdftime.*
 	-$(DELETE) $(DESTDIR)/usr/share/man/man1/save2gdf.1
 	-$(DELETE) $(DESTDIR)/usr/share/man/man1/mexSLOAD.1
 	-$(DELETE) $(DESTDIR)/usr/share/man/man1/sigviewer.1
