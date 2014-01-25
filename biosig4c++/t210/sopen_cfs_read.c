@@ -97,7 +97,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"%s:%i sopen_cfs_read started [%s]\n",__FILE
 			hdr->EVENT.POS = (typeof(hdr->EVENT.POS)) realloc(hdr->EVENT.POS, (hdr->EVENT.N + NumberOfDataSections - 1) * sizeof(*hdr->EVENT.POS));
 		}
 
-if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n",hdr->NS,n,d,FileHeaderSize,DataHeaderSize,LastDataSectionHeaderOffset,NumberOfDataSections,leu32p(hdr->AS.Header+0x86));
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i) CFS - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n",__FILE__,__LINE__,hdr->NS,n,d,FileHeaderSize,DataHeaderSize,LastDataSectionHeaderOffset,NumberOfDataSections,leu32p(hdr->AS.Header+0x86));
 
 		/* channel information */
 		hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
@@ -123,6 +123,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n
 			while (isspace(hc->Label[len])) len--;		// remove trailing blanks
 			hc->Label[len+1] = 0;
 
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i) Channel #%i: %i<%s>/%i<%s>\n",__FILE__,__LINE__,k+1, H2[22 + k*H2LEN], H2 + 23 + k*H2LEN, H2[32 + k*H2LEN], H2 + 33 + k*H2LEN);
+
+
 			hc->PhysDimCode  = PhysDimCode (H2 + 22 + 1 + k*H2LEN);			// Y axis units
 			xPhysDimScale[k] = PhysDimScale(PhysDimCode(H2 + 32 + 1 + k*H2LEN));	// X axis units
 
@@ -143,7 +146,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 131 - %d,%d,%d,0x%x,0x%x,0x%x,%d,0x%x\n
 			hc->LowPass  = NAN;
 			hc->HighPass = NAN;
 			hc->Notch    = NAN;
-if (VERBOSE_LEVEL>7) fprintf(stdout,"Channel #%i: [%s](%i/%i) <%s>/<%s> ByteSpace%i,Next#%i\n",k+1, H2 + 1 + k*H2LEN, dataType, H2[43], H2 + 23 + k*H2LEN, H2 + 33 + k*H2LEN, leu16p(H2+44+k*H2LEN), leu16p(H2+46+k*H2LEN));
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i) Channel #%i: [%s](%i/%i) <%s>/<%s> ByteSpace%i,Next#%i\n",__FILE__,__LINE__,k+1, H2 + 1 + k*H2LEN, dataType, H2[43], H2 + 23 + k*H2LEN, H2 + 33 + k*H2LEN, leu16p(H2+44+k*H2LEN), leu16p(H2+46+k*H2LEN));
 		}
 		hdr->AS.bpb = bpb;
 
@@ -315,8 +318,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n[DS#%3i] 0x%x 0x%x [0x%x 0x%x szChanData=
 				uint32_t xspr = leu32p(pos+4);
 				float Cal    = lef32p(pos+8);
 				float Off    = lef32p(pos+12);
-				double Xcal  = lef32p(pos+16);
-				double Xoff  = lef32p(pos+20);// unused
+				double XCal  = lef32p(pos+16);
+				double XOff  = lef32p(pos+20);// unused
 				if (m > 0) {
 					if ( (hc->SPR != xspr)
 					  || (hc->Cal != Cal)
@@ -331,10 +334,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n[DS#%3i] 0x%x 0x%x [0x%x 0x%x szChanData=
 				}
 
 
-if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 408: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x%g %g %g\n",m,k,spr,(int)SPR,hc->SPR,hc->Cal,hc->Off,hc->bi,xPhysDimScale[k], Xcal, Xoff);
+if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 408: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x%g %g %g\n",m,k,spr,(int)SPR,hc->SPR,hc->Cal,hc->Off,hc->bi,xPhysDimScale[k], XCal, XOff);
 
-				double Fs = 1.0 / (xPhysDimScale[k] * Xcal);
-				if ( (hc->OnOff == 0) || (Xcal == 0.0) ) {
+				double Fs = 1.0 / (xPhysDimScale[k] * XCal);
+				if ( (hc->OnOff == 0) || (XCal == 0.0) ) {
 					; // do nothing:  
 				}
 				else if (flag_firstchan) {
@@ -395,13 +398,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 408: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 				hc->Cal     = lef32p(pos+8);
 				hc->Off     = lef32p(pos+12);
 */
-				double Xcal = lef32p(pos+16);
-				double Xoff = lef32p(pos+20);// unused
+				double XCal = lef32p(pos+16);
+				double XOff = lef32p(pos+20);// unused
 
-if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x%g %g %g\n",m,k,spr,(int)SPR,hc->SPR,hc->Cal,hc->Off,hc->bi,xPhysDimScale[k], Xcal, Xoff);
+if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x%g %g %g %g %g\n",m,k,spr, (int)SPR, hc->SPR, hc->Cal, hc->Off, hc->bi, xPhysDimScale[k], lef32p(pos+8), lef32p(pos+12), XCal, XOff);
 
-				double Fs = 1.0 / (xPhysDimScale[k] * Xcal);
-				if ( (hc->OnOff == 0) || (Xcal == 0.0) ) {
+				double Fs = 1.0 / (xPhysDimScale[k] * XCal);
+				if ( (hc->OnOff == 0) || (XCal == 0.0) ) {
 					; // do nothing:
 				}
 				else if (flag_firstchan) {
@@ -555,32 +558,35 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 429: SPR=%i=%i NRec=%i\n",(int)SPR,hdr-
 		}
 
 		for (k = 0; k < hdr->NS; k++) {
-			switch (hdr->CHANNEL[k].GDFTYP) {
+			CHANNEL_TYPE *hc = hdr->CHANNEL + k;
+			switch (hc->GDFTYP) {
 			case 0:
 			case 1:
-				hdr->CHANNEL[k].DigMax  =  127;
-				hdr->CHANNEL[k].DigMin  = -128;
+				hc->DigMax  =  127;
+				hc->DigMin  = -128;
 				break;
 			case 2:
-				hdr->CHANNEL[k].DigMax  =  255;
-				hdr->CHANNEL[k].DigMin  =  0;
+				hc->DigMax  =  255;
+				hc->DigMin  =  0;
 				break;
 			case 3:
-				hdr->CHANNEL[k].DigMax  = (int16_t)0x7fff;
-				hdr->CHANNEL[k].DigMin  = (int16_t)0x8000;
+				hc->DigMax  = (int16_t)0x7fff;
+				hc->DigMin  = (int16_t)0x8000;
 				break;
 			case 4:
-				hdr->CHANNEL[k].DigMax  = 0xffff;
-				hdr->CHANNEL[k].DigMin  = 0;
+				hc->DigMax  = 0xffff;
+				hc->DigMin  = 0;
 				break;
 			case 16:
 			case 17:
-				hdr->CHANNEL[k].DigMax  =  1e9;
-				hdr->CHANNEL[k].DigMin  = -1e9;
+				hc->DigMax  =  1e9;
+				hc->DigMin  = -1e9;
 				break;
 			}
-			hdr->CHANNEL[k].PhysMax = hdr->CHANNEL[k].DigMax * hdr->CHANNEL[k].Cal + hdr->CHANNEL[k].Off;
-			hdr->CHANNEL[k].PhysMin = hdr->CHANNEL[k].DigMin * hdr->CHANNEL[k].Cal + hdr->CHANNEL[k].Off;
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (%i): %f %f %f %f %f %f\n",__FILE__,__LINE__,hc->PhysMax, hc->DigMax, hc->Cal, hc->Off,hc->PhysMin, hc->DigMin );
+			hc->PhysMax = hc->DigMax * hc->Cal + hc->Off;
+			hc->PhysMin = hc->DigMin * hc->Cal + hc->Off;
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (%i): %f %f %f %f %f %f\n",__FILE__,__LINE__,hc->PhysMax, hc->DigMax, hc->Cal, hc->Off,hc->PhysMin, hc->DigMin );
 		}
 
 #undef H1LEN
