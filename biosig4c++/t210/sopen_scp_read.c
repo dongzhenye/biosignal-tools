@@ -318,14 +318,16 @@ void deallocEN1064(en1064_t en1064) {
 	en1064.Section4.beat = NULL;
 }
 
-#if defined(_ICONV_H) || defined (_LIBICONV_H)
+
+int decode_scp_text(HDRTYPE *hdr, size_t inbytesleft, char *input, size_t outbytesleft, char *output) {
+
+#if  defined(_ICONV_H) || defined (_LIBICONV_H)
 /*
 	decode_scp_text converts SCP text strings into UTF-8 strings
-	The table of language support code has been obtained from
-	EN1064:2005+A1:2007, p.30.
+	The table of language support code as defined in
+	CEN Standard EN1064:2005+A1:2007, p.30.
 */
-int decode_scp_text(uint8_t LanguageSupportCode, size_t inbytesleft, char *input, size_t outbytesleft, char *output) {
-
+	uint8_t LanguageSupportCode = (*(struct aecg*)(hdr->aECG)).Section1.Tag14.LANG_SUPP_CODE;
 	iconv_t cd;
 	if ((LanguageSupportCode & 0x01) == 0)
 		cd = iconv_open ("UTF-8", "ASCII");
@@ -372,21 +374,37 @@ int decode_scp_text(uint8_t LanguageSupportCode, size_t inbytesleft, char *input
 
 	else if (LanguageSupportCode == 0x2F)  // KS C5601-1987 (Korean) - does not match exactly
 		cd = iconv_open ("UTF-8", "EUC-KR");
-	else
+	else {
+		biosigERROR(hdr, B4C_CHAR_ENCODING_UNSUPPORTED, "SCP character encoding not supported");
 		return -1;
+	}
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: input=<%s>\n",__FILE__,__LINE__, input);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: input=<%s>\n", __FILE__, __LINE__, input);
 
 	iconv(cd, &input, &inbytesleft, &output, &outbytesleft);
 	int errsv = errno;
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: output=<%s>\n",__FILE__,__LINE__, output);
+	if (errsv)
+		biosigERROR(hdr, B4C_CHAR_ENCODING_UNSUPPORTED, "conversion of SCP text failed");
+
+
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: output=<%s>\n", __FILE__, __LINE__, output);
 
 	return (iconv_close(cd) || errsv);
-}
+
+#else  // if neither _ICONV_H nor _LIBCONV_H are defined
+
+	if ((LanguageSupportCode & 0x01) != 0) {
+		biosigERROR(hdr, B4C_CHAR_ENCODING_UNSUPPORTED, "SCP character encoding not supported");
+	}
+	else	// ASCII encoding is UTF-8 compatible - no convesion needed
+		strncpy(output, input, min(inbytesleft, outbytesleft+1));
+
+	return(LanguageSupportCode & 0x01);
 
 #endif
 
+}
 
 
 EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
@@ -647,7 +665,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					if (!hdr->FLAG.ANONYMOUS) {
 						// strncpy(hdr->Patient.Name, (char*)(PtrCurSect+curSectPos),min(len1,MAX_LENGTH_NAME));
 						 // convert to UTF8
-						decode_scp_text(aECG->Section1.Tag14.LANG_SUPP_CODE, len1, PtrCurSect+curSectPos, MAX_LENGTH_NAME, hdr->Patient.Name);
+						decode_scp_text(hdr, len1, PtrCurSect+curSectPos, MAX_LENGTH_NAME, hdr->Patient.Name);
 					}
 				}
 				else if (tag==1) {
@@ -657,7 +675,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 							strcat(hdr->Patient.Name,", ");
 							len+=2;
 							// convert to UTF8
-							decode_scp_text(aECG->Section1.Tag14.LANG_SUPP_CODE, len1, PtrCurSect+curSectPos, MAX_LENGTH_NAME-len+1, hdr->Patient.Name+len);
+							decode_scp_text(hdr, len1, PtrCurSect+curSectPos, MAX_LENGTH_NAME-len+1, hdr->Patient.Name+len);
 						}
 					}
 				}
@@ -668,7 +686,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 #endif
 					}
 					// convert to UTF8
-					decode_scp_text(aECG->Section1.Tag14.LANG_SUPP_CODE, len1, PtrCurSect+curSectPos, MAX_LENGTH_PID, hdr->Patient.Id);
+					decode_scp_text(hdr, len1, PtrCurSect+curSectPos, MAX_LENGTH_PID, hdr->Patient.Id);
 					hdr->Patient.Id[MAX_LENGTH_PID] = 0;
 					
 					if (!strcmp(hdr->Patient.Id,"UNKNOWN"))
@@ -681,7 +699,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 							strcat(hdr->Patient.Name," ");
 							len+=1;
 							// convert to UTF8
-							decode_scp_text(aECG->Section1.Tag14.LANG_SUPP_CODE, len1, PtrCurSect+curSectPos, MAX_LENGTH_NAME-len+1, hdr->Patient.Name+len);
+							decode_scp_text(hdr, len1, PtrCurSect+curSectPos, MAX_LENGTH_NAME-len+1, hdr->Patient.Name+len);
 						}
 					}
 				}
@@ -806,7 +824,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					hdr->ID.Hospital = malloc(outlen);
 					if (hdr->ID.Hospital) {
 						// convert to UTF8
-						decode_scp_text(aECG->Section1.Tag14.LANG_SUPP_CODE, len1, PtrCurSect+curSectPos, outlen, hdr->ID.Hospital);
+						decode_scp_text(hdr, len1, PtrCurSect+curSectPos, outlen, hdr->ID.Hospital);
 						hdr->ID.Hospital[outlen] = 0;
 					}
 				}
@@ -835,7 +853,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					hdr->ID.Technician = malloc(outlen);
 					if (hdr->ID.Technician) {
 						// convert to UTF8
-						decode_scp_text(aECG->Section1.Tag14.LANG_SUPP_CODE, len1, PtrCurSect+curSectPos, outlen, hdr->ID.Technician);
+						decode_scp_text(hdr, len1, PtrCurSect+curSectPos, outlen, hdr->ID.Technician);
 						hdr->ID.Technician[outlen] = 0;
 					}
 				}
