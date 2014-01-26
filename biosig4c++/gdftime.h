@@ -64,7 +64,7 @@
 	The following macros define the conversions between the unix time and the
 	GDF format.
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-typedef int64_t 		gdf_time; /* gdf time is represented in 64 bits */
+typedef int64_t 		gdf_time, gdftime_t; /* gdf time is represented in 64 bits */
 
 #define t_time2gdf_time(t)	((gdf_time)floor(ldexp(((double)(t))/86400.0 + 719529.0, 32)))
 #define gdf_time2t_time(t)	((ldexp(((double)(t)),-32) - 719529.0)*86400.0)
@@ -77,15 +77,35 @@ EXTERN_C {
 /*
  * converts struct tm into gdf_time format
  */
-gdf_time   tm_time2gdf_time(struct tm *t);
+gdftime_t   tm_time2gdf_time(struct tm *t);
 /*
  * gdf_time2tm_time converts gdf-time into struct tm format,
  */
-struct tm *gdf_time2tm_time(gdf_time t);
+struct tm *gdf_time2tm_time(gdftime_t t);
 /*
  * re-entrant version of gdf_time2tm_time, memory for t must be allocated
  */
-int gdf_time2tm_time_r(gdf_time t, struct tm *tm);
+int gdf_time2tm_time_r(gdftime_t t, struct tm *tm);
+
+
+/*
+char *gdftime2string(gdftime_t)
+char *gdfdate2string(gdftime_t)
+char *gdfdatetime2string(gdftime_t)
+
+gdftime_t string2gdftime(const char*)
+gdftime_t string2gdfdate(const char*)
+gdftime_t string2gdfdatetime(const char*)
+
+gdftime_t time2gdftime(int,int,float)
+gdftime_t date2gdftime(int,int,int)
+gdftime_t datetime2gdftime(int,int,int,int,int,float)
+
+void gdftime2datetime(&int,&int,&int,&int,&int,&float)
+void gdftime2time(&int,&int,&float)
+void gdftime2date(&int,&int,&int)
+ */
+
 
 #ifdef __cplusplus
 }
