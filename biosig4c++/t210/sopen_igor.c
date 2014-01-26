@@ -1,6 +1,6 @@
 /*
 
-    Copyright (C) 2013 Alois Schloegl <alois.schloegl@gmail.com>
+    Copyright (C) 2013,2014 Alois Schloegl <alois.schloegl@gmail.com>
 
     This file is part of the "BioSig for C/C++" repository 
     (biosig4c++) at http://biosig.sf.net/ 
@@ -93,10 +93,6 @@ char *IgorChanLabel(char *inLabel, HDRTYPE *hdr, size_t *ngroup, size_t *nseries
 		}
 	}
 
-	for (k=0; k<hdr->NS; k++) {
-
-	}
-
 	if ((*ns)+1 > hdr->NS) {	// another channel
 		hdr->NS = (*ns)+1;
 		hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
@@ -139,30 +135,25 @@ void ReorderBytes(void *p, int bytesPerPoint, long numValues)	// Reverses byte o
 }
 */
 
-void ReorderShort(void* sp)
-{
+void ReorderShort(void* sp) {
 	*(uint16_t*)sp = bswap_16(*(uint16_t*)sp);
 }
 
-void ReorderLong(void* lp)
-{
+void ReorderLong(void* lp) {
 	*(uint32_t*)lp = bswap_32(*(uint32_t*)lp);
 }
 
-void ReorderDouble(void* dp)
-{
+void ReorderDouble(void* dp) {
 	*(uint64_t*)dp = bswap_64(*(uint64_t*)dp);
 }
 
-void ReorderBinHeader1(BinHeader1* p)
-{
+void ReorderBinHeader1(BinHeader1* p) {
 	ReorderShort(&p->version);
 	ReorderLong(&p->wfmSize);
 	ReorderShort(&p->checksum);
 }
 
-void ReorderBinHeader2(BinHeader2* p)
-{
+void ReorderBinHeader2(BinHeader2* p) {
 	ReorderShort(&p->version);
 	ReorderLong(&p->wfmSize);
 	ReorderLong(&p->noteSize);
@@ -170,8 +161,7 @@ void ReorderBinHeader2(BinHeader2* p)
 	ReorderShort(&p->checksum);
 }
 
-void ReorderBinHeader3(BinHeader3* p)
-{
+void ReorderBinHeader3(BinHeader3* p) {
 	ReorderShort(&p->version);
 	ReorderLong(&p->wfmSize);
 	ReorderLong(&p->noteSize);
@@ -180,8 +170,7 @@ void ReorderBinHeader3(BinHeader3* p)
 	ReorderShort(&p->checksum);
 }
 
-void ReorderBinHeader5(BinHeader5* p)
-{
+void ReorderBinHeader5(BinHeader5* p) {
 	ReorderShort(&p->version);
 	ReorderShort(&p->checksum);
 	ReorderLong(&p->wfmSize);
@@ -203,8 +192,7 @@ void ReorderBinHeader5(BinHeader5* p)
 //	ReorderLong(&p->optionsSize2);
 }
 
-void ReorderWaveHeader2(WaveHeader2* p)
-{
+void ReorderWaveHeader2(WaveHeader2* p) {
 	ReorderShort(&p->type);
 //	ReorderLong(&p->next);
 	// char bname does not need to be reordered.
@@ -233,8 +221,7 @@ void ReorderWaveHeader2(WaveHeader2* p)
 	// The wData field marks the start of the wave data which will be reordered separately.
 }
 
-void ReorderWaveHeader5(WaveHeader5* p)
-{
+void ReorderWaveHeader5(WaveHeader5* p) {
 //	ReorderLong(&p->next);
 	ReorderLong(&p->creationDate);
 	ReorderLong(&p->modDate);
@@ -334,6 +321,8 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 	}
 	count = binHeaderSize+waveHeaderSize; 
 
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): %i %i %i\n",__FILE__,__LINE__,binHeaderSize,waveHeaderSize, (int)count);
+
 	if (hdr->HeadLen < count) {
 		hdr->AS.Header = realloc(hdr->AS.Header, count+1);
 		hdr->HeadLen  += ifread(hdr->AS.Header + hdr->HeadLen, 1, count-hdr->HeadLen, hdr);
@@ -351,6 +340,7 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 		return;
 	}
 	
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): sizeof BinHeaders %i %i %i %i\n",__FILE__,__LINE__,sizeof(BinHeader1),sizeof(BinHeader2),sizeof(BinHeader3),sizeof(BinHeader5));
 	// Do byte reordering if the file is from another platform.	
 	if (flag_swap) {
 		version = bswap_16(version); 
@@ -379,6 +369,8 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 				break;
 		}
 	}
+
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): sizeof WaveHeaders %i %i %i\n",__FILE__,__LINE__,sizeof(WaveHeader2),sizeof(WaveHeader5),(int)iftell(hdr));
 	
 	// Read some of the BinHeader fields.
 	uint32_t modDate;
@@ -465,7 +457,7 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 			break;
 	}
 
-	if (VERBOSE_LEVEL > 7) fprintf(stdout, "Wave name=%s, npnts=%d, type=0x%x.\n", hdr->CHANNEL[0].Label, (int)hdr->NRec, type);
+	if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) Wave name=%s, npnts=%d, type=0x%x.\n", __FILE__, __LINE__, hdr->CHANNEL[0].Label, (int)hdr->NRec, type);
 	
 	uint16_t gdftyp; 
 	double digmin,digmax; 
@@ -569,7 +561,96 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 	hdr->AS.length= 0;
 	hdr->data.block = NULL; 
 	hdr->AS.rawdata = NULL;
-	
+
+	if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) %i %i %i 0x%x\n", __FILE__, __LINE__, (int)hdr->HeadLen, (int)hdr->FILE.size, (hdr->AS.bpb*hdr->NRec), hdr->HeadLen+hdr->AS.bpb*hdr->NRec);
+
+	size_t endpos = hdr->HeadLen + hdr->AS.bpb * hdr->NRec; 
+	if (endpos < hdr->FILE.size) {
+		/*
+		 *  If data were recorded with NeuroMatic/NClamp: http://www.neuromatic.thinkrandom.com/
+		 *  some additional information like SamplingRate, Scaling, etc. can be obtained from 
+		 *  a text block at the end of a file.	
+		 */
+
+		size_t sz = hdr->FILE.size-endpos; 
+		char *tmpstr = malloc(sz+1);
+		ifseek(hdr, endpos, SEEK_SET);
+		ifread(tmpstr, 1, sz, hdr);
+		tmpstr[sz]=0; 
+		char *ptr = tmpstr; 
+		// skip 0-bytes at the beginning of the block
+		while ((ptr != (tmpstr+sz)) && (*ptr==0)) {
+			ptr++;
+		}
+		if (ptr != tmpstr + sz) {
+			// if block is not empty
+			if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) [%i]<%s>\n", __FILE__, __LINE__, sz, ptr);
+
+			// parse lines
+			char *line = strtok(ptr,"\n\r\0");
+			CHANNEL_TYPE *hc = hdr->CHANNEL+0; 
+			struct tm t; 
+			while (line != NULL) {	
+
+				if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) <%s>\n", __FILE__, __LINE__, line);
+
+				size_t p = strcspn(line,":");	// search for field delimiter
+
+				if (!strncmp(line,"ADCname",p)) {
+					strncpy(hc->Label,line+p+1,MAX_LENGTH_LABEL+1);
+					hc->Label[MAX_LENGTH_LABEL]=0;
+				}
+				else if (!strncmp(line,"ADCunits",p)) {
+					hc->PhysDimCode = PhysDimCode(line+p+1);
+					if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) %s<%s>\n", __FILE__, __LINE__, line+p+1,PhysDim3(hc->PhysDimCode));
+				}
+				else if (!strncmp(line,"ADCunitsX",p)) {
+					if (!strcmp(line+p+1,"msec")) line[p+3]=0;
+					hdr->SampleRate /=  PhysDimScale(PhysDimCode(line+p+1));
+					if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) %f Hz\n", __FILE__, __LINE__, hdr->SampleRate);
+				}
+				else if (!strncmp(line,"ADCscale",p)) {
+					hc->Cal  = strtod(line+p+1,NULL);
+					hc->PhysMax = hc->DigMax * hc->Cal;
+					hc->PhysMin = hc->DigMin * hc->Cal;
+					hc->Label[MAX_LENGTH_LABEL]=0;
+				}
+				else if (!strncmp(line,"Time",p)) {
+					ptr = line;   // replace separator with : 
+					while (*ptr) {
+						if (*ptr==',') *ptr=':';
+						ptr++;		
+					}
+					strptime(line+p+1,"%H:%M:%S",&t);
+					if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) %s\n", __FILE__, __LINE__, line);
+					if (VERBOSE_LEVEL > 7) {
+						char tmp[30];
+						strftime(tmp,30,"%F %T",&t);
+						fprintf(stdout, "%s (line %i) %s\n", __FILE__, __LINE__, tmp);
+					}
+				}
+				else if (!strncmp(line,"Date",p)) {
+					strptime(line+p+1,"%d %b %Y",&t);
+					t.tm_hour = 0;
+					t.tm_min  = 0;
+					t.tm_sec  = 0;
+					if (VERBOSE_LEVEL > 7) {
+						char tmp[30];
+						strftime(tmp,30,"%F %T",&t);
+						fprintf(stdout, "%s (line %i) %s\n", __FILE__, __LINE__, tmp);
+					}
+				}
+				else if (!strncmp(line,"Time Stamp",p)) {
+					hdr->SampleRate *= hdr->SPR*hdr->NRec/strtod(line+p+1,NULL);
+				}
+
+				line = strtok(NULL, "\n\r\0");
+			}
+			hdr->T0 = tm_time2gdf_time(&t);
+		}	
+		
+		if (tmpstr) free(tmpstr);
+	}
 }
 
 /*

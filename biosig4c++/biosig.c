@@ -1,6 +1,6 @@
 /*
 
-    Copyright (C) 2005-2013 Alois Schloegl <alois.schloegl@gmail.com>
+    Copyright (C) 2005-2014 Alois Schloegl <alois.schloegl@gmail.com>
     Copyright (C) 2011 Stoyan Mihaylov
     This file is part of the "BioSig for C/C++" repository
     (biosig4c++) at http://biosig.sf.net/
@@ -4260,7 +4260,7 @@ else if (!strncmp(MODE,"r",1)) {
 	    	if (Dur==0.0 && FLAG_BUGGY_NEUROLOGGER_EDF) Dur = hdr->SPR/496.0;
 		hdr->SampleRate = hdr->SPR/Dur;
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[EDF 220] #=%li\n",iftell(hdr));
+		if (VERBOSE_LEVEL>8) fprintf(stdout,"[EDF 220] #=%li SPR=%i\n",(int)iftell(hdr),(int)hdr->SPR);
 
 		if (hdr->NRec <= 0) {
         		struct stat FileBuf;
@@ -8102,6 +8102,10 @@ if (VERBOSE_LEVEL>8)
 	}
 
 	else if (hdr->TYPE==IBW) {
+		struct stat FileBuf;
+		stat(hdr->FileName, &FileBuf);
+		hdr->FILE.size = FileBuf.st_size;
+
 		sopen_ibw_read(hdr);
 	}
 
