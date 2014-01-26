@@ -326,6 +326,16 @@ int biosig_set_startdatetime(HDRTYPE *hdr, struct tm T) {
 	return (ldexp(hdr->T0,-32)<100.0);
 }
 
+gdf_time biosig_get_startdatetime_gdf(HDRTYPE *hdr) {
+	if (hdr==NULL) return 0;
+	return(hdr->T0);
+}
+int biosig_set_startdatetime_gdf(HDRTYPE *hdr, gdf_time T) {
+	if (hdr==NULL) return -1;
+	hdr->T0 = T;
+	return (ldexp(hdr->T0,-32)<100.0);
+}
+
 int biosig_get_birthdate(HDRTYPE *hdr, struct tm *T) {
 	if (hdr==NULL) return -1;
 	gdf_time2tm_time_r(hdr->Patient.Birthday, T);

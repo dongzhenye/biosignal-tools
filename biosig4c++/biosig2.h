@@ -108,6 +108,8 @@ int    biosig_change_eventtable_samplerate(HDRTYPE *hdr, double fs);
 
 int biosig_get_startdatetime(HDRTYPE *hdr, struct tm *T);
 int biosig_set_startdatetime(HDRTYPE *hdr, struct tm T);
+gdf_time biosig_get_startdatetime_gdf(HDRTYPE *hdr);
+int biosig_set_startdatetime_gdf(HDRTYPE *hdr, gdf_time T);
 
 int biosig_get_birthdate(HDRTYPE *hdr, struct tm *T);
 int biosig_set_birthdate(HDRTYPE *hdr, struct tm T);
