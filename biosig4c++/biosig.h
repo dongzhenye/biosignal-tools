@@ -495,6 +495,13 @@ extern const struct FileFormatStringTable_t FileFormatStringTable [];
 EXTERN_C {
 #endif
 
+uint32_t get_biosig_version (); 
+/* 	returns the version number in hex-decimal representation
+	get_biosig_version() & 0x00ff0000 :  major version number
+	get_biosig_version() & 0x0000ff00 :  minor version number
+	get_biosig_version() & 0x000000ff :  patch level
+ --------------------------------------------------------------- */
+
 HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT);
 /* 	allocates memory initializes header HDR of type HDRTYPE
 	with NS channels an N_EVENT event elements

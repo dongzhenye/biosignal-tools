@@ -1280,6 +1280,9 @@ int getTimeChannelNumber(HDRTYPE* hdr) {
 /**                                                                        **/
 /****************************************************************************/
 
+uint32_t get_biosig_version () {
+	return ((BIOSIG_VERSION_MAJOR<<16) + (BIOSIG_VERSION_MINOR<<8) + BIOSIG_PATCHLEVEL);
+}
 
 /****************************************************************************/
 /**                     INIT HDR                                           **/
