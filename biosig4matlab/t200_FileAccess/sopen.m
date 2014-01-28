@@ -658,8 +658,8 @@ end;
 	                HDR.SampleRate = HDR.SPR/HDR.Dur;
           
 	                HDR.AS.spb = sum(HDR.AS.SPR);	% Samples per Block
-	                HDR.AS.bi  = [0;cumsum(HDR.AS.SPR(:))]; 
-	                HDR.AS.BPR = ceil(HDR.AS.SPR.*GDFTYP_BYTE(HDR.GDFTYP+1)'); 
+	                HDR.AS.bi  = [0;cumsum(ceil(HDR.AS.SPR.*GDFTYP_BYTE(HDR.GDFTYP+1)'))];
+	                HDR.AS.BPR = ceil(HDR.AS.SPR.*GDFTYP_BYTE(HDR.GDFTYP+1)');
 	                if any(HDR.AS.BPR ~= HDR.AS.SPR.*GDFTYP_BYTE(HDR.GDFTYP+1)');
 	                        fprintf(2,'\nError SOPEN (GDF/EDF/BDF): block configuration in file %s not supported.\n',HDR.FileName);
 	                end;
@@ -963,9 +963,13 @@ end;
                         	ReRefMx(:,tmp) = [];
                         end;	
                         
-                        status = fseek(HDR.FILE.FID,HDR.HeadLen+HDR.AS.bi(HDR.EDF.Annotations)*2,'bof');
-			sz = HDR.AS.SPR(HDR.EDF.Annotations)*2; 
-                        t = fread(HDR.FILE.FID,inf,[int2str(sz),'*uchar=>uchar'],HDR.AS.bpb-HDR.AS.SPR(HDR.EDF.Annotations)*2);
+			status = fseek(HDR.FILE.FID,HDR.HeadLen+HDR.AS.bi(HDR.EDF.Annotations),'bof');
+			sz = HDR.AS.SPR(HDR.EDF.Annotations)*GDFTYP_BYTE(HDR.GDFTYP(HDR.EDF.Annotations)+1)'
+			if (exist('OCTAVE_VERSION','builtin') && strcmp('OCTAVE_VERSION','3.8.0'))
+				error('Octave 3.8.0 is broken')
+			else
+				[t,c] = fread(HDR.FILE.FID, [sz,inf], [int2str(sz),'*uchar=>uchar'], HDR.AS.bpb-sz);
+			end;
 			t(length(t)+1:sz*ceil(length(t)/sz)) = 0;
 			t = reshape(char(t),sz,[]);
                         HDR.EDFplus.ANNONS = t;
