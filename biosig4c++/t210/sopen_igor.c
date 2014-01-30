@@ -31,6 +31,7 @@
 #include "../biosig-dev.h"
 #include "../igor/IgorBin.h"
 
+#define IGOROLD 1	// will be used for testing and migrating to new version 
 
 #ifdef __cplusplus
 extern "C" {
@@ -370,7 +371,7 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 		}
 	}
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): sizeof WaveHeaders %i %i %i\n",__FILE__,__LINE__,sizeof(WaveHeader2),sizeof(WaveHeader5),(int)iftell(hdr));
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): sizeof WaveHeaders %i %i %i v%i\n",__FILE__,__LINE__,sizeof(WaveHeader2),sizeof(WaveHeader5),(int)iftell(hdr),version);
 	
 	// Read some of the BinHeader fields.
 	uint32_t modDate;
@@ -394,14 +395,16 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 				hdr->CHANNEL[0].PhysDimCode = PhysDimCode(w2->dataUnits);
 				hdr->CHANNEL[0].SPR = hdr->SPR = 1;
 				hdr->NRec = w2->npnts;
+#ifdef IGOROLD
 				hdr->CHANNEL[0].Cal = w2->hsA;
 				hdr->CHANNEL[0].Off = w2->hsB;
-/*
-				hdr->CHANNEL[0].PhysMax = w2->topFullScale;
-				hdr->CHANNEL[0].PhysMin = w2->botFullScale;
 				hdr->CHANNEL[0].DigMax = (w2->topFullScale-w2->hsB)/w2->hsA;
 				hdr->CHANNEL[0].DigMin = (w2->botFullScale-w2->hsB)/w2->hsA;
-*/
+#else
+				hdr->SampleRate = 1.0/w2->hsA;
+				hdr->CHANNEL[0].PhysMax = w2->topFullScale;
+				hdr->CHANNEL[0].PhysMin = w2->botFullScale;
+#endif
 				hdr->FLAG.OVERFLOWDETECTION = !w2->fsValid;	
 
 				hdr->HeadLen = binHeaderSize+waveHeaderSize-16;    // 16 = size of wData field in WaveHeader2 structure.
@@ -444,12 +447,14 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 				hdr->CHANNEL[0].SPR = hdr->SPR = 1;
 				hdr->NRec = w5->npnts;
 
+#ifdef IGOROLD 
 				hdr->CHANNEL[0].Cal = 1.0;
 				hdr->CHANNEL[0].Off = 0.0;
-
-/*				hdr->CHANNEL[0].PhysMax = w5->topFullScale;
+#else 
+				hdr->SampleRate = 1.0/w5->sfA[0];
+				hdr->CHANNEL[0].PhysMax = w5->topFullScale;
 				hdr->CHANNEL[0].PhysMin = w5->botFullScale;
-*/
+#endif
 				hdr->FLAG.OVERFLOWDETECTION = !w5->fsValid;	
 
 				hdr->HeadLen = binHeaderSize+waveHeaderSize-4;    // 4 = size of wData field in WaveHeader5 structure.
@@ -540,8 +545,13 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 		hc->OnOff  = 1;
 		hc->DigMin = digmin;
 		hc->DigMax = digmax;
+#ifdef IGOROLD
 		hc->PhysMax = digmax * hc->Cal + hc->Off;
 		hc->PhysMin = digmin * hc->Cal + hc->Off;
+#else
+		hc->Cal = (hc->PhysMax-hc->PhysMin) / (digmax - digmin);
+		hc->Off = hc->PhysMin - hc->DigMin * hc->Cal;
+#endif
 		hc->LeadIdCode = 0;
 		hc->bi = bpb;
 		hc->Transducer[0] = 0;
@@ -602,15 +612,15 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 				}
 				else if (!strncmp(line,"ADCunits",p)) {
 					hc->PhysDimCode = PhysDimCode(line+p+1);
-					if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) %s<%s>\n", __FILE__, __LINE__, line+p+1,PhysDim3(hc->PhysDimCode));
+					if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) %s<%s>\n", __FILE__, __LINE__, line+p+1, PhysDim3(hc->PhysDimCode));
 				}
 				else if (!strncmp(line,"ADCunitsX",p)) {
 					if (!strcmp(line+p+1,"msec")) line[p+3]=0;
-					hdr->SampleRate /=  PhysDimScale(PhysDimCode(line+p+1));
+					hdr->SampleRate /= PhysDimScale(PhysDimCode(line+p+1));
 					if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) %f Hz\n", __FILE__, __LINE__, hdr->SampleRate);
 				}
 				else if (!strncmp(line,"ADCscale",p)) {
-					hc->Cal  = strtod(line+p+1,NULL);
+					hc->Cal     = strtod(line+p+1,NULL);
 					hc->PhysMax = hc->DigMax * hc->Cal;
 					hc->PhysMin = hc->DigMin * hc->Cal;
 					hc->Label[MAX_LENGTH_LABEL]=0;
@@ -641,7 +651,7 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 					}
 				}
 				else if (!strncmp(line,"Time Stamp",p)) {
-					hdr->SampleRate *= hdr->SPR*hdr->NRec/strtod(line+p+1,NULL);
+					//hdr->SampleRate *= hdr->SPR*hdr->NRec/strtod(line+p+1,NULL);
 				}
 
 				line = strtok(NULL, "\n\r\0");
