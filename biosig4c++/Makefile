@@ -871,7 +871,7 @@ install_octave: mexSLOAD.mex
 	install mex/mexSLOAD.mex* 	$(DESTDIR)/usr/share/octave/site-m/
 	install mex/mexSOPEN.mex* 	$(DESTDIR)/usr/share/octave/site-m/
 
-install_libbiosig.a: libbiosig.a libbiosig2.a libphysicalunits.a
+install_libbiosig.a: libbiosig.a libbiosig2.a libphysicalunits.a libgdftime.a
 	install biosig.h    		$(INC)
 	install gdftime.h    		$(INC)
 	install biosig-dev.h    	$(INC)
@@ -884,12 +884,13 @@ install_libbiosig.a: libbiosig.a libbiosig2.a libphysicalunits.a
 	install libbiosig2.a		$(LIB)
 	install libgdftime.a		$(LIB)
 
-install_libbiosig: libbiosig2.so libphysicalunits.so  install_libbiosig.a
+install_libbiosig: libbiosig2.so libphysicalunits.so libgdftime.so  install_libbiosig.a
 	# do not install libbiosig.so, only static version should be installed
 	#install libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)
 	#ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}
 	#ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION} $(LIB)/libbiosig.so
 	install libphysicalunits.so	$(LIB)
+	install libgdftime.so	$(LIB)
 	install libbiosig2.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)
 	ln -sf  libbiosig2.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig2.so.${MAJOR_VERSION}.${MINOR_VERSION}
 	ln -sf  libbiosig2.so.${MAJOR_VERSION}.${MINOR_VERSION} $(LIB)/libbiosig2.so
