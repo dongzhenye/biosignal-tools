@@ -970,6 +970,7 @@ void sopen_itx_read (HDRTYPE* hdr) {
 			}
 		}
 		clear_sweepnames(sweepname_list);
+		hdr->EVENT.N = sweepNo;
 
                 if (VERBOSE_LEVEL>7)
 			fprintf(stdout,"[791] reading %s,v%4.2f format finished \n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
