@@ -204,7 +204,7 @@ int main(int argc, char **argv){
 	}
 
 	if (VERBOSE_LEVEL>7) 
-		fprintf(stdout,"[103] save2gdf: arg%i = <%s>\n", k, argv[k]);
+		fprintf(stdout,"%s (line %i): save2gdf: arg%i = <%s>\n",__FILE__,__LINE__, k, argv[k]);
 
     }
 
@@ -225,7 +225,7 @@ int main(int argc, char **argv){
     	}	
 
 	if (VERBOSE_LEVEL<0) VERBOSE=1; // default 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"[108] SAVE2GDF %s %s started \n", source, dest);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): SAVE2GDF %s %s started \n",__FILE__,__LINE__, source, dest);
 	fprintf(stderr,"%s %s %s\n", argv[0], source, dest);
 
 	tzset();
@@ -277,7 +277,7 @@ int main(int argc, char **argv){
 	} 
 #endif
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"[112] SOPEN-R finished (error %i)\n", hdr->AS.B4C_ERRNUM);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): SOPEN-R finished (error %i)\n",__FILE__,__LINE__, hdr->AS.B4C_ERRNUM);
 
 	if ((status=serror2(hdr))) {
 		destructHDR(hdr);
@@ -299,9 +299,12 @@ int main(int argc, char **argv){
 		exit(status); 
 	} 
 	
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"[113] SOPEN-R finished\n");
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i) SOPEN-R finished\n",__FILE__,__LINE__);
 
 	sort_eventtable(hdr);
+
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i) event table sorted\n",__FILE__,__LINE__);
+
 	if (FLAG_JSON) {
 		fprintf_hdr2json(stdout, hdr);
 	}
@@ -329,11 +332,11 @@ int main(int argc, char **argv){
 	
 #ifdef CHOLMOD_H
 	if (VERBOSE_LEVEL>7) 
-        	fprintf(stdout,"[121] %p %p Flag.ReRef=%i\n",hdr->Calib, hdr->rerefCHANNEL,flagREREF);
+		fprintf(stdout,"[121] %p %p Flag.ReRef=%i\n",__FILE__,__LINE__,hdr->Calib, hdr->rerefCHANNEL,flagREREF);
 #endif
 
 	if (VERBOSE_LEVEL>7) 
-		fprintf(stdout,"\n[123] SREAD [%f,%f].\n",t1,t2);
+		fprintf(stdout,"\n[123] SREAD [%f,%f].\n",__FILE__,__LINE__,t1,t2);
 
 	if (hdr->NRec <= 0) { 
 		// in case number of samples is not known
@@ -348,7 +351,7 @@ int main(int argc, char **argv){
 	
 	biosig_data_type* data = hdr->data.block;
 	if ((VERBOSE_LEVEL>8) && (hdr->data.size[0]*hdr->data.size[1]>500))
-		fprintf(stdout,"[125] UCAL=%i %e %e %e \n",hdr->FLAG.UCAL,data[100],data[110],data[500+hdr->SPR]);
+		fprintf(stdout,"%s (line %i): UCAL=%i %e %e %e \n",__FILE__,__LINE__,hdr->FLAG.UCAL,data[100],data[110],data[500+hdr->SPR]);
 	
 	if ((status=serror2(hdr))) {
 		destructHDR(hdr);
@@ -356,11 +359,11 @@ int main(int argc, char **argv){
 	};
 
 	if (VERBOSE_LEVEL>7) 
-		fprintf(stdout,"\n[129] SREAD on %s successful [%i,%i].\n",hdr->FileName,(int)hdr->data.size[0],(int)hdr->data.size[1]);
+		fprintf(stdout,"\n%s (line %i): SREAD on %s successful [%i,%i].\n",__FILE__,__LINE__,hdr->FileName,(int)hdr->data.size[0],(int)hdr->data.size[1]);
 
 //	fprintf(stdout,"\n %f,%f.\n",hdr->FileName,hdr->data.block[3*hdr->SPR],hdr->data.block[4*hdr->SPR]);
 	if (VERBOSE_LEVEL>7) 
-		fprintf(stdout,"\n[130] File  %s =%i/%i\n",hdr->FileName,hdr->FILE.OPEN,hdr->FILE.Des);
+		fprintf(stdout,"\n%s (line %i): File  %s =%i/%i\n",__FILE__,__LINE__,hdr->FileName,hdr->FILE.OPEN,hdr->FILE.Des);
 
 	if ((dest==NULL) && !FLAG_CSV && !FLAG_DYGRAPH) {
 		if (ne)	/* used for testig SFLUSH_GDF_EVENT_TABLE */
@@ -373,9 +376,9 @@ int main(int argc, char **argv){
 			// fprintf(stdout,"Status-SFLUSH %i\n",sflush_gdf_event_table(hdr));
 		}
 
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"[131] going for SCLOSE\n");
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): going for SCLOSE\n",__FILE__,__LINE__);
 		sclose(hdr);
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"[137] SCLOSE(HDR) finished\n");
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): SCLOSE(HDR) finished\n",__FILE__,__LINE__);
 		status=serror2(hdr);
 		destructHDR(hdr);
 		exit(status); 
@@ -385,10 +388,10 @@ int main(int argc, char **argv){
 		sclose(hdr); 
 		free(hdr->AS.Header);
 		hdr->AS.Header = NULL;
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"[138] file closed\n");
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): file closed\n",__FILE__,__LINE__);
 	}
 	if (VERBOSE_LEVEL>7 ) 
-		fprintf(stdout,"\n[139] File %s closed sd=%i/%i\n",hdr->FileName,hdr->FILE.OPEN,hdr->FILE.Des);
+		fprintf(stdout,"\n%s (line %i): File %s closed sd=%i/%i\n",__FILE__,__LINE__,hdr->FileName,hdr->FILE.OPEN,hdr->FILE.Des);
 
 	SOURCE_TYPE = hdr->TYPE;
 	if (FLAG_DYGRAPH) TARGET_TYPE=SOURCE_TYPE;
@@ -426,7 +429,7 @@ int main(int argc, char **argv){
     *********************************/
 
 #ifdef CHOLMOD_H
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"[199] %p %p\n",hdr->CHANNEL,hdr->rerefCHANNEL);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): %p %p\n",__FILE__,__LINE__,hdr->CHANNEL,hdr->rerefCHANNEL);
 
         if (hdr->Calib && hdr->rerefCHANNEL) {
 	        if (VERBOSE_LEVEL>6) 
@@ -473,7 +476,7 @@ int main(int argc, char **argv){
     	for (k=0; k<hdr->NS; k++)
     	if (hdr->CHANNEL[k].OnOff && hdr->CHANNEL[k].SPR) {
 
-		if (VERBOSE_LEVEL > 7) fprintf(stdout,"[204] #%i %i %i N=%i [%i,%i]\n",(int)k,(int)k2,(int)hdr->FLAG.ROW_BASED_CHANNELS,(int)N,(int)hdr->data.size[0],(int)(hdr->data.size[1]));
+		if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i): #%i %i %i N=%i [%i,%i]\n",__FILE__,__LINE__,(int)k,(int)k2,(int)hdr->FLAG.ROW_BASED_CHANNELS,(int)N,(int)hdr->data.size[0],(int)(hdr->data.size[1]));
 	
 		double MaxValue;
 		double MinValue;
@@ -585,7 +588,7 @@ int main(int argc, char **argv){
 	if (!FLAG_CONVERSION_TESTED) 
 		fprintf(stderr,"Warning SAVE2GDF: conversion from %s to %s not tested\n",GetFileTypeString(SOURCE_TYPE),GetFileTypeString(TARGET_TYPE));
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"[205] UCAL=%i\n", hdr->FLAG.UCAL);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): UCAL=%i\n",__FILE__,__LINE__, hdr->FLAG.UCAL);
 
 	hdr->FLAG.ANONYMOUS = 1; 	// no personal names are processed 
 
@@ -664,7 +667,7 @@ int main(int argc, char **argv){
 		strcpy(tmp+destlen,".gz");
 
 	if (VERBOSE_LEVEL>7) 
-		fprintf(stdout,"[211] z=%i sd=%i\n",hdr->FILE.COMPRESSION,hdr->FILE.Des);
+		fprintf(stdout,"%s (line %i) z=%i sd=%i\n",__FILE__,__LINE__,hdr->FILE.COMPRESSION,hdr->FILE.Des);
 
 		sopen(tmp, "wb", hdr);
 
@@ -680,21 +683,21 @@ int main(int argc, char **argv){
 			savelink(source);
 #endif
 		if (VERBOSE_LEVEL>7)
-			fprintf(stdout,"\n[221] File %s opened. %i %i %i Des=%i\n",hdr->FileName,hdr->AS.bpb,hdr->NS,(int)(hdr->NRec),hdr->FILE.Des);
+			fprintf(stdout,"\n%s (line %i): File %s opened. %i %i %i Des=%i\n",__FILE__,__LINE__,hdr->FileName,hdr->AS.bpb,hdr->NS,(int)(hdr->NRec),hdr->FILE.Des);
 
 		swrite(data, hdr->NRec, hdr);
 
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"[231] SWRITE finishes\n");
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): SWRITE finishes (errno=%i)\n",__FILE__,__LINE__,(int)hdr->AS.B4C_ERRNUM);
 		if ((status=serror2(hdr))) { 
 			destructHDR(hdr);
 			exit(status); 
 	    	}	
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"[236] SCLOSE finished\n");
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): SWRITE finishes %i\n",__FILE__,__LINE__,(int)status);
 
 		sclose(hdr);
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"[241] SCLOSE finished\n");
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): SCLOSE finished\n",__FILE__,__LINE__);
 
 	}
 	status = serror2(hdr);
