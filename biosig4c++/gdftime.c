@@ -161,6 +161,76 @@ int gdf_time2tm_time_r(gdf_time t, struct tm *t3) {
         return(0);
 }
 
+#if 0
+gdftime_t string2gdftime(const char* str) {
+	struct tm t; 
+	strptime(str,"%d %b %Y",&t);
+	t.tm_hour = 0;
+	t.tm_min  = 0;
+	t.tm_sec  = 0;
+	return tm_time2gdf_time(&t);
+}
+
+gdftime_t string2gdfdate(const char* str) {
+	struct tm t; 
+	strptime(str,"%d %b %Y",&t);
+	t.tm_hour = 0;
+	t.tm_min  = 0;
+	t.tm_sec  = 0;
+	return tm_time2gdf_time(&t);
+}
+
+gdftime_t string2gdfdatetime(const char* str) {
+	struct tm t; 
+	
+	return tm_time2gdf_time(getdate(str));
+
+}
+
+#endif
+
+/*
+char *gdftime2string(gdftime_t)
+char *gdfdate2string(gdftime_t)
+char *gdfdatetime2string(gdftime_t)
+
+gdftime_t time2gdftime(int,int,float)
+gdftime_t date2gdftime(int,int,int)
+gdftime_t datetime2gdftime(int,int,int,int,int,float)
+
+void gdftime2datetime(&int,&int,&int,&int,&int,&float)
+void gdftime2time(&int,&int,&float)
+void gdftime2date(&int,&int,&int)
+
+
+					strptime(line+p+1,"%H:%M:%S",&t);
+					if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) %s\n", __FILE__, __LINE__, line);
+					if (VERBOSE_LEVEL > 7) {
+						char tmp[30];
+						strftime(tmp,30,"%F %T",&t);
+						fprintf(stdout, "%s (line %i) %s\n", __FILE__, __LINE__, tmp);
+					}
+				}
+				else if (!strncmp(line,"Date",p)) {
+					strptime(line+p+1,"%d %b %Y",&t);
+					t.tm_hour = 0;
+					t.tm_min  = 0;
+					t.tm_sec  = 0;
+					if (VERBOSE_LEVEL > 7) {
+						char tmp[30];
+						strftime(tmp,30,"%F %T",&t);
+						fprintf(stdout, "%s (line %i) %s\n", __FILE__, __LINE__, tmp);
+					}
+				}
+				else if (!strncmp(line,"Time Stamp",p)) {
+					hdr->SampleRate *= hdr->SPR*hdr->NRec/strtod(line+p+1,NULL);
+				}
+
+				line = strtok(NULL, "\n\r\0");
+
+ */
+
+
 
 
 /****************************************************************************/
