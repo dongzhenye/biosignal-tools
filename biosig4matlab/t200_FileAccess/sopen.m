@@ -964,7 +964,7 @@ end;
                         end;	
                         
 			status = fseek(HDR.FILE.FID,HDR.HeadLen+HDR.AS.bi(HDR.EDF.Annotations),'bof');
-			sz = HDR.AS.SPR(HDR.EDF.Annotations)*GDFTYP_BYTE(HDR.GDFTYP(HDR.EDF.Annotations)+1)'
+			sz = HDR.AS.SPR(HDR.EDF.Annotations)*GDFTYP_BYTE(HDR.GDFTYP(HDR.EDF.Annotations)+1)';
 			if (exist('OCTAVE_VERSION','builtin') && strcmp('OCTAVE_VERSION','3.8.0'))
 				error('Octave 3.8.0 is broken')
 			else
