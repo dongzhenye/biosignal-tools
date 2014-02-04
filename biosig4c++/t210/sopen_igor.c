@@ -2,8 +2,8 @@
 
     Copyright (C) 2013,2014 Alois Schloegl <alois.schloegl@gmail.com>
 
-    This file is part of the "BioSig for C/C++" repository 
-    (biosig4c++) at http://biosig.sf.net/ 
+    This file is part of the "BioSig for C/C++" repository
+    (biosig4c++) at http://biosig.sf.net/
 
     BioSig is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -16,8 +16,8 @@
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>. 
-    
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
  */
 
@@ -31,7 +31,7 @@
 #include "../biosig-dev.h"
 #include "../igor/IgorBin.h"
 
-#define IGOROLD 1	// will be used for testing and migrating to new version 
+#define IGOROLD 1	// will be used for testing and migrating to new version
 
 #ifdef __cplusplus
 extern "C" {
@@ -107,7 +107,7 @@ char *IgorChanLabel(char *inLabel, HDRTYPE *hdr, size_t *ngroup, size_t *nseries
 int ibwChecksum(int16_t *data, int flag_swap, int oldcksum, int numbytes) {
 	numbytes >>= 1;				// 2 bytes to a short -- ignore trailing odd byte.
 	if (flag_swap) {
-		while(numbytes-- > 0) 
+		while(numbytes-- > 0)
 			oldcksum += bswap_16(*(data++));
 	} else {
 		while(numbytes-- > 0)
@@ -121,7 +121,7 @@ int ibwChecksum(int16_t *data, int flag_swap, int oldcksum, int numbytes) {
 void ReorderBytes(void *p, int bytesPerPoint, long numValues)	// Reverses byte order.
 {
 	unsigned char ch, *p1, *p2, *pEnd;
-	
+
 	pEnd = (unsigned char *)p + numValues*bytesPerPoint;
 	while (p < (void *)pEnd) {
 		p1 = p;
@@ -291,60 +291,59 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 /*
 	this function will be called by the function SOPEN in "biosig.c"
 
-	Input: 
+	Input:
 		char* Header	// contains the file content
-		
-	Output: 
+
+	Output:
 		HDRTYPE *hdr	// defines the HDR structure accoring to "biosig.h"
 */
 
-
 	fprintf(stdout,"Warning: support for IBW is very experimental\n");
-	
+
 	uint16_t version = *(uint16_t*)hdr->AS.Header;
 	char flag_swap = (version & 0xFF) == 0;
-	if (flag_swap) 
-		version = bswap_16(version); 
-	
-	unsigned count=0; 
-	int binHeaderSize; 
-	int waveHeaderSize; 
+	if (flag_swap)
+		version = bswap_16(version);
+
+	unsigned count=0;
+	int binHeaderSize;
+	int waveHeaderSize;
 
 	switch (version) {
-	case 1: binHeaderSize=sizeof(BinHeader1); waveHeaderSize=sizeof(WaveHeader2); break; 
-	case 2: binHeaderSize=sizeof(BinHeader2); waveHeaderSize=sizeof(WaveHeader2); break; 
-	case 3: binHeaderSize=sizeof(BinHeader3); waveHeaderSize=sizeof(WaveHeader2); break; 
-	case 5: binHeaderSize=sizeof(BinHeader5); waveHeaderSize=sizeof(WaveHeader5); break; 
+	case 1: binHeaderSize=sizeof(BinHeader1); waveHeaderSize=sizeof(WaveHeader2); break;
+	case 2: binHeaderSize=sizeof(BinHeader2); waveHeaderSize=sizeof(WaveHeader2); break;
+	case 3: binHeaderSize=sizeof(BinHeader3); waveHeaderSize=sizeof(WaveHeader2); break;
+	case 5: binHeaderSize=sizeof(BinHeader5); waveHeaderSize=sizeof(WaveHeader5); break;
 	default:
 		if (VERBOSE_LEVEL>7) fprintf(stderr,"ver=%x \n",version);
 		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Igor/IBW: unsupported version number");
-		return; 
+		return;
 	}
-	count = binHeaderSize+waveHeaderSize; 
+	count = binHeaderSize+waveHeaderSize;
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): %i %i %i\n",__FILE__,__LINE__,binHeaderSize,waveHeaderSize, (int)count);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): IBW v%i %i %i %i\n",__FILE__,__LINE__,version, binHeaderSize,waveHeaderSize, (int)count);
 
 	if (hdr->HeadLen < count) {
 		hdr->AS.Header = realloc(hdr->AS.Header, count+1);
 		hdr->HeadLen  += ifread(hdr->AS.Header + hdr->HeadLen, 1, count-hdr->HeadLen, hdr);
 	}
 
-	// compute check sum 
-	if ((int)hdr->VERSION == 5) count -= 4; 
+	// compute check sum
+	if ((int)hdr->VERSION == 5) count -= 4;
 
 	void *buffer = hdr->AS.Header;
-	// Check the checksum.	
+	// Check the checksum.
 	int crc;
 	if ((ibwChecksum((int16_t*)buffer, flag_swap, 0, count))) {
 		if (VERBOSE_LEVEL>7) fprintf(stderr,"ver=%x crc = %x  %i %i \n",version, crc, binHeaderSize, waveHeaderSize);
 		biosigERROR(hdr, B4C_CRC_ERROR, "Igor/IBW: checksum error");
 		return;
 	}
-	
+
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): sizeof BinHeaders %i %i %i %i\n",__FILE__,__LINE__,sizeof(BinHeader1),sizeof(BinHeader2),sizeof(BinHeader3),sizeof(BinHeader5));
-	// Do byte reordering if the file is from another platform.	
+	// Do byte reordering if the file is from another platform.
 	if (flag_swap) {
-		version = bswap_16(version); 
+		version = bswap_16(version);
 		switch(version) {
 			case 1:
 				ReorderBinHeader1((BinHeader1*)hdr->AS.Header);
@@ -372,12 +371,12 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 	}
 
 	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): sizeof WaveHeaders %i %i %i v%i\n",__FILE__,__LINE__,sizeof(WaveHeader2),sizeof(WaveHeader5),(int)iftell(hdr),version);
-	
+
 	// Read some of the BinHeader fields.
 	uint32_t modDate;
 	int16_t type = 0;			// See types (e.g. NT_FP64) above. Zero for text waves.
 
-	hdr->NS = 1; 
+	hdr->NS = 1;
 	hdr->SampleRate = 1;
 	hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
 
@@ -398,19 +397,24 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 #ifdef IGOROLD
 				hdr->CHANNEL[0].Cal = w2->hsA;
 				hdr->CHANNEL[0].Off = w2->hsB;
-				hdr->CHANNEL[0].DigMax = (w2->topFullScale-w2->hsB)/w2->hsA;
-				hdr->CHANNEL[0].DigMin = (w2->botFullScale-w2->hsB)/w2->hsA;
+/*
+				hdr->CHANNEL[0].DigMax = (w2->topFullScale-w2->hsB) / w2->hsA;
+				hdr->CHANNEL[0].DigMin = (w2->botFullScale-w2->hsB) / w2->hsA;
+*/
 #else
-				hdr->SampleRate = 1.0/w2->hsA;
+				hdr->SampleRate = 1.0 / w2->hsA;
 				hdr->CHANNEL[0].PhysMax = w2->topFullScale;
 				hdr->CHANNEL[0].PhysMin = w2->botFullScale;
 #endif
-				hdr->FLAG.OVERFLOWDETECTION = !w2->fsValid;	
+				hdr->FLAG.OVERFLOWDETECTION = !w2->fsValid;
+
+				if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): %f %f <%s> <%s>\n",__FILE__,__LINE__,w2->hsA,w2->hsB,w2->xUnits,w2->dataUnits);
+				if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): %f %f\n",__FILE__,__LINE__,w2->topFullScale,w2->botFullScale);
 
 				hdr->HeadLen = binHeaderSize+waveHeaderSize-16;    // 16 = size of wData field in WaveHeader2 structure.
 			}
 			break;
-			
+
 		case 5:
 			{
 				WaveHeader5* w5;
@@ -419,7 +423,10 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 				type = w5->type;
 
 				int k;
-				size_t nTraces=1; 
+				size_t nTraces=1;
+
+				if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): %i %i %i %i %i\n",__FILE__,__LINE__,w5->nDim[0],w5->nDim[1],w5->nDim[2],w5->nDim[3],w5->nDim[4]);
+
 				for (k=1; (w5->nDim[k]!=0) && (k<4); k++) {
 					// count number of traces
 					nTraces *= w5->nDim[k];
@@ -445,17 +452,19 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 				strncpy(hdr->CHANNEL[0].Label, w5->bname, MAX_LENGTH_LABEL);
 				hdr->CHANNEL[0].PhysDimCode = PhysDimCode(w5->dataUnits);
 				hdr->CHANNEL[0].SPR = hdr->SPR = 1;
-				hdr->NRec = w5->npnts;
+				hdr->NRec        = w5->npnts;
+				hdr->SampleRate /= w5->sfA[0];
 
-#ifdef IGOROLD 
+#ifdef IGOROLD
 				hdr->CHANNEL[0].Cal = 1.0;
 				hdr->CHANNEL[0].Off = 0.0;
-#else 
-				hdr->SampleRate = 1.0/w5->sfA[0];
+#else
 				hdr->CHANNEL[0].PhysMax = w5->topFullScale;
 				hdr->CHANNEL[0].PhysMin = w5->botFullScale;
 #endif
-				hdr->FLAG.OVERFLOWDETECTION = !w5->fsValid;	
+				if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): %f %f\n",__FILE__,__LINE__,w5->topFullScale,w5->botFullScale);
+
+				hdr->FLAG.OVERFLOWDETECTION = !w5->fsValid;
 
 				hdr->HeadLen = binHeaderSize+waveHeaderSize-4;    // 4 = size of wData field in WaveHeader5 structure.
 			}
@@ -463,9 +472,9 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 	}
 
 	if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) Wave name=%s, npnts=%d, type=0x%x.\n", __FILE__, __LINE__, hdr->CHANNEL[0].Label, (int)hdr->NRec, type);
-	
-	uint16_t gdftyp; 
-	double digmin,digmax; 
+
+	uint16_t gdftyp;
+	double digmin,digmax;
 	// Consider the number type, not including the complex bit or the unsigned bit.
 	switch(type & ~(NT_CMPLX | NT_UNSIGNED)) {
 		case NT_I8:
@@ -482,7 +491,7 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 			}
 			break;
 		case NT_I16:
-			gdftyp = 3; 
+			gdftyp = 3;
 			hdr->AS.bpb = 2;		// short
 			if (type & NT_UNSIGNED) {
 				gdftyp++;
@@ -491,10 +500,10 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 			} else {
 				digmin = 0;
 				digmax = ldexp( 1,16)-1;
-			}	
+			}
 			break;
 		case NT_I32:
-			gdftyp = 5; 
+			gdftyp = 5;
 			hdr->AS.bpb = 4;		// long
 			if (type & NT_UNSIGNED) {
 				gdftyp++;
@@ -503,10 +512,10 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 			} else {
 				digmin = 0;
 				digmax = ldexp( 1,32)-1;
-			}	
+			}
 			break;
 		case NT_FP32:
-			gdftyp = 16; 
+			gdftyp = 16;
 			hdr->AS.bpb = 4;		// float
 			digmin = -__FLT_MAX__;
 			digmax = __FLT_MAX__;
@@ -529,18 +538,18 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 
 	if (type & NT_CMPLX) {
 		hdr->AS.bpb *= 2;			// Complex wave - twice as many points.
-		hdr->NS     *= 2; 	
+		hdr->NS     *= 2;
 		hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
 		strcpy(hdr->CHANNEL[2].Label,"imag part");
 		hdr->CHANNEL[1].Cal = 1.0;
 		hdr->CHANNEL[1].Off = 0.0;
 		hdr->CHANNEL[1].SPR = hdr->SPR;
 	}
-	
-	typeof (hdr->NS) k; 
+
+	typeof (hdr->NS) k;
 	size_t bpb=0;
 	for (k = 0; k < hdr->NS; k++) {
-		CHANNEL_TYPE *hc = hdr->CHANNEL+k; 
+		CHANNEL_TYPE *hc = hdr->CHANNEL+k;
 		hc->GDFTYP = gdftyp;
 		hc->OnOff  = 1;
 		hc->DigMin = digmin;
@@ -549,8 +558,10 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 		hc->PhysMax = digmax * hc->Cal + hc->Off;
 		hc->PhysMin = digmin * hc->Cal + hc->Off;
 #else
-		hc->Cal = (hc->PhysMax-hc->PhysMin) / (digmax - digmin);
-		hc->Off = hc->PhysMin - hc->DigMin * hc->Cal;
+		hc->Cal = (hc->PhysMax - hc->PhysMin) / (digmax - digmin);
+		hc->Off =  hc->PhysMin - hc->DigMin * hc->Cal;
+
+		if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) %f %f %f %f.\n", __FILE__, __LINE__, hc->PhysMax, hc->PhysMin, digmax, digmin);
 #endif
 		hc->LeadIdCode = 0;
 		hc->bi = bpb;
@@ -566,28 +577,29 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 		bpb += GDFTYP_BITS[gdftyp]/8;
 	}
 
-	hdr->FILE.POS = 0; 
-	hdr->AS.first = 0; 
+	hdr->FILE.POS = 0;
+	hdr->AS.first = 0;
 	hdr->AS.length= 0;
-	hdr->data.block = NULL; 
+	hdr->data.block = NULL;
 	hdr->AS.rawdata = NULL;
 
 	if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) %i %i %i 0x%x\n", __FILE__, __LINE__, (int)hdr->HeadLen, (int)hdr->FILE.size, (hdr->AS.bpb*hdr->NRec), hdr->HeadLen+hdr->AS.bpb*hdr->NRec);
 
-	size_t endpos = hdr->HeadLen + hdr->AS.bpb * hdr->NRec; 
+#ifndef IGOROLD
+	size_t endpos = hdr->HeadLen + hdr->AS.bpb * hdr->NRec;
 	if (endpos < hdr->FILE.size) {
 		/*
 		 *  If data were recorded with NeuroMatic/NClamp: http://www.neuromatic.thinkrandom.com/
-		 *  some additional information like SamplingRate, Scaling, etc. can be obtained from 
-		 *  a text block at the end of a file.	
+		 *  some additional information like SamplingRate, Scaling, etc. can be obtained from
+		 *  a text block at the end of a file.
 		 */
 
-		size_t sz = hdr->FILE.size-endpos; 
+		size_t sz = hdr->FILE.size-endpos;
 		char *tmpstr = malloc(sz+1);
 		ifseek(hdr, endpos, SEEK_SET);
 		ifread(tmpstr, 1, sz, hdr);
-		tmpstr[sz]=0; 
-		char *ptr = tmpstr; 
+		tmpstr[sz]=0;
+		char *ptr = tmpstr;
 		// skip 0-bytes at the beginning of the block
 		while ((ptr != (tmpstr+sz)) && (*ptr==0)) {
 			ptr++;
@@ -598,9 +610,9 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 
 			// parse lines
 			char *line = strtok(ptr,"\n\r\0");
-			CHANNEL_TYPE *hc = hdr->CHANNEL+0; 
-			struct tm t; 
-			while (line != NULL) {	
+			CHANNEL_TYPE *hc = hdr->CHANNEL+0;
+			struct tm t;
+			while (line != NULL) {
 
 				if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) <%s>\n", __FILE__, __LINE__, line);
 
@@ -615,21 +627,23 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 					if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) %s<%s>\n", __FILE__, __LINE__, line+p+1, PhysDim3(hc->PhysDimCode));
 				}
 				else if (!strncmp(line,"ADCunitsX",p)) {
+					if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) Fs=%f %s\n", __FILE__, __LINE__, hdr->SampleRate, line+p+1);
 					if (!strcmp(line+p+1,"msec")) line[p+3]=0;
 					hdr->SampleRate /= PhysDimScale(PhysDimCode(line+p+1));
 					if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) %f Hz\n", __FILE__, __LINE__, hdr->SampleRate);
 				}
 				else if (!strncmp(line,"ADCscale",p)) {
 					hc->Cal     = strtod(line+p+1,NULL);
+					if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) Cal %f %s\n", __FILE__, __LINE__, hc->Cal, line+p+1);
 					hc->PhysMax = hc->DigMax * hc->Cal;
 					hc->PhysMin = hc->DigMin * hc->Cal;
 					hc->Label[MAX_LENGTH_LABEL]=0;
 				}
 				else if (!strncmp(line,"Time",p)) {
-					ptr = line;   // replace separator with : 
+					ptr = line;   // replace separator with :
 					while (*ptr) {
 						if (*ptr==',') *ptr=':';
-						ptr++;		
+						ptr++;
 					}
 					strptime(line+p+1,"%H:%M:%S",&t);
 					if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) %s\n", __FILE__, __LINE__, line);
@@ -657,10 +671,11 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 				line = strtok(NULL, "\n\r\0");
 			}
 			hdr->T0 = tm_time2gdf_time(&t);
-		}	
-		
+		}
+
 		if (tmpstr) free(tmpstr);
 	}
+#endif   // not defined IGOROLD
 }
 
 /*
@@ -715,7 +730,7 @@ void sopen_itx_read (HDRTYPE* hdr) {
 		char flagSupported = 1;
 
 	        if (VERBOSE_LEVEL>7)
-                        fprintf(stdout,"[701] start reading %s,v%4.2f format (%i)\n",GetFileTypeString(hdr->TYPE),hdr->VERSION,ifeof(hdr));
+                        fprintf(stdout,"%s (line %i) start reading %s,v%4.2f format (%i)\n",__FILE__,__LINE__,GetFileTypeString(hdr->TYPE),hdr->VERSION,ifeof(hdr));
 
 		typeof(hdr->SPR) SPR = 0, spr = 0;
 		typeof(hdr->NS)  ns  = 0;
@@ -734,7 +749,7 @@ void sopen_itx_read (HDRTYPE* hdr) {
 		while (!ifeof(hdr)) {
 
 	        if (VERBOSE_LEVEL>8)
-                        fprintf(stdout,"[721] start reading %s,v%4.2f format (%i)\n",GetFileTypeString(hdr->TYPE),hdr->VERSION,(int)iftell(hdr));
+                        fprintf(stdout,"%s (line %i) start reading %s,v%4.2f format (%i)\n",__FILE__,__LINE__,GetFileTypeString(hdr->TYPE),hdr->VERSION,(int)iftell(hdr));
 
 			int i = 0;
 			while ( (c != -1) &&  (c != 10) &&  (c != 13) && (i < IGOR_MAXLENLINE) ) {
@@ -746,7 +761,7 @@ void sopen_itx_read (HDRTYPE* hdr) {
 			while (isspace(c)) c = ifgetc(hdr); 	// keep first non-space character of next line in buffer
 
 	        if (VERBOSE_LEVEL>8)
-                        fprintf(stdout,"\t[723] <%s> (%i)\n",line,(int)iftell(hdr));
+                        fprintf(stdout,"\t%s (line %i) <%s> (%i)\n",__FILE__,__LINE__,line,(int)iftell(hdr));
 
 			if (!strncmp(line,"BEGIN",5)) {
 				flagData = 1;
@@ -757,7 +772,7 @@ void sopen_itx_read (HDRTYPE* hdr) {
 				flagData = 0;
                                 if ((SPR!=0) && (SPR != spr)) {
 					flagSupported = 0;
-					if (VERBOSE_LEVEL>7) fprintf(stdout,"[%s%i] ITX (not supported): %i, %i \n",__FILE__,__LINE__, SPR, spr);
+					if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i) ITX (not supported): %i, %i \n",__FILE__,__LINE__, SPR, spr);
 				}
 				else
 					SPR = spr;
@@ -816,7 +831,7 @@ void sopen_itx_read (HDRTYPE* hdr) {
 			else if (!strncmp(line,"WAVES",5)) {
 
                if (VERBOSE_LEVEL>7)
-                        fprintf(stdout,"[761]<%s>#%i: %i/%i\n",line,(int)ns,(int)spr,(int)hdr->SPR);
+                        fprintf(stdout,"%s (line %i): <%s>#%i: %i/%i\n",__FILE__,__LINE__,line,(int)ns,(int)spr,(int)hdr->SPR);
 
 				char *p;
 				p = strrchr(line,'_');
@@ -835,7 +850,7 @@ void sopen_itx_read (HDRTYPE* hdr) {
 					}
 				}
 
-		if  (VERBOSE_LEVEL>7) fprintf(stdout,"[%s: %i] ITX (supported %i): %i, %i, %i, %i, %i\n",__FILE__,__LINE__, flagSupported, (int)ns, (int)spr, (int)hdr->SPR, chanNo, sweepNo);
+		if  (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i) ITX (supported %i): %i, %i, %i, %i, %i\n",__FILE__,__LINE__, flagSupported, (int)ns, (int)spr, (int)hdr->SPR, chanNo, sweepNo);
 
 				if (ns >= hdr->NS) {
 					hdr->NS = ns+1;
@@ -843,13 +858,13 @@ void sopen_itx_read (HDRTYPE* hdr) {
 				}
 
 		if (VERBOSE_LEVEL>7)
-                        fprintf(stdout,"[767]<%s>#%i: %i/%i\n",line,(int)ns,(int)spr,(int)hdr->SPR);
+                        fprintf(stdout,"%s (line %i): <%s>#%i: %i/%i\n",__FILE__,__LINE__,line,(int)ns,(int)spr,(int)hdr->SPR);
 
 				CHANNEL_TYPE* hc = hdr->CHANNEL + ns;
 				strncpy(hc->Label, line+6, MAX_LENGTH_LABEL);
 
 		if (VERBOSE_LEVEL>7)
-                        fprintf(stdout,"[769]<%s>#%i: %i/%i\n",line,(int)ns,(int)spr,(int)hdr->SPR);
+                        fprintf(stdout,"%s (line %i): <%s>#%i: %i/%i\n",__FILE__,__LINE__,line,(int)ns,(int)spr,(int)hdr->SPR);
 
 				hc->OnOff    = 1;
 				hc->GDFTYP   = 17;
@@ -869,7 +884,7 @@ void sopen_itx_read (HDRTYPE* hdr) {
 
 				// decode channel number and sweep number
                 if (VERBOSE_LEVEL>7)
-                        fprintf(stdout,"[776]<%s>#%i: %i/%i\n",line,(int)ns,(int)spr,(int)hdr->SPR);
+                        fprintf(stdout,"%s (line %i): <%s>#%i: %i/%i\n",__FILE__,__LINE__,line,(int)ns,(int)spr,(int)hdr->SPR);
 
 			}
 			else if (flagData)
@@ -877,7 +892,7 @@ void sopen_itx_read (HDRTYPE* hdr) {
 		}
 
                 if (VERBOSE_LEVEL>7)
-                        fprintf(stdout,"[751] scaning %s,v%4.2f format (supported: %i)\n",GetFileTypeString(hdr->TYPE),hdr->VERSION,flagSupported);
+                        fprintf(stdout,"%s (line %i): scaning %s,v%4.2f format (supported: %i)\n",__FILE__,__LINE__,GetFileTypeString(hdr->TYPE),hdr->VERSION,flagSupported);
 
 		if (!flagSupported) {
 			clear_sweepnames(sweepname_list);
@@ -888,12 +903,12 @@ void sopen_itx_read (HDRTYPE* hdr) {
 
 		hdr->NRec = count_sweepnames(sweepname_list);
                 if (VERBOSE_LEVEL>7)
-                        fprintf(stdout,"[781] [%i,%i,%i] = %i, %i\n",(int)hdr->NS,(int)hdr->SPR,(int)hdr->NRec,(int)hdr->NRec*hdr->SPR*hdr->NS, (int)hdr->AS.bpb);
+                        fprintf(stdout,"%s (line %i): [%i,%i,%i] = %i, %i\n",__FILE__,__LINE__,(int)hdr->NS,(int)hdr->SPR,(int)hdr->NRec,(int)hdr->NRec*hdr->SPR*hdr->NS, (int)hdr->AS.bpb);
 
 		hdr->EVENT.N = hdr->NRec - 1;
 		hdr->EVENT.SampleRate = hdr->SampleRate;
-		hdr->EVENT.POS = (uint32_t*) realloc(hdr->EVENT.POS,hdr->EVENT.N*sizeof(*hdr->EVENT.POS));
-		hdr->EVENT.TYP = (uint16_t*) realloc(hdr->EVENT.TYP,hdr->EVENT.N*sizeof(*hdr->EVENT.TYP));
+		hdr->EVENT.POS = (uint32_t*) realloc(hdr->EVENT.POS, hdr->EVENT.N * sizeof(*hdr->EVENT.POS));
+		hdr->EVENT.TYP = (uint16_t*) realloc(hdr->EVENT.TYP, hdr->EVENT.N * sizeof(*hdr->EVENT.TYP));
 #if (BIOSIG_VERSION >= 10500)
 		hdr->EVENT.TimeStamp = (gdf_time*)realloc(hdr->EVENT.TimeStamp, hdr->EVENT.N*sizeof(gdf_time));
 #endif
@@ -903,7 +918,7 @@ void sopen_itx_read (HDRTYPE* hdr) {
 		hdr->AS.first  = 0;
 		hdr->AS.length = hdr->NRec;
 		hdr->AS.bpb = sizeof(double)*hdr->NS;
-		for (ns=0; ns<hdr->NS; ns++) {
+		for (ns=0; ns < hdr->NS; ns++) {
 			hdr->CHANNEL[ns].SPR = hdr->SPR;
 			hdr->CHANNEL[ns].bi  = sizeof(double)*ns;
 		}
@@ -915,7 +930,6 @@ void sopen_itx_read (HDRTYPE* hdr) {
 		/*
 			reads and converts data into biosig structure
 		*/
-
 		spr = 0;SPR = 0;
 		ifseek(hdr, 0, SEEK_SET);
 		c = ifgetc(hdr);	// read first character
@@ -973,7 +987,7 @@ void sopen_itx_read (HDRTYPE* hdr) {
 		hdr->EVENT.N = sweepNo;
 
                 if (VERBOSE_LEVEL>7)
-			fprintf(stdout,"[791] reading %s,v%4.2f format finished \n",GetFileTypeString(hdr->TYPE),hdr->VERSION);
+			fprintf(stdout,"%s (line %i): reading %s,v%4.2f format finished \n",__FILE__,__LINE__,GetFileTypeString(hdr->TYPE),hdr->VERSION);
 
 		hdr->SPR   = 1;
 		hdr->NRec *= hdr->SPR;
@@ -988,5 +1002,3 @@ void sopen_itx_read (HDRTYPE* hdr) {
 #ifdef __cplusplus
 }
 #endif
-
-
