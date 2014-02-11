@@ -2170,10 +2170,25 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 	{	hdr->TYPE = TRC; // Micromed *.TRC format
 		hdr->FILE.LittleEndian = 1;
 	}
+	else {
+		// if the first 4 bytes represent the file length
+		struct stat FileBuf;
+		if (stat(hdr->FileName,&FileBuf)==0
+		&& (leu16p(hdr->AS.Header+2)==(FileBuf.st_size & 0x0000ffff))
+		&& (leu16p(hdr->AS.Header)==0) )
+		{
+			// Cardioview 3000 generates such SCP files
+			hdr->TYPE = SCP_ECG;
+			hdr->FILE.LittleEndian = 1;
+			fprintf(stderr,"Warning SOPEN (SCP): this kind of an SCP file predates the official SCP (EN1064) standard and is not fully implemented.\n" );
+			if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i): %i %s %s \n",__FILE__,__LINE__,hdr->TYPE,GetFileTypeString(hdr->TYPE),hdr->FileName);
+		}
+		if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i): 0x%x 0x%x \n",__FILE__,__LINE__,leu32p(hdr->AS.Header),FileBuf.st_size);
+	}
 
 #endif //ONLYGDF
 
-	if (VERBOSE_LEVEL > 7) fprintf(stdout,"[228] %i %s %s \n",hdr->TYPE,GetFileTypeString(hdr->TYPE),hdr->FileName);
+	if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i): %i %s %s \n",__FILE__,__LINE__,hdr->TYPE,GetFileTypeString(hdr->TYPE),hdr->FileName);
 
 	return(hdr);
 }

@@ -592,19 +592,16 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 	for (K=1; K<NSections; K++)	{
 
-	if (VERBOSE_LEVEL>7)
-		fprintf(stdout,"%s(%i) ",hdr->FileName,K);
-		
 		curSect           = section[K].ID;
 		len		  = section[K].length;
 		sectionStart 	  = section[K].index;
 
 	if (VERBOSE_LEVEL>7)
-		fprintf(stdout,"SCP Section %i %i len=%i secStart=%i HeaderLength=%i\n",K,curSect,len,(int)sectionStart,hdr->HeadLen);
+		fprintf(stdout,"SCP Section %i %i len=%i secStart=%i HeaderLength=%i\n",__FILE__,__LINE__,K,curSect,len,(int)sectionStart,hdr->HeadLen);
 
 	if (len==0) continue;	 /***** empty section *****/
 		if (sectionStart + len > hdr->HeadLen) {
-			biosigERROR(hdr, B4C_INCOMPLETE_FILE, "SOPEN(SCP-READ): File inclomplete - Section length + start of section is more then total length of header");
+			biosigERROR(hdr, B4C_INCOMPLETE_FILE, "%s (line %i): SOPEN(SCP-READ): File incomplete - Section length + start of section is more then total length of header");
 			break;
 		}
 
@@ -625,6 +622,9 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		if (versionProtocol != 13 && versionProtocol != 20)
 			fprintf(stderr,"Warning SOPEN(SCP-READ): Version of Protocol is not 13 or 20 but %i. This is not tested.\n", versionProtocol);
 #endif
+		if (VERBOSE_LEVEL>7)
+			fprintf(stdout,"%s (line %i): SCP Section %i %i len=%i secStart=%i HeaderLength=%i %i %i\n",__FILE__,__LINE__, K, curSect, len, (int)sectionStart,(int)versionSection, (int)versionProtocol);
+
 		curSectPos = 16;
 
 		/**** SECTION 0: POINTERS TO DATA AREAS IN THE RECORD ****/
