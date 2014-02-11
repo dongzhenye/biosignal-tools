@@ -321,6 +321,10 @@ void deallocEN1064(en1064_t en1064) {
 
 int decode_scp_text(HDRTYPE *hdr, size_t inbytesleft, char *input, size_t outbytesleft, char *output) {
 
+#ifdef DEBUG
+	const char *start = output;
+#endif
+
 #if  defined(_ICONV_H) || defined (_LIBICONV_H)
 /*
 	decode_scp_text converts SCP text strings into UTF-8 strings
@@ -379,28 +383,50 @@ int decode_scp_text(HDRTYPE *hdr, size_t inbytesleft, char *input, size_t outbyt
 		return -1;
 	}
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: input=<%s>\n", __FILE__, __LINE__, input);
+	errno = 0; // reset error status
+	int errsv;
+	if (input[inbytesleft-1]==0) {
 
-	iconv(cd, &input, &inbytesleft, &output, &outbytesleft);
-	int errsv = errno;
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: input=<%s>%i,%i\n", __FILE__, __LINE__, input,inbytesleft,outbytesleft);
 
+		// input string is 0-terminated
+		iconv(cd, &input, &inbytesleft, &output, &outbytesleft);
+		errsv = errno;
+	}
+	else {
+		/* In case the string is not 0-terminated,
+		 * the string is copied to make it 0-terminated
+		 */
+		char *tmpstr=malloc(inbytesleft+1);
+		char *bakstr=tmpstr;
+		strncpy(tmpstr,input,inbytesleft);
+		tmpstr[inbytesleft]=0;
+		inbytesleft++;
+
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: input=<%s>%i,%i\n", __FILE__, __LINE__, tmpstr,inbytesleft,outbytesleft);
+
+		iconv(cd, &tmpstr, &inbytesleft, &output, &outbytesleft);
+		errsv = errno;
+		free(bakstr);
+	}
 	if (errsv)
 		biosigERROR(hdr, B4C_CHAR_ENCODING_UNSUPPORTED, "conversion of SCP text failed");
 
-
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: output=<%s>\n", __FILE__, __LINE__, output);
+#ifdef DEBUG
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: [e%i ] output=<%s>%i,%i\n", __FILE__, __LINE__, errsv,start,inbytesleft,outbytesleft);
+#endif
 
 	return (iconv_close(cd) || errsv);
 
 #else  // if neither _ICONV_H nor _LIBCONV_H are defined
 
-	if ((LanguageSupportCode & 0x01) != 0) {
+	if ((LanguageSupportCode & 0xFE) != 0) {
 		biosigERROR(hdr, B4C_CHAR_ENCODING_UNSUPPORTED, "SCP character encoding not supported");
 	}
 	else	// ASCII encoding is UTF-8 compatible - no convesion needed
 		strncpy(output, input, min(inbytesleft, outbytesleft+1));
 
-	return(LanguageSupportCode & 0x01);
+	return(LanguageSupportCode & 0xFE);
 
 #endif
 
@@ -680,15 +706,15 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					}
 				}
 				else if (tag==2) {
-					if (len1 > MAX_LENGTH_PID) {
 #ifndef ANDROID
+					if (len1 > MAX_LENGTH_PID) {
 						fprintf(stdout,"Warning SCP(read): length of Patient Id (section1 tag2) exceeds %i>%i\n",len1,MAX_LENGTH_PID); 
-#endif
 					}
+#endif
+
 					// convert to UTF8
 					decode_scp_text(hdr, len1, PtrCurSect+curSectPos, MAX_LENGTH_PID, hdr->Patient.Id);
 					hdr->Patient.Id[MAX_LENGTH_PID] = 0;
-					
 					if (!strcmp(hdr->Patient.Id,"UNKNOWN"))
 						hdr->Patient.Id[0] = 0;
 				}
@@ -802,7 +828,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					aECG->Section1.Tag14.ACQ_DEV_MANUF  = (char*)(PtrCurSect+curSectPos+36+tmp+1);	// tag 14, byte 38 (ACQ_DEV_MANUF has to be "Manufacturer")
 					
 
-					if (aECG->Section1.Tag14.LANG_SUPP_CODE & 0x01) {
+					if (aECG->Section1.Tag14.LANG_SUPP_CODE & 0xFE) {
 #if _ICONV_H
 						fprintf(stdout, "Warning SCP-ECG: decoding of text strings not ready yet");
 #else
