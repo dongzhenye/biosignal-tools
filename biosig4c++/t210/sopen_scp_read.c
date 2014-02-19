@@ -387,10 +387,24 @@ int decode_scp_text(HDRTYPE *hdr, size_t inbytesleft, char *input, size_t outbyt
 	int errsv;
 	if (input[inbytesleft-1]==0) {
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: input=<%s>%i,%i\n", __FILE__, __LINE__, input,inbytesleft,outbytesleft);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: input=<%s>%i,%i\n", __FILE__, __LINE__, input,inbytesleft,outbytesleft);
 
 		// input string is 0-terminated
 		iconv(cd, &input, &inbytesleft, &output, &outbytesleft);
+		errsv = errno;
+	}
+	else if (inbytesleft < 64) {
+		/* In case the string is not 0-terminated,
+		 * the string is copied to make it 0-terminated
+		 */
+		char buf[64];
+		char *tmpstr=buf;
+		memcpy(buf,input,inbytesleft);
+		tmpstr[inbytesleft++]=0;
+
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: input=<%s>%i,%i\n", __FILE__, __LINE__, input,(int)inbytesleft,(int)outbytesleft);
+
+		iconv(cd, &tmpstr, &inbytesleft, &output, &outbytesleft);
 		errsv = errno;
 	}
 	else {
@@ -403,7 +417,7 @@ int decode_scp_text(HDRTYPE *hdr, size_t inbytesleft, char *input, size_t outbyt
 		tmpstr[inbytesleft]=0;
 		inbytesleft++;
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: input=<%s>%i,%i\n", __FILE__, __LINE__, tmpstr,inbytesleft,outbytesleft);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: input=<%s>%i,%i\n", __FILE__, __LINE__, tmpstr,inbytesleft,outbytesleft);
 
 		iconv(cd, &tmpstr, &inbytesleft, &output, &outbytesleft);
 		errsv = errno;
