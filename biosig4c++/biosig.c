@@ -2174,7 +2174,7 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 		// if the first 4 bytes represent the file length
 		struct stat FileBuf;
 		if (stat(hdr->FileName,&FileBuf)==0
-		&& (leu16p(hdr->AS.Header+2)==(FileBuf.st_size & 0x0000ffff))
+		&& (leu32p(hdr->AS.Header+2)==FileBuf.st_size)
 		&& (leu16p(hdr->AS.Header)==0) )
 		{
 			// Cardioview 3000 generates such SCP files
