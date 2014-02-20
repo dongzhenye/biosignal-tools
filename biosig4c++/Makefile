@@ -183,7 +183,7 @@ ifneq (,$(findstring WITH_MATIO, $(DEFINES)))
 endif
 ifneq (,$(findstring stack-protector, $(CFLAGS)))
 ifneq (,$(findstring CYGWIN, $(shell uname)))
-  LDLIBS     += -lssp
+  LDLIBS     += -lssp -liconv
 endif 
 endif
 
