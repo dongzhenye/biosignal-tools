@@ -319,11 +319,35 @@ void deallocEN1064(en1064_t en1064) {
 }
 
 
-int decode_scp_text(HDRTYPE *hdr, size_t inbytesleft, char *input, size_t outbytesleft, char *output) {
+/*
+  decode_scp_text converts SCP text strings in various language encodings into UTF-8.
+  hdr is used to identify the language support code of EN1064+A1:2007
+  versionSection is used to handle older versions (specifically 10) in a reasonable way.
+
+  input can be a string that without a 0-terminated character;
+  the end of the input string is determined by inbytesleft.
+  output must be of size outbytesleft+1.
+*/
+int decode_scp_text(HDRTYPE *hdr, size_t inbytesleft, char *input, size_t outbytesleft, char *output, uint8_t versionSection) {
 
 #ifdef DEBUG
 	const char *start = output;
 #endif
+
+	int exitcode = 0;
+	switch (versionSection) {
+	case 13:
+	case 20:
+		break;  // use language conversion code below
+	case 10:
+		exitcode =  0;
+	default:
+		exitcode = -1;	// unknown version - do not know whether this is the correct way of doing it.
+		outbytesleft = min(inbytesleft,outbytesleft);
+		memcpy(output,input,outbytesleft);
+		output[outbytesleft]=0;
+		return(exitcode);
+	}
 
 #if  defined(_ICONV_H) || defined (_LIBICONV_H)
 /*
@@ -387,7 +411,7 @@ int decode_scp_text(HDRTYPE *hdr, size_t inbytesleft, char *input, size_t outbyt
 	int errsv;
 	if (input[inbytesleft-1]==0) {
 
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: input=<%s>%i,%i\n", __FILE__, __LINE__, input,inbytesleft,outbytesleft);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: input=<%s>%i,%i\n", __FILE__, __LINE__, input,(int)inbytesleft,(int)outbytesleft);
 
 		// input string is 0-terminated
 		iconv(cd, &input, &inbytesleft, &output, &outbytesleft);
@@ -413,11 +437,11 @@ int decode_scp_text(HDRTYPE *hdr, size_t inbytesleft, char *input, size_t outbyt
 		 */
 		char *tmpstr=malloc(inbytesleft+1);
 		char *bakstr=tmpstr;
-		strncpy(tmpstr,input,inbytesleft);
+		strncpy(tmpstr,(char*)input,inbytesleft);
 		tmpstr[inbytesleft]=0;
 		inbytesleft++;
 
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: input=<%s>%i,%i\n", __FILE__, __LINE__, tmpstr,inbytesleft,outbytesleft);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(%i) decode_scp_text: input=<%s>%i,%i\n", __FILE__, __LINE__, tmpstr,(int)inbytesleft,(int)outbytesleft);
 
 		iconv(cd, &tmpstr, &inbytesleft, &output, &outbytesleft);
 		errsv = errno;
@@ -609,9 +633,11 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 		PtrCurSect = ptr+sectionStart;
 		crc 	   = leu16p(PtrCurSect);
+		/*
 		uint16_t tmpcrc = CRCEvaluate((uint8_t*)(PtrCurSect+2),len-2);
 		uint8_t versionSection  = *(ptr+sectionStart+8);
 		uint8_t versionProtocol = *(ptr+sectionStart+9);
+		*/
 		// future versions might not need to do this, because language encoding is fixed (i.e. known).
 
 			uint32_t len1;
@@ -637,7 +663,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		sectionStart 	  = section[K].index;
 
 	if (VERBOSE_LEVEL>7)
-		fprintf(stdout,"SCP Section %i %i len=%i secStart=%i HeaderLength=%i\n",__FILE__,__LINE__,K,curSect,len,(int)sectionStart,hdr->HeadLen);
+		fprintf(stdout,"%s (line %i): SCP Section %i %i len=%i secStart=%i HeaderLength=%i\n",__FILE__,__LINE__,K,curSect,len,(int)sectionStart,hdr->HeadLen);
 
 	if (len==0) continue;	 /***** empty section *****/
 		if (sectionStart + len > hdr->HeadLen) {
@@ -663,7 +689,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			fprintf(stderr,"Warning SOPEN(SCP-READ): Version of Protocol is not 13 or 20 but %i. This is not tested.\n", versionProtocol);
 #endif
 		if (VERBOSE_LEVEL>7)
-			fprintf(stdout,"%s (line %i): SCP Section %i %i len=%i secStart=%i HeaderLength=%i %i %i\n",__FILE__,__LINE__, K, curSect, len, (int)sectionStart,(int)versionSection, (int)versionProtocol);
+			fprintf(stdout,"%s (line %i): SCP Section %i %i len=%i secStart=%i version=%i %i \n",__FILE__,__LINE__, K, curSect, len, (int)sectionStart,(int)versionSection, (int)versionProtocol);
 
 		curSectPos = 16;
 
@@ -705,7 +731,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					if (!hdr->FLAG.ANONYMOUS) {
 						// strncpy(hdr->Patient.Name, (char*)(PtrCurSect+curSectPos),min(len1,MAX_LENGTH_NAME));
 						 // convert to UTF8
-						decode_scp_text(hdr, len1, PtrCurSect+curSectPos, MAX_LENGTH_NAME, hdr->Patient.Name);
+						decode_scp_text(hdr, len1, (char*)PtrCurSect+curSectPos, MAX_LENGTH_NAME, hdr->Patient.Name, versionSection);
 					}
 				}
 				else if (tag==1) {
@@ -715,7 +741,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 							strcat(hdr->Patient.Name,", ");
 							len+=2;
 							// convert to UTF8
-							decode_scp_text(hdr, len1, PtrCurSect+curSectPos, MAX_LENGTH_NAME-len+1, hdr->Patient.Name+len);
+							decode_scp_text(hdr, len1, (char*)PtrCurSect+curSectPos, MAX_LENGTH_NAME-len+1, hdr->Patient.Name+len, versionSection);
 						}
 					}
 				}
@@ -727,7 +753,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 #endif
 
 					// convert to UTF8
-					decode_scp_text(hdr, len1, PtrCurSect+curSectPos, MAX_LENGTH_PID, hdr->Patient.Id);
+					decode_scp_text(hdr, len1, (char*)PtrCurSect+curSectPos, MAX_LENGTH_PID, hdr->Patient.Id, versionSection);
 					hdr->Patient.Id[MAX_LENGTH_PID] = 0;
 					if (!strcmp(hdr->Patient.Id,"UNKNOWN"))
 						hdr->Patient.Id[0] = 0;
@@ -739,7 +765,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 							strcat(hdr->Patient.Name," ");
 							len+=1;
 							// convert to UTF8
-							decode_scp_text(hdr, len1, PtrCurSect+curSectPos, MAX_LENGTH_NAME-len+1, hdr->Patient.Name+len);
+							decode_scp_text(hdr, len1, (char*)PtrCurSect+curSectPos, MAX_LENGTH_NAME-len+1, hdr->Patient.Name+len, versionSection);
 						}
 					}
 				}
@@ -864,7 +890,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					hdr->ID.Hospital = malloc(outlen);
 					if (hdr->ID.Hospital) {
 						// convert to UTF8
-						decode_scp_text(hdr, len1, PtrCurSect+curSectPos, outlen, hdr->ID.Hospital);
+						decode_scp_text(hdr, len1, (char*)PtrCurSect+curSectPos, outlen, hdr->ID.Hospital, versionSection);
 						hdr->ID.Hospital[outlen] = 0;
 					}
 				}
@@ -893,7 +919,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 					hdr->ID.Technician = malloc(outlen);
 					if (hdr->ID.Technician) {
 						// convert to UTF8
-						decode_scp_text(hdr, len1, PtrCurSect+curSectPos, outlen, hdr->ID.Technician);
+						decode_scp_text(hdr, len1, (char*)PtrCurSect+curSectPos, outlen, hdr->ID.Technician, versionSection);
 						hdr->ID.Technician[outlen] = 0;
 					}
 				}
