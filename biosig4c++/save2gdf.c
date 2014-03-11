@@ -530,12 +530,15 @@ int main(int argc, char **argv){
 			hdr->CHANNEL[k].DigMax  = MaxValueD;
 			hdr->CHANNEL[k].DigMin  = MinValueD;
 		}
+/* TODO: check whether this is really needed - was probably just a workaround for another bug
+		
 		else if ((SOURCE_TYPE==GDF) && (TARGET_TYPE==GDF)) 
 			;
 		else if (SOURCE_TYPE==HEKA)
 			;
 		else if (SOURCE_TYPE==ABF)
 			;
+*/
 		else if (TARGET_TYPE==SCP_ECG && !hdr->FLAG.UCAL) {
 			double scale = PhysDimScale(hdr->CHANNEL[k].PhysDimCode) *1e9;
 			if (hdr->FLAG.ROW_BASED_CHANNELS) {
@@ -565,17 +568,20 @@ int main(int argc, char **argv){
 		}
 		else if ((hdr->CHANNEL[k].GDFTYP<10 ) && (TARGET_TYPE==GDF || TARGET_TYPE==CFWB)) {
 			/* heuristic to determine optimal data type */
-			if ((MaxValue <= 127) && (MinValue >= -128))
+
+			if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i): #%i %i %f %f %f %f %f %f\n",__FILE__,__LINE__,k+1,(int)hdr->FLAG.UCAL,MinValue,MaxValue,MinValueF,MaxValueF,MinValueD,MaxValueD);
+
+			if ((MaxValueD <= 127) && (MinValueD >= -128))
 		    		hdr->CHANNEL[k].GDFTYP = 1;
-			else if ((MaxValue <= 255.0) && (MinValue >= 0.0))
+			else if ((MaxValueD <= 255.0) && (MinValueD >= 0.0))
 			    	hdr->CHANNEL[k].GDFTYP = 2;
-			else if ((MaxValue <= ldexp(1.0,15)-1.0) && (MinValue >= ldexp(-1.0,15)))
+			else if ((MaxValueD <= ldexp(1.0,15)-1.0) && (MinValueD >= ldexp(-1.0,15)))
 		    		hdr->CHANNEL[k].GDFTYP = 3;
-			else if ((MaxValue <= ldexp(1.0,16)-1.0) && (MinValue >= 0.0))
+			else if ((MaxValueD <= ldexp(1.0,16)-1.0) && (MinValueD >= 0.0))
 			    	hdr->CHANNEL[k].GDFTYP = 4;
-			else if ((MaxValue <= ldexp(1.0,31)-1.0) && (MinValue >= ldexp(-1.0,31)))
+			else if ((MaxValueD <= ldexp(1.0,31)-1.0) && (MinValueD >= ldexp(-1.0,31)))
 		    		hdr->CHANNEL[k].GDFTYP = 5;
-			else if ((MaxValue <= ldexp(1.0,32)-1.0) && (MinValue >= 0.0))
+			else if ((MaxValueD <= ldexp(1.0,32)-1.0) && (MinValueD >= 0.0))
 		    		hdr->CHANNEL[k].GDFTYP = 6;
 		} 
 		else {
