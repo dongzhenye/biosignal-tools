@@ -884,11 +884,11 @@ install_libbiosig.a: libbiosig.a libbiosig2.a libphysicalunits.a libgdftime.a
 	install libbiosig2.a		$(LIB)
 	install libgdftime.a		$(LIB)
 
-install_libbiosig: libbiosig2.so libphysicalunits.so libgdftime.so  install_libbiosig.a
+install_libbiosig: libbiosig2.so libbiosig.so libphysicalunits.so libgdftime.so  install_libbiosig.a
 	# do not install libbiosig.so, only static version should be installed
-	#install libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)
-	#ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}
-	#ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION} $(LIB)/libbiosig.so
+	install libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)
+	ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}
+	ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION} $(LIB)/libbiosig.so
 	install libphysicalunits.so	$(LIB)
 	install libgdftime.so	$(LIB)
 	install libbiosig2.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)
