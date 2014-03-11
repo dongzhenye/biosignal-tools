@@ -309,6 +309,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n[DS#%3i] 0x%x 0x%x [0x%x 0x%x szChanData=
 			hdr->AS.first  = 0;
 			hdr->AS.length = 0;
 			char flag_firstchan = 1; 
+			uint32_t xspr0= 0;
+
 			for (k = 0; k < hdr->NS; k++) {
 				uint8_t *pos = hdr->AS.Header + datapos + 30 + 24 * k;
 
@@ -320,19 +322,24 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n[DS#%3i] 0x%x 0x%x [0x%x 0x%x szChanData=
 				float Off    = lef32p(pos+12);
 				double XCal  = lef32p(pos+16);
 				double XOff  = lef32p(pos+20);// unused
+				if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): %i/%i %i/%i %f+%f change SPR:%i->%i, Cal:%f->%f, Off: %f->%f\n",__FILE__,__LINE__, (int)m, (int)NumberOfDataSections, (int)k,(int)hdr->NS, XCal, XOff, (int)hc->SPR,(int)xspr,hc->Cal,Cal,hc->Off,Off);
+
+				if (k==0) xspr0 = xspr;
+				else if (xspr0 != xspr) {
+					if (VERBOSE_LEVEL>7) fprintf(stdout,"Error %s (line %i): %i/%i %i/%i change SPR:%i->%i\n",__FILE__,__LINE__, (int)m, (int)NumberOfDataSections, (int)k,(int)hdr->NS,(int)hc->SPR,(int)xspr);
+					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: samples per record change - this is not supported yet.\n");
+				}
+
 				if (m > 0) {
-					if ( (hc->SPR != xspr)
-					  || (hc->Cal != Cal)
+					if ( (hc->Cal != Cal)
 					  || (hc->Off != Off)
 					   )
 					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: channel properties changes between segments - this is not supported yet.\n");
 				}
 				else {
-					hc->SPR = xspr;
 					hc->Cal = Cal;
 					hc->Off = Off;
 				}
-
 
 if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 408: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x%g %g %g\n",m,k,spr,(int)SPR,hc->SPR,hc->Cal,hc->Off,hc->bi,xPhysDimScale[k], XCal, XOff);
 
@@ -348,8 +355,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 408: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: different sampling rates are not supported\n");
 				}
 
-				if (hc->OnOff && (spr < hc->SPR)) 
-					spr = hc->SPR;
 				sz  += hc->SPR * GDFTYP_BITS[hc->GDFTYP] >> 3;
 				assert(hc->bi == bpb);
 				bpb += GDFTYP_BITS[hc->GDFTYP]>>3;	// per single sample
@@ -357,7 +362,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 408: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 				
 			}
 
-			SPR += spr;
+			SPR += xspr0;
 			SZ  += sz;
 			if (hdr->AS.bpb != bpb)
 				biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: channel properties changes between segments - this is not supported yet.\n");
@@ -387,12 +392,14 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 408: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 			hdr->AS.first  = 0;
 			hdr->AS.length = 0;
 			char flag_firstchan = 1;
+			uint32_t xspr0= 0;
 			for (k = 0; k < hdr->NS; k++) {
 				uint8_t *pos = hdr->AS.Header + datapos + 30 + 24 * k;
 
 				CHANNEL_TYPE *hc = hdr->CHANNEL + k;
 
 				uint32_t bi = leu32p(pos);
+				uint32_t xspr = leu32p(pos+4);
 				hc->SPR     = leu32p(pos+4);
 /*
 				hc->Cal     = lef32p(pos+8);
@@ -400,6 +407,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 408: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 */
 				double XCal = lef32p(pos+16);
 				double XOff = lef32p(pos+20);// unused
+
+				if (k==0) xspr0 = xspr;
+				assert(xspr0 == xspr);
 
 if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x%g %g %g %g %g\n",m,k,spr, (int)SPR, hc->SPR, hc->Cal, hc->Off, hc->bi, xPhysDimScale[k], lef32p(pos+8), lef32p(pos+12), XCal, XOff);
 
@@ -415,12 +425,10 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 409: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: different sampling rates are not supported\n");
 				}
 
-				if (hc->OnOff && (spr < hc->SPR))
-					spr = hc->SPR;
-				sz  += hc->SPR * GDFTYP_BITS[hc->GDFTYP] >> 3;
+				sz  += xspr * GDFTYP_BITS[hc->GDFTYP] >> 3;
 				hc->bi = bpb;
 				bpb += GDFTYP_BITS[hc->GDFTYP]>>3;	// per single sample
-				hdr->AS.length += hc->SPR;
+				hdr->AS.length += xspr;
 
 			}
 
@@ -453,7 +461,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 412 #%i %i %i %i %i: %i @%p %i\n", k, h
 					}
 
 					size_t k2;
-					for (k2 = 0; k2 < hc->SPR; k2++) {
+
+					for (k2 = 0; k2 < xspr0; k2++) {
+
 						uint8_t *ptr = srcaddr + memoffset + k2*stride;
 
 if (VERBOSE_LEVEL>8) fprintf(stdout,"512 %i %i %i %i %i \n",(int)stride,(int)hc->bi,(int)SPR,(int)k2,(int)hdr->AS.bpb);
@@ -489,12 +499,8 @@ if (VERBOSE_LEVEL>8) fprintf(stdout,"512 %i %i %i %i %i \n",(int)stride,(int)hc-
 							biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "CED/CFS: invalid data type");
 						}
 
-					   	if (hc->OnOff) {
-							/* TODO: channels with less samples are currently ignored - resampling or ignoring the channel ? */
-//							*(double*) (hdr->AS.rawdata + (k + (SPR + k2)*hdr->NS) * sizeof(double)) = val * hc->Cal + hc->Off;
-							continue;
-					   	}
-						
+						if (hc->OnOff) continue;
+
 						if (!strncmp(hc->Label,"Marker",6) && hc->PhysDimCode==2176 && hc->GDFTYP==5 && next != 0) { 
 							// matrix data might contain time markers. 						
 
@@ -520,14 +526,14 @@ if (VERBOSE_LEVEL>8) fprintf(stdout,"512 %i %i %i %i %i \n",(int)stride,(int)hc-
 				}
 			}
 
-			SPR += spr;
+			SPR += xspr0;
 			SZ  += sz;
 
 			datapos = leu32p(hdr->AS.Header + datapos);
 		}
 		free(DATAPOS);
 
-if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 419: SPR=%i=%i NRec=%i  @%p\n",(int)SPR,hdr->SPR,(int)hdr->NRec, hdr->AS.rawdata);
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): SPR=%i=%i NRec=%i  @%p\n",__FILE__,__LINE__,(int)SPR,hdr->SPR,(int)hdr->NRec, hdr->AS.rawdata);
 
 		// set variables such that sread_raw does not attempt to reload the data
 		hdr->AS.first = 0;
