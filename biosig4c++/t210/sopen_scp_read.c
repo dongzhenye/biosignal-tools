@@ -683,9 +683,9 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			fprintf(stderr,"Warning SOPEN(SCP-READ): Current Section No does not match field in sections (%i %i)\n",curSect,leu16p(PtrCurSect+2)); 
 		if (len != leu32p(PtrCurSect+4))
 			fprintf(stderr,"Warning SOPEN(SCP-READ): length field in pointer section (%i) does not match length field in sections (%i %i)\n",K,len,leu32p(PtrCurSect+4)); 
-		if (versionSection != 13 && versionSection != 20)
+		if ((versionSection != 13) && (versionSection != 20) && (versionSection != (uint8_t)(hdr->Version*10)))
 			fprintf(stderr,"Warning SOPEN(SCP-READ): Version of section %i is not 13 or 20 but %i. This is not tested.\n", curSect, versionSection);
-		if (versionProtocol != 13 && versionProtocol != 20)
+		if ((versionProtocol != 13) && (versionProtocol != 20) && (versionProtocol != (uint8_t)(hdr->Version*10)))
 			fprintf(stderr,"Warning SOPEN(SCP-READ): Version of Protocol is not 13 or 20 but %i. This is not tested.\n", versionProtocol);
 #endif
 		if (VERBOSE_LEVEL>7)

@@ -2014,7 +2014,6 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 		&& (leu16p(hdr->AS.Header+32) == (uint16_t)0x0001)
 		) {
 	    	hdr->TYPE = SCP_ECG;
-	    	hdr->VERSION = *(hdr->AS.Header+14)/10.0;
 	}
 /*
 	// special SCP files - header is strange, files can be decoded
@@ -10218,6 +10217,7 @@ if (VERBOSE_LEVEL>2)
 		if ( leu16p(hdr->AS.Header) != crc) {
 			biosigERROR(hdr, B4C_CRC_ERROR, "Warning SOPEN(SCP-READ): Bad CRC!");
 		}
+		hdr->Version = hdr->AS.Header[14]/10.0;
 		sopen_SCP_read(hdr);
 
 		serror2(hdr);	// report and reset error, but continue
