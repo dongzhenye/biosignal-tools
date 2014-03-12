@@ -314,7 +314,7 @@ int main(int argc, char **argv){
 
 	// all channels are converted - channel selection currently not supported
     	for (k=0; k<hdr->NS; k++) {
-    		if (!hdr->CHANNEL[k].OnOff && hdr->CHANNEL[k].SPR) {
+		if ( (hdr->CHANNEL[k].OnOff > 0) && hdr->CHANNEL[k].SPR ) {
 			if ((hdr->SPR/hdr->CHANNEL[k].SPR)*hdr->CHANNEL[k].SPR != hdr->SPR)
 				 fprintf(stdout,"Warning: channel %i might be decimated!\n",k+1);
     		};
@@ -332,11 +332,11 @@ int main(int argc, char **argv){
 	
 #ifdef CHOLMOD_H
 	if (VERBOSE_LEVEL>7) 
-		fprintf(stdout,"[121] %p %p Flag.ReRef=%i\n",__FILE__,__LINE__,hdr->Calib, hdr->rerefCHANNEL,flagREREF);
+		fprintf(stdout,"%s (line %i): %p %p Flag.ReRef=%i\n",__FILE__,__LINE__,hdr->Calib, hdr->rerefCHANNEL,flagREREF);
 #endif
 
 	if (VERBOSE_LEVEL>7) 
-		fprintf(stdout,"\n[123] SREAD [%f,%f].\n",__FILE__,__LINE__,t1,t2);
+		fprintf(stdout,"%s (line %i): SREAD [%f,%f].\n",__FILE__,__LINE__,t1,t2);
 
 	if (hdr->NRec <= 0) { 
 		// in case number of samples is not known
