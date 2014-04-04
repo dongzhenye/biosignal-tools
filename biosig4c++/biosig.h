@@ -40,7 +40,7 @@
 
 #define BIOSIG_VERSION_MAJOR 1
 #define BIOSIG_VERSION_MINOR 5
-#define BIOSIG_PATCHLEVEL 12
+#define BIOSIG_PATCHLEVEL 13
 // for backward compatibility 
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
@@ -50,6 +50,7 @@
 #if defined(_VCPP_DEF) || defined(_MSC_VER)
     #define __BYTE_ORDER  __LITTLE_ENDIAN
     typedef long   		ssize_t;
+    typedef unsigned long	size_t;
     typedef unsigned __int64	uint64_t;
     typedef __int64		int64_t;
     typedef unsigned __int32	uint32_t;
