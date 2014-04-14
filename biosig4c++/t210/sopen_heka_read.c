@@ -567,9 +567,8 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"HEKA L5 @%i= #%i,%i, %s %g/%g %g/%g \n",(in
 	                                                        fprintf(stdout, "Warning: Yunits do not match #%i,%f-%fHz\n",ns, DT[ns],dT);
 	                                                        biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: Yunits do not match");
 							}
-	                                                if ( fabs( DT[ns] - dT) > 1e-9 * dT) {
-								fprintf(stdout, "Warning sampling intervals do not match #%i,%f-%fHz\n",ns, DT[ns],dT);
-	                                                        biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "Heka/Patchmaster: sampling intervals do not match");
+	                                                if ( ( VERBOSE_LEVEL > 7 ) && ( fabs( DT[ns] - dT) > 1e-9 * dT) ) {
+								fprintf(stdout, "%s (line %i) different sampling rates [%i,%i,%i,%i]#%i,%f/%f \n",__FILE__,__LINE__,(int)k1,(int)k2,(int)k3,(int)k4,(int)ns, 1.0/DT[ns],1.0/dT);
 	                                                }
 						}
 
