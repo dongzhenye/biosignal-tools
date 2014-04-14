@@ -2,7 +2,10 @@ function [INI,S,E] = detectmuscle(S, iter, Mode)
 % Muscle detection with inverse filtering
 % Artifacts are indicated with NaN's. 
 %
-% [INI,S,E] = detectmuscle(S [, iter [,1]])% [INI,S,E] = detectmuscle(S, Fs, Mode)  with Mode>1% [INI,S,E] = detectmuscle(S, arg2, Mode)%
+% [INI,S,E] = detectmuscle(S [, iter [,1]])
+% [INI,S,E] = detectmuscle(S, Fs, Mode)  with Mode>1
+% [INI,S,E] = detectmuscle(S, arg2, Mode)
+%
 % iter		number of iterations [default:1]
 % INI.MU	mean of S
 % INI.InvFilter	coefficients of inverse filter 
@@ -10,7 +13,9 @@ function [INI,S,E] = detectmuscle(S, iter, Mode)
 % E		isnan(E) indicates muscle artifact
 % Mode	1: [default] inverse filtering
 %	2: based on gradient, range and amplitude [BrainVision method]
-% 	3: slope > 11 uV/sample [1]% 	4: beta2 > 0.9 uV^2/Hz [1] %
+% 	3: slope > 11 uV/sample [1]
+% 	4: beta2 > 0.9 uV^2/Hz [1] 
+%
 %
 % References: 
 % [1]	Van de Velde, M., Van Erp, G., Cluitmans, P., 1998. 
@@ -18,7 +23,8 @@ function [INI,S,E] = detectmuscle(S, iter, Mode)
 % 	Electroencephalography and Clinical Neurophysiology 107 (2), 149-158.
 %
 
-%	$Id$%	Copyright (C) 2003,2008,2009 by Alois Schloegl <a.schloegl@ieee.org>	%    	This is part of the BIOSIG-toolbox http://biosig.sf.net/
+%	Copyright (C) 2003,2008,2009,2014 by Alois Schloegl <alois.schloegl@gmail.com>	
+%    	This is part of the BIOSIG-toolbox http://biosig.sf.net/
 %
 %    BioSig is free software: you can redistribute it and/or modify
 %    it under the terms of the GNU General Public License as published by
@@ -65,7 +71,8 @@ if Mode==1,
         	        S(E(:,k)>(INI.TH(k)) | E(:,k)<(-INI.TH(k)),k) = NaN;
 	        end;
 	end; 
-	% the following part demonstrates a possible correction 	for k = 1:size(S,2),
+	% the following part demonstrates a possible correction 
+	for k = 1:size(S,2),
                 E(:,k) = filter(INI.InvFilter(k,:),1,S(:,k));
 	end;
 	% isnan(E), returns Artifactselse 
@@ -85,7 +92,7 @@ elseif Mode==2,
 	% Mark as bad after event: 100.00 ms
 	
 	ix2 = abs(filter([-1;zeros(Fs/10-1,1);1],1,S))>150;
-	ix2 = [ix2(Fs/20+1:end,:);zeros(Fs/20+1,size(S,2))]; 
+	ix2 = [ix2(Fs/20+1:end,:);zeros(Fs/20,size(S,2))]; 
 
 	% Criterion for bad amplitude:
 	% Minimal allowed amplitude: -75.00 µV
@@ -109,7 +116,7 @@ elseif Mode==3,
 elseif Mode==4,
 	%% TODO: free butter 
 	Fs = iter; 
-	if Fs>= 250, 
+	if Fs < 250, 
 		[A,B]=butter(5,25*2/Fs,'high');
 	else 	
 		[A,B]=butter(5,[25,125]*2/Fs);
@@ -120,5 +127,6 @@ elseif Mode==4,
 
 end; 
 
-if nargout<3, return; end;
+if nargout<3, return; end
+
 
