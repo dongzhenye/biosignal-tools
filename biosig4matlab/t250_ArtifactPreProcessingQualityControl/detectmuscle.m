@@ -8,7 +8,7 @@ function [INI,S,E] = detectmuscle(S, iter, Mode)
 %
 % iter		number of iterations [default:1]
 % INI.MU	mean of S
-% INI.InvFilter	coefficients of inverse filter 
+% INI.InvFilter	coefficients of inverse filter (see [2-5])
 % S		outlier replaced by NaN
 % E		isnan(E) indicates muscle artifact
 % Mode	1: [default] inverse filtering
@@ -16,12 +16,23 @@ function [INI,S,E] = detectmuscle(S, iter, Mode)
 % 	3: slope > 11 uV/sample [1]
 % 	4: beta2 > 0.9 uV^2/Hz [1] 
 %
-%
 % References: 
-% [1]	Van de Velde, M., Van Erp, G., Cluitmans, P., 1998. 
-%	Detection of muscle artefact in the normal human awake EEG. 
-% 	Electroencephalography and Clinical Neurophysiology 107 (2), 149-158.
-%
+% [1] Van de Velde, M., Van Erp, G., Cluitmans, P., 1998.
+%     Detection of muscle artefact in the normal human awake EEG.
+%     Electroencephalography and Clinical Neurophysiology 107 (2), 149-158.
+% [2] Lopes da Silva, F.H., van Hulten, K., Lommen, J.G. Stomr van Leeuwen, W., von Veelen, C.W.M. and Vliegenthart, W. (1977)
+%     Automatic detection and localization of epiliptic foci, Electroenceph. Clin. Neurophysiol. 43: 1-13.
+% [3] Bodenstein G. and Praetorius H.M. (1977)
+%     Feature extraction from the electroencephalogram by adaptive segmentation,
+%     Proc. IEEE, 65: 642-657.
+% [4] Praetorius H.M., Bodenstein G. and Creutzfeld O. (1977)
+%     Adaptive Segmentation of EEG records: A new approach to automatic EEG analysis.
+%     Electroenceph. Clin. Neurophysiol. 42: 84-94.
+% [5] Alois Schlögl (2000)
+%     The electroencephalogram and the adaptive autoregressive model: theory and applications.
+%     Shaker Verlag, Aachen, Germany,(ISBN3-8265-7640-3).
+%     http://pub.ist.ac.at/~schloegl/publications/EEG_AAR_model.pdf
+
 
 %	Copyright (C) 2003,2008,2009,2014 by Alois Schloegl <alois.schloegl@gmail.com>	
 %    	This is part of the BIOSIG-toolbox http://biosig.sf.net/
