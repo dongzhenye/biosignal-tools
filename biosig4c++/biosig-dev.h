@@ -64,11 +64,7 @@ extern int VERBOSE_LEVEL; 	// used for debugging, variable is always defined
 
 #ifdef WITH_CHOLMOD
     #ifdef __APPLE__
-        #ifdef MACPORTS
-            #include <cholmod.h>
-        #else
-            #include <ufsparse/cholmod.h>
-        #endif
+        #include <cholmod.h>
     #else
         #include <suitesparse/cholmod.h>
     #endif
