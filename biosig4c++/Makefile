@@ -83,7 +83,7 @@ ifeq (,$(TARGET))
 	CC      := gcc	
 	CXX     := g++
 	LD      := ld
-	AR      := ar crs
+	AR      := ar rcs
 	PREFIX  := /usr/bin/
 else ifeq (intel,$(TARGET))
 	CC      := /opt/intel/bin/icc
@@ -96,7 +96,7 @@ else
 	CC      := $(TARGET)-gcc
 	CXX     := $(TARGET)-g++
 	LD      := $(TARGET)-ld
-	AR      := $(TARGET)-ar crs
+	AR      := $(TARGET)-ar rcs
 	ifeq (mingw, $(findstring mingw, $(TARGET)))
 		## add gnulib's getlogin
 		SOURCES += win32/getlogin.c win32/getline.c win32/getdelim.c
@@ -104,7 +104,7 @@ else
 		## exclude conflicting definition of sopen from mingw's io.h
 		CFLAGS  += -I.
 		IO_H_FILE2 = io.h
-	        LIBS    += -liconv -liberty -lssp -lws2_32
+		LIBS    += -liconv -liberty -lssp -lws2_32
 	endif
 endif
 
@@ -146,6 +146,13 @@ INCPATH       = -I/opt/local/include/
 #		../gdcm-2.0.10/Source/DataDictionary 			\
 #		../gdcm-2.0.10/Source/Common
 LINK          = $(LD)
+ifeq (Darwin,$(uname))
+  LDFLAGS     += -dynamiclib -undefined suppress -flat_namespace
+  LDLIBS      += -liconv
+else
+  LDFLAGS     += -shared -fPIC -Wl,-rpath,.
+endif
+
 LFLAGS_dynamic = -L. -L/opt/local/lib
 LIBS_dynamic  = -lbiosig
 LFLAGS_static = -L/opt/local/lib
@@ -368,8 +375,18 @@ endif
 
 MinGW64OBJECTS  = $(patsubst win32/%.obj, win64/%.obj, $(MinGWOBJECTS))
 
+LIB_OBJECTS = libbiosig.a libbiosig2.a libgdf.a libgdftime.a libphysicalunits.a libbiosig.so libbiosig2.so libgdftime.so libphysicalunits.so
+
 first: $(IO_H_FILE2) save2gdf libbiosig.a
 all:   first mex4o biosig4python sigviewer win32 win64 win32/sigviewer.exe win64/sigviewer.exe #biosig_client biosig_server mma java tcl perl php ruby #sigviewer 
+
+.PHONY : io.h libbiosig lib
+
+ifneq (Darwin,$(uname))
+libbiosig lib: $(LIB_OBJECTS)
+else
+libbiosig lib: $(patsubst %.so, %.dylib, $(LIB_OBJECTS))
+endif
 
 #############################################################
 #	Compilation: Implicit, default rules
@@ -584,9 +601,6 @@ win64: mexw64
 #	GNU/Linux - BUILD
 #############################################################
 
-.PHONY : io.h libbiosig lib
-libbiosig lib: libbiosig.a libbiosig2.a libbiosig2.so libgdf.a libgdftime.a libgdftime.so libphysicalunits.a libphysicalunits.so
-
 t240/libcnsfef.a:
 #	$(MAKE) -C t240 regen		#
 	$(MAKE) -C t240 libcnsfef.a CC=$(CC) AR='$(AR)'	# generate t240/*.o files
@@ -599,6 +613,8 @@ libphysicalunits.def: physicalunits.o
 
 libphysicalunits.so: physicalunits.o
 	$(CC) -shared -fPIC -Wl,-rpath,. -Wl,-soname,"$@" $(LDLIBS) -o "$@" "$<"
+libphysicalunits.dylib: physicalunits.o
+	$(CC) $(LDFLAGS) $(LDLIBS) "$<" -o "$@"
 
 libgdftime.a: gdftime.o
 	-$(DELETE) "$@"
@@ -610,6 +626,8 @@ libgdftime.so: gdftime.o
 		-o $@.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $<
 	/sbin/ldconfig -n .
 	ln -sf $@.${MAJOR_VERSION}.${MINOR_VERSION} $@
+libgdftime.dylib: gdftime.o
+	$(CC) $(LDFLAGS) $(LDLIBS) -o "$@"
 
 libgdf.a: gdf.o getlogin.o gdftime.o physicalunits.o
 	-$(DELETE) "$@"
@@ -622,7 +640,8 @@ libgdf.so: gdf.o gdftime.o physicalunits.o
 		-o $@.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} gdf.o getlogin.o gdftime.o physicalunits.o
 	/sbin/ldconfig -n .
 	ln -sf $@.${MAJOR_VERSION}.${MINOR_VERSION} "$@"
-
+libgdf.dylib: gdf.o gdftime.o physicalunits.o
+	$(CC) $(LDFLAGS) $(LDLIBS) "$<" -o "$@"
 
 libbiosig.a: $(OBJECTS) t240/libcnsfef.a libbiosig.pc
 	-$(DELETE) libbiosig.a
@@ -637,6 +656,8 @@ libbiosig.so: $(OBJECTS) t240/libcnsfef.a libbiosig.pc
 		-o $@.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(OBJECTS) t240/*.o
 	/sbin/ldconfig -n .
 	ln -sf $@.${MAJOR_VERSION}.${MINOR_VERSION} $@
+libbiosig.dylib: $(OBJECTS)
+	$(CC) $(LDFLAGS) $(LDLIBS) $(OBJECTS) t240/*.o -o "$@"
 
 
 libbiosig.pc :
@@ -651,7 +672,6 @@ libbiosig.pc :
 	echo "URL: http://biosig.sf.net"   >>libbiosig.pc
 	echo "Libs: $(LDLIBS)"             >>libbiosig.pc
 	echo "Cflags: $(DEFINES)"          >>libbiosig.pc
-  	 
 
 libbiosig2.a: $(OBJECTS) biosig2.o t240/libcnsfef.a
 	-$(DELETE) libbiosig2.a
@@ -665,6 +685,9 @@ libbiosig2.so: $(OBJECTS) biosig2.o t240/libcnsfef.a
 		-o libbiosig2.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(OBJECTS) biosig2.o t240/*.o
 	/sbin/ldconfig -n .
 	ln -sf libbiosig2.so.${MAJOR_VERSION} libbiosig2.so
+libbiosig2.dylib: $(OBJECTS)  biosig2.o t240/libcnsfef.a
+	$(CC) $(LDFLAGS) $(LDLIBS) $(OBJECTS) t240/*.o -o "$@"
+
 
 save2gdf: save2gdf.o libbiosig.$(LIBEXT)
 	$(CXX) $(CXXFLAGS) save2gdf.o libbiosig.$(LIBEXT) $(LFLAGS) $(LIBS) -o save2gdf
@@ -808,7 +831,7 @@ distclean:
 	-$(DELETE) *.i
 	-$(DELETE) *.o
 	-$(DELETE) *.lib
-	-$(DELETE) *.so
+	-$(DELETE) *.so *.dylib
 	-$(DELETE) *.so.*
 	-$(DELETE) *.mex*
 	-$(DELETE) *.oct
@@ -838,7 +861,7 @@ clean:
 	-$(DELETE) *.dll.a
 	-$(DELETE) *.i
 	-$(DELETE) *.o
-	-$(DELETE) *.so
+	-$(DELETE) *.so *.dylib
 	-$(DELETE) *.so.*
 	-$(DELETE) *.mex*
 	-$(DELETE) *.oct
