@@ -1145,6 +1145,11 @@ void FreeTextEvent(HDRTYPE* hdr,size_t N_EVENT, const char* annotation) {
 		hdr->EVENT.LenCodeDesc = 1;
 	}
 
+	if (annotation == NULL) {
+		hdr->EVENT.TYP[N_EVENT] = 0;
+		return;
+	}
+
 	// First, compare text with any predefined event description
 	for (k=0; ETD[k].typ != 0; k++) {
 		if (!strcmp(ETD[k].desc, annotation)) {
@@ -4313,6 +4318,14 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ line<%s>\n",line);
 					char *s3 = strtok(NULL,"\x14");
 					char *tstr   = strtok(s1,"\x14\x15");
 					char *durstr = strtok(NULL,"\x14\x15");
+
+					if (tstr==NULL) {
+						// TODO: check whether this is needed based on the EDF+ specs or whether it is an incorrect
+						fprintf(stderr,"Warning EDF+ events: tstr not defined\n");
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): EDF+ line<%s>\n",__FILE__,__LINE__,line);
+						break;
+					}
+
 					double t = atof(tstr);
 					if (flag > 0) {
 						if (N_EVENT <= hdr->EVENT.N+1)
