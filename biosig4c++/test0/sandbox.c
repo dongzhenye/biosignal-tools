@@ -27,6 +27,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <iconv.h>
+
 
 #include "../biosig-dev.h"
 
@@ -46,10 +48,10 @@ EXTERN_C int sopen_dicom_read(HDRTYPE* hdr) {
 
 #ifdef WITH_HDF
 #include <hdf5.h>
-#endif 
+#endif
 #ifdef WITH_MATIO
 #include <matio.h>
-#endif 
+#endif
 
 
 #ifdef WITH_GDCM
@@ -165,33 +167,33 @@ extern "C" {
 int sopen_hdf5(HDRTYPE* hdr) {
         /*
                 file hdr->FileName is already opened and hdr->HeadLen bytes are read
-                These are available from hdr->AS.Header. 
+                These are available from hdr->AS.Header.
 
-                ToDo: populate hdr 
+                ToDo: populate hdr
         */
 	size_t count = hdr->HeadLen;
-        fprintf(stdout,"Trying to read HDF data using \"%s\"\n",H5_VERS_INFO);  
+        fprintf(stdout,"Trying to read HDF data using \"%s\"\n",H5_VERS_INFO);
 
 	ifclose(hdr);
 
-        return(-1); 
+        return(-1);
 }
-#endif 
+#endif
 
 #ifdef WITH_MATIO
 int sopen_matlab(HDRTYPE* hdr) {
         /*
                 file hdr->FileName is already opened and hdr->HeadLen bytes are read
-                These are available from hdr->AS.Header. 
+                These are available from hdr->AS.Header.
 
-                ToDo: populate hdr 
-			sanity checks 
+                ToDo: populate hdr
+			sanity checks
 			memory leaks
         */
 	ifclose(hdr);
 	//size_t count = hdr->HeadLen;
 
-        fprintf(stdout, "Trying to read Matlab data using MATIO v%i.%i.%i\n", MATIO_MAJOR_VERSION, MATIO_MINOR_VERSION, MATIO_RELEASE_LEVEL);  
+        fprintf(stdout, "Trying to read Matlab data using MATIO v%i.%i.%i\n", MATIO_MAJOR_VERSION, MATIO_MINOR_VERSION, MATIO_RELEASE_LEVEL);
 
 	mat_t *matfile = Mat_Open(hdr->FileName, MAT_ACC_RDONLY);
 	matvar_t *EEG=NULL, *pnts=NULL, *nbchan=NULL, *trials=NULL, *srate=NULL, *data=NULL, *chanlocs=NULL, *event=NULL;
@@ -206,12 +208,12 @@ int sopen_matlab(HDRTYPE* hdr) {
 			data   = Mat_VarGetStructField(EEG, "data", BY_NAME, 0);
 			chanlocs = Mat_VarGetStructField(EEG, "chanlocs", BY_NAME, 0);
 			event    = Mat_VarGetStructField(EEG, "event", BY_NAME, 0);
-			
+
 			hdr->NS  = *(double*)(nbchan->data);
 			hdr->SPR = *(double*)(pnts->data);
 			hdr->NRec= *(double*)(trials->data);
 			hdr->SampleRate = *(double*)(srate->data);
-			
+
 /* TODO CB
 			hdr->NRec 	 = ;
 			hdr->SPR  	 = ;
@@ -225,7 +227,7 @@ int sopen_matlab(HDRTYPE* hdr) {
 				sprintf(hc->Label,"#%2d",k+1);
 				hc->SPR = hdr->SPR;
 /* TODO CB
-				hc->GDFTYP = gdftyp; 
+				hc->GDFTYP = gdftyp;
 				hc->Transducer[0] = '\0';
 			    	hc->LowPass	= ;
 			    	hc->HighPass = ;
@@ -244,9 +246,9 @@ int sopen_matlab(HDRTYPE* hdr) {
 			}
 
 			size_t sz = hdr->NS*hdr->SPR*hdr->NRec*GDFTYP_BITS[gdftyp]>>3;
-			hdr->AS.rawdata = realloc(hdr->AS.rawdata, sz); 
+			hdr->AS.rawdata = realloc(hdr->AS.rawdata, sz);
 /* TODO CB
-			memcpy(hdr->AS.rawdata,...,sz); 
+			memcpy(hdr->AS.rawdata,...,sz);
 */
 			hdr->EVENT.N = 0; 	// TODO CB
 			hdr->EVENT.POS = (uint32_t*) realloc(hdr->EVENT.POS, hdr->EVENT.N*sizeof(*hdr->EVENT.POS));
@@ -255,11 +257,11 @@ int sopen_matlab(HDRTYPE* hdr) {
 			hdr->EVENT.CHN = (uint16_t*) realloc(hdr->EVENT.CHN, hdr->EVENT.N*sizeof(*hdr->EVENT.CHN));
 			for (k=0; k<hdr->EVENT.N; k++) {
 /* TODO CB
-				hdr->EVENT.TYP[k] = 			
+				hdr->EVENT.TYP[k] =
 				FreeTextEvent(hdr, k, annotation)
-				hdr->EVENT.POS[k] = 			
-				hdr->EVENT.CHN[k] = 0; 			
-				hdr->EVENT.DUR[k] = 0;			
+				hdr->EVENT.POS[k] =
+				hdr->EVENT.CHN[k] = 0;
+				hdr->EVENT.DUR[k] = 0;
 */
 			}
 
@@ -275,122 +277,308 @@ int sopen_matlab(HDRTYPE* hdr) {
 			//Mat_VarPrint(chanlocs, 1);
 			//Mat_VarPrint(event,  1);
 
-			
+
 			Mat_VarFree(EEG);
 		}
 
 		Mat_Close(matfile);
 	}
-	
-        return (0); 
+
+        return (0);
 }
-#endif 
+#endif
+
+
+void PascalToCString( unsigned char *string )
+{
+	// First byte of pascal string contains string length
+	short i,stringLength = string[0];
+
+	// Shift string left
+
+	for (i = 0; i < stringLength; i++ )
+		string[i] = string[i+1];
+
+	// Append null byte
+	string[stringLength] = 0;
+}
 
 
 void sopen_axg_read(HDRTYPE* hdr) {
+
+		// read whole file into RAM
+		size_t count = hdr->HeadLen;
+		while (!ifeof(hdr)) {
+			const int minsize=1024;
+			hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header, 2*count+minsize);
+			count += ifread(hdr->AS.Header+count, 1, count+minsize, hdr);
+		}
+		ifclose(hdr);
 
 		int32_t nCol;
 		switch ((int) hdr->VERSION) {
 		case 1:
 		case 2:
-			nCol         = bei32p(hdr->AS.Header+6);
-			hdr->HeadLen = 10;
+			nCol         = bei16p(hdr->AS.Header+6);
+			hdr->HeadLen = 8;
 			break;
+		case 3:
+		case 4:
+		case 5:
 		case 6:
 			nCol      = bei32p(hdr->AS.Header+8);
 			hdr->HeadLen = 12;
-		default: 
-			biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG with more the 16.7 traces are not supported");
+			break;
+		default:
+			biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG - unsupported version number");
 			return;
 		}
 
 	    	hdr->FILE.LittleEndian = 0;
-		uint32_t k; 
-		size_t count = hdr->HeadLen;
-		typeof(hdr->CHANNEL->GDFTYP) gdftyp;
+		/* hack: for now each trace (i.e. column) becomes a separate channel -
+			later the traces of the channels will be reorganized
+		 */
+		hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL,nCol*sizeof(CHANNEL_TYPE));
 
 	        // result = AG_ReadFloatColumn( dataRefNum, fileFormat, columnNumber, &column );
+		int32_t k;
+		uint8_t *pos = hdr->AS.Header+hdr->HeadLen;
+		hdr->SPR    = beu32p(pos);
 		switch ((int) hdr->VERSION) {
 		case 1:
-			gdftyp = 16;	// float
-			ifseek(hdr, hdr->HeadLen, SEEK_SET);
 			for (k = 0; k < nCol; k++) {
-				const int colHdrSize=84;
-				uint8_t colHdr[colHdrSize];
-			    	ifread(colHdr,1,colHdrSize,hdr);
-				uint32_t points = beu32p(colHdr);
-			    	ifseek(hdr, points * sizeof(float),SEEK_CUR);
+				CHANNEL_TYPE *hc = hdr->CHANNEL+k;
+				hc->GDFTYP = 16; 	//float
+				hc->PhysDimCode = 0;
+				hc->SPR    = beu32p(pos);
+
+				int strlen = pos[4];
+				if (strlen > 79) {
+					biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG - invalid title length ");
+					return;
+				}
+
+				PascalToCString(pos+4); 	// shift by 1 byte and terminate 0 char
+				char *u1 = strrchr((char*)(pos+4),'(');
+				char *u2 = strrchr((char*)(pos+4),')');
+				if (u1 != NULL && u2 != NULL && u1 < u2) {
+					*u1 = 0;
+					*u2 = 0;
+					hc->PhysDimCode = PhysDimCode(u1+1);
+				}
+
+				strncpy(hc->Label, (char*)pos+4, strlen);
+
+				// start of data section
+				hc->bufptr = pos+84;
+				pos += 84 + hc->SPR * sizeof(float);
+
+				// these might be reorganized below
+				hc->PhysMax =  1e9;
+				hc->PhysMin = -1e9;
+				hc->DigMax  =  1e9;
+				hc->DigMin  = -1e9;
+
+				hc->Cal     =  1.0;
+				hc->Off     =  0.0;
+				hc->OnOff   =  1;
+				hc->LeadIdCode = 0;
+				hc->Transducer[0] = 0;
+				hc->TOffset   = 0;
+				hc->HighPass  = NAN;
+				hc->LowPass   = NAN;
+				hc->Notch     = NAN;
+				hc->Impedance = INFINITY;
+				hc->fZ        = NAN;
+				hc->XYZ[0] = 0.0;
+				hc->XYZ[1] = 0.0;
+				hc->XYZ[2] = 0.0;
+
 			}
 			break;
-		case 2: {
-			// k=0
-			gdftyp = 3;	// int16
-			const int colHdrSize = 92;
-			uint8_t colHdr[colHdrSize];
-		    	count  += ifread(colHdr,1,colHdrSize,hdr);
-			uint32_t points = beu32p(colHdr);
-			float firstsample = bef32p(colHdr+84);
-			hdr->SampleRate = 1.0/bef32p(colHdr+88);
-			for (k=1; k<nCol; k++) {
-				ifread(colHdr,1,colHdrSize,hdr);
-				points = beu32p(colHdr);
-				firstsample = bef32p(colHdr+84);
-				float Fs = 1.0/bef32p(colHdr+88);
-			    	ifseek(hdr, points * sizeof(int16_t),SEEK_CUR);
+		case 2:
+			for (k = 0; k < nCol; k++) {
+				CHANNEL_TYPE *hc = hdr->CHANNEL+k;
+				hc->GDFTYP = 3;		// int16
+				hc->PhysDimCode = 0;
+				hc->SPR    = beu32p(pos);
+				if (k==0) {
+					hc->Off    = bef32p(pos+84);
+					hc->Cal    = bef32p(pos+88);
+					hc->bufptr = NULL;
+					hdr->SampleRate = 1.0 / hc->Cal;
+				}
+				else {
+					hc->Cal    = bef32p(pos+84);
+					hc->Off    = 0.0;
+					hc->bufptr = pos + 88;
+				}
+				int strlen = pos[4];
+				if (strlen > 79) {
+					biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG - invalid title length ");
+					return;
+				}
+
+				// start of data sectioB
+				pos += (k==0 ? 92 : 88 + hc->SPR * sizeof(int16_t) );
+
 			}
 			break;
-			}
 		case 6:
 			for (k=0; k < nCol; k++) {
-				const int colHdrSize=12;
-				uint8_t colHdr[colHdrSize];
-			    	ifread(colHdr,1,colHdrSize,hdr);
-				uint32_t points = beu32p(colHdr);
-				uint32_t datatype = beu32p(colHdr+4);
-				uint32_t titleLen = beu32p(colHdr+8);
-			    	ifseek(hdr, titleLen, SEEK_CUR);
+				CHANNEL_TYPE *hc  = hdr->CHANNEL+k;
+				hc->SPR           = beu32p(pos);
+				uint32_t datatype = beu32p(pos+4);
+				size_t titleLen   = beu32p(pos+8);
+				char *inbuf       = pos + 12;
+				char *outbuf      = hc->Label;
+				size_t outlen = MAX_LENGTH_LABEL+1;
+				size_t inlen  = titleLen;
+#if  defined(_ICONV_H) || defined (_LIBICONV_H)
+				iconv_t ICONV = iconv_open("UTF-8","UCS-2BE");
+				size_t reticonv = iconv(ICONV, &inbuf, &inlen, &outbuf, &outlen);
+				iconv_close(ICONV);
+
+				if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i): %i %i %i %i %li\n", __FILE__, __LINE__, (int)hc->SPR, (int)datatype, (int)titleLen, (int)(pos-hdr->AS.Header), reticonv );
+
+				if (reticonv == (size_t)(-1) ) {
+					perror("AXG - conversion of title failed!!!");
+					biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG - conversion of title failed");
+					return;
+				}
+				*outbuf=0;
+#else
+				++inbuf; 
+				int i = min(MAX_LENGTH_LABEL, titleLen/2);
+				for (; i>0 ; i-- ) {
+					*outbuf= *inbuf;
+					inbuf += 2;
+					outbuf++;
+				}
+				outbuf = 0; 
+#endif
+				hc->bufptr = pos + 12 + titleLen;
+
 				/*
 				// The only types used for data file columns are...
 				//   ShortArrayType = 4     IntArrayType = 5
 				//   FloatArrayType = 6     DoubleArrayType = 7
 				//   SeriesArrayType = 9    ScaledShortArrayType = 10
 				*/
+				hc->Cal = 1.0;
+				hc->Off = 0.0;
+				switch (datatype) {
+				case 4: hc->GDFTYP = 3;	// int16
+					break;
+				case 5: hc->GDFTYP = 5; // int32
+					break;
+				case 6: hc->GDFTYP = 16; // float32
+					break;
+				case 7: hc->GDFTYP = 17; // double
+					break;
+				case 9: hc->GDFTYP = 17;  // series
+					double firstval = *(double*)hc->bufptr;
+					double increment = *(double*)(hc->bufptr+8);
+					hc->bufptr = NULL;
+	//				if (!strncmp(hc->Label,"Time (s)",4)) hdr->SampleRate = 1.0/increment; 	
+					break;
+				case 10: hc->GDFTYP = 3; // scaled short
+					hc->Cal = *(double*)(hc->bufptr);
+					hc->Off = *(double*)(hc->bufptr+8);
+					break;
+				default:
+					biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"error reading AXG: unsupported data type");
+					return;
+				}
+
+				if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i): %i <%s> %i %i %i\n", __FILE__, __LINE__, (int)hc->SPR, hc->Label, (int)datatype, (int)titleLen, (int)(pos-hdr->AS.Header) );
+
+				pos += 12 + titleLen;
+				// position of next column
 				switch (datatype) {
 				case 4:
-				    	ifseek(hdr, points * sizeof(int16_t), SEEK_CUR);
+					pos += hc->SPR * sizeof(int16_t);
 					break;
 				case 5: //int32
 				case 6: //float
-				    	ifseek(hdr, points * 4, SEEK_CUR);
+					pos += hc->SPR * 4;
 					break;
 				case 7:
-				    	ifseek(hdr, points * sizeof(double), SEEK_CUR);
+					pos += hc->SPR * sizeof(double);
 					break;
-				case 9: {
-					const int colHdrSize = 2*sizeof(double);
-					uint8_t colHdr[colHdrSize];
-				    	count  += ifread(colHdr, 1, colHdrSize, hdr);
-					double firstsample = bef64p(colHdr);
-					hdr->SampleRate = 1.0 / bef64p(colHdr+8);
+				case 9:
+					pos += 2 * sizeof(double);
 					break;
-					}
 				case 10:
-				    	ifseek(hdr, 2 * sizeof(double) + points * sizeof(int16_t), SEEK_CUR);
+					pos += 2 * sizeof(double) + hc->SPR * sizeof(int16_t);
 					break;
 				default:
 					biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"error reading AXG: unsupported data type");
 				}
+				if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i): %i %i %i %i\n", __FILE__, __LINE__, (int)hc->SPR, (int)datatype, (int)titleLen, (int)(pos-hdr->AS.Header) );
+
 			}
 			break;
 		default:
 			biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG version is not supported");
 		}
 
-		/* TODO 
+
+		// read Comments
+		size_t szComments  = beu32p(pos);
+		char *inbuf       = pos+4;
+		char *Comments    = malloc(szComments+1);
+		char *outbuf      = Comments;
+		size_t outlen = szComments+1;
+		size_t inlen  = szComments;
+
+		iconv_t ICONV = iconv_open("UTF-8","UCS-2BE");
+		size_t reticonv = iconv(ICONV, &inbuf, &inlen, &outbuf, &outlen);
+		iconv_close(ICONV);
+		if (reticonv == (size_t)(-1) ) {
+			perror("AXG - conversion of comments failed!!!");
+			biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG - conversion of comments failed");
+			return;
+		}
+		Comments[outlen]=0;
+
+		if (VERBOSE_LEVEL >7)
+			fprintf(stdout,"\n=== COMMENT === \n %s\n",Comments);
+		pos += 4+szComments;
+
+
+		// read Notes
+		size_t szNotes  = beu32p(pos);
+		inbuf           = pos+4;
+		hdr->AS.fpulse  = malloc(szNotes+1);
+		outbuf = hdr->AS.fpulse;
+		outlen = szNotes+1;
+		inlen  = szNotes;
+
+		ICONV  = iconv_open("UTF-8","UCS-2BE");
+		reticonv = iconv(ICONV, &inbuf, &inlen, &outbuf, &outlen);
+		iconv_close(ICONV);
+		if (reticonv == (size_t)(-1) ) {
+			perror("AXG - conversion of Notes failed!!!");
+			biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG - conversion of Notes failed");
+			return;
+		}
+		hdr->AS.fpulse[outlen]=0;
+
+		if (VERBOSE_LEVEL >7)
+			fprintf(stdout,"=== NOTES === \n %s\n",hdr->AS.fpulse);
+		pos += 4+szNotes;
+
+		free(Comments);
+		//free(Notes);
+
+		/* TODO
+			assigne trace to channels
+
 			read comments
 			read notes
 			complete header information
-			
+
 		*/
 
 /*
@@ -400,8 +588,8 @@ void sopen_axg_read(HDRTYPE* hdr) {
 			hc = hdr->CHANNEL + k;
 			// hc->PhysDimCode = 4256; // "V"
 			hc->PhysDimCode   = 0;
-			hc->Transducer[0] = 0; 
-			
+			hc->Transducer[0] = 0;
+
 			hc->LeadIdCode = 0;
 			hc->SPR        = hdr->SPR;
 			hc->Cal        = 1.0;
@@ -414,7 +602,7 @@ void sopen_axg_read(HDRTYPE* hdr) {
 			hc->HighPass   = NAN;
 		}
 */
-		biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG format not supported, yet.");
+//		biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG format not supported, yet.");
 
 }
 
