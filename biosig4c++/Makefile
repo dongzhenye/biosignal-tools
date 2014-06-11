@@ -285,6 +285,7 @@ SOURCES      += biosig.c \
 		t210/sopen_famos_read.c \
 		t210/sopen_abf_read.c \
 		t210/sopen_alpha_read.c \
+		t210/sopen_axg_read.c \
 		t210/scp-decode.cpp \
 		t220/sopen_scp_write.c \
 		t220/crc4scp.c \
@@ -314,8 +315,9 @@ OBJECTS      += \
 		sopen_heka_read.o \
 		sopen_igor.o \
 		sopen_scp_read.o \
-		sopen_alpha_read.o \
 		sopen_abf_read.o \
+		sopen_alpha_read.o \
+		sopen_axg_read.o \
 		sopen_scp_write.o \
 		sopen_hl7aecg.o \
 		biosig-network.o \
@@ -334,6 +336,7 @@ MinGWOBJECTS  = \
 		win32/sopen_scp_read.obj \
 		win32/sopen_abf_read.obj \
 		win32/sopen_alpha_read.obj \
+		win32/sopen_axg_read.obj \
 		win32/sopen_scp_write.obj \
 		win32/sopen_hl7aecg.obj \
 		win32/biosig-network.obj \
@@ -827,6 +830,10 @@ bin/flowmon: flowmon.o gdf.o physicalunits.o
 .PHONY: clean distclean install remove install_sigviewer install_octave asc bin testscp testhl7 testbin test test6 zip 
 
 distclean:
+	-$(DELETE) -r autom4te.cache
+	-$(DELETE) aclocal.m4 config.guess config.h config.h.in config.log config.sub config.status depcomp missing stamp-h1
+	-$(DELETE) Makefile.am doc/Makefile.am mex/Makefile.am python/Makefile.am
+	-$(DELETE) install-sh ltmain.sh
 	-$(DELETE) *.a
 	-$(DELETE) *.i
 	-$(DELETE) *.o
