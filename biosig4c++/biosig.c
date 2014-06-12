@@ -12258,11 +12258,14 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 
 	if (start >= (size_t)hdr->NRec) return(0);
 
-	if (hdr->TYPE == SMR) // data is already cached in SMR
+	switch (hdr->TYPE) {
+	case AXG:
+	case SMR: // data is already cached
 		count = hdr->NRec;
-	else 
+		break;
+	default: 
 	 	count = sread_raw(start, length, hdr, 0);
-
+	}
 
 	if (hdr->AS.B4C_ERRNUM) return(0);
 
@@ -12543,10 +12546,12 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 			else if (MITTYP==311)
 				;
 			else
-*/
+ */
 
+			if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) GDFTYP=%i %i %i \n", __FILE__, __LINE__, GDFTYP,k1,k2);
 			biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "Error SREAD: datatype not supported");
 			return(-1);
+
 		}	// end switch
 
 		// overflow and saturation detection
@@ -12662,6 +12667,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 				sample_value = (biosig_data_type)int32_value;
 			}
 			else {
+				if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) GDFTYP=%i %i %i \n", __FILE__, __LINE__, GDFTYP,k1,k2);
 				biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "Error SREAD: datatype not supported");
 				return(0);
 			}

@@ -180,7 +180,7 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) %i %i %i\n", __FILE__, __LIN
 					hc->OnOff = 0;
 					if (!memcmp(inbuf,"\0T\0i\0m\0e\0 \0(\0s\0)\0",8)) {
 						hdr->SampleRate = 1.0/increment;
-						hc->OnOff = 2;	// time axis
+						//hc->OnOff = 2;	// time axis
 					}
 					else {
 						biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "AXG: series data not being a Time axis is not supported. ");
@@ -270,6 +270,7 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) %p %p %i %i\n", __FILE__, __
 			hc->GDFTYP = 0;
 		}
 		size_t EventN = 0;
+		hdr->SPR = 0;
 
 if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) NS=%i nCol=%i\n", __FILE__, __LINE__, hdr->NS, nCol );
 
@@ -311,23 +312,21 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) NS=%i nCol=%i\n", __FILE__, 
 			}
 			else {
 				if (hc->Cal != TEMPCHANNEL[k].Cal || hc->Off != TEMPCHANNEL[k].Off) {
+					// in case input is scaled short, output shoud be float
 					hc->GDFTYP = max(16, hc->GDFTYP);
 				}
 			}
 
-
-if (VERBOSE_LEVEL > 8) fprintf(stdout,"%s (line %i) %i %i %f %f\n", __FILE__, __LINE__, (int)k, (int)ns, TEMPCHANNEL[k].Cal, hc->Cal );
+			if (hdr->SPR < hc->SPR) hdr->SPR = hc->SPR;
 
 			if (ns+1 == hdr->NS) {
 				flag_traces_of_first_sweep_done = 1;
 				// if current column corresponds to last channel, ...
-				uint32_t spr = 0;
 				// check if all traces of the same sweep have the same length, and ...
 				for (ns=0; ns < hdr->NS; ns++) {
 					CHANNEL_TYPE *hc = hdr->CHANNEL + ns;
 					if (hc->OnOff != 1) continue;
-					if (spr == 0 ) spr = hc->SPR;
-					else if (spr != hc->SPR) {
+					else if (hdr->SPR != hc->SPR) {
 						biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG - SPR differs between channel");
 						return;
 					}
@@ -340,12 +339,12 @@ if (VERBOSE_LEVEL > 8) fprintf(stdout,"%s (line %i) %i %i %f %f\n", __FILE__, __
 					hdr->EVENT.TYP = (uint16_t*)realloc(hdr->EVENT.TYP, EventN * sizeof(*hdr->EVENT.TYP));
 				}
 				hdr->EVENT.TYP[hdr->EVENT.N] = 0x7ffe;
-				hdr->EVENT.POS[hdr->EVENT.N] = hdr->CHANNEL[0].SPR;
+				hdr->EVENT.POS[hdr->EVENT.N] = hdr->SPR;
 				hdr->EVENT.N++;
 			}
 		}
 
-		hdr->NRec = hdr->CHANNEL[0].SPR;
+		hdr->NRec = hdr->SPR;
 		hdr->SPR = 1;
 		uint32_t bi = 0, bi8=0;
 		for (ns=0; ns < hdr->NS; ns++) {
@@ -353,15 +352,14 @@ if (VERBOSE_LEVEL > 8) fprintf(stdout,"%s (line %i) %i %i %f %f\n", __FILE__, __
 			hc->SPR = hdr->SPR;
 			hc->bi8 = bi8;
 			hc->bi  = bi8/8;
-			if (hc->OnOff != 1) continue;
-			bi8    += GDFTYP_BITS[hc->GDFTYP];
+			if (hc->OnOff != 1)
+				hc->SPR = 0;
+			else
+				bi8 += GDFTYP_BITS[hc->GDFTYP];
 		}
-		hdr->AS.bpb = bi;
+		hdr->AS.bpb = bi8/8;
 
 		for (ns=0; ns < hdr->NS; ns++) {
-
-if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) #%i/%i\n", __FILE__, __LINE__, (int)ns,(int)hdr->NS );
-
 			CHANNEL_TYPE *hc = hdr->CHANNEL+ns;
 
 			// define hdr->channel[.].Label, hdr->channel[.].PhysDim
@@ -450,8 +448,6 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) #%i/%i\n", __FILE__, __LINE_
 			CHANNEL_TYPE *hc = hdr->CHANNEL + ns;
 
 			if (hc->OnOff != 1) continue;
-
-if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) %i %i\n", __FILE__, __LINE__, hc->GDFTYP, TEMPCHANNEL[k].GDFTYP );
 
 			uint32_t i;
 			switch (hc->GDFTYP) {
@@ -557,10 +553,6 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) %i %i\n", __FILE__, __LINE__
 		hdr->FILE.LittleEndian = (__BYTE_ORDER == __LITTLE_ENDIAN);
 		hdr->AS.first  = 0;
 		hdr->AS.length = (size_t)hdr->NRec;
-
-
-if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i)\n", __FILE__, __LINE__ );
-
 
 		// read Comments
 		size_t szComments = beu32p(pos);
