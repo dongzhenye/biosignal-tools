@@ -39,8 +39,8 @@
 #define __BIOSIG_EXT_H__
 
 #define BIOSIG_VERSION_MAJOR 1
-#define BIOSIG_VERSION_MINOR 5
-#define BIOSIG_PATCHLEVEL 13
+#define BIOSIG_VERSION_MINOR 6
+#define BIOSIG_PATCHLEVEL 0
 // for backward compatibility 
 #define BIOSIG_VERSION_STEPPING BIOSIG_PATCHLEVEL	
 #define BIOSIG_VERSION (BIOSIG_VERSION_MAJOR * 10000 + BIOSIG_VERSION_MINOR * 100 + BIOSIG_PATCHLEVEL)
@@ -142,31 +142,30 @@ enum B4C_ERROR {
 	/* list of file formats */
 enum FileFormat {
 	noFile, unknown,
-	ABF, ACQ, ACR_NEMA, AIFC, AIFF, AINF, alpha, ARFF, 
-	ASCII_IBI, ASCII, AU, ASF, ATES, ATF, AVI, Axona,
+	ABF, ABF2, ACQ, ACR_NEMA, AIFC, AIFF, AINF, alpha, ARFF,
+	ASCII_IBI, ASCII, AU, ASF, ATES, ATF, AVI, AXG, Axona,
 	BCI2000, BDF, BESA, BIN, BKR, BLSC, BMP, BNI, BSCS,
 	BrainVision, BrainVisionVAmp, BrainVisionMarker, BZ2,
 	CDF, CFS, CFWB, CNT, CTF, DICOM, DEMG,
 	EBS, EDF, EEG1100, EEProbe, EEProbe2, EEProbeAvr, EGI,
 	EGIS, ELF, EMBLA, EMSA, ePrime, ET_MEG, ETG4000, EVENT, EXIF,
-	FAMOS, FEF, FITS, FLAC, GDF, GDF1,
+	FAMOS, FEF, FIFF, FITS, FLAC, GDF, GDF1,
 	GIF, GTF, GZIP, HDF, HL7aECG, HEKA, 
-	ISHNE, ITX, JPEG, JSON, Lexicor,
-	Matlab, MFER, MIDI, MIT, MM, MSI, MSVCLIB, MS_LNK, 
-	native, NeuroLoggerHEX, NetCDF, NEURON, NEV, NEX1, NIFTI, 
+	IBW, ISHNE, ITX, JPEG, JSON, Lexicor,
+	Matlab, MFER, MIDI, MIT, MM, MSI, MSVCLIB, MS_LNK, MX,
+	native, NeuroLoggerHEX, NetCDF, NEURON, NEV, NEX1, NIFTI, NUMPY,
 	OGG, OpenXDF,
 	PBMA, PBMN, PDF, PDP, Persyst, PGMA, PGMB,
 	PLEXON, PNG, PNM, POLY5, PPMA, PPMB, PS,
 	RDF, RIFF,
-	SASXPT, SCP_ECG, SIGIF, Sigma, SMA, SND, SQLite, 
+	SASXPT, SCP_ECG, SIGIF, Sigma, SMA, SMR, SND, SQLite,
 	SPSS, STATA, SVG, SXI, SYNERGY,
-	TIFF, TMS32, TMSiLOG, TRC, UNIPRO, VRML, VTK,
+	TDMS, TIFF, TMS32, TMSiLOG, TRC, UNIPRO, VRML, VTK,
 	WAV, WG1, WinEEG, WMF, XML, XPM,
-	Z, ZIP, ZIP2,
-	TDMS, SMR, MX, IBW, AXG, ABF2, NUMPY, FIFF
+	Z, ZIP, ZIP2
 };
 
-#if (BIOSIG_VERSION >= 10600)
+#if (BIOSIG_VERSION >= 10700)
 #error ABI change: order enum FileFormat alphabethically
 #endif
 
@@ -213,9 +212,13 @@ typedef int64_t 		nrec_t;	/* type for number of records */
 	This structure defines the header for each channel (variable header)
  */
 // TODO: change fixed length strings to dynamically allocated strings
-#define MAX_LENGTH_LABEL 	40	// TMS: 40
+#define MAX_LENGTH_LABEL 	80	// TMS: 40, AXG: 79
 #define MAX_LENGTH_TRANSDUCER 	80
-#define MAX_LENGTH_PHYSDIM      20	// DEPRECATED - DO NOT USE 
+#if (BIOSIG_VERSION < 10600)
+  #define MAX_LENGTH_PHYSDIM    20	// DEPRECATED - DO NOT USE
+#else
+  #undef MAX_LENGTH_PHYSDIM
+#endif
 #define MAX_LENGTH_PID	 	80  	// length of Patient ID: MFER<65, GDF<67, EDF/BDF<81, etc.
 #define MAX_LENGTH_RID		80	// length of Recording ID: EDF,GDF,BDF<80, HL7 ?
 #define MAX_LENGTH_NAME 	132	// max length of personal name: MFER<=128, EBS<=33*4
@@ -234,7 +237,9 @@ typedef struct CHANNEL_STRUCT {
 	char		OnOff	ATT_ALI;	/* 0: channel is off, not consider for data output; 1: channel is turned on; 2: channel containing time axis */
 	uint16_t	LeadIdCode ATT_ALI;	/* Lead identification code */
 	char 		Transducer[MAX_LENGTH_TRANSDUCER+1] ATT_ALI;	/* transducer e.g. EEG: Ag-AgCl electrodes */
+#ifdef MAX_LENGTH_PHYSDIM
         char            PhysDim[MAX_LENGTH_PHYSDIM+1] ATT_ALI ATT_DEPREC;       /* DONOT USE - use PhysDim3(PhysDimCode) instead */
+#endif
 	uint16_t	PhysDimCode ATT_ALI;	/* code for physical dimension - PhysDim3(PhysDimCode) returns corresponding string */
 
 	float 		TOffset 	ATT_ALI;	/* time delay of sampling */
@@ -413,8 +418,9 @@ typedef struct HDR_STRUCT {
 		size_t		length;		/* number of block(s) loaded in buffer */
 		uint8_t*	auxBUF;  	/* auxillary buffer - used for storing EVENT.CodeDesc, MIT FMT infor, alpha:rawdata header */
 		union {
-		char*		bci2000;	/* application specific free text field */
-		char*		fpulse;	
+		    char*	bci2000;	/* application specific free text field */
+		    char*	fpulse;
+		    char*	stimfit;
 		};
 		uint32_t	SegSel[5];	/* segment selection in a hirachical data formats, e.g. sweeps in HEKA/PatchMaster format */
 		enum B4C_ERROR	B4C_ERRNUM;	/* error code */

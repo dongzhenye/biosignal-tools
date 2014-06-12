@@ -1644,8 +1644,9 @@ void init_channel(struct CHANNEL_STRUCT *hc) {
 	hc->LeadIdCode	= 0;
 	hc->Transducer[0] = '\0';
 	hc->PhysDimCode	= 0;
+#ifdef MAX_LENGTH_PHYSDIM
 	hc->PhysDim[0]	= '?';
-
+#endif
 	hc->TOffset	= 0.0;
 	hc->HighPass	= NAN;
 	hc->LowPass	= NAN;
@@ -4509,8 +4510,9 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 			hc->LeadIdCode	= 0;
 			hc->Transducer[0] = '\0';
 			hc->PhysDimCode	= 0;
+#ifdef MAX_LENGTH_PHYSDIM
 			hc->PhysDim[0]	= '?';
-
+#endif
 			hc->TOffset	= 0.0;
 			hc->HighPass	= NAN;
 			hc->LowPass	= NAN;
