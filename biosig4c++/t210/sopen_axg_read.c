@@ -612,21 +612,9 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) NS=%i nCol=%i\n", __FILE__, 
 		strtok(DATE, "\n\r");	// cut at newline
 		char *tmp = strtok(DATE, " ");	// day of week - skip 
 
-		tmp = strtok(NULL, " ");	// abreviated month like 
-		if      (!strcmp(tmp,"Jan")) T.tm_mon = 0;
-		else if (!strcmp(tmp,"Feb")) T.tm_mon = 1;
-		else if (!strcmp(tmp,"Mar")) T.tm_mon = 2;
-		else if (!strcmp(tmp,"Apr")) T.tm_mon = 3;
-		else if (!strcmp(tmp,"May")) T.tm_mon = 4;
-		else if (!strcmp(tmp,"Jun")) T.tm_mon = 5;
-		else if (!strcmp(tmp,"Jul")) T.tm_mon = 6;
-		else if (!strcmp(tmp,"Aug")) T.tm_mon = 7;
-		else if (!strcmp(tmp,"Sep")) T.tm_mon = 8;
-		else if (!strcmp(tmp,"Oct")) T.tm_mon = 9;
-		else if (!strcmp(tmp,"Nov")) T.tm_mon = 10;
-		else if (!strcmp(tmp,"Dec")) T.tm_mon = 11;
+		tmp = strtok(NULL, " ");	// abreviated month name
+		T.tm_mon = month_string2int(tmp);
 		
-
 		tmp = strtok(NULL, " ");	// day of month
 		T.tm_mday = atoi(tmp); 
 
@@ -646,9 +634,6 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) NS=%i nCol=%i\n", __FILE__, 
 
 		hdr->T0 = tm_time2gdf_time(&T);
 
-		/* FIXME: 
-  			date/time parse for windows needed
-		*/
 #endif
 
 		hdr->AS.fpulse = Notes; 

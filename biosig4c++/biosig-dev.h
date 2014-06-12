@@ -514,6 +514,10 @@ ATT_DEPREC int strcmpi(const char* str1, const char* str2); // use strcasecmp() 
 ATT_DEPREC int strncmpi(const char* str1, const char* str2, size_t n); // use strncasecmp() instead
 #endif
 
+
+int month_string2int(const char *s);
+
+
 int u32cmp(const void *a, const void *b); 
 
 void biosigERROR(HDRTYPE *hdr, enum B4C_ERROR errnum, const char *errmsg);

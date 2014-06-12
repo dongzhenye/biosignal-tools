@@ -683,6 +683,19 @@ int strcmpi(const char* str1, const char* str2)
 #endif
 
 /*
+	Converts name of month int numeric value.
+*/
+int month_string2int(const char *s) {
+	const char ListOfMonth[12][4] = {"JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"};
+	int k;
+	for (k = 0; k < 12; k++)
+		if (!strncmpi(s, ListOfMonth[k], 3)) return k;
+
+	return -1;
+}
+
+
+/*
 	compare uint32_t
 */
 int u32cmp(const void *a,const void *b)
@@ -4046,7 +4059,6 @@ else if (!strncmp(MODE,"r",1)) {
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211b] #=%li\nT0=%s\n",iftell(hdr),asctime(&tm_time));
 
 		if (!strncmp(Header1+192,"EDF+",4)) {
-			char ListOfMonth[12][4] = {"JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"};
 
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211c+] <%s>\n",hdr->Patient.Id);
 
@@ -4071,9 +4083,7 @@ else if (!strncmp(MODE,"r",1)) {
 		    		strcpy(tmp,strtok(NULL,"-"));
 		    		for (k=0; k<strlen(tmp); ++k) tmp[k]= toupper(tmp[k]);	// convert to uppper case
 		    		t1.tm_year = atoi(strtok(NULL,"- ")) - 1900;
-		    		t1.tm_mon  = -1;
-		    		for (k=0; k<12; k++)
-		    			if (!strcmp(tmp,ListOfMonth[k])) t1.tm_mon = k;
+				t1.tm_mon  = month_string2int(tmp);
 		    		t1.tm_sec  = 0;
 		    		t1.tm_min  = 0;
 		    		t1.tm_hour = 12;
@@ -4111,7 +4121,7 @@ else if (!strncmp(MODE,"r",1)) {
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211f] <%s>\n",ptr_str);
 	    				strcpy(tmp,ptr_str);
 		    			for (k=0; k<strlen(tmp); ++k) tmp[k]=toupper(tmp[k]);	// convert to uppper case
-		    			for (m=0; m<12; m++) if (!strcmp(tmp,ListOfMonth[m])) break;
+					m = month_string2int(tmp);
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211g] <%s>\n",tmp);
 	    				y = atoi(strtok(NULL,"-")) - 1900;
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211h] <%i>\n",tm_time.tm_year);
@@ -5452,18 +5462,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 					if (c==7) {
 						tm_time.tm_isdst = -1;
 						tm_time.tm_year -= 1900;
-						if      (!strcmp(tmp,"Jan")) tm_time.tm_mon = 0;
-						else if (!strcmp(tmp,"Feb")) tm_time.tm_mon = 1;
-						else if (!strcmp(tmp,"Mar")) tm_time.tm_mon = 2;
-						else if (!strcmp(tmp,"Apr")) tm_time.tm_mon = 3;
-						else if (!strcmp(tmp,"May")) tm_time.tm_mon = 4;
-						else if (!strcmp(tmp,"Jun")) tm_time.tm_mon = 5;
-						else if (!strcmp(tmp,"Jul")) tm_time.tm_mon = 6;
-						else if (!strcmp(tmp,"Aug")) tm_time.tm_mon = 7;
-						else if (!strcmp(tmp,"Sep")) tm_time.tm_mon = 8;
-						else if (!strcmp(tmp,"Oct")) tm_time.tm_mon = 9;
-						else if (!strcmp(tmp,"Nov")) tm_time.tm_mon = 10;
-						else if (!strcmp(tmp,"Dec")) tm_time.tm_mon = 11;
+						tm_time.tm_mon   = month_string2int(tmp);
 						hdr->T0 = tm_time2gdf_time(&tm_time);
 					}
 				}
