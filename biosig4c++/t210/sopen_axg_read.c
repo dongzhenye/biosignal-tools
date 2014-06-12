@@ -343,6 +343,7 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) NS=%i nCol=%i\n", __FILE__, 
 				hdr->EVENT.N++;
 			}
 		}
+		hdr->EVENT.N--;		// ignore last separator event 
 
 		hdr->NRec = hdr->SPR;
 		hdr->SPR = 1;
@@ -580,8 +581,8 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) NS=%i nCol=%i\n", __FILE__, 
 		// read Notes
 		size_t szNotes  = beu32p(pos);
 		inbuf           = pos+4;
-		hdr->AS.fpulse  = malloc(szNotes+1);
-		outbuf = hdr->AS.fpulse;
+		char *Notes     = malloc(szNotes+1);
+		outbuf = Notes;
 		outlen = szNotes+1;
 		inlen  = szNotes;
 
@@ -592,16 +593,22 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) NS=%i nCol=%i\n", __FILE__, 
 			biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG - conversion of Notes failed");
 			return;
 		}
-		hdr->AS.fpulse[outlen]=0;
+		Notes[outlen]=0;
 
 		if (VERBOSE_LEVEL >7)
-			fprintf(stdout,"=== NOTES === \n %s\n",hdr->AS.fpulse);
+			fprintf(stdout,"=== NOTES === \n %s\n",Notes);
 		pos += 4+szNotes;
 
+		/******  parse Date and Time ********/
+		struct tm T; 
+		strptime(strstr(Notes,"Created on ")+11, "%a %b %d %Y", &T); ;
+		strptime(strstr(Notes,"acquisition at ")+15, "%T", &T); ;
+		hdr->T0 = tm_time2gdf_time(&T);
+
+		hdr->AS.fpulse = Notes; 
 		free(Comments);
 
 if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i)\n", __FILE__, __LINE__ );
-
 
 }
 
