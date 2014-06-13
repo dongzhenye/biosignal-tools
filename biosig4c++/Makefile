@@ -149,8 +149,10 @@ LINK          = $(LD)
 ifeq (Darwin,$(uname))
   LDFLAGS     += -dynamiclib -undefined suppress -flat_namespace
   LDLIBS      += -liconv
+  DLEXT        = dylib
 else
   LDFLAGS     += -shared -fPIC -Wl,-rpath,.
+  DLEXT        = so
 endif
 
 LFLAGS_dynamic = -L. -L/opt/local/lib
@@ -842,10 +844,13 @@ distclean:
 	-$(DELETE) *.so.*
 	-$(DELETE) *.mex*
 	-$(DELETE) *.oct
+	-$(DELETE) mex/mexSOPEN.cpp
+	-$(DELETE) libbiosig.pc
 	-$(DELETE) $(IO_H_FILE64) $(IO_H_FILE)
 	-$(DELETE) t5.scp t6.scp save2gdf gztest test_scp_decode biosig_server biosig_client
 	-$(DELETE) t?.[bge]df* t?.hl7* t?.scp* t?.cfw* t?.gd1* t?.*.gz *.fil $(TEMP_DIR)t1.* $(DATA_DIR)t1.*
 	-$(DELETE) python/swig_wrap.* python/biosig.py* python/_biosig.so python/biosig2.py* python/_biosig2.so
+	-$(DELETE) python/*_wrap.*
 	-$(DELETE) QMakefile
 	-$(DELETE) igor/libIgor.a
 	-$(DELETE) win32/*.a win32/*.lib win32/libbiosig.* win32/*.obj win32/*.exe
@@ -872,9 +877,10 @@ clean:
 	-$(DELETE) *.so.*
 	-$(DELETE) *.mex*
 	-$(DELETE) *.oct
+	-$(DELETE) libbiosig.pc
 	-$(DELETE) $(TEMP_DIR)t1.*
 	-$(DELETE) python/biosig.py* _biosig.so python/biosig2.py* _biosig2.so
-	-$(DELETE) python/swig_wrap.*
+	-$(DELETE) python/swig_wrap.* python/biosig2_wrap.*
 	-$(DELETE) win32/*.exe win32/*.o* win32/*.lib win32/*.a
 	-$(DELETE) win64/*.exe win64/*.o* win64/*.lib win64/*.a
 	-$(DELETE) t240/*.o*
@@ -914,7 +920,7 @@ install_libbiosig.a: libbiosig.a libbiosig2.a libphysicalunits.a libgdftime.a
 	install libbiosig2.a		$(LIB)
 	install libgdftime.a		$(LIB)
 
-install_libbiosig: libbiosig2.so libbiosig.so libphysicalunits.so libgdftime.so  install_libbiosig.a
+install_libbiosig: libbiosig2.$(DLEXT) libbiosig.$(DLEXT) libphysicalunits.$(DLEXT) libgdftime.$(DLEXT)  install_libbiosig.a
 	# do not install libbiosig.so, only static version should be installed
 	install libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)
 	ln -sf  libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(LIB)/libbiosig.so.${MAJOR_VERSION}.${MINOR_VERSION}
