@@ -1,15 +1,23 @@
+
 INSTALLATION
 ============
 
+Quick start for Debian/Linux installing libbiosig:
+
+   make save2gdf lib
+   sudo make install_libbiosig
+
+This will replace some files of the debian package biosig4c++, you might need to recompile your
+applications afterwards.
+
+
 General remarks:
 ----------------
-Please check the Makefile and (un)define the corresponding defines: 
 
-The following DEFINES are recommended and required:
+The following DEFINES in 'Makefile" are recommended and required:
  -D=WITH_CHOLMOD        used for re-referencing of data, REQUIREMENT: cholmod from libsuitesparse
  -D=WITH_ZLIB	        used to handle gzip-ped files,  REQUIREMENT: zlib (http://zlib.net/)
  -D=WITH_GSL	        provides interface to GSL, REQUIREMENT: GNU Scientific Library (GSL), 
- -D=WITH_FEF	        includes support for FEF-format from CNSystems (fails with MinGW) 
  -D=WITH_FAMOS	        includes (partial) support for FAMOS format 
  -D=__4HAERTEL__	support for special flavor of FAMOS format (experimental) 
 
@@ -17,6 +25,7 @@ The following DEFINES are recommended and required:
  -D=WITH_DICOM, -D=WITH_GDCM 	experimental DICOM support 
 
 If some libraries are not available on your system, remove the corresponding DEFINES in Makefile. 
+
 
 
 Prerequisites: 
@@ -38,7 +47,7 @@ P2) for building SigViewer
 	svn co https://sigviewer.svn.sourceforge.net/svnroot/sigviewer/trunk sigviewer
 
 
-P3) Cross-compilation on Linux for Win32-target:   
+P3) Cross-compilation on Linux for Win32/Win64-target:
 	aptitude install -R autoconf automake bash bison bzip2 \
                     cmake flex g++ intltool make sed \
                     libtool openssl libssl-dev \
@@ -47,21 +56,9 @@ P3) Cross-compilation on Linux for Win32-target:
                     xz-utils yasm mercurial 
 	git clone https://github.com/schloegl/mxe.git
 	cd mxe
-	make zlib suitesparse libgomp qt libbiosig stimfit
+	make biosig stimfit
 
-P4) Cross-compilation on GNU/Linux for Win64-target:   
-	cd mxe
-        make sure, Makefile contains the line
-	MXE_TARGETS := x86_64-static-mingw32 ...
-	and run 
-  	   make libbiosig stimfit 
-	
 
-P5) Host=Win32 platform (this solution is currently not maintained): 
-	MinGW32 (with g++)  
-	You need to use Makefile.win32 like this 
-	make -f Makefile.win32  	
-		
 
 Platform specific information
 -----------------------------
@@ -75,7 +72,7 @@ Running make compiles the converter.
   make win32		# makes the file format converter for Win32
   make win64		# makes the file format converter for Win64
   make physicalunits 	# makes the en/decoder for physical units
-  make libbiosig.a  	# makes a static library 
+  make lib            	# makes library
   make mex4o 		# makes mexSLOAD for Octave (requires Octave-headers2.9 or higher)
   make mex4m 		# makes mexSLOAD for Matlab (path_to_mex need to be defined in Makefile)
   make biosig4python 	# compiles the BioSig interface for Python (requires SWIG and Python)
