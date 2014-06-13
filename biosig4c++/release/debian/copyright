@@ -1,0 +1,62 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: biosig4c++
+Upstream-Contact: Alois Schloegl <alois.schloegl@ist.ac.at>
+Source: git clone git://git.code.sf.net/p/biosig/code biosig-code 
+
+Files: *
+Copyright: 2003-2007, Lev Walkin <vlm@lionet.info>
+           2003,2004, Giorgio De Odorico
+           2003,2004, X/IO Labs (xiolabs.com)
+           2003,2004,2006, Eugenio Cervesato
+           2005,2006, Franco Chiarugi
+           2005-2012, Alois Schloegl <a.schloegl@ieee.org>
+           2007, Elias Apostolopoulos
+License: GPL-3+
+
+Files: XMLParser/tiny*
+Copyright: 2000-2007, Lee Thomason <leethomason@mindspring.com>
+           2002-2004, Yves Berquin <yvesb@users.sourceforge.net>
+           2005, Tyge Lovset
+           2007-2010, Alois Schloegl <a.schloegl@ieee.org>
+License: ZLIB
+  This software is provided 'as-is', without any express or implied
+  warranty. In no event will the authors be held liable for any
+  damages arising from the use of this software.
+  .
+  Permission is granted to anyone to use this software for any
+  purpose, including commercial applications, and to alter it and
+  redistribute it freely, subject to the following restrictions:
+  .
+  1. The origin of this software must not be misrepresented; you must
+  not claim that you wrote the original software. If you use this
+  software in a product, an acknowledgment in the product documentation
+  would be appreciated but is not required.
+  .
+  2. Altered source versions must be plainly marked as such, and
+  must not be misrepresented as being the original software.
+  .
+  3. This notice may not be removed or altered from any source
+  distribution.
+
+Files: debian/*
+Copyright: 2011, Yaroslav Halchenko <debian@onerussian.com>
+Copyright: 2014, Alois Schloegl <alois.schloegl@ist.ac.at>
+License: GPL-3+
+
+License: GPL-3.0+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ .
+ This package is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program. If not, see <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU General
+ Public License version 3 can be found in "/usr/share/common-licenses/GPL-3".
+

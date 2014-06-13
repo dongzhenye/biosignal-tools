@@ -1,0 +1,92 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Sample debian/rules that uses debhelper.
+#
+# This file was originally written by Joey Hess and Craig Small.
+# As a special exception, when this file is copied by dh-make into a
+# dh-make output file, you may use that output file without restriction.
+# This special exception was added by Craig Small in version 0.37 of dh-make.
+#
+# Modified to make a template file for a multi-binary package with separated
+# build-arch and build-indep targets  by Bill Allombert 2001
+
+# Uncomment this to turn on verbose mode.
+export DH_VERBOSE=1
+
+# This has to be exported to make some magic below work.
+export DH_OPTIONS
+
+%:
+	dh $@ 
+
+override_dh_auto_configure:
+	dh_auto_configure
+	: # Use our copies
+
+override_dh_auto_build:
+	: # Build everything upstream builds by default
+	make $(MAKEOPTS)
+	: # Assure additional interesting to us pieces are built
+	make $(MAKEOPTS) save2gdf libbiosig.so mex4o biosig4python 
+	#make libbiosig.a save2gdf save2aecg save2scp pdp2gdf \
+	#	 biosig_client biosig_server
+	# Later: libbiosig.so -- fails, no SONAME etc,
+	#         mex4o -- there are some copying etc
+	# Later: Python -- depends on obsolete Numeric
+	#        biosig4python 
+	#  to build for multiple Python's would need to loop
+	#  between versions with smth like make python -B PYTHONVER=2.6
+
+override_dh_auto_test:
+	: I: skip testing for now -- relies on download of test data
+
+# Manual crafting of installing Octave and Python bindings
+# TODO: proper
+PYTHON=$(shell pyversions -d)
+PYDIR=$(shell /bin/ls -d /usr/lib/$(PYTHON)/*-packages)
+
+OCTDIR=$(shell octave-config --oct-site-dir)
+
+override_dh_auto_install:
+        #$(MAKE) DESTDIR=$$(pwd)/debian/biosig prefix=/usr install
+
+	dh_auto_install
+
+	: I: install Python binding for current Python verion TODO: all
+	mkdir -p debian/python-biosig$(PYDIR)
+	install -m 0644 python/biosig.py python/_biosig.so debian/python-biosig$(PYDIR)
+
+	: I: install Octave bindings
+	mkdir -p debian/octave-biosig$(OCTDIR)
+	: # install with executable flag so dh_{strip,...} tools could catch it to operate
+	install mex/mexS*.mex debian/octave-biosig$(OCTDIR)
+
+	[ -x /usr/bin/dh_numpy ] && dh_numpy || :
+
+
+override_dh_makeshlibs:
+	dh_makeshlibs
+	: # Provide Octave:Depends
+	[ -e /usr/bin/octave-depends ] \
+	&& octave-depends \
+	|| echo 'octave:Depends=octave (>= 3.4.3-1~)' >> debian/octave-biosig.substvars
+
+
+override_dh_strip:
+	dh_strip --dbg-package=libbiosig1-dbg
+	: # Address lintian concern about location
+	[ -d debian/libbiosig1-dbg/usr/lib/debug/usr/lib/pyshared ] && \
+		mv debian/libbiosig1-dbg/usr/lib/debug/usr/lib/pyshared \
+		   debian/libbiosig1-dbg/usr/lib/debug/usr/lib/pymodules || :
+
+# Tune up permission for .mex files this late in the chain
+# Silly dh_strip, dh_shlibdeps do not process those since extension
+# is "unknown" to them and they are not executable
+override_dh_gencontrol:
+	chmod a-x debian/octave-biosig$(OCTDIR)/*.mex
+	dh_gencontrol
+
+override_dh_auto_clean:
+	dh_auto_clean
+	make $(MAKEOPTS) clean					# distclean invoked by auto isn't enough
+

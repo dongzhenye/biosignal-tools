@@ -1,0 +1,5 @@
+biosig4c++ (1.6.1-1) unstable; urgency=low
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- Alois Schloegl <alois.schloegl@ist.ac.at>  Thu, 12 Jun 2014 22:35:25 +0200
