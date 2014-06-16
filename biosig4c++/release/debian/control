@@ -1,17 +1,15 @@
 Source: biosig4c++
 Priority: extra
-Maintainer: NeuroDebian Team <team@neuro.debian.net>
+Maintainer: Alois Schloegl <alois.schloegl@ist.ac.at>
 Uploaders: Yaroslav Halchenko <debian@onerussian.com>, Michael Hanke <michael.hanke@gmail.com>
 Build-Depends: debhelper (>= 7.0.50~),
-               gawk, libxml2-dev,
+               gawk,
                python-dev, python-support, swig, python-numpy,
                zlib1g-dev, libsuitesparse-dev,
                octave-pkg-dev (>= 0.5.7),
 Standards-Version: 3.9.3
 Section: science
 Homepage: http://biosig.sf.net/
-Vcs-Git: git://git.debian.org/pkg-exppsy/biosig4c--.git
-Vcs-Browser: http://git.debian.org/?p=pkg-exppsy/biosig4c--.git;a=summary
 
 Package: libbiosig1
 Section: libs
@@ -21,7 +19,7 @@ Description: I/O library for biomedical data - dynamic library
  BioSig is a library for accessing files in several biomedical data formats
  (including EDF, BDF, GDF, BrainVision, BCI2000, CFWB, HL7aECG,
  SCP_ECG (EN1064), MFER, ACQ, CNT(Neuroscan), DEMG, EGI, EEG1100,
- FAMOS, SigmaPLpro, TMS32).  The complete list of supported file
+ FAMOS, SigmaPLpro, TMS32). The complete list of supported file
  formats is available at http://pub.ist.ac.at/~schloegl/biosig/TESTED .
  .
  This package provides dynamic library.
@@ -34,7 +32,7 @@ Description: I/O library for biomedical data - debug symbols
  BioSig is a library for accessing files in several biomedical data formats
  (including EDF, BDF, GDF, BrainVision, BCI2000, CFWB, HL7aECG,
  SCP_ECG (EN1064), MFER, ACQ, CNT(Neuroscan), DEMG, EGI, EEG1100,
- FAMOS, SigmaPLpro, TMS32).  The complete list of supported file
+ FAMOS, SigmaPLpro, TMS32). The complete list of supported file
  formats is available at http://pub.ist.ac.at/~schloegl/biosig/TESTED .
  .
  This package provides debug symbols.
@@ -47,7 +45,7 @@ Description: I/O library for biomedical data - development files
  BioSig is a library for accessing files in several biomedical data formats
  (including EDF, BDF, GDF, BrainVision, BCI2000, CFWB, HL7aECG,
  SCP_ECG (EN1064), MFER, ACQ, CNT(Neuroscan), DEMG, EGI, EEG1100,
- FAMOS, SigmaPLpro, TMS32).  The complete list of supported file
+ FAMOS, SigmaPLpro, TMS32). The complete list of supported file
  formats is available at http://pub.ist.ac.at/~schloegl/biosig/TESTED .
  .
  This package provides header files and static library.
@@ -70,14 +68,19 @@ Section: python
 Architecture: any
 Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}
 Description: Python bindings for BioSig library
- This package provides Python bindings for BioSig library.  Primary
+ This package provides Python bindings for BioSig library. Primary
  goal -- I/O interface to variety of biomedical file formats, including
  but not limited to SCP-ECG(EN1064), HL7aECG (FDA-XML), GDF, EDF.
+ The complete list of supported file formats is available at
+ http://pub.ist.ac.at/~schloegl/biosig/TESTED .
 
 Package: octave-biosig
 Architecture: any
 Depends: ${octave:Depends}, ${shlibs:Depends}, ${misc:Depends}
 Description: Octave bindings for BioSig library
- This package provides Octave bindings for BioSig library.  Primary
+ This package provides Octave bindings for BioSig library. Primary
  goal -- I/O interface to variety of biomedical file formats, including
  but not limited to SCP-ECG(EN1064), HL7aECG (FDA-XML), GDF, EDF.
+ The complete list of supported file formats is available at
+ http://pub.ist.ac.at/~schloegl/biosig/TESTED .
+
