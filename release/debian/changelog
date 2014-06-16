@@ -1,5 +1,119 @@
 biosig4c++ (1.6.1-1) unstable; urgency=low
 
-  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+  * support for additional data formats
+       ABF1, AXG, 
+  * support improved for 
+       CFS (performance, scaling), SCP (convert strings to UTF-8), 
+       ISHNE, HEKA (TimeStamps, performance), MFER, IGOR
+  * bug fixes in supported data formats: 
+       EDF+, ITX, HEKA (scaling), CFS
+
+  * JSON output format for header added. 
+
+  * ABI changed:
+    The size of some structs, and some enumeration types have changed.
+    Most likely, You'll need to recompile your application, even if 
+    the dynamic biosig library (.so, .dll) is used.
+
+  * API change: field CHANNEL->PhysDim is removed.
+     This is already deprecated for quite a while.
+     Use instead the function PhysDim3(CHANNEL->PhysDimCode)
 
  -- Alois Schloegl <alois.schloegl@ist.ac.at>  Thu, 12 Jun 2014 22:35:25 +0200
+
+biosig4c++ (1.3.0-2) unstable; urgency=low
+
+  * Do not build biosig_{client,server} which are still experimental and
+    actually were not shipped within any package anyway (as a side-effect
+    Closes: #675582)
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Sun, 03 Jun 2012 22:18:19 -0400
+
+biosig4c++ (1.3.0-1) unstable; urgency=low
+
+  * Fresh upstream release
+    - libbiosig now SOVERSION 1, thus libbiosig1{,-dbg} to replace
+      libbiosig0
+  * debian/copyright: updated for DEP5
+  * debian/patches:
+    - added up_memcpy_str_cast (sent upstream)
+    - removed up_for_loop_initial (upstreamed)
+    - removed up_*oct* (no hardcoded octave version information in
+      upstream Makefile any longer), deb_link_dynamically_python
+    - removed deb_link_dynamically in favor of specifying LIBEXT=so to
+      calls to make
+    - removed deb_use_borrowed_eventcodes: now debian/upstream-extern
+      provides needed extra external files (from biosig) and gets symlinked
+      as extern at build time
+    - refreshed deb_no_mex_copy_upstairs,deb_no_locals
+  * upstream-files/eventcodes.txt -- refreshed from online
+  * debian/control:
+    - new build-depends: gawk, libxml2-dev
+    - boosted policy to 3.9.3 -- no further changes
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Thu, 24 May 2012 09:22:13 -0400
+
+biosig4c++ (0.96.3+svn2677-4) UNRELEASED; urgency=low
+
+  * debian/upstream: Authors need to be separated by ' and ' rather than
+    by ','
+
+ -- Andreas Tille <tille@debian.org>  Wed, 09 May 2012 09:48:22 +0200
+
+biosig4c++ (0.96.3+svn2677-3) unstable; urgency=low
+
+  * ACK the .1 NMU (Thank you Miguel)
+    - debian/rules: call dh_numpy only if available
+  * Use unversioned mkoctfile (Closes: #665051).
+    Thanks Lucas Nussbaum for the report and Nicolas Bourdaud for the patch.
+  * debian/rules, debian/control
+    - fixed typo in debian/control resulting in octave:Depends
+    - adjusted conditional use of octave-depends across systems (should
+      generate octave:Depends subst for recent systems lacking
+      octave-depends)
+  * debian/patches: refreshed
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Wed, 11 Apr 2012 12:36:54 -0400
+
+biosig4c++ (0.96.3+svn2677-2.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Fix "missing dependency on python-numpy" by adding dh_numpy under
+    override_dh_auto_install (Closes: #641790)
+
+ -- Miguel de Val Borro <miguel.deval@gmail.com>  Fri, 02 Dec 2011 20:02:39 +0100
+
+biosig4c++ (0.96.3+svn2677-2) unstable; urgency=low
+
+  * up_for_loop_initial patch to prevent FTBFS. Thanks Aurelien Jarno for
+    report and patch (Closes: #633346)
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Sat, 09 Jul 2011 10:40:56 -0400
+
+biosig4c++ (0.96.3+svn2677-1) unstable; urgency=low
+
+  * Initial release (Closes: #585533)
+  * Ship and use a copy of eventcodes.txt from biosig project
+  * Patches added:
+    - up_system_octave_version to build against default available
+      version of octave
+    - deb_no_mex_copy_upstairs to not try copy resultant .mex files
+      outside of the tree
+    - deb_link_dynamically* to assure dynamic linking against the library
+    - deb_no_locals to avoid errorneous linking against /usr/local
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Thu, 05 May 2011 12:28:27 -0400
+
+biosig4c++ (0.94.2+svn2552-1~pre1) UNRELEASED; urgency=low
+
+  * New upstream snapshot: some API extensions in the library interface
+  * Assure linking of .so against used libraries
+  * Symlinks for the missing manpages
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Fri, 29 Oct 2010 00:58:54 -0400
+
+biosig4c++ (0.94.1+svn2521-1~pre0) UNRELEASED; urgency=low
+
+  * Initial Debian packaging.
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Fri, 11 Jun 2010 01:19:48 -0400
