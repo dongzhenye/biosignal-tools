@@ -24,7 +24,7 @@ rm -rf biosig-code $BIOSIG4M_DIR $BIOSIG4C_DIR $BIOSIG4M_DIR/../NaN $BIOSIG4M_DI
 rm  biosig-$1*.gz biosig-$1*.zip biosig4c++[-_]$1*.gz  biosig4c++-$1*.zip $B4OM
 
 SRCDIR=$HOME"/src"
-SRCDIR=`pwd`"/../../.."
+SRCDIR=`pwd`"/../.."
 
 echo "== clone biosig =="
 git clone $SRCDIR/biosig-code biosig-code 
