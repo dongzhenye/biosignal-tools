@@ -908,6 +908,7 @@ install_octave: mexSLOAD.mex
 	install mex/mexSOPEN.mex* 	$(DESTDIR)/usr/share/octave/site-m/
 
 install_libbiosig.a: libbiosig.a libbiosig2.a libphysicalunits.a libgdftime.a
+	install -d 			$(BIN) $(INC) $(LIB)/pkgconfig/
 	install biosig.h    		$(INC)
 	install gdftime.h    		$(INC)
 	install biosig-dev.h    	$(INC)
@@ -932,7 +933,7 @@ install_libbiosig: libbiosig2.$(DLEXT) libbiosig.$(DLEXT) libphysicalunits.$(DLE
 	ln -sf  libbiosig2.so.${MAJOR_VERSION}.${MINOR_VERSION} $(LIB)/libbiosig2.so
 
 install: save2gdf libbiosig.a doc/save2gdf.1 install_libbiosig
-	install -d 			$(BIN)
+	install -d 			$(BIN) $(LIB) $(INC)
 	install save2gdf 		$(BIN)
 	install heka2itx 		$(BIN)
 	install save2aecg 		$(BIN)
@@ -940,9 +941,7 @@ install: save2gdf libbiosig.a doc/save2gdf.1 install_libbiosig
 	-install bin/ttl2trig  		$(BIN)
 	#install rec2bin  		$(BIN)
 	#install bin2rec  		$(BIN)
-	install -d			$(LIB) $(INC)
-	install biosig.h    		$(INC)
-	install physicalunits.h    	$(INC)
+	install biosig.h physicalunits.h $(INC)
 	install libbiosig.a libphysicalunits.a libgdftime.a $(LIB)
 	mkdir -p  			$(DESTDIR)/usr/share/man/man1
 	install doc/*.1  		$(DESTDIR)/usr/share/man/man1
