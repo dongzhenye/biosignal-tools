@@ -157,7 +157,7 @@ endif
 
 LFLAGS_dynamic = -L. -L/opt/local/lib
 LIBS_dynamic  = -lbiosig
-LFLAGS_static = -L/opt/local/lib
+LFLAGS_static = -L/opt/local/lib 
 LIBS_static   = libbiosig.a
 ifeq ($(LIBEXT),so)
   LFLAGS      += $(LFLAGS_dynamic)
@@ -166,6 +166,8 @@ else
   LFLAGS      += $(LFLAGS_static)
 #  LIBS        += $(LIBS_static)
 endif
+LFLAGS       +=  -z relro -z now
+
 ifneq (,$(findstring WITH_ZLIB, $(DEFINES)))
   LDLIBS     += -lz
 endif
