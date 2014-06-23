@@ -166,7 +166,7 @@ else
   LFLAGS      += $(LFLAGS_static)
 #  LIBS        += $(LIBS_static)
 endif
-LFLAGS       +=  -z relro -z now
+LFLAGS       += -Wl,-z,relro,-z,now
 
 ifneq (,$(findstring WITH_ZLIB, $(DEFINES)))
   LDLIBS     += -lz
