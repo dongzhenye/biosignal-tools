@@ -1,3 +1,6 @@
-usr/include/*
-usr/lib/lib*.a
-usr/lib/lib*.so
+usr/include/biosig.h
+usr/include/biosig-dev.h 
+usr/include/gdftime.h 
+usr/include/physicalunits.h 
+usr/lib/libbiosig.a
+usr/lib/libbiosig*.so

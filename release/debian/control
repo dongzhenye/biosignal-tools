@@ -13,7 +13,7 @@ Homepage: http://biosig.sf.net/
 Vcs-Git: git://git.code.sf.net/p/biosig/code biosig-code 
 Vcs-Browser: http://sourceforge.net/p/biosig/code/ci/master/tree/biosig4c++/
 
-Package: libbiosig1
+Package: libbiosig1.6
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -29,7 +29,7 @@ Description: I/O library for biomedical data - dynamic library
 Package: libbiosig1-dbg
 Section: debug
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libbiosig1 (= ${binary:Version})
+Depends: ${shlibs:Depends}, ${misc:Depends}, libbiosig1.6 (= ${binary:Version})
 Description: I/O library for biomedical data - debug symbols
  BioSig is a library for accessing files in several biomedical data formats
  (including EDF, BDF, GDF, BrainVision, BCI2000, CFWB, HL7aECG,
@@ -42,7 +42,7 @@ Description: I/O library for biomedical data - debug symbols
 Package: libbiosig-dev
 Section: libdevel
 Architecture: any
-Depends: libbiosig1 (= ${binary:Version}), ${misc:Depends}
+Depends: libbiosig1.6 (= ${binary:Version}), ${misc:Depends}
 Description: I/O library for biomedical data - development files
  BioSig is a library for accessing files in several biomedical data formats
  (including EDF, BDF, GDF, BrainVision, BCI2000, CFWB, HL7aECG,
