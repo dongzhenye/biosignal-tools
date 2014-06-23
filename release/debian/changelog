@@ -21,6 +21,30 @@ biosig4c++ (1.6.1-1) unstable; urgency=low
 
  -- Alois Schloegl <alois.schloegl@ist.ac.at>  Thu, 12 Jun 2014 22:35:25 +0200
 
+biosig4c++ (1.3.6-1) experimental; urgency=low
+
+  * New upstream (primarily bugfix) release
+  * debian/patches
+    - deb_no_mex_copy_upstairs: adjusted to just override COPY in mex/Makefile
+    - deb_no_locals: adopted upstream
+    - others refreshed to reflect (partial) adoption upstream and changes
+    - up_no_need_for_-lidn to remove obsolete -lidn 
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Fri, 07 Sep 2012 14:44:22 -0400
+
+biosig4c++ (1.3.5-1) experimental; urgency=low
+
+  * New upstream release (restores compatibility with API 1.3 broken in
+    non-uploaded revisions)
+  * debian/patches
+    - 0001-Revert-do-not-install-dynamic-library-we-need-dynami.patch
+      to install shared library
+    - up_correct_biosig_LIBS_in_mex
+      to provide correct args for mkoctfile while linking against dynamic
+      library
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Wed, 11 Jul 2012 09:40:16 -0400
+
 biosig4c++ (1.3.0-2) unstable; urgency=low
 
   * Do not build biosig_{client,server} which are still experimental and
