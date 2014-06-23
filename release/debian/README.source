@@ -1,9 +1,15 @@
 biosig4c++ for Debian
 ---------------------
 
-<this file describes information about the source package, see Debian policy
-manual section 4.14. You WILL either need to modify or delete this file>
+Source package is generated from git repository directly, thus do not
+expect tarballs to match using md5sum against the ones released
+upstream.
 
+TinyXML
+~~~~~~~
 
+Upstream carries modified copy of tinyxml with enabled support of
+compression, which was not accepted upstream in tinyxml (yet, if
+ever).
 
-
+ -- Yaroslav Halchenko <debian@onerussian.com>, Wed, 24 Nov 2010 14:25:36 -0500

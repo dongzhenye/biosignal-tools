@@ -73,11 +73,11 @@ override_dh_makeshlibs:
 
 
 override_dh_strip:
-	dh_strip --dbg-package=libbiosig1-dbg
+	dh_strip --dbg-package=libbiosig16-dbg
 	: # Address lintian concern about location
-	[ -d debian/libbiosig1-dbg/usr/lib/debug/usr/lib/pyshared ] && \
-		mv debian/libbiosig1-dbg/usr/lib/debug/usr/lib/pyshared \
-		   debian/libbiosig1-dbg/usr/lib/debug/usr/lib/pymodules || :
+	[ -d debian/libbiosig16-dbg/usr/lib/debug/usr/lib/pyshared ] && \
+		mv debian/libbiosig16-dbg/usr/lib/debug/usr/lib/pyshared \
+		   debian/libbiosig16-dbg/usr/lib/debug/usr/lib/pymodules || :
 
 # Tune up permission for .mex files this late in the chain
 # Silly dh_strip, dh_shlibdeps do not process those since extension
