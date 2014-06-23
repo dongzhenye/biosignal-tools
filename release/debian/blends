@@ -1,0 +1,14 @@
+Tasks: debian-science/electrophysiology
+Suggests: libbiosig0
+Published-Title: BioSig: A Free and Open Source Software Library for BCI Research
+Published-Authors: Alois Schlögl, Clemens Brunner
+Published-In: Computer, 41(10): 44-50
+Published-Year: 2008
+Published-DOI: 10.1109/MC.2008.407
+Published-URL: http://pub.ist.ac.at/~schloegl/publications/Schloegl2007_BCI_Software.pdf
+
+Tasks: debian-med/imaging-dev
+Depends: libbiosig-dev
+
+Tasks: debian-med/imaging
+Depends: biosig-tools
