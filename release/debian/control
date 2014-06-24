@@ -7,10 +7,10 @@ Build-Depends: debhelper (>= 8),
                python-dev, python-support, swig, python-numpy,
                zlib1g-dev, libsuitesparse-dev,
                octave-pkg-dev (>= 0.5.7),
-Standards-Version: 3.9.3
+Standards-Version: 3.9.5
 Section: science
 Homepage: http://biosig.sf.net/
-Vcs-Git: git://git.code.sf.net/p/biosig/code biosig-code 
+Vcs-Git: git://git.code.sf.net/p/biosig/code
 Vcs-Browser: http://sourceforge.net/p/biosig/code/ci/master/tree/biosig4c++/
 
 Package: libbiosig16
