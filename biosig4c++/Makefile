@@ -108,7 +108,7 @@ else
 	endif
 endif
 
-DEFINES_ALL   = -D=NDEBUG
+DEFINES_ALL   = #-D=NDEBUG
 
 DEFINES      += $(DEFINES_ALL)
 #DEFINES      += -D=WITH_SON 
