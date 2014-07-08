@@ -5,7 +5,7 @@ PortSystem          1.0
 PortGroup           cmake 1.0
 
 name                libbiosig
-version             1.5.13
+version             1.6.1
 categories          science
 platforms           darwin
 license             GPL-3
@@ -35,13 +35,12 @@ configure.args-append \
                     -DUSE_SUITESPARSE=ON \
                     -DUSE_ZLIB=ON \
                     -DZLIB_INCLUDE_DIR=${prefix}/include \
-                    -DZLIB_LIBRARY=${prefix}/lib/libz.dylib
+                    -DZLIB_LIBRARY=${prefix}/lib/libz.dylib \
+                    -DICONV_LIBRARY=${prefix}/lib/libiconv.dylib \
+                    -DCHOLMOD_LIBRARY=${prefix}/lib/libcholmod.dylib
 
 configure.cflags-append \
                     -DMACPORTS
 
 configure.cxxflags-append \
                     -DMACPORTS
-
-configure.ldflags-append \
-                    -lcholmod -liconv
