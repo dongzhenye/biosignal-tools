@@ -50,6 +50,11 @@ if (nargin>=3)
                 StartPos = round(tmp)/HDR.SampleRate;
         end;
 else
+	if ~isfield(HDR.FILE,'POS')
+                % Possible workaround for this issue:
+                % http://sccn.ucsd.edu/pipermail/eeglablist/2014/008344.html
+		HDR.FILE.POS = 0;
+	end;
         StartPos = HDR.FILE.POS/HDR.SampleRate; 
 end;
 
