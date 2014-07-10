@@ -57,6 +57,7 @@ set (sources
   XMLParser/tinyxmlparser.cpp 
   biosig.c
   gdftime.c
+  mdc_ecg_codes.c
   physicalunits.c
 )
 
