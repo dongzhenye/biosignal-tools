@@ -1,8 +1,9 @@
+
 #!/usr/bin/awk -f
 #
 #    Converts 11073-10102-AnnexB into 11073-10101-AnnexB.i
 #
-#    Copyright (C) 2013 Alois Schloegl <alois.schloegl@gmail.com>
+#    Copyright (C) 2013,2014 Alois Schloegl <alois.schloegl@ist.ac.at>
 #    This file is part of the "BioSig for C/C++" repository
 #    (biosig4c++) at http://biosig.sf.net/
 #
@@ -35,8 +36,8 @@ BEGIN { FS = "\t";
 		}
 		
 		# hexadecimal or decimal - both are fine
-		printf("\t{ %3i, %5i, %9i, \"%s\" }, \n",$1, $2, $3, $4);
-		# printf("\t{ %3i, 0x%x, 0x%x, \"%s\" }, \n",$1, $2, $3, $4);
+		printf("\t{ %5i, %9i, \"%s\" }, \n",$2, $3, $4);
+		# printf("\t{ 0x%x, 0x%x, \"%s\" }, \n", $2, $3, $4);
 	}
 }
 

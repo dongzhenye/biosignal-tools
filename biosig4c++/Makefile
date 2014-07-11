@@ -298,6 +298,7 @@ SOURCES      += biosig.c \
 		test0/sandbox.c \
 		xgethostname.c \
 		gdftime.c \
+		mdc_ecg_codes.c \
 		physicalunits.c \
 		biosig-network.c \
 		save2gdf.c \
@@ -326,6 +327,7 @@ OBJECTS      += \
 		sopen_hl7aecg.o \
 		biosig-network.o \
 		gdftime.o \
+		mdc_ecg_codes.o \
 		physicalunits.o \
 		sandbox.o \
 		xgethostname.o
