@@ -175,7 +175,8 @@ end;
 		for m = 1:length(OnsetBurst)-1,	% loop for each burst candidate 
 			tmp = OnsetSpike( OnsetBurst(m) <= OnsetSpike & OnsetSpike < OnsetBurst(m+1) );
 			d   = diff(tmp);
-			ix = sum(t0 < OnsetBurst(m));  %% number of sweep 
+
+			ix = sum(t0 <= OnsetBurst(m));  %% number of sweep
 			T0 = t0(ix);	% time since beginning of sweep 
 			if length(tmp) > 1,
 				m2 = m2 + 1;
