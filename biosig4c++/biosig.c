@@ -684,7 +684,7 @@ int month_string2int(const char *s) {
 	const char ListOfMonth[12][4] = {"JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"};
 	int k;
 	for (k = 0; k < 12; k++)
-		if (!strncmpi(s, ListOfMonth[k], 3)) return k;
+		if (!strncasecmp(s, ListOfMonth[k], 3)) return k;
 
 	return -1;
 }
