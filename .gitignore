@@ -2,6 +2,7 @@
 *~
 # ignore precompiled files
 # ignore object files
+*.i
 *.o
 *.obj
 *.o64
@@ -13,6 +14,7 @@ biosig4c++/save2gdf
 biosig4c++/mma/sload
 biosig4c++/mma/sload.exe
 # ignore mex files
+mex/mexSOPEN.cpp
 *.mex*
 # ignore intermediate files for biosig4python
 biosig4c++/python/biosig.py
