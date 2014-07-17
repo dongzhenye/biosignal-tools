@@ -462,6 +462,7 @@ typedef struct aecg {
 		uint8_t	 NumberOfStatements;
 		char 	 **Statements;
         } Section11;
+
 } aECG_TYPE;
 
 /****************************************************************************/
@@ -470,13 +471,13 @@ typedef struct aecg {
 /**                                                                        **/
 /****************************************************************************/
 
-/*
-        file access wrapper: use ZLIB (if available) or STDIO
- */ 	 
 #ifdef __cplusplus
 EXTERN_C {
 #endif 
 
+/*
+        file access wrapper: use ZLIB (if available) or STDIO
+ */
 HDRTYPE* 	ifopen(HDRTYPE* hdr, const char* mode );
 int 		ifclose(HDRTYPE* hdr);
 int             ifeof(HDRTYPE* hdr);
