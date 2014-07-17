@@ -1727,12 +1727,12 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 #ifndef  ONLYGDF
 	else if (!memcmp(hdr->AS.Header, "ABF ", 4)) {
     	// else if (!memcmp(Header1,"ABF \x66\x66\xE6\x3F",4)) { // ABF v1.8
-	    	hdr->TYPE = ABF;
+		hdr->TYPE    = ABF;
     		hdr->VERSION = lef32p(hdr->AS.Header+4);
     	}
-	else if (!memcmp(hdr->AS.Header, "ABF2", 4)) {
-		hdr->TYPE = ABF2;
-    		hdr->VERSION = beu32p(hdr->AS.Header+4);
+	else if (!memcmp(hdr->AS.Header, "ABF2\x00\x00", 6) && ( hdr->AS.Header[7] < 10 ) ) {
+		hdr->TYPE    = ABF2;
+		hdr->VERSION = hdr->AS.Header[6] + ( hdr->AS.Header[7] / 10.0 );
     	}
     	else if (!memcmp(Header1+20,"ACR-NEMA",8))
 	    	hdr->TYPE = ACR_NEMA;
