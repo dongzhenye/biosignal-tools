@@ -11,7 +11,7 @@ function [ISI] = get_inter_spike_intervals(F)
 % Output:  
 %	ISI series (vector) of interspike intervals in seconds  
 %
-% See also: SOPEN, SLOAD, DETECT_SPIKES_BURSTS, SPIKE2BURSTS
+% See also: SOPEN, SLOAD, DETECT_SPIKES_BURSTS, SPIKE2BURSTS, OPTIMUM_ISI_SPIKE_BURST_SEPARATION
 
 %    Copyright (C) 2014 by Alois Schloegl <alois.schloegl@ist.ac.at>
 %    This is part of the BIOSIG-toolbox http://biosig.sf.net/
@@ -46,15 +46,14 @@ ix = ( ( HDR.EVENT.TYP == hex2dec('0201') ) | ( HDR.EVENT.TYP == hex2dec('7ffe')
 EVENT.TYP = HDR.EVENT.TYP(ix);
 EVENT.POS = HDR.EVENT.POS(ix);
 
-%% allocate memory and initialize with NaN
-T = repmat(NaN,length(EVENT.POS),1);
+[EVENT.POS, ixx] = sort(EVENT.POS);
+EVENT.TYP = EVENT.TYP(ixx);
 
 %% select spike posititions, segment breaks remain NaN
-ix = find(EVENT.TYP==hex2dec('0201'));
-T(ix) = EVENT.POS(ix); 
+EVENT.POS(EVENT.TYP == hex2dec('7ffe')) = NaN;
 
 %% compute interspike intervals, segment breaks result in NaN. 
-d = diff(T); 
+d = diff(EVENT.POS/HDR.EVENT.SampleRate);
 
 %% remove meaningless intervals caused by segment breaks, and normalize to seconds. 
 ISI = d(~isnan(d))/HDR.SampleRate;

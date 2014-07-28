@@ -30,6 +30,8 @@ function [HDR, s] = detect_spikes_bursts(fn, chan, varargin)
 %	winlen	[default: .2e-3 s] windowlength in seconds for computing slope
 %	dT_Burst	[default: 50e-3 s] am inter-spike-interval (ISI) exceeding this value,
 %		marks the beginning of a new burst
+%               'OPTIMUM_ISI' will use the function OPTIMUM_ISI_SPIKE_BURST_SEPARATION
+%               for identifying dT_Burst.
 %	dT_Exclude an interspike interval smaller than this value, indicates a
 %		double detection, and the second detection is deleted.
 %		in case of several consecutive ISI's smaller than this value,
@@ -62,12 +64,13 @@ function [HDR, s] = detect_spikes_bursts(fn, chan, varargin)
 %     data	signal data, one channel per column
 %		between segments, NaN values for 0.1s are introduced
 %
+% see also:  DETECT_SPIKES_BURSTS, SPIKE2BURSTS, OPTIMUM_ISI_SPIKE_BURST_SEPARATION
+%
 % References:
 %
 
-%	$Id$
-%	Copyright (C) 2011 by Alois Schloegl <alois.schloegl@gmail.com>
-%    	This is part of the BIOSIG-toolbox http://biosig.sf.net/
+%    Copyright (C) 2011,2014 by Alois Schloegl <alois.schloegl@ist.ac.at>
+%    This is part of the BIOSIG-toolbox http://biosig.sf.net/
 %
 %    BioSig is free software: you can redistribute it and/or modify
 %    it under the terms of the GNU General Public License as published by

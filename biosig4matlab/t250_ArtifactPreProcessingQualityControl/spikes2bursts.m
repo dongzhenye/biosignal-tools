@@ -19,6 +19,8 @@ function [H, s] = spikes2bursts(fn, varargin)
 %	HDR	header structure obtained by SOPEN, SLOAD, or meXSLOAD
 %	dT_Burst	[default: 50e-3 s] am inter-spike-interval (ISI) exceeding this value, 
 %		marks the beginning of a new burst
+%               'OPTIMUM_ISI' will use the function OPTIMUM_ISI_SPIKE_BURST_SEPARATION
+%               for identifying dT_Burst.
 %	dT_Exclude an interspike interval smaller than this value, indicates a
 %		double detection, and the second detection is deleted.
 %		in case of several consecutive ISI's smaller than this value,
@@ -45,6 +47,8 @@ function [H, s] = spikes2bursts(fn, varargin)
 %     data	signal data, one channel per column
 %		between segments, NaN values for 0.1s are introduced
 %	
+% see also:  DETECT_SPIKES_BURSTS, SPIKE2BURSTS, OPTIMUM_ISI_SPIKE_BURST_SEPARATION
+%
 % References: 
 %
 
@@ -146,6 +150,9 @@ end;
 	Fs = HDR.SampleRate; 
 	chan = unique(EVENT.CHN);
 
+	if strcmpi(dT_Burst,'OPTIMUM_ISI');
+		dt_Burst = optimum_isi_spike_burst_separation(get_inter_spike_intervals(HDR));
+	end;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %	Set Parameters for Burst Detection 
