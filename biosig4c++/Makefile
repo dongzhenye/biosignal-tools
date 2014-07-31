@@ -85,6 +85,7 @@ ifeq (,$(TARGET))
 	LD      := ld
 	AR      := ar rcs
 	PREFIX  := /usr/bin/
+	LFLAGS  += -Wl,-z,relro,-z,now
 else ifeq (intel,$(TARGET))
 	CC      := /opt/intel/bin/icc
 	CXX     := /opt/intel/bin/icc
@@ -166,7 +167,6 @@ else
   LFLAGS      += $(LFLAGS_static)
 #  LIBS        += $(LIBS_static)
 endif
-LFLAGS       += -Wl,-z,relro,-z,now
 
 ifneq (,$(findstring WITH_ZLIB, $(DEFINES)))
   LDLIBS     += -lz
