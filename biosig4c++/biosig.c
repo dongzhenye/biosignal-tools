@@ -1524,6 +1524,10 @@ HDRTYPE* constructHDR(const unsigned NS, const unsigned N_EVENT)
 	hdr->SCP.Section9Length  = 0;
 	hdr->SCP.Section10Length = 0;
 	hdr->SCP.Section11Length = 0;
+#if (BIOSIG_VERSION >= 10700)
+	hdr->SCP.Section12.NumberOfEntries = 0;
+	hdr->SCP.Section12.annotatedECG = NULL;
+#endif
 #endif
 
 	return(hdr);
@@ -1565,6 +1569,14 @@ void destructHDR(HDRTYPE* hdr) {
 			free(((struct aecg*)hdr->aECG)->Section11.Statements);
     		free(hdr->aECG);
     	}
+#endif
+#if (BIOSIG_VERSION >= 10700)
+	if (hdr->SCP.Section12.annotatedECG != NULL) {
+		free(hdr->SCP.Section12.annotatedECG);
+		hdr->SCP.Section12.annotatedECG = NULL;
+		hdr->SCP.Section12.NumberOfEntries = 0;
+	}
+	hdr->SCP.Section12.NumberOfEntries = 0;
 #endif
 	if (hdr->ID.Technician != NULL) free(hdr->ID.Technician);
 	if (hdr->ID.Hospital   != NULL) free(hdr->ID.Hospital);
@@ -2375,7 +2387,6 @@ void struct2gdfbin(HDRTYPE *hdr)
 	     	 ******/	
 
 		/* writing header 3, in Tag-Length-Value from
-			currently only tag=1 is used for storing user-specific events (i.e. free text annotations
 		 */
 		uint32_t TagNLen[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 	     	uint8_t tag=1;
@@ -2479,6 +2490,17 @@ void struct2gdfbin(HDRTYPE *hdr)
 		tag = 13;
 		if (hdr->SCP.Section11 != NULL) {
 			TagNLen[tag] = hdr->SCP.Section11Length;  // leu32p(hdr->SCP.Section11+4);
+			if (TagNLen[tag]) {
+				hdr->HeadLen += 4+TagNLen[tag];
+			}
+		}
+#endif
+#if (BIOSIG_VERSION >= 10700)
+		// TODO: SCPECGv3
+		tag = 14;
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag %i\n",tag);
+		if (hdr->SCP.Section12.NumberOfEntries >0) {
+			TagNLen[tag] = 4 + 4 + sizeof(hdr->SCP.Section12.annotatedECG[0]) * hdr->SCP.Section12.NumberOfEntries;
 			if (TagNLen[tag]) {
 				hdr->HeadLen += 4+TagNLen[tag];
 			}
@@ -2834,6 +2856,25 @@ void struct2gdfbin(HDRTYPE *hdr)
 		if (TagNLen[tag]>0) {
 			leu32a(tag + (TagNLen[tag]<<8), Header2); 	// Tag=9 & Length of Tag 9
 			memcpy((char*)(Header2+4),hdr->SCP.Section11, TagNLen[tag]);		/* Flawfinder: ignore *** memory is allocated after 1st H3 scan above */
+			Header2 += 4+TagNLen[tag];
+		}
+#endif
+#if (BIOSIG_VERSION >= 10700)
+		// TODO: SCPECGv3
+		tag = 14;
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"GDFw tag %i\n",tag);
+		if (TagNLen[tag]>0) {
+			leu32a(tag + (TagNLen[tag]<<8), Header2); 	// Tag=9 & Length of Tag 9
+			leu32a(hdr->SCP.Section12.NumberOfEntries, Header2+4);
+			uint32_t m; 
+			uint8_t *off = Header2+8;
+			for (m=0; m < hdr->SCP.Section12.NumberOfEntries; m++) {
+				leu32a(hdr->SCP.Section12.annotatedECG[m].id,            off);
+				leu32a(hdr->SCP.Section12.annotatedECG[m].physicalunits, off+4);
+				leu32a(hdr->SCP.Section12.annotatedECG[m].value,         off+6);
+				off += sizeof(hdr->SCP.Section12.annotatedECG[0]); 
+			}
+			memcpy((char*)(Header2+4),hdr->SCP.Section12.NumberOfEntries, TagNLen[tag]);		/* Flawfinder: ignore *** memory is allocated after 1st H3 scan above */
 			Header2 += 4+TagNLen[tag];
 		}
 #endif
@@ -3217,6 +3258,20 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"user-specific events defined\n");
 				else if (tag==13) {
 					hdr->SCP.Section11 = Header2+pos+4;
 					hdr->SCP.Section11Length = len;
+				}
+#endif
+#if (BIOSIG_VERSION >= 10700)
+				// TODO: SCPECG v3
+				else if (tag==14) {
+					hdr->SCP.Section12.NumberOfEntries = leu32p(Header2+pos+4);
+					uint32_t m; 
+					uint8_t *off = Header2+pos+8;
+					for (m=0; m < hdr->SCP.Section12.NumberOfEntries; m++) {
+						hdr->SCP.Section12.annotatedECG[m].id            = leu32p(off);
+						hdr->SCP.Section12.annotatedECG[m].physicalunits = leu16p(off+4);
+						hdr->SCP.Section12.annotatedECG[m].value         = leu32p(off+6);
+						off += sizeof(hdr->SCP.Section12.annotatedECG[0]); 
+					}
 				}
 #endif
 
@@ -14169,7 +14224,7 @@ int hdr2ascii(HDRTYPE* hdr, FILE *fid, int VERBOSE)
 				}
 			}
 
-			if (aECG->Section11.NumberOfStatements>0) {
+			if ( aECG->Section11.NumberOfStatements > 0 ) {
 				fprintf(stdout,"\n\nReport %04i-%02i-%02i %02ih%02im%02is (Status=%s)\n",aECG->Section11.t.tm_year+1900,aECG->Section11.t.tm_mon+1,aECG->Section11.t.tm_mday,aECG->Section11.t.tm_hour,aECG->Section11.t.tm_min,aECG->Section11.t.tm_sec,StatusString[min(aECG->Section11.Confirmed,3)]);
 				for (k=0; k<aECG->Section11.NumberOfStatements;k++) {
 					fprintf(stdout,"%s\n",aECG->Section11.Statements[k]);

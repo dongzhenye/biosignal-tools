@@ -606,6 +606,18 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 				memcpy(PtrCurSect+16,hdr->SCP.Section11,hdr->SCP.Section11Length);
 			}
 		}
+#if (BIOSIG_VERSION >= 10700)
+		else if (curSect==12) // SECTION 12
+		{
+			if ( (VERSION == 30) && (hdr->SCP.Section12.NumberOfEntries > 0) ) {
+				curSectLen = hdr->SCP.Section12.NumberOfEntries * sizeof(hdr->SCP.Section12.annotatedECG[0]);  // current section length without 16 bytes
+				ptr = (uint8_t*)realloc(ptr,sectionStart+curSectLen);
+				PtrCurSect = ptr+sectionStart;
+				memcpy(PtrCurSect+16,hdr->SCP.Section12.annotatedECG, curSectLen);
+				curSectLen += 16;  // current section length
+			}
+		}
+#endif
 #endif
 		else {
 		}

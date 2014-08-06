@@ -451,6 +451,16 @@ typedef struct HDR_STRUCT {
 		uint32_t Section9Length;
 		uint32_t Section10Length;
 		uint32_t Section11Length;
+#if (BIOSIG_VERSION >= 10700)
+	        struct Section12 {
+			size_t   NumberOfEntries;
+			struct {
+				uint32_t id;
+				uint16_t physicalunits;
+				uint32_t value;
+			} *annotatedECG;
+	        } Section12;
+#endif
 	} SCP;
 #endif
 

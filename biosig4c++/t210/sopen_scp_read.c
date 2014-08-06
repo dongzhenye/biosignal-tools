@@ -875,6 +875,9 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 						biosigERROR(hdr, B4C_CHAR_ENCODING_UNSUPPORTED, "SCP-SCP: Non-ASCII text string language - conversion not supported");
 #endif
 					}
+					if (VERBOSE_LEVEL>7)
+						fprintf(stdout,"%s (line %i): Version %i\n",__FILE__,__LINE__,aECG->Section1.Tag14.VERSION);
+
 
 					
 				}
@@ -1106,9 +1109,9 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		}
 		/**** SECTION 4: QRS LOCATIONS (IF REFERENCE BEATS ARE ENCODED) ****/
 		else if (curSect==4)  {
-			en1064.Section4.len_ms	= leu16p(PtrCurSect+curSectPos);
-			en1064.Section4.fiducial_sample	= leu16p(PtrCurSect+curSectPos+2);
-			en1064.Section4.N	= leu16p(PtrCurSect+curSectPos+4);
+			en1064.Section4.len_ms	= leu16p(PtrCurSect+curSectPos);		// ### TODO: SCPECGv3 ###
+			en1064.Section4.fiducial_sample	= leu16p(PtrCurSect+curSectPos+2);	// ### TODO: SCPECGv3 ###
+			en1064.Section4.N	= leu16p(PtrCurSect+curSectPos+4);		// ### TODO: SCPECGv3 ###
 			en1064.Section4.SPR	= hdr->SPR/4;
 
 			en1064.Section4.beat	= (typeof(en1064.Section4.beat))malloc(en1064.Section4.N*sizeof(*en1064.Section4.beat));
@@ -1141,7 +1144,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 			en1064.Section5.Length  = (1000L * en1064.Section4.len_ms) / en1064.Section5.dT_us; // hdr->SPR;
 			en1064.Section5.inlen	= (typeof(en1064.Section5.inlen))malloc(hdr->NS*2);
 			for (i=0; i < hdr->NS; i++) {
-				en1064.Section5.inlen[i] = leu16p(PtrCurSect+curSectPos+6+2*i);
+				en1064.Section5.inlen[i] = leu16p(PtrCurSect+curSectPos+6+2*i);	// ### TODO: SCPECGv3 ###
 				if (!section[4].length && (en1064.Section5.Length < en1064.Section5.inlen[i]))
 					en1064.Section5.Length = en1064.Section5.inlen[i];
 			}
@@ -1158,7 +1161,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 
 				Ptr2datablock           = (PtrCurSect+curSectPos+6+2*hdr->NS);
 				for (i=0; i < hdr->NS; i++) {
-					en1064.Section5.inlen[i] = leu16p(PtrCurSect+curSectPos+6+2*i);
+					en1064.Section5.inlen[i] = leu16p(PtrCurSect+curSectPos+6+2*i);	// ### TODO: SCPECGv3 ###
 					if (en1064.FLAG.HUFFMAN) {
 						if (DecodeHuffman(HTrees, Huffman, Ptr2datablock, en1064.Section5.inlen[i], en1064.Section5.datablock + en1064.Section5.Length*i, en1064.Section5.Length)) {
 							biosigERROR(hdr, B4C_DECOMPRESSION_FAILED, "Empty node in Huffman table! Do not know what to do !");
@@ -1247,7 +1250,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 				hc->PhysMax     = hc->DigMax * hc->Cal;
 				hc->PhysMin     = hc->DigMin * hc->Cal;
 
-				uint16_t inlen    = leu16p(PtrCurSect+curSectPos+6+2*i);
+				uint16_t inlen    = leu16p(PtrCurSect+curSectPos+6+2*i);	// ### TODO: SCPECGv3 ###
 				if (en1064.FLAG.HUFFMAN) {
 					if (DecodeHuffman(HTrees, Huffman, Ptr2datablock, inlen, data + i*hdr->SPR, hdr->SPR)) {
 						biosigERROR(hdr, B4C_DECOMPRESSION_FAILED, "Empty node in Huffman table! Do not know what to do !");
@@ -1495,7 +1498,16 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		}
 
 		/**** SECTION 12 ****/
-		else if (curSect==12)  {
+#if (BIOSIG_VERSION >= 10700)
+		else if ( (curSect==12)  &&  (versionSection  = 30) && (versionProtocol == 30) ) {
+			size_t n, sz = (leu32p(PtrCurSect+4) - curSectPos);
+			hdr->SCP.Section12.NumberOfEntries = sz / sizeof(hdr->SCP.Section12.annotatedECG[0]);
+			hdr->SCP.Section12.annotatedECG = (typeof (hdr->SCP.Section12.annotatedECG)) realloc(hdr->SCP.Section12.annotatedECG, sz );
+
+			memcpy(hdr->SCP.Section12.annotatedECG , PtrCurSect+curSectPos, sz);	// keep it little endian
+		}
+#endif
+		else if (curSect==12) {
 		}
 
 		/**** SECTION 13 ****/
