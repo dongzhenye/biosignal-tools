@@ -10914,7 +10914,7 @@ if (VERBOSE_LEVEL>2)
 		hdr->data.size[1] = 0;
 	}
 
-#ifdef WITH_DICOM
+#if defined(WITH_DICOM) || defined(WITH_GDCM) || defined(WITH_DCMTK)
 	else if (hdr->TYPE==DICOM) {
 		fprintf(stderr,"DICOM support is very (!!!) experimental!\n");
 

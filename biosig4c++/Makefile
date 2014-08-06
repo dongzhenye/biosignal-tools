@@ -140,12 +140,6 @@ CFLAGS       += -fstack-protector -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security
 #CXXFLAGS      += -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
 CXXFLAGS      = $(CFLAGS)
 INCPATH       = -I/opt/local/include/
-#INCPATH       = -I /usr/local/include/gdcm-2.0/
-#		../gdcm-2.0.10/Source/DataStructureAndEncodingDefinition \
-#		../gdcm-2.0.10/Source/InformationObjectDefinition  	\
-#		../gdcm-2.0.10/Source/MediaStorageAndFileFormat 	\
-#		../gdcm-2.0.10/Source/DataDictionary 			\
-#		../gdcm-2.0.10/Source/Common
 LINK          = $(LD)
 ifeq (Darwin,$(uname))
   LDFLAGS     += -dynamiclib -undefined suppress -flat_namespace
@@ -168,6 +162,10 @@ else
 #  LIBS        += $(LIBS_static)
 endif
 
+ifneq (,$(findstring WITH_GDCM, $(DEFINES)))
+  INCPATH    += -I$(wildcard /usr/include/gdcm-2*/)
+  LDLIBS     += -lgdcmCommon -lgdcmDSED -lgdcmMEXD -lgdcmMSFF -lgdcmDICT -lgdcmIOD
+endif
 ifneq (,$(findstring WITH_ZLIB, $(DEFINES)))
   LDLIBS     += -lz
 endif
@@ -421,7 +419,10 @@ vpath %.cpp ./:./t210:./t230:./XMLParser:./mex
 %.o : win32/%.c
 	$(CC) -c $(DEFINES) $(CFLAGS)  $(INCPATH) -o "$@" "$<"
 
-%.o: %.cpp
+%.o: %.cpp  biosig.h biosig-dev.h
+	$(CXX) -c $(DEFINES) $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
+
+sandbox.o: test0/sandbox.c  biosig.h biosig-dev.h
 	$(CXX) -c $(DEFINES) $(CXXFLAGS) $(INCPATH) -o "$@" "$<"
 
 
