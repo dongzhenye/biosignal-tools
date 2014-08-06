@@ -32,16 +32,14 @@
 
 #include "../biosig-dev.h"
 
-// these functios are stubs
+// these functions are stubs
 
 #ifdef WITH_DCMTK
 #undef WITH_DICOM
 #undef WITH_GDCM
 
-
 EXTERN_C int sopen_dicom_read(HDRTYPE* hdr) {
 	fprintf(stdout,"DCMTK is used to read dicom files.\n");
-
 }
 
 #endif
@@ -64,102 +62,128 @@ EXTERN_C int sopen_dicom_read(HDRTYPE* hdr) {
 #include "gdcmAttribute.h"
 
 //#include "gdcmCommon.h"
-#include "gdcmPreamble.h"
+//#include "gdcmPreamble.h"
 #include "gdcmFile.h"
 #include "gdcmFileMetaInformation.h"
+#include "gdcmWaveform.h"
+
+/*
+ This is the list from gdcmconv.cxx
 #include "gdcmReader.h"
-#include "gdcmImageReader.h"
+#include "gdcmFileDerivation.h"
+#include "gdcmAnonymizer.h"
+#include "gdcmVersion.h"
+#include "gdcmPixmapReader.h"
+#include "gdcmPixmapWriter.h"
 #include "gdcmWriter.h"
+#include "gdcmSystem.h"
+#include "gdcmFileMetaInformation.h"
 #include "gdcmDataSet.h"
-#include <gdcmAttribute.h>
-#include <gdcmWaveform.h>
+#include "gdcmIconImageGenerator.h"
+#include "gdcmAttribute.h"
+#include "gdcmSequenceOfItems.h"
+#include "gdcmUIDGenerator.h"
+#include "gdcmImage.h"
+#include "gdcmImageChangeTransferSyntax.h"
+#include "gdcmImageApplyLookupTable.h"
+#include "gdcmImageFragmentSplitter.h"
+#include "gdcmImageChangePlanarConfiguration.h"
+#include "gdcmImageChangePhotometricInterpretation.h"
+#include "gdcmFileExplicitFilter.h"
+#include "gdcmJPEG2000Codec.h"
+#include "gdcmJPEGCodec.h"
+#include "gdcmJPEGLSCodec.h"
+#include "gdcmSequenceOfFragments.h"
+*/
+
 
 EXTERN_C int sopen_dicom_read(HDRTYPE* hdr) {
 
 	fprintf(stdout,"GDCM is used to read dicom files.\n");
 
-	gdcm::Reader r;
+	gdcm::Reader reader;
         const gdcm::DataElement *de;
-	r.SetFileName( hdr->FileName );
-	if( !r.Read() )
+	reader.SetFileName( hdr->FileName );
+	if ( !reader.Read() ) {
+		fprintf(stdout,"%s (line %i) \n",__FILE__,__LINE__);
 		return 1;
+	}
 
-	gdcm::File &file = r.GetFile();
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i)\n",__FILE__,__LINE__);
+	gdcm::File &file = reader.GetFile();
 	gdcm::FileMetaInformation &header = file.GetHeader();
+
 	if ( header.FindDataElement( gdcm::Tag(0x0002, 0x0013 ) ) )
 		const gdcm::DataElement &de = header.GetDataElement( gdcm::Tag(0x0002, 0x0013) );
 
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i)\n",__FILE__,__LINE__);
 	gdcm::DataSet &ds = file.GetDataSet();
 
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i)\n",__FILE__,__LINE__);
 	if ( header.FindDataElement( gdcm::Tag(0x0002, 0x0010 ) ) )
 		de = &header.GetDataElement( gdcm::Tag(0x0002, 0x0010) );
 
-fprintf(stdout,"attr <0x0002,0x0010> len=%i\n",de->GetByteValue() );
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): attr <0x0002,0x0010> len=%i\n",__FILE__,__LINE__,de->GetByteValue() );
 
-/*
-	{
+	if (0) {
 		gdcm::Attribute<0x28,0x100> at;
 		at.SetFromDataElement( ds.GetDataElement( at.GetTag() ) );
-		if( at.GetValue() != 8 )
+		if( at.GetValue() != 8 ) {
+
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): attr <0x0002,0x0010> GetValue\n",__FILE__,__LINE__ );
+
 			return 1;
-		//at.SetValue( 32 );
-		//ds.Replace( at.GetAsDataElement() );
+		}
+		at.SetValue( 32 );
+		ds.Replace( at.GetAsDataElement() );
 	}
 	{
 
-fprintf(stdout,"attr <0x0008,0x002a>\n");
+
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): attr <0x0008,0x002a>\n",__FILE__,__LINE__);
 		gdcm::Attribute<0x0008,0x002a> at;
-fprintf(stdout,"attr <0x0008,0x002a>\n");
  		ds.GetDataElement( at.GetTag() );
-fprintf(stdout,"attr <0x0008,0x002a>\n");
 		at.SetFromDataElement( ds.GetDataElement( at.GetTag() ) );
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): attr <0x0008,0x002a>\n",__FILE__,__LINE__);
 
-		fprintf(stdout,"DCM: [0008,002a]: %i %p\n",at.GetNumberOfValues(), at.GetValue());
+//		fprintf(stdout,"DCM: [0008,002a]: %i %p\n", at.GetNumberOfValues(), at.GetValue());
 	}
-*/
+
 	{
 
-fprintf(stdout,"attr <0x0008,0x0023>\n");
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): attr <0x0008,0x0023>\n",__FILE__,__LINE__);
 		gdcm::Attribute<0x0008,0x0023> at;
-fprintf(stdout,"attr <0x0008,0x0023>\n");
  		ds.GetDataElement( at.GetTag() );
-fprintf(stdout,"attr <0x0008,0x0023>\n");
-//		at.SetFromDataElement( ds.GetDataElement( at.GetTag() ) );
+		at.SetFromDataElement( ds.GetDataElement( at.GetTag() ) );
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): attr <0x0008,0x0023>\n",__FILE__,__LINE__);
+	}
+	if (1) {
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): attr <0x003a,0x0005>\n",__FILE__,__LINE__);
+		gdcm::Attribute<0x003a,0x0005> NumberOfWaveformChannels;
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): attr <0x003a,0x0005> %i\n",__FILE__,__LINE__, NumberOfWaveformChannels.GetValue());
+// 		ds.GetDataElement( NumberOfWaveformChannels.GetTag() );
+//		NumberOfWaveformChannels.SetFromDataElement( ds.GetDataElement( NumberOfWaveformChannels.GetTag() ) );
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): attr <0x003a,0x0005> %i\n",__FILE__,__LINE__, NumberOfWaveformChannels.GetValue());
+	}
+	{
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): attr <0x003a,0x0010>\n",__FILE__,__LINE__);
+		gdcm::Attribute<0x003a,0x0010> NumberOfWaveformSamples;
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): attr <0x003a,0x0010> %i\n",__FILE__,__LINE__, NumberOfWaveformSamples.GetValue());
 
 //		fprintf(stdout,"DCM: [0008,0023]: %i %p\n",at.GetNumberOfValues(), at.GetValue());
 	}
 
+		gdcm::Attribute<0x003a,0x001a> SamplingFrequency;
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i): attr <0x003a,0x001a> %f\n",__FILE__,__LINE__, SamplingFrequency.GetValue());
 
-/*
-				{
-				struct tm t0;
-				hdr->AS.Header[pos+14]=0;
-				t0.tm_sec = atoi((char*)hdr->AS.Header+pos+12);
-				hdr->AS.Header[pos+12]=0;
-				t0.tm_min = atoi((char*)hdr->AS.Header+pos+10);
-				hdr->AS.Header[pos+10]=0;
-				t0.tm_hour = atoi((char*)hdr->AS.Header+pos+8);
-				hdr->AS.Header[pos+8]=0;
-				t0.tm_mday = atoi((char*)hdr->AS.Header+pos+6);
-				hdr->AS.Header[pos+6]=0;
-				t0.tm_mon = atoi((char*)hdr->AS.Header+pos+4)-1;
-				hdr->AS.Header[pos+4]=0;
-				t0.tm_year = atoi((char*)hdr->AS.Header+pos)-1900;
-
-				hdr->T0 = tm_time2gdf_time(&t0);
-				break;
-				}
-
-*/
+	return 0;
 }
 #endif
-
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 #ifdef WITH_HDF
 int sopen_hdf5(HDRTYPE* hdr) {
@@ -307,7 +331,8 @@ int sopen_fiff_read(HDRTYPE* hdr) {
 	}
 
 	/* define event table */
-	hdr->EVENT.N = reallocEventTable(hdr, 0);
+	hdr->EVENT.N = 0;
+	//reallocEventTable(hdr, 0);
 
 	/* report status header and return */
 	hdr2ascii(hdr,stdout,4);
@@ -470,15 +495,17 @@ int sopen_dicom_read(HDRTYPE* hdr) {
 			*/
 			case 0x00020000: {
 				int c = 0;
-				if (!memcmp(hdr->AS.Header+pos-8,"UL",2))
+				if (!memcmp(hdr->AS.Header+pos-4,"UL",2))
 					c = leu32p(hdr->AS.Header+pos);
-				else if (!memcmp(hdr->AS.Header+pos-8,"SL",2))
+				else if (!memcmp(hdr->AS.Header+pos-4,"SL",2))
 					c = lei32p(hdr->AS.Header+pos);
-				else if (!memcmp(hdr->AS.Header+pos-8,"US",2))
+				else if (!memcmp(hdr->AS.Header+pos-4,"US",2))
 					c = leu16p(hdr->AS.Header+pos);
-				else if (!memcmp(hdr->AS.Header+pos-8,"SS",2))
+				else if (!memcmp(hdr->AS.Header+pos-4,"SS",2))
 					c = lei16p(hdr->AS.Header+pos);
 				else  {
+
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i) %i<%i %i>\n",__FILE__,__LINE__,pos,hdr->AS.Header[pos-8],hdr->AS.Header[pos-7]);
 					biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "DICOM (0002,0000): unsupported");
 				}
 				EndOfGroup2 = c + pos;
@@ -589,7 +616,7 @@ int sopen_dicom_read(HDRTYPE* hdr) {
 				}
 				break;
 			case 0x00100020: // ID
-				strncpy(hdr->Patient.Id,(char*)hdr->AS.Header+pos,MAX_LENGTH_NAME);
+				strncpy(hdr->Patient.Id,(char*)hdr->AS.Header+pos,MAX_LENGTH_PID);
 				hdr->Patient.Id[MAX_LENGTH_PID]=0;
 				break;
 
@@ -640,6 +667,9 @@ int sopen_dicom_read(HDRTYPE* hdr) {
 
 		}
 		if (flag_t0 == 3) hdr->T0 = tm_time2gdf_time(&T0);
+
+if (VERBOSE_LEVEL>7) fprintf(stdout,"%s (line %i)\n",__FILE__,__LINE__);
+
 	return(0);
 }
 #endif
