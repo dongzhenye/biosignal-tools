@@ -251,19 +251,31 @@ EXTERN_C void sopen_abf_read(HDRTYPE* hdr) {
 
 				double PhysMax = lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fADCRange));
 				double DigMax  = (double)lei32p(hdr->AS.Header + offsetof(struct ABFFileHeader, lADCResolution));
-				double fInstrumentScaleFactor = lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fInstrumentScaleFactor) + 4 * k);
-				hc->Cal      = fInstrumentScaleFactor * PhysMax/DigMax;
-				hc->Off      = 0.0;
-				hc->DigMax   = DigMax-1.0;
+				double fTotalScaleFactor = lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fInstrumentScaleFactor) + 4 * k)
+							 * lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fADCProgrammableGain) + 4 * k);
+
+				hc->Off      = -lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fInstrumentOffset) + 4 * k);
+				if (lei16p(hdr->AS.Header + offsetof(struct ABFFileHeader, nSignalType) + 2 * k) != 0) {
+					hc->Off           -= lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fInstrumentOffset) + 4 * k);
+					fTotalScaleFactor *= lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fSignalGain) + 4 * k);
+				}
+				if (lei16p(hdr->AS.Header + offsetof(struct ABFFileHeader, nTelegraphEnable) + 2 * k) != 0) {
+					fTotalScaleFactor *= lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fTelegraphAdditGain) + 4 * k);
+				}
+				hc->Cal      = PhysMax / (fTotalScaleFactor * DigMax);
+
+				hc->DigMax   =  DigMax-1.0;
 				hc->DigMin   = -hc->DigMax;
 				hc->PhysMax  = hc->DigMax * hc->Cal;
 				hc->PhysMin  = hc->DigMin * hc->Cal;
 
 				if (VERBOSE_LEVEL>7) {
 					fprintf(stdout,"==== CHANNEL %i [%s] ====\n",k,units);
+					fprintf(stdout,"nSignalType:\t%i\n",lei16p(hdr->AS.Header + offsetof(struct ABFFileHeader, nSignalType) + 2 * k));
 					fprintf(stdout,"nADCPtoLChannelMap:\t%i\n",lei16p(hdr->AS.Header + offsetof(struct ABFFileHeader, nADCPtoLChannelMap) + 2 * k));
 					fprintf(stdout,"nADCSamplingSeq:\t%i\n",lei16p(hdr->AS.Header + offsetof(struct ABFFileHeader, nADCSamplingSeq) + 2 * k));
 					fprintf(stdout,"fADCProgrammableGain:\t%f\n",lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fADCProgrammableGain) + 4 * k));
+					fprintf(stdout,"fADCRange:\t%f\n",lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fADCRange) + 4 * k));
 
 					fprintf(stdout,"fADCDisplayAmplification:\t%f\n",lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fADCDisplayAmplification) + 4 * k));
 					fprintf(stdout,"fADCDisplayOffset:\t%f\n",lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fADCDisplayOffset) + 4 * k));
@@ -273,6 +285,7 @@ EXTERN_C void sopen_abf_read(HDRTYPE* hdr) {
 					fprintf(stdout,"fSignalOffset:\t%f\n",lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fSignalOffset) + 4 * k));
 					fprintf(stdout,"fSignalLowpassFilter:\t%f\n",lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fSignalLowpassFilter) + 4 * k));
 					fprintf(stdout,"fSignalHighpassFilter:\t%f\n",lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fSignalHighpassFilter) + 4 * k));
+					fprintf(stdout,"fTelegraphAdditGain:\t%f\n",lef32p(hdr->AS.Header + offsetof(struct ABFFileHeader, fTelegraphAdditGain) + 4 * k));
 				}
 				k1++;
 			}
