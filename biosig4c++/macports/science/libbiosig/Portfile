@@ -22,8 +22,8 @@ master_sites.mirror_subdir \
                     /BioSig%20for%20C_C++/src
 distname            biosig4c++-${version}.src
 worksrcdir          biosig4c++-${version}
-checksums           rmd160  fa6be2f3741c1db00b794a8ef6a79678b396a919 \
-                    sha256  19d1163df6d58297c7b0ff356aff70d61c5f2d347b80d84393ebec941c49cded
+checksums           rmd160  28b2980c88035adfce29691857541576d37a1396 \
+                    sha256  677924cf90b8c46d235bac75141493e5f0fac2c4b7ba206cf432030f9c91b893
 
 depends_build-append \
                     port:gawk
