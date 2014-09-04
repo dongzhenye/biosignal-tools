@@ -8,7 +8,9 @@
 *.o64
 # ignore library files
 *.a
-*.so
+*.so*
+*.dll
+*.def
 # ignore executables
 biosig4c++/save2gdf
 biosig4c++/mma/sload
@@ -20,6 +22,6 @@ mex/mexSOPEN.cpp
 biosig4c++/python/biosig.py
 biosig4c++/python/swig_wrap.cxx
 # 
-save2gdf.exe
-libbiosig.dll
-libbiosig.def
+*.exe
+*.deb
+*.tar.gz
