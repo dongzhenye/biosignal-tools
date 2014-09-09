@@ -17,14 +17,7 @@ export DH_VERBOSE=1
 export DH_OPTIONS
 
 %:
-	dh $@
-
-
-override_dh_pysupport:
-	dh_pycentral
-
-build:
-	dh build --with python-central
+	dh $@ --with python2
 
 override_dh_auto_configure:
 	dh_auto_configure
@@ -49,7 +42,7 @@ override_dh_auto_test:
 
 # Manual crafting of installing Octave and Python bindings
 # TODO: proper
-PYTHON=$(shell pyversions -d)
+PYTHON=$(shell pyversions -vr)
 PYDIR=$(shell /bin/ls -d /usr/lib/$(PYTHON)/*-packages)
 
 OCTDIR=$(shell octave-config --oct-site-dir)

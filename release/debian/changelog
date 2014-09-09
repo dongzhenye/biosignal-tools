@@ -1,5 +1,9 @@
 biosig4c++ (1.6.1-1) unstable; urgency=low
 
+  * debian/contral:
+       switch to dh-python2
+       boosted policy compliance to 3.9.5
+
   * support for additional data formats
        ABF1, AXG, 
   * support improved for 
@@ -19,7 +23,7 @@ biosig4c++ (1.6.1-1) unstable; urgency=low
      This is already deprecated for quite a while.
      Use instead the function PhysDim3(CHANNEL->PhysDimCode)
 
- -- Alois Schloegl <alois.schloegl@ist.ac.at>  Thu, 12 Jun 2014 22:35:25 +0200
+ -- Alois Schloegl <alois.schloegl@ist.ac.at>  Tue, 09 Sep 2014 22:32:25 +0200
 
 biosig4c++ (1.4.1-1) experimental; urgency=low
 
