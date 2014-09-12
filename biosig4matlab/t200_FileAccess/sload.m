@@ -302,7 +302,13 @@ end;
 
 
 FlagLoaded = 0;
-if exist('mexSLOAD','file')==3,
+
+[dir,name,ext,ver]=fileparts(FILENAME);
+
+if strcmpi(ext,'.mat')
+	; % do not try using mexSLOAD because we now it will fail.
+
+elseif exist('mexSLOAD','file')==3,
 	try
 		valid_rerefmx = 1;
 		if ischar(CHAN)

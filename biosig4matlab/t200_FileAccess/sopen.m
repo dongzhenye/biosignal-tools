@@ -44,9 +44,8 @@ function [HDR,H1,h2] = sopen(arg1,PERMISSION,CHAN,MODE,arg5,arg6)
 % see also: SLOAD, SREAD, SSEEK, STELL, SCLOSE, SWRITE, SEOF, BDF2BIOSIG_EVENTS
 
 
-%	$Id$
-%	(C) 1997-2006,2007,2008,2009,2011,2012 by Alois Schloegl <alois.schloegl@gmail.com>	
-%    	This is part of the BIOSIG-toolbox http://biosig.sf.net/
+%    Copyright (C) 1997-2014 by Alois Schloegl <alois.schloegl@ist.ac.at>	
+%    This is part of the BIOSIG-toolbox http://biosig.sf.net/
 %
 %    BioSig is free software: you can redistribute it and/or modify
 %    it under the terms of the GNU General Public License as published by
@@ -6455,9 +6454,18 @@ elseif strncmp(HDR.TYPE,'MAT',3),
         		warning('identification of bbci data may be not correct');
         	end; 	
 	end; 
-        flag.fieldtrip = isfield(tmp,'data');
-        if flag.fieldtrip,
+        flag.fieldtrip = 0;
+        flag.farkas = 0;
+        if isfield(tmp,'data'),
          	flag.fieldtrip = isfield(tmp.data,'cfg') && isfield(tmp.data,'hdr') && isfield(tmp.data,'label') && isfield(tmp.data,'fsample'); 
+
+		flag.farkas = ( isfield(tmp.data,'series') && 
+				isfield(tmp.data,'markers') && 
+				isfield(tmp.data,'chanLabels') && isfield(tmp.data,'labels') && 
+				isfield(tmp.data,'art') && isfield(tmp.data,'percClean') && 
+				isfield(tmp.data,'artAll') && isfield(tmp.data,'note') && 
+				isfield(tmp.data,'percCleanOverall') && isfield(tmp.data,'chanLabelsArt') &&
+				isfield(tmp.data,'chanLabelsArtAll') );
 	end; 
 	flag.brainvision = isfield(tmp,'Channels') && isfield(tmp,'ChannelCount') && isfield(tmp,'Markers') && isfield(tmp,'MarkerCount') && isfield(tmp,'SampleRate') && isfield(tmp,'SegmentCount') && isfield(tmp,'t');
 	
@@ -6524,6 +6532,34 @@ elseif strncmp(HDR.TYPE,'MAT',3),
                 	[HDR.EVENT.CodeDesc, CodeIndex, HDR.EVENT.TYP(ix)] = unique({tmp.Markers(ix).Description});
 		end;
                 HDR.TYPE = 'native'; 
+		clear tmp;         
+        
+        elseif flag.farkas, 
+        	%% Some Matlab file from Igor Farkas
+		[HDR.NS,HDR.NRec]=size(tmp.data.series);	% channels, records
+		HDR.SPR=1;				% samples per record, 1 is interleaved format
+		HDR.SampleRate = 512;			
+		%HDR.AS.SPR=ones(1,HDR.NS);		% only needed in case of different sampling rates per channel 	
+		%HDR.PhysDimCode=repmat(physicalunits('uV'),1,HDR.NS);	% define physical units
+		HDR.PhysDimCode = repmat(4275,1,HDR.NS); % uV
+		HDR.T0 = now; 				% date/time of recording start in format [yyyy mm dd HH MM SS]
+		HDR.GDFTYP = repmat(16,1,HDR.NS);	% 16: float, 17: double, 3: int16, etc.
+		HDR.Label = tmp.data.chanLabels;
+		HDR.data  = tmp.data.series';
+
+		HDR.Calib = sparse(2:HDR.NS+1,1:HDR.NS,1); 
+		HDR.GDFTYP = repmat(16,1,HDR.NS);
+
+		HDR.EVENT.POS = tmp.data.markers(:);
+		HDR.EVENT.TYP = ones(size(HDR.EVENT.POS));
+
+		HDR.PhysMax=max(HDR.data);
+		HDR.PhysMin=min(HDR.data);
+		HDR.DigMax=HDR.PhysMax;
+		HDR.DigMin=HDR.PhysMin;
+
+		HDR.FLAG.UCAL = 1;
+		HDR.TYPE = 'native'; 
 		clear tmp;         
         
         elseif flag.bcic2008_1,	%isfield(tmp,'cnt') && isfield(tmp,'mrk') && isfield(tmp,'nfo')                
