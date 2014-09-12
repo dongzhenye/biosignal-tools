@@ -143,8 +143,9 @@ end;
 
 %%% resolve wildcards %%%
 if ischar(FILENAME) 
+[p,name,ext]=fileparts(FILENAME);
+
 if any(FILENAME=='*')
-        p = fileparts(FILENAME);
         f = dir(FILENAME);
         EOGix = zeros(1,length(f));
         for k = 1:length(f);
@@ -302,8 +303,6 @@ end;
 
 
 FlagLoaded = 0;
-
-[dir,name,ext,ver]=fileparts(FILENAME);
 
 if strcmpi(ext,'.mat')
 	; % do not try using mexSLOAD because we now it will fail.
