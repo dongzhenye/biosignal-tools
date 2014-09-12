@@ -6458,16 +6458,14 @@ elseif strncmp(HDR.TYPE,'MAT',3),
         flag.farkas = 0;
         if isfield(tmp,'data'),
          	flag.fieldtrip = isfield(tmp.data,'cfg') && isfield(tmp.data,'hdr') && isfield(tmp.data,'label') && isfield(tmp.data,'fsample'); 
+		flag.farkas =                isfield(tmp.data,'series')        && isfield(tmp.data,'markers')   && isfield(tmp.data,'chanLabels');
+		flag.farkas = flag.farkas && isfield(tmp.data,'art')           && isfield(tmp.data,'percClean') && isfield(tmp.data,'artAll');
+		flag.farkas = flag.farkas && isfield(tmp.data,'note')          && isfield(tmp.data,'percCleanOverall');
+		flag.farkas = flag.farkas && isfield(tmp.data,'chanLabelsArt') && isfield(tmp.data,'chanLabelsArtAll');
 
-		flag.farkas = ( isfield(tmp.data,'series') && 
-				isfield(tmp.data,'markers') && 
-				isfield(tmp.data,'chanLabels') && isfield(tmp.data,'labels') && 
-				isfield(tmp.data,'art') && isfield(tmp.data,'percClean') && 
-				isfield(tmp.data,'artAll') && isfield(tmp.data,'note') && 
-				isfield(tmp.data,'percCleanOverall') && isfield(tmp.data,'chanLabelsArt') &&
-				isfield(tmp.data,'chanLabelsArtAll') );
+		flag.brainvision = isfield(tmp,'Channels')    && isfield(tmp,'ChannelCount') && isfield(tmp,'Markers') && isfield(tmp,'MarkerCount');
+		flag.brainvision = flag.brainvision && isfield(tmp,'SampleRate')   && isfield(tmp,'SegmentCount') && isfield(tmp,'t');
 	end; 
-	flag.brainvision = isfield(tmp,'Channels') && isfield(tmp,'ChannelCount') && isfield(tmp,'Markers') && isfield(tmp,'MarkerCount') && isfield(tmp,'SampleRate') && isfield(tmp,'SegmentCount') && isfield(tmp,'t');
 	
         if isfield(tmp,'HDR'),
                 H = HDR; 
