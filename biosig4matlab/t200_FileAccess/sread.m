@@ -24,8 +24,7 @@ function [S,HDR,time] = sread(HDR,NoS,StartPos)
 % as published by the Free Software Foundation; either version 3
 % of the License, or (at your option) any later version.
 
-%	$Id$
-%	(C) 1997-2005,2007,2008,2011 by Alois Schloegl <alois.schloegl@gmail.com>	
+%	(C) 1997-2005,2007,2008,2011,2014 by Alois Schloegl <alois.schloegl@ist.ac.at>
 %    	This is part of the BIOSIG-toolbox http://biosig.sf.net/
 
 S = [];
@@ -66,7 +65,12 @@ end;
 
 % define HDR.out.EVENT. This is used by EEGLAB. 
 ix = (HDR.EVENT.POS >= StartPos*HDR.SampleRate) & (HDR.EVENT.POS <= (StartPos+NoS)*HDR.SampleRate); 
-HDR.out.EVENT.POS = HDR.EVENT.POS(ix)-StartPos;
+try
+	HDR.out.EVENT.POS = HDR.EVENT.POS(ix)-StartPos;
+catch
+	%% matlab 7.9 (R2009b) does not support minus operator on uint64 variables
+	HDR.out.EVENT.POS = double(HDR.EVENT.POS(ix))-StartPos;
+end;
 HDR.out.EVENT.TYP = HDR.EVENT.TYP(ix);
 if isfield(HDR.EVENT,'CHN')
         if ~isempty(HDR.EVENT.CHN)
@@ -173,6 +177,7 @@ elseif strcmp(HDR.TYPE,'EDF') || strcmp(HDR.TYPE,'GDF') || strcmp(HDR.TYPE,'BDF'
     	fp     = HDR.HeadLen + block1*HDR.AS.bpb;
     	STATUS = fseek(HDR.FILE.FID, fp, 'bof');
         count  = 0;
+        bi = [0; cumsum(HDR.AS.SPR(:))];
         if HDR.NS==0,
         elseif all(HDR.GDFTYP==HDR.GDFTYP(1)),
                 if (HDR.AS.spb*nb<=2^24), % faster access
@@ -181,8 +186,8 @@ elseif strcmp(HDR.TYPE,'EDF') || strcmp(HDR.TYPE,'GDF') || strcmp(HDR.TYPE,'BDF'
                         [s,c] = fread(HDR.FILE.FID,[HDR.AS.spb, nb],gdfdatatype(HDR.GDFTYP(1)));
                         for k = 1:length(HDR.InChanSelect),
                                K = HDR.InChanSelect(k);
-                               if (HDR.AS.SPR(K)>0)
-                                       S(:,k) = rs(reshape(s(HDR.AS.bi(K)+1:HDR.AS.bi(K+1),:),HDR.AS.SPR(K)*nb,1),HDR.AS.SPR(K),HDR.SPR);
+                               if (HDR.AS.SPR(K) > 0)
+                                       S(:,k) = rs(reshape(s(bi(K)+1:bi(K+1),:),HDR.AS.SPR(K)*nb,1),HDR.AS.SPR(K),HDR.SPR);
                                else
                                        S(:,k) = NaN;
                                end;
@@ -198,7 +203,7 @@ elseif strcmp(HDR.TYPE,'EDF') || strcmp(HDR.TYPE,'GDF') || strcmp(HDR.TYPE,'BDF'
                                 for k = 1:length(HDR.InChanSelect), 
                                         K = HDR.InChanSelect(k);
                                         if (HDR.AS.SPR(K)>0)
-                                                tmp = reshape(s(HDR.AS.bi(K)+1:HDR.AS.bi(K+1),:),HDR.AS.SPR(K)*c/HDR.AS.spb,1);
+                                                tmp = reshape(s(bi(K)+1:bi(K+1),:),HDR.AS.SPR(K)*c/HDR.AS.spb,1);
                                                 s1(:,k) = rs(tmp,HDR.AS.SPR(K),HDR.SPR);
                                         end;
                                 end;
@@ -223,7 +228,7 @@ elseif strcmp(HDR.TYPE,'EDF') || strcmp(HDR.TYPE,'GDF') || strcmp(HDR.TYPE,'BDF'
                         for k = 1:length(HDR.InChanSelect), 
                                 K = HDR.InChanSelect(k);
                                 if (HDR.AS.SPR(K)>0)
-                                        s1(:,k) = rs(s(HDR.AS.bi(K)+1:HDR.AS.bi(K+1),:),HDR.AS.SPR(K),HDR.SPR);
+                                        s1(:,k) = rs(s(bi(K)+1:bi(K+1),:),HDR.AS.SPR(K),HDR.SPR);
                                 end;
                         end;
                         ix2   = min(nr-count, size(s1,1)-ix1);
