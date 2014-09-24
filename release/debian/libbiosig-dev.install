@@ -2,5 +2,6 @@ usr/include/biosig.h
 usr/include/biosig-dev.h 
 usr/include/gdftime.h 
 usr/include/physicalunits.h 
-usr/lib/libbiosig.a
-usr/lib/libbiosig*.so
+usr/lib/libbiosig2.a
+usr/lib/libbiosig2.so.1.6.1
+
