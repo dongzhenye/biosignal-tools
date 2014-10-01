@@ -665,6 +665,7 @@ libbiosig.so: $(OBJECTS) t240/libcnsfef.a libbiosig.pc
 	$(CXX) -shared -fPIC -Wl,-soname,$@.${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
 		-o $@.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(OBJECTS) t240/*.o
 	/sbin/ldconfig -n .
+	ln -s "$@.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING}"  "$@"
 
 libbiosig.dylib: $(OBJECTS)
 	$(CC) $(LDFLAGS) $(LDLIBS) $(OBJECTS) t240/*.o -o "$@"
@@ -694,6 +695,7 @@ libbiosig2.so: $(OBJECTS) biosig2.o t240/libcnsfef.a
 	$(CXX) -shared -fPIC -Wl,-soname,libbiosig2.so.${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
 		-o libbiosig2.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(OBJECTS) biosig2.o t240/*.o
 	/sbin/ldconfig -n .
+	ln -s "$@.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING}"  "$@"
 
 libbiosig2.dylib: $(OBJECTS)  biosig2.o t240/libcnsfef.a
 	$(CC) $(LDFLAGS) $(LDLIBS) $(OBJECTS) t240/*.o -o "$@"
@@ -753,28 +755,28 @@ mexw64: $(patsubst mex/%.cpp, mex/%.mexw64, $(MEX_OBJECTS))
 ifdef MEX_EXT
 mex: mex4o mex4m mexw32 mexw64
 mex4m: $(patsubst mex/%.cpp, mex/%.$(MEX_EXT), $(MEX_OBJECTS))
-mex/%.$(MEX_EXT): mex/%.cpp Makefile libbiosig.a
-	$(MEX) $(MEX_OPTION) $(DEFINES) "$<" libbiosig.a $(LFLAGS) $(LIBS) -o "$@"
+mex/%.$(MEX_EXT): mex/%.cpp Makefile biosig.h biosig-dev.h libbiosig.a
+	$(MEX) $(MEX_OPTION) $(DEFINES) "$<" -lbiosig $(LFLAGS) $(LIBS) -o "$@"
 	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
 else
 mex: mex4o mexw32 mexw64
 endif
 
-mex/%.mex: mex/%.cpp Makefile libbiosig.a
-	$(OCT) $(DEFINES) -v -g --mex "$<" libbiosig.a $(LIBS) -o "$@"
+mex/%.mex: mex/%.cpp Makefile biosig.h biosig-dev.h libbiosig.so
+	$(OCT) $(DEFINES) -v -g --mex "$<" -L. -lbiosig $(LIBS) -o "$@"
 	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
 
-mex/%.oct: mex/%.cpp Makefile libbiosig.a
-	$(OCT) $(DEFINES) "$<" libbiosig.a $(LIBS) -o "$@"
+mex/%.oct: mex/%.cpp Makefile biosig.h biosig-dev.h libbiosig.so
+	$(OCT) $(DEFINES) "$<" -L. -lbiosig $(LIBS) -o "$@"
 	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
 
-mex/%.mexw32: mex/%.cpp Makefile
+mex/%.mexw32: mex/%.cpp Makefile biosig.h biosig-dev.h
 	## $(CROSS)-g++ is used instead of $(CXX), so it can be called from biosig as well as mxe. 
 	$(CROSS)-g++ -shared $(GNUMEX)/mex.def -DMATLAB_MEX_FILE $(DEFINES) -x c++  \
 		-I$(W32MAT_INC) -O2 -o "$@" -L$(GNUMEX) -s "$<" -llibmx -llibmex -lbiosig -liconv -lssp $(LDLIBS) -lws2_32
 	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
 
-mex/%.mexw64: mex/%.cpp Makefile
+mex/%.mexw64: mex/%.cpp Makefile biosig.h biosig-dev.h
 	$(CROSS64)-g++ -shared $(GNUMEX64)/mex.def -DMATLAB_MEX_FILE $(DEFINES) -x c++  \
 		-I$(W64MAT_INC) -O2 -o "$@" -L$(GNUMEX64) -s "$<" -llibmx -llibmex -lbiosig -liconv -lssp $(LDLIBS) -lws2_32
 	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
