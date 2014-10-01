@@ -146,7 +146,7 @@ ifeq (Darwin,$(uname))
   LDLIBS      += -liconv
   DLEXT        = dylib
 else
-  LDFLAGS     += -shared -fPIC -Wl,-rpath,.
+  LDFLAGS     += -shared -fPIC
   DLEXT        = so
 endif
 
@@ -622,7 +622,7 @@ libphysicalunits.def: physicalunits.o
 	$(CXX) -o libphysicalunits.dll -s -shared -fPIC "$<" $(LIBS) -Wl,--subsystem,windows,--output-def,libphysicalunits.def,--out-implib,libphysicalunits.dll.a
 
 libphysicalunits.so: physicalunits.o
-	$(CC) -shared -fPIC -Wl,-rpath,. -Wl,-soname,"$@" $(LDLIBS) -o "$@" "$<"
+	$(CC) -shared -fPIC -Wl,-soname,"$@" $(LDLIBS) -o "$@" "$<"
 libphysicalunits.dylib: physicalunits.o
 	$(CC) $(LDFLAGS) $(LDLIBS) "$<" -o "$@"
 
@@ -632,7 +632,7 @@ libgdftime.a: gdftime.o
 libgdftime.def: gdftime.o
 	$(CC) -o libgdftime.dll -s -shared -fPIC "$@" -Wl,--subsystem,windows,--output-def,libgdftime.def,--out-implib,libgdftime.dll.a
 libgdftime.so: gdftime.o
-	$(CC) -shared -fPIC -Wl,-rpath,. -Wl,-soname,$@.${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
+	$(CC) -shared -fPIC -Wl,-soname,$@.${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
 		-o $@.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $<
 	/sbin/ldconfig -n .
 	ln -sf $@.${MAJOR_VERSION}.${MINOR_VERSION} $@
@@ -646,7 +646,7 @@ libgdf.def: gdf.o getlogin.o gdftime.o physicalunits.o
 	$(CXX) -s -shared -fPIC -o libgdf.dll gdf.o getlogin.o gdftime.o physicalunits.o $(LIBS) -Wl,--subsystem,windows,--output-def,libgdf.def,--out-implib,libgdf.dll.a
 
 libgdf.so: gdf.o gdftime.o physicalunits.o
-	$(CC) -shared -fPIC -Wl,-rpath,. -Wl,-soname,$@.${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
+	$(CC) -shared -fPIC -Wl,-soname,$@.${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
 		-o $@.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} gdf.o getlogin.o gdftime.o physicalunits.o
 	/sbin/ldconfig -n .
 	ln -sf $@.${MAJOR_VERSION}.${MINOR_VERSION} "$@"
@@ -662,7 +662,7 @@ libbiosig.def: $(OBJECTS) t240/libcnsfef.a libbiosig.pc
 
 
 libbiosig.so: $(OBJECTS) t240/libcnsfef.a libbiosig.pc
-	$(CXX) -shared -fPIC -Wl,-rpath,. -Wl,-soname,$@.${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
+	$(CXX) -shared -fPIC -Wl,-soname,$@.${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
 		-o $@.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(OBJECTS) t240/*.o
 	/sbin/ldconfig -n .
 
@@ -691,7 +691,7 @@ libbiosig2.def: $(OBJECTS) biosig2.o t240/libcnsfef.a
 
 
 libbiosig2.so: $(OBJECTS) biosig2.o t240/libcnsfef.a
-	$(CXX) -shared -fPIC -Wl,-rpath,. -Wl,-soname,libbiosig2.so.${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
+	$(CXX) -shared -fPIC -Wl,-soname,libbiosig2.so.${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
 		-o libbiosig2.so.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(OBJECTS) biosig2.o t240/*.o
 	/sbin/ldconfig -n .
 
