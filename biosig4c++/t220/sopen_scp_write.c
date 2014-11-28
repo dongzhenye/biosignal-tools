@@ -127,7 +127,6 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			curSectLen = 16; // current section length
 			sectionStart = 6; 
 		
-			memcpy(ptr+16,"SCPECG",6); // reserved
 			curSectLen += NSections*10;
 		}
 		else if (curSect==1)  // SECTION 1 
@@ -638,7 +637,12 @@ EXTERN_C int sopen_SCP_write(HDRTYPE* hdr) {
 			leu32a(curSectLen, ptr+sectionStart+4); 	// section length->section header
 			ptr[sectionStart+8] = VERSION; 	// Section Version Number 
 			ptr[sectionStart+9] = VERSION; 	// Protocol Version Number
-			memset(ptr+sectionStart+10,0,6);
+			if (curSect==0) {
+				memcpy(ptr+16,"SCPECG",6);	// defined as in ISO/DIS 11073-91064 Section 5.3.2
+			}
+			else {
+				memset(ptr+sectionStart+10,0,6); // reserved according to ISO/DIS 11073-91064 Section 5.2.7
+			}
 			crc = CRCEvaluate(ptr+sectionStart+2,curSectLen-2); // compute CRC
 			leu16a(crc, ptr+sectionStart);
 		}	
