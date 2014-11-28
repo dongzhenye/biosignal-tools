@@ -600,6 +600,9 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 	len = leu32p(PtrCurSect+4); 
 	NSections = min((len-16)/10,_NUM_SECTION);
 
+	if (memcmp(ptr+16, "SCPECG\0\0", 8)) {
+		fprintf(stderr,"Warning SOPEN (SCP): Bytes 11-16 of Section 0 do not contain SCPECG - this violates ISO/DIS 11073-91064 Section 5.3.2.\n" );
+	}
 	section[0].ID	  = 0;
 	section[0].length = len;
 	section[0].index  = 6+16;
@@ -666,6 +669,7 @@ EXTERN_C int sopen_SCP_read(HDRTYPE* hdr) {
 		fprintf(stdout,"%s (line %i): SCP Section %i %i len=%i secStart=%i HeaderLength=%i\n",__FILE__,__LINE__,K,curSect,len,(int)sectionStart,hdr->HeadLen);
 
 	if (len==0) continue;	 /***** empty section *****/
+
 		if (sectionStart + len > hdr->HeadLen) {
 			biosigERROR(hdr, B4C_INCOMPLETE_FILE, "%s (line %i): SOPEN(SCP-READ): File incomplete - Section length + start of section is more then total length of header");
 			break;
