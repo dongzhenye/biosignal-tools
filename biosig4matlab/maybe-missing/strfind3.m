@@ -41,7 +41,7 @@ function idx = strfind (text, pattern)
     usage ("idx = strfind (text, pattern)");
   elseif (! ischar (pattern))
     error ("strfind: pattern must be a string value");
-  endif
+ end
 
   if (ischar (text))
     text_was_str = true;
@@ -54,7 +54,7 @@ function idx = strfind (text, pattern)
     n = numel (text);
   else
     error ("strfind: text must be a string or cell array of strings");
-  endif
+ end
 
   idx = cell (sz);
   for i = 1:n
@@ -65,11 +65,11 @@ function idx = strfind (text, pattern)
       tmp_idx = tmp_idx(tmp_text(tmp_idx + k) == pattern(++k));
     endwhile
     idx{i} = tmp_idx;
-  endfor
+  end
 
   if (text_was_str)
     idx = idx{:};
-  endif
+ end
 
 endfunction
 

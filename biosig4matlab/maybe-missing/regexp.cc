@@ -750,7 +750,7 @@ The pattern is taken literally.\n\
 %!   assert (sort(fieldnames(nm)),{'word1';'word2'})
 %!   assert (nm.word1,'short')
 %!   assert (nm.word2,'test')
-%! endif
+%!end
 
 %!test
 %! ## This test is expected to fail if PCRE is not installed
@@ -769,7 +769,7 @@ The pattern is taken literally.\n\
 %!   assert (sort(fieldnames(nm)),{'word1';'word2'})
 %!   assert (nm.word1,'short')
 %!   assert (nm.word2,'test')
-%! endif
+%!end
 
 %!test
 %! ## This test is expected to fail if PCRE is not installed
@@ -785,7 +785,7 @@ The pattern is taken literally.\n\
 %!   assert (nm.first{2},'James');
 %!   assert (nm.last{1},'Davis');
 %!   assert (nm.last{2},'Rogers');
-%! endif
+%!end
 
 %!assert(regexp("abc\nabc",'.'),[1:7])
 %!assert(regexp("abc\nabc",'.','dotall'),[1:7])
@@ -794,7 +794,7 @@ The pattern is taken literally.\n\
 %!   assert(regexp("abc\nabc",'(?s).'),[1:7])
 %!   assert(regexp("abc\nabc",'.','dotexceptnewline'),[1,2,3,5,6,7])
 %!   assert(regexp("abc\nabc",'(?-s).'),[1,2,3,5,6,7])
-%! endif
+%!end
 
 %!assert(regexp("caseCaSe",'case'),1)
 %!assert(regexp("caseCaSe",'case',"matchcase"),1)
@@ -803,7 +803,7 @@ The pattern is taken literally.\n\
 %! if (!isempty(findstr(octave_config_info ("DEFS"),"HAVE_PCRE")))
 %!   assert(regexp("caseCaSe",'(?-i)case'),1)
 %!   assert(regexp("caseCaSe",'(?i)case'),[1,5])
-%! endif
+%!end
 
 %!assert (regexp("abc\nabc",'c$'),7)
 %!assert (regexp("abc\nabc",'c$',"stringanchors"),7)
@@ -812,7 +812,7 @@ The pattern is taken literally.\n\
 %!   assert (regexp("abc\nabc",'(?-m)c$'),7)
 %!   assert (regexp("abc\nabc",'c$',"lineanchors"),[3,7])
 %!   assert (regexp("abc\nabc",'(?m)c$'),[3,7])
-%! endif
+%!end
 
 %!assert (regexp("this word",'s w'),4)
 %!assert (regexp("this word",'s w','literalspacing'),4)
@@ -821,7 +821,7 @@ The pattern is taken literally.\n\
 %!   assert (regexp("this word",'(?-x)s w','literalspacing'),4)
 %!   assert (regexp("this word",'s w','freespacing'),[])
 %!   assert (regexp("this word",'(?x)s w'),[])
-%! endif
+%!end
 
 %!error regexp('string', 'tri', 'BadArg');
 %!error regexp('string');
@@ -925,7 +925,7 @@ if there are none. See @code{regexp} for more details\n\
 %!   assert (sort(fieldnames(nm)),{'word1';'word2'})
 %!   assert (nm.word1,'ShoRt')
 %!   assert (nm.word2,'Test')
-%! endif
+%!end
 
 %!test
 %! ## This test is expected to fail if PCRE is not installed
@@ -944,7 +944,7 @@ if there are none. See @code{regexp} for more details\n\
 %!   assert (sort(fieldnames(nm)),{'word1';'word2'})
 %!   assert (nm.word1,'ShoRt')
 %!   assert (nm.word2,'Test')
-%! endif
+%!end
 
 %!assert(regexpi("abc\nabc",'.'),[1:7])
 %!assert(regexpi("abc\nabc",'.','dotall'),[1:7])
@@ -953,7 +953,7 @@ if there are none. See @code{regexp} for more details\n\
 %!   assert(regexpi("abc\nabc",'(?s).'),[1:7])
 %!   assert(regexpi("abc\nabc",'.','dotexceptnewline'),[1,2,3,5,6,7])
 %!   assert(regexpi("abc\nabc",'(?-s).'),[1,2,3,5,6,7])
-%! endif
+%!end
 
 %!assert(regexpi("caseCaSe",'case'),[1,5])
 %!assert(regexpi("caseCaSe",'case',"matchcase"),1)
@@ -962,7 +962,7 @@ if there are none. See @code{regexp} for more details\n\
 %! if (!isempty(findstr(octave_config_info ("DEFS"),"HAVE_PCRE")))
 %!   assert(regexpi("caseCaSe",'(?-i)case'),1)
 %!   assert(regexpi("caseCaSe",'(?i)case'),[1,5])
-%! endif
+%!end
 
 %!assert (regexpi("abc\nabc",'c$'),7)
 %!assert (regexpi("abc\nabc",'c$',"stringanchors"),7)
@@ -971,7 +971,7 @@ if there are none. See @code{regexp} for more details\n\
 %!   assert (regexpi("abc\nabc",'(?-m)c$'),7)
 %!   assert (regexpi("abc\nabc",'c$',"lineanchors"),[3,7])
 %!   assert (regexpi("abc\nabc",'(?m)c$'),[3,7])
-%! endif
+%!end
 
 %!assert (regexpi("this word",'s w'),4)
 %!assert (regexpi("this word",'s w','literalspacing'),4)
@@ -980,7 +980,7 @@ if there are none. See @code{regexp} for more details\n\
 %!   assert (regexpi("this word",'(?-x)s w','literalspacing'),4)
 %!   assert (regexpi("this word",'s w','freespacing'),[])
 %!   assert (regexpi("this word",'(?x)s w'),[])
-%! endif
+%!end
 
 %!error regexpi('string', 'tri', 'BadArg');
 %!error regexpi('string');

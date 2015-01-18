@@ -39,23 +39,23 @@ function rnd = betarnd (a, b, r, c)
       [retval, a, b] = common_size (a, b);
       if (retval > 0)
 	error ("betarnd: a and b must be of common size or scalar");
-      endif
-    endif
-  endif
+     end
+   end
+ end
 
   if (nargin == 4)
     if (! (isscalar (r) && (r > 0) && (r == round (r))))
       error ("betarnd: r must be a positive integer");
-    endif
+   end
     if (! (isscalar (c) && (c > 0) && (c == round (c))))
       error ("betarnd: c must be a positive integer");
-    endif
+   end
     sz = [r, c];
 
     if (any (size (a) != 1)
 	&& (length (size (a)) != length (sz) || any (size (a) != sz)))
       error ("betarnd: a and b must be scalar or of size [r,c]");
-    endif
+   end
   elseif (nargin == 3)
     if (isscalar (r) && (r > 0))
       sz = [r, r];
@@ -63,36 +63,36 @@ function rnd = betarnd (a, b, r, c)
       sz = r(:)';
     else
       error ("betarnd: r must be a postive integer or vector");
-    endif
+   end
 
     if (any (size (a) != 1)
 	&& (length (size (a)) != length (sz) || any (size (a) != sz)))
       error ("betarnd: a and b must be scalar or of size sz");
-    endif
+   end
   elseif (nargin == 2)
     sz = size(a);
   else
     print_usage ();
-  endif
+ end
 
   if (isscalar(a) && isscalar(b))
     if (find (!(a > 0) | !(a < Inf) | !(b > 0) | !(b < Inf)))
       rnd = NaN * ones (sz);
     else
       rnd = betainv (rand(sz), a, b);
-    endif
+   end
   else
     rnd = zeros (sz);
 
     k = find (!(a > 0) | !(a < Inf) | !(b > 0) | !(b < Inf));
     if (any (k))
       rnd(k) = NaN * ones (size (k));
-    endif
+   end
 
     k = find ((a > 0) & (a < Inf) & (b > 0) & (b < Inf));
     if (any (k))
       rnd(k) = betainv (rand (size (k)), a(k), b(k));
-    endif
-  endif
+   end
+ end
 
 endfunction

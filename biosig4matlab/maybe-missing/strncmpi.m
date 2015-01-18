@@ -29,12 +29,12 @@ function status = strncmpi(s1, s2, n)
 
   if (nargin != 3)
     usage ("strncmpi (s, t, n)");
-  endif
+ end
 
   status = 0;		# Assume strings are different
   if (isstr (s1) && isstr(s2))
     status = strncmp(upper(s1),upper(s2),n);
-  endif
+ end
 
 endfunction
 

@@ -35,15 +35,15 @@ function [Y,M,D,h,m,s] = datevec(date,P)
 
   if nargin == 0 || nargin > 2
     usage("V=datevec(n) or [Y,M,D,h,m,s]=datevec(n)");
-  endif
-  if nargin < 2, P = []; endif
+ end
+  if nargin < 2, P = [];end
 
   if (ischar(date) || iscellstr(date))
     ## handle strings
     if isempty(P)
       tm = localtime(time);
       P = tm.year+1900-50;
-    endif
+   end
 
     global __month_names = ["Jan";"Feb";"Mar";"Apr";"May";"Jun";...
 			    "Jul";"Aug";"Sep";"Oct";"Nov";"Dec"];
@@ -57,9 +57,9 @@ function [Y,M,D,h,m,s] = datevec(date,P)
 	thisdate = date{i};
       else
 	thisdate = date(i,:);
-      endif
+     end
       [Y(i) M(i) D(i) h(i) m(i) s(i)] = datesplit(date(i,:), P);
-    endfor
+    end
   else
     ## handle date numbers
 
@@ -86,11 +86,11 @@ function [Y,M,D,h,m,s] = datevec(date,P)
     s = s - 3600*h;
     m = floor(s/60);
     s = s - 60*m;
-  endif
+ end
 
   if nargout <= 1
     Y = [ Y(:), M(:), D(:), h(:), m(:), s(:) ];
-  endif
+ end
 endfunction
 
 %!assert(all(datenum(datevec([-1e4:1e4]))==[-1e4:1e4]'))

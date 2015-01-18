@@ -41,7 +41,7 @@ function idx = strfind (text, pattern)
     usage ("idx = strfind (text, pattern)");
   elseif (! isstr (pattern))
     error ("strfind: pattern must be a string value");
-  endif
+ end
 
   if (isstr (text))
     idx = 1:(length (text) - lp + 1);
@@ -54,11 +54,11 @@ function idx = strfind (text, pattern)
     idx = cell (size(text));
     for i = 1:length(text)
    	idx{i} = strfind(text{i},pattern);
-    endfor 	
+    end 	
 
   else
     error ("strfind: text must be a string or cell array of strings");
-  endif
+ end
 
 endfunction
 

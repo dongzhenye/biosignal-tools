@@ -68,7 +68,7 @@ function [a, b, c, d] = butter (n, W, varargin)
     case { 'low',  'pass' }, stop = 0;
     otherwise,  error ("butter: expected [high|stop] or [s|z]");
     endswitch
-  endfor
+  end
 
 
   [r, c]=size(W);
@@ -78,19 +78,19 @@ function [a, b, c, d] = butter (n, W, varargin)
     error ("butter: only one filter band allowed");
   elseif (length(W)==2 && !(W(1) < W(2)))
     error ("butter: first band edge must be smaller than second");
-  endif
+ end
 
   if ( digital && !all(W >= 0 & W <= 1))
     error ("butter: critical frequencies must be in (0 1)");
   elseif ( !digital && !all(W >= 0 ))
     error ("butter: critical frequencies must be in (0 inf)");
-  endif
+ end
 
   ## Prewarp to the band edges to s plane
   if digital
     T = 2;       # sampling frequency of 2 Hz
     W = 2/T*tan(pi*W/T);
-  endif
+ end
 
   ## Generate splane poles for the prototype butterworth filter
   ## source: Kuc
@@ -106,7 +106,7 @@ function [a, b, c, d] = butter (n, W, varargin)
   ## Use bilinear transform to convert poles to the z plane
   if digital
      [zero, pole, gain] = bilinear(zero, pole, gain, T);
-  endif
+ end
 
   ## convert to the correct output form
   if nargout==2, 
@@ -119,6 +119,6 @@ function [a, b, c, d] = butter (n, W, varargin)
   else
     ## output ss results 
     [a, b, c, d] = zp2ss (zero, pole, gain);
-  endif
+ end
 
 endfunction

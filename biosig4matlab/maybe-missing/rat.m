@@ -32,7 +32,7 @@ function [n,d] = rat(x,tol)
 
   if (nargin != [1,2] || nargout != 2)
     usage("[n,d] = rat(x,tol)");
-  endif
+ end
 
   y = x(:);
 
@@ -42,7 +42,7 @@ function [n,d] = rat(x,tol)
   ## default norm
   if (nargin < 2)
     tol = 1e-6 * norm(y,1);
-  endif
+ end
 
   ## First step in the approximation is the integer portion
   n = round(y);  # first element in the continued fraction
@@ -55,7 +55,7 @@ function [n,d] = rat(x,tol)
   while (1)
     ## determine which fractions have not yet converged
     idx = find (abs(y-n./d) >= tol);
-    if (isempty(idx)) break; endif
+    if (isempty(idx)) break;end
 
     ## grab the next step in the continued fraction
     flip = 1./frac(idx);

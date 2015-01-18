@@ -35,6 +35,6 @@ function retval = isvector (x)
     retval = (ndims (x) == 2 && (sz(1) == 1 || sz(2) == 1));
   else
     error;
-  endif
+ end
 
 end

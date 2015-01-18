@@ -89,9 +89,9 @@
 function retval = datestr(date,code,P)
   if (nargin == 0 || nargin > 3 )
     usage("datestr(date [, code]) or datestr('date' [, code [, P]])");
-  endif
-  if (nargin < 3) P = []; endif
-  if (nargin < 2) code = []; endif
+ end
+  if (nargin < 3) P = [];end
+  if (nargin < 2) code = [];end
   V = datevec(date, P);
 
   if (isempty(code))
@@ -101,8 +101,8 @@ function retval = datestr(date,code,P)
       code = 1; 
     else
       code = 0;
-    endif
-  endif
+   end
+ end
 
   global __month_names = ["Jan";"Feb";"Mar";"Apr";"May";"Jun";...
 			  "Jul";"Aug";"Sep";"Oct";"Nov";"Dec"];
@@ -186,6 +186,6 @@ function retval = datestr(date,code,P)
       retval = str;
     else 
       retval = [ retval ; str ] ;
-    endif
-  endfor
+   end
+  end
 endfunction

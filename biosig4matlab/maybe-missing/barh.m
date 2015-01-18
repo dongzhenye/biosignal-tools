@@ -64,10 +64,10 @@ function [xb, yb] = bar (x, y)
         tmp_yb(i+1) = x(k);
         tmp_yb(i+2) = 0.0;
         k++;
-      endfor
+      end
     else
       error ("bar: argument must be a vector");
-    endif
+   end
   elseif (nargin == 2)
     if (isvector (x) && isvector (y))
       xlen = length (x);
@@ -78,7 +78,7 @@ function [xb, yb] = bar (x, y)
         cutoff = zeros (1, xlen);
         for i = 1:xlen-1
           cutoff(i) = (x(i) + x(i+1)) / 2.0;
-        endfor
+        end
         delta_p = cutoff(1) - x(1);
         delta_m = delta_p;
         tmp_xb(1) = x(1) - delta_m;
@@ -94,25 +94,25 @@ function [xb, yb] = bar (x, y)
           if (k < xlen)
             if (x(k+1) < x(k))
               error ("barh: x vector values must be in ascending order");
-            endif
+           end
             delta_m = x(k+1) - cutoff(k);
             k++;
             if (k < xlen)
               delta_p = cutoff(k) - x(k);
             else
               delta_p = delta_m;
-            endif
-          endif
-        endfor
+           end
+         end
+        end
       else
         error ("barh: arguments must be the same length");
-      endif
+     end
     else
       error ("barh: arguments must be vectors");
-    endif
+   end
   else
     usage ("[xb, yb] = barh (x, y)");
-  endif
+ end
 
   if (nargout == 0)
     % modified by Alois Schloegl
@@ -120,6 +120,6 @@ function [xb, yb] = bar (x, y)
   else
     xb = tmp_xb;
     yb = tmp_yb;
-  endif
+ end
 
 endfunction

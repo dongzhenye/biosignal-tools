@@ -93,13 +93,13 @@ function [y, m, d, h, mi, s] = datesplit(ds, P)
 
   if nargin < 2
     P = [];
-  endif
+ end
 
   today = datevec(now);
 
   if (isempty(P))
     P = today(1)-50;
-  endif
+ end
 
   global __month_names = ["Jan";"Feb";"Mar";"Apr";"May";"Jun";...
 			  "Jul";"Aug";"Sep";"Oct";"Nov";"Dec"];
@@ -108,14 +108,14 @@ function [y, m, d, h, mi, s] = datesplit(ds, P)
 
   if (iscellstr(ds))
     ds = ds{1};
-  endif
+ end
   ds = tolower(deblank(ds));
 
   if (nargin < 1)
     error("datesplit: no input arguments");
   elseif (nargin == 1)
     fmt = [];
-  endif
+ end
   %% we have to determine the format, this could be error prone
 
   ## format  0  dd-mmm-yyyy HH:MM:SS    e.g. 07-Sep-2000 15:38:09
@@ -126,20 +126,20 @@ function [y, m, d, h, mi, s] = datesplit(ds, P)
   if (isempty(match))
     [match, m, d, y, h, mi, s, ap] = \
 	regexp("^([a-z]{3})[-./](3[01]|[0-2]?[0-9])[-./]([0-9]{4})[, ]+(2[0-3]|[01]?[0-9]):([0-5][0-9])(:[0-5][0-9]|)[, ]*([ap]m|)$", ds);
-  endif
+ end
 
   ## format 31  yyyy-mm-dd HH:MM:SS     e.g. 2004-03-13 13:26:03
   if (isempty(match))
     [match, y, m, d, h, mi, s, ap] = \
 	regexp("^([0-9]{4})[-./](1[012]|0?[0-9])[-./](3[01]|[0-2]?[0-9])[, ]+(2[0-3]|[01]?[0-9]):([0-5][0-9])(:[0-5][0-9]|)[, ]*([ap]m|)$", ds);
-  endif
+ end
 
   ## format 30  yyyymmddTHHMMSS         e.g. 20470313T132603
   if (isempty(match))
     [match, y, m, d, h, mi, s] = \
 	regexp("^([0-9]{4})(1[012]|0[0-9])(3[01]|[012][0-9])t(2[0-3]|[01][0-9])([0-5][0-9])([0-5][0-9])$", ds);
     ap = "NA";
-  endif
+ end
 
   ## format 13  HH:MM:SS                e.g. 15:38:09
   ## format 14  HH:MM:SS PM             e.g. 03:38:09 PM
@@ -154,8 +154,8 @@ function [y, m, d, h, mi, s] = datesplit(ds, P)
       y = today(1);
       m = today(2);
       d = today(3);
-    endif
-  endif
+   end
+ end
 
   ## format  1  dd-mmm-yyyy             e.g. 07-Sep-2000
   if (isempty(match))
@@ -168,8 +168,8 @@ function [y, m, d, h, mi, s] = datesplit(ds, P)
       mi = 0;
       s = 0;
       ap = "NA";
-    endif
-  endif
+   end
+ end
 
   ## format 22  mmm.dd.yyyy             e.g. Mar.03.1962
   if (isempty(match))
@@ -182,8 +182,8 @@ function [y, m, d, h, mi, s] = datesplit(ds, P)
       mi = 0;
       s = 0;
       ap = "NA";
-    endif
-  endif
+   end
+ end
 
   ## format  2  mm/dd/yy                e.g. 09/07/00
   ## format 23  mm/dd/yyyy              e.g. 03/13/1962
@@ -213,7 +213,7 @@ function [y, m, d, h, mi, s] = datesplit(ds, P)
 	else
 	  %% it's ambiguous
 	  error(["datesplit: ambiguous date " ds]);
-	endif
+	end
       elseif ((d == 0) || (d > 31))
 	%% the day and the year need to be switched
 	tmp = y;
@@ -222,16 +222,16 @@ function [y, m, d, h, mi, s] = datesplit(ds, P)
       else
 	%% it's ambiguous
 	error(["datesplit: ambiguous date " ds]);
-      endif
+     end
 
       %% assume the beginning of the day
       h = 0;
       mi = 0;
       s = 0;
       ap = "NA";
-    endif
+   end
 
-  endif
+ end
 
   ## format 29  yyyymmdd                e.g. 20470313
   if (isempty(match))
@@ -246,8 +246,8 @@ function [y, m, d, h, mi, s] = datesplit(ds, P)
       mi = 0;
       s = 0;
       ap = "NA";
-    endif
-  endif
+   end
+ end
 
   ## format 17  QQ-YY                   e.g. Q3-00
   ## format 27  QQ-YYYY                 e.g. Q4-2132
@@ -266,8 +266,8 @@ function [y, m, d, h, mi, s] = datesplit(ds, P)
       mi = 59;
       s = 59;
       ap = "NA";
-    endif
-  endif
+   end
+ end
 
   ## format 28  mmmyyyy                 e.g. Mar2047
   ## format 12  mmmyy                   e.g. Sep00
@@ -281,8 +281,8 @@ function [y, m, d, h, mi, s] = datesplit(ds, P)
       mi = 0;
       s = 0;
       ap = "NA";
-    endif
-  endif
+   end
+ end
 
   ## format  6  mm/dd                   e.g. 09/07
   ## format 19  dd/mm                   e.g. 13/03
@@ -305,15 +305,15 @@ function [y, m, d, h, mi, s] = datesplit(ds, P)
       else
 	%% it's ambiguous
 	error(["datesplit: ambiguous date " ds]);
-      endif
+     end
       %% assume this year and the beginning of the day
       y = today(1);
       h = 0;
       mi = 0;
       s = 0;
       ap = "NA";
-    endif
-  endif
+   end
+ end
 
   ## format 10  yyyy                    e.g. 2000
   if (isempty(match))
@@ -327,8 +327,8 @@ function [y, m, d, h, mi, s] = datesplit(ds, P)
       mi = 0;
       s = 0;
       ap = "NA";
-    endif
-  endif
+   end
+ end
 
   ## format  3  mmm                     e.g. Sep
   if (isempty(match))
@@ -343,8 +343,8 @@ function [y, m, d, h, mi, s] = datesplit(ds, P)
       mi = 0;
       s = 0;
       ap = "NA";
-    endif
-  endif
+   end
+ end
 
   ## format  8  ddd                     e.g. Thu
   %% People shouldn't use this function for something like this
@@ -353,33 +353,33 @@ function [y, m, d, h, mi, s] = datesplit(ds, P)
     %% you mean I did all that work, and you still didn't use a valid
     %% date?  Darn you!
     error(["datesplit: Unknown date format " ds]);
-  endif
+ end
 
   if (! isempty(match))
     if isempty(s)
       s = 0;
     elseif (ischar(s) && (1 == findstr(s,":")))
       s = s(2:3);
-    endif
+   end
     if isempty(ap)
       ap = "NA";
-    endif
-  endif
+   end
+ end
 
   %% start converting the date from characters to numbers
   if (ischar(y))
     y = str2num(y);
     if (isempty(y))
       error(["datesplit: Invalid year specification " y]);
-    endif
-  endif
+   end
+ end
   %% Handle Y2K issues...
   if (y < 100)
     y = y + 1900;
     if (y < P)
       y = y + 100;
-    endif
-  endif
+   end
+ end
 
   if (ischar(m))
     m_num = str2num(m);
@@ -387,18 +387,18 @@ function [y, m, d, h, mi, s] = datesplit(ds, P)
       m = strmatch(m, tolower(__month_names));
     else
       m = m_num;
-    endif
+   end
     if (isempty(m))
       error(["datesplit: Invalid month specification"]);
-    endif
-  endif
+   end
+ end
 
   if (ischar(d))
     d = str2num(d);
     if (isempty(d))
       error(["datesplit: Invalid day specification " d]);
-    endif
-  endif
+   end
+ end
 
   if (ischar(h))
     h = str2num(h);
@@ -407,32 +407,32 @@ function [y, m, d, h, mi, s] = datesplit(ds, P)
     elseif ((ap(2) == "M") && (h > 12))
       error(["datesplit: Invalid hour specification, AM or PM specified but"
 	     "hour is greater than 12."]);
-    endif
+   end
     
     if (strcmpi(ap, "PM") && (h < 12))
       h = h + 12;
     elseif (strcmpi(ap, "AM") && (h == 12))
       h = 0;
-    endif
-  endif
+   end
+ end
 
   if (ischar(mi))
     mi = str2num(mi);
     if (isempty(mi) || (mi > 59))
       error(["datesplit: Invalid minute specification " mi]);
-    endif
-  endif
+   end
+ end
 
   if (ischar(s))
     s = str2num(s);
     if (isempty(s) || (s > 59))
       error(["datesplit: Invalid second specification " s]);
-    endif
-  endif
+   end
+ end
 
   if (nargout <= 1)
     y = [y, m, d, h, mi, s];
-  endif
+ end
 
 endfunction
 

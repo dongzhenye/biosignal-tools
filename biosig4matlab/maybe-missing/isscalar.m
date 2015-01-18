@@ -31,6 +31,6 @@ function retval = isscalar (x)
     retval = prod (size (x)) == 1;
   else
     error;
-  endif
+ end
 
 end

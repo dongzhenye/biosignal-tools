@@ -87,29 +87,29 @@ function [h_r, w_r] = freqz (b, a, n, region, Fs)
     if (! isstr (region) && ! isempty (region))
       Fs = region; 
       region = [];
-    endif
-  endif
+   end
+ end
 
   if (isempty (a)) 
     a = 1; 
-  endif
+ end
   if (isempty (n))
     n = 512; 
-  endif
+ end
   if (isempty (region))
     if (isreal (b) && isreal (a))
       region = "half";
     else
       region = "whole";
-    endif
-  endif
+   end
+ end
   if (isempty (Fs)) 
     if (nargout == 0) 
       Fs = 2; 
     else 
       Fs = 2*pi; 
-    endif
-  endif
+   end
+ end
 
   la = length (a);
   a = reshape (a, 1, la);
@@ -122,7 +122,7 @@ function [h_r, w_r] = freqz (b, a, n, region, Fs)
       w = 2*pi*n/Fs;
     else
       w = n;
-    endif
+   end
     n = length (n);
     extent = 0;
   elseif (strcmp (region, "whole"))
@@ -131,20 +131,20 @@ function [h_r, w_r] = freqz (b, a, n, region, Fs)
   else
     w = pi * (0:n-1) / n;
     extent = 2 * n;
-  endif
+ end
 
   if (length (b) == 1)
     if (length (a) == 1)
       hb = b * ones (1, n);
     else
       hb = b;
-    endif
+   end
   elseif (extent >= k) 
     hb = fft (postpad (b, extent));
     hb = hb(1:n);
   else
     hb = polyval (postpad (b, k), exp (j*w));
-  endif
+ end
   if (length (a) == 1)
     ha = a;
   elseif (extent >= k)
@@ -152,7 +152,7 @@ function [h_r, w_r] = freqz (b, a, n, region, Fs)
     ha = ha(1:n);
   else
     ha = polyval (postpad (a, k), exp (j*w));
-  endif
+ end
   h = hb ./ ha;
   w = Fs * w / (2*pi);
 
