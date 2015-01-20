@@ -131,7 +131,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i) Channel #%i: %i<%s>/%i<%s>\n",_
 
 			uint8_t  dataType  = H2[42 + k*H2LEN];
 			//uint8_t  dataKind  = H2[43 + k*H2LEN];
-			uint16_t byteSpace = leu16p(H2+44 + k*H2LEN);		// stride 
+			//uint16_t byteSpace = leu16p(H2+44 + k*H2LEN);		// stride
 			//uint16_t next      = leu16p(H2+46 + k*H2LEN);
 			hc->GDFTYP = dataType < 5 ? dataType+1 : dataType+11;
 			if (H2[43 + k * H2LEN] == 1) {
@@ -239,7 +239,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n******* Data Section variable information
 		for (m = NumberOfDataSections; 0 < m; ) {
 			DATAPOS[--m] = datapos;
 			datapos      = leu32p(hdr->AS.Header + datapos);
-if (VERBOSE_LEVEL>7) fprintf(stdout,"%s:%i sopen_cfs_read started: section %d pos %u 0x%x\n",__FILE__,__LINE__,m,datapos,datapos);
+if (VERBOSE_LEVEL>7) fprintf(stdout, "%s:%i sopen_cfs_read started: section %d pos %lu 0x%lx\n",__FILE__,__LINE__,m,datapos,datapos);
 		}
 
 		if (hdr->AS.SegSel[0] > NumberOfDataSections) {
@@ -316,7 +316,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"\n[DS#%3i] 0x%x 0x%x [0x%x 0x%x szChanData=
 
 				CHANNEL_TYPE *hc = hdr->CHANNEL + k;
 
-				uint32_t bi  = leu32p(pos);
+				// uint32_t bi  = leu32p(pos);	// unused
 				uint32_t xspr = leu32p(pos+4);
 				float Cal    = lef32p(pos+8);
 				float Off    = lef32p(pos+12);
@@ -398,7 +398,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 408: %i #%i: SPR=%i=%i=%i  x%f+-%f %i x
 
 				CHANNEL_TYPE *hc = hdr->CHANNEL + k;
 
-				uint32_t bi = leu32p(pos);
+				//uint32_t bi = leu32p(pos);	// unused
 				uint32_t xspr = leu32p(pos+4);
 				hc->SPR     = leu32p(pos+4);
 /*
@@ -469,7 +469,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"CFS 412 #%i %i %i %i %i: %i @%p %i\n", k, h
 if (VERBOSE_LEVEL>8) fprintf(stdout,"512 %i %i %i %i %i \n",(int)stride,(int)hc->bi,(int)SPR,(int)k2,(int)hdr->AS.bpb);
 
 						uint8_t *dest = hdr->AS.rawdata + hc->bi + (SPR + k2) * hdr->AS.bpb;
-						double val;
+						double val=NAN;
 						
 						switch (gdftyp) {
 						// reorder for performance reasons - more frequent gdftyp's come first
@@ -515,7 +515,7 @@ if (VERBOSE_LEVEL>8) fprintf(stdout,"512 %i %i %i %i %i \n",(int)stride,(int)hc-
 							*/
 
 						 	// typically a single character within a 4 byte integer, this should be sufficient to ensure \0 termination
-							char *Desc = srcaddr + hdr->CHANNEL[next].bi + k2*stride;
+							char *Desc = (char*)srcaddr + hdr->CHANNEL[next].bi + k2 * stride;
 							Desc[1] = 0; 
 							FreeTextEvent(hdr, hdr->EVENT.N, Desc);
 							hdr->EVENT.POS[hdr->EVENT.N] = lround( (val * hc->Cal + hc->Off) * hdr->SampleRate) + SPR;  
@@ -780,7 +780,7 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 
 	assert( timebase == 1e-6 || hdr->VERSION >= 6 );
 	if (VERBOSE_LEVEL > 6) {
-		fprintf(stdout,"SMR:\tmaxFTime=%g\n\t timebase=%g\n\t dTimeBase=%g timePerADC=%i\n",maxFTime,timebase,dTimeBase,timePerADC);
+		fprintf(stdout,"SMR:\tmaxFTime=%i\n\t timebase=%g\n\t dTimeBase=%g timePerADC=%i\n",maxFTime,timebase,dTimeBase,timePerADC);
 	}
 
 
@@ -806,7 +806,7 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 		hc->PhysMax = hc->DigMax * hc->Cal + hc->Off;
 		hc->PhysMin = hc->DigMin * hc->Cal + hc->Off;
 
-		strncpy(hc->Label, hdr->AS.Header+off+108+1, min(9,MAX_LENGTH_LABEL));
+		strncpy(hc->Label, (char*)(hdr->AS.Header+off+108+1), min(9,MAX_LENGTH_LABEL));
 		if ( !strcmp((char*)(hdr->AS.Header+off+132),"\x5 Volt")
 		  || !strcmp((char*)(hdr->AS.Header+off+132),"\x4Volt")  )
 			hc->PhysDimCode = 4256; 	// Volt
@@ -890,7 +890,7 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 
 			fprintf(stdout,"[%i].comment\t<%s>\n",(int)k,hdr->AS.Header+off+26+1);
 
-			fprintf(stdout,"[%i].maxChanTime\t%i\t%i\t%i\n",(int)k,lei32p(hdr->AS.Header+off+98),*(int32_t*)(hdr->AS.Header+off+98));
+			fprintf(stdout,"[%i].maxChanTime\t%i\t%i\n",(int)k,lei32p(hdr->AS.Header+off+98),*(int32_t*)(hdr->AS.Header+off+98));
 			fprintf(stdout,"[%i].lChanDvd\t%i\n",(int)k,lei32p(hdr->AS.Header+off+102));
 			fprintf(stdout,"[%i].phyChan\t%i\n",(int)k,lei16p(hdr->AS.Header+off+106));
 			fprintf(stdout,"[%i].title\t<%s>\n",(int)k,hdr->AS.Header+off+108+1);
@@ -909,7 +909,7 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 			fprintf(stdout,"[%i].v.real.min\t%f\n", (int)k, lef32p(hdr->AS.Header+off+124));
 			fprintf(stdout,"[%i].v.real.max\t%f\n", (int)k, lef32p(hdr->AS.Header+off+128));
 	
-			fprintf(stdout,"[%i].v.event\t%0x\n", (int)k, lef32p(hdr->AS.Header+off+124));
+			fprintf(stdout,"[%i].v.event\t%0x\n", (int)k, leu32p(hdr->AS.Header+off+124));
 		}
         }         
 
@@ -917,7 +917,7 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 	  read blocks 
  	 *********************************************/
 
-	size_t H0Len = hdr->HeadLen; 
+	// size_t H0Len = hdr->HeadLen; 	// unused variable
 	while (!ifeof(hdr)) {
 		// read channel header and extra data
 		hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,hdr->HeadLen*2);
@@ -926,7 +926,7 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 	}
 	hdr->HeadLen = count; 
 		
-	size_t noblocks = (hdr->HeadLen - H0Len) / 64020;
+	// size_t noblocks = (hdr->HeadLen - H0Len) / 64020;	// unused variable
 
 	hdr->SPR        = maxFTime; // TODO: do we really need +10 ? 
 	hdr->NRec       = 1;
@@ -942,12 +942,12 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 		
 		if (hc->OnOff)	{
 			if (hc->GDFTYP==3) {	
-				size_t k;
+				nrec_t k;
 				for (k = 0; k < hdr->SPR * hdr->NRec; k++) 
 					*(int16_t*)(hdr->AS.rawdata + hc->bi + k*sizeof(int16_t) ) = 0x8000;
 			}
 			else if (hc->GDFTYP==16) {	
-				size_t k;
+				nrec_t k;
 				for (k = 0; k < hdr->SPR * hdr->NRec; k++) 
 					*(float*)(hdr->AS.rawdata + hc->bi + k*sizeof(float) ) = (float)NAN;
 			}
@@ -960,9 +960,9 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 	hdr->AS.length = hdr->NRec; 	
 	hdr->AS.flag_collapsed_rawdata = 1;
 
-	size_t maxTime = 0; 	
+	// size_t maxTime = 0; 		// unused variable
 	ns = 0;
-	uint32_t i,j;
+	int32_t i,j;
 	for (m = 0; m < hdr->NS; m++) {
 		CHANNEL_TYPE *hc = hdr->CHANNEL + m;
 
@@ -986,7 +986,7 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 
 		hc->SPR = hdr->SPR;
 		uint32_t firstblock = leu32p(hdr->AS.Header + 512 + m * 140 + 6); 	// first block of channel k
-		uint32_t lastblock  = leu32p(hdr->AS.Header + 512 + m * 140 + 10); 	// last block of channel k
+		// uint32_t lastblock  = leu32p(hdr->AS.Header + 512 + m * 140 + 10); 	// last block of channel k
 		
 		uint32_t pos = firstblock;
 		k = 0; 
@@ -1010,7 +1010,7 @@ EXTERN_C void sopen_smr_read(HDRTYPE* hdr) {
 			
 			uint16_t chanNumber  = leu16p(hdr->AS.Header+pos+16);
 			uint16_t item        = leu16p(hdr->AS.Header+pos+18);
-			 int32_t maxChanTime = lei32p(hdr->AS.Header+pos+98-6);
+			// int32_t maxChanTime = lei32p(hdr->AS.Header+pos+98-6);	// not used
 
 			assert (chanNumber == m+1);
 			

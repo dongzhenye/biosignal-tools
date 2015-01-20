@@ -499,8 +499,9 @@ extern const struct FileFormatStringTable_t FileFormatStringTable [];
 
 /* reset structure packing to default settings */
 #pragma pack(pop)
+#if defined(_MINGW32__) || defined(__CYGWIN__)
 #pragma ms_struct reset
-
+#endif
 
 /****************************************************************************/
 /**                                                                        **/

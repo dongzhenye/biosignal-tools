@@ -562,7 +562,16 @@ int NumberOfChannels(HDRTYPE *hdr);
         rereferencing is applied
  ------------------------------------------------------------------------*/
 
+
+size_t reallocEventTable(HDRTYPE *hdr, size_t EventN);
+/*
+	allocate, and resize memory of event table
+ ------------------------------------------------------------------------*/
+
 void FreeGlobalEventCodeTable();
+/*
+	free memory allocated for global event code
+ ------------------------------------------------------------------------*/
 
 size_t	sread_raw(size_t START, size_t LEN, HDRTYPE* hdr, char flag);
 /* sread_raw: 

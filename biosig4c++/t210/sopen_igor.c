@@ -27,6 +27,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 */
+#include <ctype.h>
 #include <string.h>
 #include "../biosig-dev.h"
 #include "../igor/IgorBin.h"
@@ -340,7 +341,9 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 		return;
 	}
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): sizeof BinHeaders %i %i %i %i\n",__FILE__,__LINE__,sizeof(BinHeader1),sizeof(BinHeader2),sizeof(BinHeader3),sizeof(BinHeader5));
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): sizeof BinHeaders %i %i %i %i\n",__FILE__,__LINE__,
+			(int)sizeof(BinHeader1),(int)sizeof(BinHeader2),(int)sizeof(BinHeader3),(int)sizeof(BinHeader5));
+
 	// Do byte reordering if the file is from another platform.
 	if (flag_swap) {
 		version = bswap_16(version);
@@ -370,10 +373,10 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 		}
 	}
 
-	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): sizeof WaveHeaders %i %i %i v%i\n",__FILE__,__LINE__,sizeof(WaveHeader2),sizeof(WaveHeader5),(int)iftell(hdr),version);
+	if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): sizeof WaveHeaders %i %i %i v%i\n",__FILE__,__LINE__,
+				(int)sizeof(WaveHeader2), (int)sizeof(WaveHeader5), (int)iftell(hdr),version);
 
 	// Read some of the BinHeader fields.
-	uint32_t modDate;
 	int16_t type = 0;			// See types (e.g. NT_FP64) above. Zero for text waves.
 
 	hdr->NS = 1;
@@ -388,7 +391,6 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 			{
 				WaveHeader2* w2;
 				w2 = (WaveHeader2*)(buffer+binHeaderSize);
-				modDate = w2->modDate;
 				type = w2->type;
 				strncpy(hdr->CHANNEL[0].Label, w2->bname, MAX_LENGTH_LABEL);
 				hdr->CHANNEL[0].PhysDimCode = PhysDimCode(w2->dataUnits);
@@ -419,13 +421,12 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 			{
 				WaveHeader5* w5;
 				w5 = (WaveHeader5*)(buffer+binHeaderSize);
-				modDate = w5->modDate;
 				type = w5->type;
 
 				int k;
 				size_t nTraces=1;
 
-				if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): %i %i %i %i %i\n",__FILE__,__LINE__,w5->nDim[0],w5->nDim[1],w5->nDim[2],w5->nDim[3],w5->nDim[4]);
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"%s(line %i): %i %i %i %i\n", __FILE__, __LINE__, w5->nDim[0], w5->nDim[1], w5->nDim[2], w5->nDim[3]);
 
 				for (k=1; (w5->nDim[k]!=0) && (k<4); k++) {
 					// count number of traces
@@ -474,7 +475,7 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 	if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) Wave name=%s, npnts=%d, type=0x%x.\n", __FILE__, __LINE__, hdr->CHANNEL[0].Label, (int)hdr->NRec, type);
 
 	uint16_t gdftyp;
-	double digmin,digmax;
+	double digmin=NAN, digmax=NAN;
 	// Consider the number type, not including the complex bit or the unsigned bit.
 	switch(type & ~(NT_CMPLX | NT_UNSIGNED)) {
 		case NT_I8:
@@ -583,7 +584,9 @@ void sopen_ibw_read (HDRTYPE* hdr) {
 	hdr->data.block = NULL;
 	hdr->AS.rawdata = NULL;
 
-	if (VERBOSE_LEVEL > 7) fprintf(stdout, "%s (line %i) %i %i %i 0x%x\n", __FILE__, __LINE__, (int)hdr->HeadLen, (int)hdr->FILE.size, (hdr->AS.bpb*hdr->NRec), hdr->HeadLen+hdr->AS.bpb*hdr->NRec);
+	if (VERBOSE_LEVEL > 7)
+		fprintf(stdout, "%s (line %i) %i %i %i 0x%x\n", __FILE__, __LINE__,
+			(int)hdr->HeadLen, (int)hdr->FILE.size, (int)(hdr->AS.bpb*hdr->NRec), (int)(hdr->HeadLen+hdr->AS.bpb*hdr->NRec));
 
 #ifndef IGOROLD
 	size_t endpos = hdr->HeadLen + hdr->AS.bpb * hdr->NRec;

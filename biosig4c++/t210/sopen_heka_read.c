@@ -147,14 +147,14 @@ void sopen_heka(HDRTYPE* hdr, FILE *itx) {
 
 if (VERBOSE_LEVEL>7) fprintf(stdout,"HEKA 114\n");
 
-		double oTime;
+		// double oTime;
 		uint32_t nItems;
 		if (hdr->FILE.LittleEndian) {
-			oTime  = lef64p(hdr->AS.Header+40);
+			// oTime  = lef64p(hdr->AS.Header+40);	// not used
 			nItems = leu32p(hdr->AS.Header+48);
 		}
 		else {
-			oTime  = bef64p(hdr->AS.Header+40);
+			// oTime  = bef64p(hdr->AS.Header+40);	// not used
 			nItems = beu32p(hdr->AS.Header+48);
 		}
 
@@ -521,7 +521,7 @@ if (VERBOSE_LEVEL>6) fprintf(stdout,"HEKA L5 @%i= #%i,%i, %s %g/%g %g/%g \n",(in
 							/* TODO: fix remaining channel header  */
 							/* LowPass, HighPass, Notch, Impedance, */
 							hc->LowPass = NAN; 
-							hc->HighPass = hc->HighPass = (Bandwidth > 0) ? Bandwidth : NAN;
+							hc->HighPass = (Bandwidth > 0) ? Bandwidth : NAN;
 							hc->Notch = NAN;
 							hc->Impedance = (RsValue > 0) ? RsValue : NAN;	
 

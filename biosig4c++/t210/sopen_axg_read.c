@@ -29,7 +29,6 @@
 
 #include "../biosig-dev.h"
 
-
 void sopen_axg_read(HDRTYPE* hdr) {
 
 		hdr->FILE.LittleEndian = 0;
@@ -102,7 +101,7 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) %p %i\n", __FILE__, __LINE__
 				}
 				if (i==hdr->NS) {
 					// in case of new title, add another channel
-					ValLabel[hdr->NS] = pos+4;
+					ValLabel[hdr->NS] = (char*)pos+4;
 					keyLabel[k] = hdr->NS;
 					hdr->NS++;
 				}
@@ -153,7 +152,7 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) %p %i\n", __FILE__, __LINE__
 				hc->SPR           = beu32p(pos);
 				uint32_t datatype = beu32p(pos+4);
 				size_t titleLen   = beu32p(pos+8);
-				char *inbuf       = pos + 12;
+				char *inbuf       = (char*)pos + 12;
 				hc->bufptr        = pos + 12 + titleLen;
 
 if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) %i %i %i\n", __FILE__, __LINE__, (int)datatype, (int)titleLen, (int)hc->SPR);
@@ -174,7 +173,7 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) %i %i %i\n", __FILE__, __LIN
 				case 7: // double
 					break;
 				case 9: hc->GDFTYP = 17;  // series
-					double firstval  = bef64p(hc->bufptr);
+					// double firstval  = bef64p(hc->bufptr);
 					double increment = bef64p(hc->bufptr+8);
 					hc->bufptr = NULL;
 					hc->OnOff = 0;
@@ -218,7 +217,7 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) %p %i\n", __FILE__, __LINE__
 if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) %p %i\n", __FILE__, __LINE__, hdr->CHANNEL, k );
 				if (i==hdr->NS) {
 					// in case of new title, add another channel
-					ValLabel[hdr->NS] = pos+12; 	// pointer to title of channel 'nLabel', length of title is stored in beu32p(pos+8)
+					ValLabel[hdr->NS] = (char*)pos+12; 	// pointer to title of channel 'nLabel', length of title is stored in beu32p(pos+8)
 					keyLabel[k] = hdr->NS;
 					hdr->NS++;
 				}
@@ -259,7 +258,7 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) %p %i\n", __FILE__, __LINE__
 			biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"AXG version is not supported");
 		}
 
-if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) %p %p %i %i\n", __FILE__, __LINE__, TEMPCHANNEL, hdr->CHANNEL, (int)hdr->NS , sizeof(CHANNEL_TYPE));
+if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) %p %p %i %i\n", __FILE__, __LINE__, TEMPCHANNEL, hdr->CHANNEL, (int)hdr->NS , (int)sizeof(CHANNEL_TYPE));
 
 		/* convert columns/traces into channels */
 		hdr->CHANNEL = (CHANNEL_TYPE*)realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
@@ -347,7 +346,7 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) NS=%i nCol=%i\n", __FILE__, 
 
 		hdr->NRec = hdr->SPR;
 		hdr->SPR = 1;
-		uint32_t bi = 0, bi8=0;
+		uint32_t bi8 = 0;
 		for (ns=0; ns < hdr->NS; ns++) {
 			CHANNEL_TYPE *hc = hdr->CHANNEL+ns;
 			hc->SPR = hdr->SPR;
@@ -557,7 +556,7 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) NS=%i nCol=%i\n", __FILE__, 
 
 		// read Comments
 		size_t szComments = beu32p(pos);
-		char  *inbuf       = pos+4;
+		char  *inbuf       = (char*)pos+4;
 		char  *Comments    = malloc(szComments+1);
 		char  *outbuf      = Comments;
 		size_t outlen     = szComments+1;
@@ -580,7 +579,7 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) NS=%i nCol=%i\n", __FILE__, 
 
 		// read Notes
 		size_t szNotes  = beu32p(pos);
-		inbuf           = pos+4;
+		inbuf           = (char*)pos+4;
 		char *Notes     = malloc(szNotes+1);
 		outbuf = Notes;
 		outlen = szNotes+1;
