@@ -134,6 +134,11 @@ DEFINES      += -D=WITH_FEF
 #DEFINES      += -D=WITH_GDCM
 #DEFINES      += -D=WITH_GSL
 #DEFINES      += -D=WITH_EEPROBE
+#DEFINES      += -D=WITH_TDMS
+#DEFINES      += -D=WITH_AVI
+#DEFINES      += -D=WITH_RIFF
+#DEFINES      += -D=WITH_WAV
+#DEFINES      += -D=WITH_NEV
 DEFINES      += -D=MAKE_EDFLIB
 
 CFLAGS       += -fstack-protector -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -pipe -fPIC -Wall -fno-builtin-memcmp -O2 -Wextra

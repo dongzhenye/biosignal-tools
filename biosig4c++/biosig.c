@@ -9577,6 +9577,7 @@ if (VERBOSE_LEVEL>2)
 
 	}
 
+#if defined(WITH_NEV)
 	else if (hdr->TYPE==NEV) {
 
 		fprintf(stdout,"Support for NEV format is under construction - most likely its not useful yet.\n"); 		
@@ -9723,6 +9724,7 @@ if (VERBOSE_LEVEL>2)
 		}
 		return(hdr);
 	}
+#endif
 
 	else if (hdr->TYPE==NIFTI) {
 		if (count<352) 
@@ -9872,7 +9874,7 @@ if (VERBOSE_LEVEL>2)
 		int c=1;	
 		while (~ifeof(hdr) && c) {
 
-		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [25] %d\n",count); 		
+		if (VERBOSE_LEVEL>7) fprintf(stdout,"SOPEN (Persyst) [25] %d\n",(int)count);
 
 			hdr->AS.Header = (uint8_t*)realloc(hdr->AS.Header,count*2+1);
 		    	c = ifread(hdr->AS.Header + count, 1, count, hdr);
@@ -9885,7 +9887,6 @@ if (VERBOSE_LEVEL>2)
 		int32_t gdftyp = 3;
 		double Cal = 1.0; 
 		int status = 0;
-		size_t pos=0;
 		char *remHDR=(char*)hdr->AS.Header;
 		const char *FirstName=NULL, *MiddleName=NULL, *SurName=NULL;
 		char *datfile = NULL;
@@ -10034,7 +10035,6 @@ if (VERBOSE_LEVEL>2)
 					break;
 				}
 				case 5: {
-					char *tag = line; 
 					char *val = strchr(line,'=');
 					*val= 0;		// replace "=" with terminating \0
 					val++;			// next character is the start of the value parameters
@@ -10490,6 +10490,7 @@ if (VERBOSE_LEVEL>2)
 		}
 	}
 
+#if defined(WITH_TDMS)
 	else if (hdr->TYPE==TDMS) {
 		/*
 			Specification obtained from http://www.ni.com/white-paper/5696/en
@@ -10505,15 +10506,15 @@ if (VERBOSE_LEVEL>2)
 #define kTocBigEndian 		(1L<<6)
 #define kTocNewObjList 		(1L<<2)
 
-		char flagBigEndian = (beu32p(hdr->AS.Header+4) & kTocBigEndian) != 0; 
-		uint32_t ToCmask = leu32p(hdr->AS.Header+4);
+		// char flagBigEndian = (beu32p(hdr->AS.Header+4) & kTocBigEndian) != 0; 
+		// uint32_t ToCmask = leu32p(hdr->AS.Header+4);
 		hdr->VERSION 	 = leu32p(hdr->AS.Header+8);
 		uint64_t nextSegmentOffset = leu64p(hdr->AS.Header+12);
 		uint64_t rawDataOffset = leu64p(hdr->AS.Header+20);
 
 		biosigERROR(hdr,B4C_FORMAT_UNSUPPORTED,"Format TDMS is currently not supported"); 
 	}
-
+#endif
 	else if (hdr->TYPE==TMS32) {
 		hdr->VERSION 	= leu16p(hdr->AS.Header+31);
 		hdr->SampleRate = leu16p(hdr->AS.Header+114);
@@ -10851,6 +10852,7 @@ if (VERBOSE_LEVEL>2)
 		/// TODO, FIXME
 	}
 
+#if defined(WITH_WAV) || defined(WITH_AVI) || defined(WITH_RIFF)
 	else if ((hdr->TYPE==WAV)||(hdr->TYPE==AVI)||(hdr->TYPE==RIFF)) {
 		// hdr->FLAG.SWAP  = (__BYTE_ORDER == __BIG_ENDIAN);
 		hdr->FILE.LittleEndian = 1;
@@ -10900,6 +10902,7 @@ if (VERBOSE_LEVEL>2)
 		/// TODO, FIXME
 		}
 	}
+#endif
 
 	else if (hdr->TYPE==ASCII_IBI) {
 
@@ -11015,12 +11018,13 @@ if (VERBOSE_LEVEL>2)
 				count += ifread(hdr->AS.Header,5120-count,1,hdr);
 			}
 			hdr->HeadLen = count; 
-			uint16_t gdftyp = 1; 
 			hdr->NS   = leu16p(hdr->AS.Header+0x40);			
-			hdr->NRec = leu16p(hdr->AS.Header+0x110);	// total number of blocks 		
+			hdr->NRec = leu16p(hdr->AS.Header+0x110);	// total number of blocks
+			/*
+			uint16_t gdftyp = 1; 
 			uint16_t startblock = leu16p(hdr->AS.Header+0x112);			
 			// FIXME: 
-
+			*/
 	    		biosigERROR(hdr, B4C_FORMAT_UNSUPPORTED, "ERROR BIOSIG SOPEN(READ): WG1 0x5555FEAF format is not supported yet");
 		}
 		else {
@@ -12372,7 +12376,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 	if (hdr->TYPE==MIT) {
 		MITTYP = *(uint16_t*)hdr->AS.auxBUF;
 		if (VERBOSE_LEVEL>7)
-			fprintf(stdout,"0x%x 0x%x \n",*(uint32_t*)hdr->AS.rawdata,*(uint32_t*)hdr->AS.rawdata);
+			fprintf(stdout,"FMT=%i 0x%x 0x%x \n",MITTYP, *(uint32_t*)hdr->AS.rawdata,*(uint32_t*)hdr->AS.rawdata);
 	} 
 	else if (hdr->TYPE==Axona) 
 		stride = 64; 
@@ -12599,7 +12603,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 			else
  */
 
-			if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) GDFTYP=%i %i %i \n", __FILE__, __LINE__, GDFTYP,k1,k2);
+			if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) GDFTYP=%i %i %i \n", __FILE__, __LINE__, GDFTYP, (int)k1, (int)k2);
 			biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "Error SREAD: datatype not supported");
 			return(-1);
 
@@ -12718,7 +12722,7 @@ size_t sread(biosig_data_type* data, size_t start, size_t length, HDRTYPE* hdr) 
 				sample_value = (biosig_data_type)int32_value;
 			}
 			else {
-				if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) GDFTYP=%i %i %i \n", __FILE__, __LINE__, GDFTYP,k1,k2);
+				if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i) GDFTYP=%i %i %i \n", __FILE__, __LINE__, GDFTYP,(int)k1,(int)k2);
 				biosigERROR(hdr, B4C_DATATYPE_UNSUPPORTED, "Error SREAD: datatype not supported");
 				return(0);
 			}
@@ -12900,17 +12904,17 @@ size_t swrite(const biosig_data_type *data, size_t nelem, HDRTYPE* hdr) {
 	if (hdr->TYPE==ATF) {
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"ATF swrite\n");
 
-		size_t nr = hdr->data.size[(int)hdr->FLAG.ROW_BASED_CHANNELS];        // if collapsed data, use k2, otherwise use k1
+		nrec_t nr = hdr->data.size[(int)hdr->FLAG.ROW_BASED_CHANNELS];        // if collapsed data, use k2, otherwise use k1
 		assert(nr == hdr->NRec * hdr->SPR);
 
 		typeof(hdr->NS) k,k2;
-		size_t c = 0;
+		nrec_t c = 0;
 
-		char tabflag = 0;
 		unsigned timeChan = getTimeChannelNumber(hdr);
+		// char tabflag = 0;
 		if ( timeChan == 0) {
 			hdr->HeadLen += fprintf(hdr->FILE.FID, "\"Time (s)\"");
-			tabflag = 1;
+		//	tabflag = 1;
 		}
 
 		if (hdr->data.size[1-hdr->FLAG.ROW_BASED_CHANNELS] < hdr->NS) {
