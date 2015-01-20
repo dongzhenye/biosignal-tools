@@ -665,7 +665,7 @@ libbiosig.so: $(OBJECTS) t240/libcnsfef.a libbiosig.pc
 	$(CXX) -shared -fPIC -Wl,-soname,$@.${MAJOR_VERSION}.${MINOR_VERSION} $(LDLIBS) \
 		-o $@.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING} $(OBJECTS) t240/*.o
 	/sbin/ldconfig -n .
-	ln -s "$@.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING}"  "$@"
+	ln -sf "$@.${MAJOR_VERSION}.${MINOR_VERSION}.${STEPPING}" "$@"
 
 libbiosig.dylib: $(OBJECTS)
 	$(CC) $(LDFLAGS) $(LDLIBS) $(OBJECTS) t240/*.o -o "$@"
