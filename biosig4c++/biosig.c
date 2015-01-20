@@ -9647,7 +9647,7 @@ if (VERBOSE_LEVEL>2)
 
 			if (VERBOSE_LEVEL>8) {
 				char tmp[9];tmp[8]=0; 
-				char tmp24[25];tmp24[25]=0; 
+				char tmp24[25]; tmp24[24]=0;
 				memcpy(tmp,identifier,8);
 				memcpy(tmp24,identifier+8,24);
 				
