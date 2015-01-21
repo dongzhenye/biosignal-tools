@@ -2199,7 +2199,7 @@ HDRTYPE* getfiletype(HDRTYPE* hdr)
 			fprintf(stderr,"Warning SOPEN (SCP): this kind of an SCP file predates the official SCP (EN1064) standard and is not fully implemented.\n" );
 			if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i): %i %s %s \n",__FILE__,__LINE__,hdr->TYPE,GetFileTypeString(hdr->TYPE),hdr->FileName);
 		}
-		if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i): 0x%x 0x%x \n",__FILE__,__LINE__,leu32p(hdr->AS.Header),FileBuf.st_size);
+		if (VERBOSE_LEVEL > 7) fprintf(stdout,"%s (line %i): 0x%x 0x%x \n",__FILE__,__LINE__,leu32p(hdr->AS.Header),(int)FileBuf.st_size);
 	}
 
 #endif //ONLYGDF
@@ -4334,7 +4334,7 @@ else if (!strncmp(MODE,"r",1)) {
 	    	if (Dur==0.0 && FLAG_BUGGY_NEUROLOGGER_EDF) Dur = hdr->SPR/496.0;
 		hdr->SampleRate = hdr->SPR/Dur;
 
-		if (VERBOSE_LEVEL>8) fprintf(stdout,"[EDF 220] #=%li SPR=%i\n",(int)iftell(hdr),(int)hdr->SPR);
+		if (VERBOSE_LEVEL>8) fprintf(stdout,"[EDF 220] #=%i SPR=%i\n",(int)iftell(hdr),(int)hdr->SPR);
 
 		if (hdr->NRec <= 0) {
         		struct stat FileBuf;
@@ -4503,6 +4503,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 		sopen_abf2_read(hdr);
 	}
 
+#if defined(WITH_ATF)
 	else if (hdr->TYPE==ATF) {
 		// READ ATF
 		hdr->HeadLen = count;
@@ -4624,7 +4625,6 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 			hdr->AS.rawdata = realloc(hdr->AS.rawdata, hdr->NRec * hdr->SPR * hdr->AS.bpb);
 		}
 
-		/*
 			TODO:
 			 this marks that no data has been read, and
 			 hdr->SampleRate, are not defined
@@ -4634,6 +4634,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 
 		hdr->AS.rawdata = NULL;
 	}
+#endif // WITH_ATF
 
 	else if (hdr->TYPE==ACQ) {
 		/* defined in http://biopac.com/AppNotes/app156FileFormat/FileFormat.htm */
@@ -4665,7 +4666,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 		// define channel specific header information
 		hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL, hdr->NS * sizeof(CHANNEL_TYPE));
 		uint32_t* ACQ_NoSamples = (uint32_t*) calloc(hdr->NS, sizeof(uint32_t));
-		uint16_t CHAN;
+		//uint16_t CHAN;
     		POS = leu32p(hdr->AS.Header+6);
     		size_t minBufLenXVarDiv = -1;	// maximum integer value
 		for (k = 0; k < hdr->NS; k++) {
@@ -4674,7 +4675,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 	    		uint8_t* Header2 = hdr->AS.Header+POS;
 			hc->LeadIdCode = 0; 
 			hc->Transducer[0] = '\0';
-			CHAN = leu16p(Header2+4);
+			//CHAN = leu16p(Header2+4);
 			strncpy(hc->Label,(char*)Header2+6,min(MAX_LENGTH_LABEL,40));
 			strncpy(tmp,(char*)Header2+68,20); tmp[20]=0;
 			if (!strcmp(tmp,"Volts"))
@@ -8187,7 +8188,7 @@ if (VERBOSE_LEVEL>8)
 
     	else if (hdr->TYPE==ISHNE) {
 
-		char flagANN = !strncmp(hdr->AS.Header,"ANN",3);
+		char flagANN = !strncmp((char*)hdr->AS.Header,"ANN",3);
 
 		fprintf(stderr,"Warning SOPEN(ISHNE): support for ISHNE format is experimental\n");
 
@@ -8623,16 +8624,13 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"MFER: TLV %i %i %i %i %g \n",tag,len,buf[0]
 				}
 				if (POS>0 && Desc) {
 					size_t N = hdr->EVENT.N;
-#ifdef CURRENTLY_NOT_AVAILABLE
-					// FIXME: biosig_set_number_of_events is currently part of biosig2 interface
 					if (N_EVENT <= N) {
-						N_EVENT = biosig_set_number_of_events(hdr, max(16, N*2));
+						N_EVENT = reallocEventTable(hdr, max(16, N*2));
 					}
 					hdr->EVENT.POS[N] = POS;
 					hdr->EVENT.CHN[N] = CHN;
 					FreeTextEvent(hdr, N, Desc);   // sets hdr->EVENT.TYP[n]
 					hdr->EVENT.N = N+1;
-#endif //CURRENTLY_NOT_AVAILABLE
 				}
 				curPos += len;
 			}
@@ -8700,7 +8698,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"MFER: TLV %i %i %i %i %i %i %i %i %i\n",tag
 					}
 					else if (tag2==10) {
 						// GDFTYP
-						if (len2!=1) fprintf(stderr,"warning MFER tag63-10 incorrect length %i!=1\n",len2, buf[0]);
+						if (len2!=1) fprintf(stderr,"warning MFER tag63-10 incorrect length %i!=1\n",len2);
 						if 	(buf[0]==0)	gdftyp=3; // int16
 						else if (buf[0]==1)	gdftyp=4; // uint16
 						else if (buf[0]==2)	gdftyp=5; // int32
@@ -8846,7 +8844,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"MFER: TLV %i %i %i %i %i %i %i %g %i %g\n",
 				int skew=0;
 				curPos += ifread(&skew, 1, len,hdr);
 if (VERBOSE_LEVEL>2)
-	fprintf(stdout,"MFER: sample skew %s ns\n",skew);
+	fprintf(stdout,"MFER: sample skew %i ns\n",skew);
 			}
 			else if (tag==70)     //0x46: digital signature
 			{
