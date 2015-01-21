@@ -132,11 +132,11 @@ if (VERBOSE_LEVEL>8) {
 		}
 		if (l1+l2+1 <= MAX_LENGTH_NAME) {
 			hdr->Patient.Name[l1]=' ';
-			strcpy(hdr->Patient.Name+1 + l1, str2);
+			strcpy(hdr->Patient.Name+1 + l1, str2);		// Flawfinder: ignore
 		}
 		if (l1+l2+l3+2 <= MAX_LENGTH_NAME) {
 			hdr->Patient.Name[l1+l2+1]=' ';
-			strcpy(hdr->Patient.Name+2+l1+l2, str3);
+			strcpy(hdr->Patient.Name+2+l1+l2, str3);	// Flawfinder: ignore
 		}
 	}
 	

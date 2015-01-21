@@ -47,7 +47,7 @@ EXTERN_C void sopen_alpha_read(HDRTYPE* hdr) {
 		fprintf(stdout,"Warning: support for alpha format is just experimental.\n"); 
 		
 		char* fn = (char*)malloc(strlen(hdr->FileName)+15);
-		strcpy(fn,hdr->FileName); 
+		strcpy(fn,hdr->FileName); 	// Flawfinder: ignore
 		
 		const size_t bufsiz = 4096; 
 		char buf[bufsiz]; 
@@ -56,8 +56,8 @@ EXTERN_C void sopen_alpha_read(HDRTYPE* hdr) {
 		
 		const char *f2 = "alpha.alp";		
 		char *tmpstr   = strrchr(fn,FILESEP); 
-		if (tmpstr) 	strcpy(tmpstr+1,f2); 
-		else 	    	strcpy(fn,f2); 
+		if (tmpstr) 	strcpy(tmpstr+1,f2);  	// Flawfinder: ignore
+		else 	    	strcpy(fn,f2);  	// Flawfinder: ignore
 
 		FILE *fid = fopen(fn,"r"); count  = fread(buf,1,bufsiz-1,fid); fclose(fid); buf[count]=0;	// terminating 0 character 		
 		char *t   = strtok(buf,"\xA\xD");
@@ -75,8 +75,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"0: %s \n",t);
 		}
 
 		f2 = "rawhead";
-		if (tmpstr) 	strcpy(tmpstr+1,f2); 
-		else 	    	strcpy(fn,f2); 
+		if (tmpstr) 	strcpy(tmpstr+1,f2); 	 	// Flawfinder: ignore
+		else 	    	strcpy(fn,f2);  		// Flawfinder: ignore
 				
 		int Notch = 0; 		
 		int Bits  = 0; 		
@@ -157,7 +157,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"<%6.2f> %i- %s | %s\n",hdr->VERSION, STATUS
 						hc->PhysMax = hc->DigMax; 
 						hc->PhysMin = hc->DigMin; 
 					
-						strcpy(hc->Label, t);
+						strncpy(hc->Label, t, MAX_LENGTH_LABEL+1);
 						char* t2= strchr(t1,',');
 						t2[0] = 0; while (isspace((++t2)[0]));
 						char* t3= strchr(t2,',');
@@ -212,8 +212,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"<%6.2f> %i- %s | %s\n",hdr->VERSION, STATUS
 
 		
 		f2 = "cal_res";
-		if (tmpstr) 	strcpy(tmpstr+1,f2); 
-		else 	    	strcpy(fn,f2); 
+		if (tmpstr) 	strcpy(tmpstr+1,f2); 	// Flawfinder: ignore
+		else 	    	strcpy(fn,f2); 		// Flawfinder: ignore
 				
 		fid = fopen(fn,"r"); 
 		if (fid!=NULL) {
@@ -273,8 +273,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"<%6.2f> %i- %s | %s\n",hdr->VERSION, STATUS
 		}
 		
 		f2 = "r_info";
-		if (tmpstr) 	strcpy(tmpstr+1,f2); 
-		else 	    	strcpy(fn,f2); 
+		if (tmpstr) 	strcpy(tmpstr+1,f2);	// Flawfinder: ignore
+		else 	    	strcpy(fn,f2);		// Flawfinder: ignore
 				
 		fid = fopen(fn,"r"); 
 		if (fid!=NULL) {
@@ -313,7 +313,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"<%6.2f> %i- %s | %s\n",hdr->VERSION, STATUS
 					size_t l1 = strlen(t1);
 					hdr->ID.Technician = (char*)realloc(hdr->ID.Technician,l0+l1+2);
 					hdr->ID.Technician[l0] = ' ';
-					strcpy(hdr->ID.Technician+l0+1,t1);
+					strcpy(hdr->ID.Technician+l0+1, t1);		// Flawfinder: ignore
 				}	
 
 				t = strtok(NULL,"\xA\xD");
@@ -322,8 +322,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"<%6.2f> %i- %s | %s\n",hdr->VERSION, STATUS
 		}
 		
 		f2 = "marker";
-		if (tmpstr) 	strcpy(tmpstr+1,f2); 
-		else 	    	strcpy(fn,f2); 
+		if (tmpstr) 	strcpy(tmpstr+1,f2); 		// Flawfinder: ignore
+		else 	    	strcpy(fn,f2); 			// Flawfinder: ignore
 		fid = fopen(fn,"r"); 
 		if (fid != NULL) {
 			size_t n,N;
@@ -394,8 +394,8 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"<%6.2f> %i- %s | %s\n",hdr->VERSION, STATUS
 		tmpstr[0] = 0;	
 		tmpstr    = strrchr(fn,FILESEP); 
 		f2 = "s_info";
-		if (tmpstr) 	strcpy(tmpstr+1,f2); 
-		else 	    	strcpy(fn,f2); 
+		if (tmpstr) 	strcpy(tmpstr+1,f2); 		// Flawfinder: ignore
+		else 	    	strcpy(fn,f2); 			// Flawfinder: ignore
 				
 		fid = fopen(fn,"r"); 
 		if (fid!=NULL) {
@@ -466,19 +466,19 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"<%6.2f> %i- %s | %s\n",hdr->VERSION, STATUS
 			size_t l0 = strlen(Firstname);
 			size_t l1 = strlen(Lastname);
 			if (l0+l1+1 <= MAX_LENGTH_NAME) {
-				strcpy(hdr->Patient.Name, Firstname);
+				strcpy(hdr->Patient.Name, Firstname);			// Flawfinder: ignore
 				hdr->Patient.Name[l0] = ' ';
-				strcpy(hdr->Patient.Name + l0 + 1, Lastname);
+				strcpy(hdr->Patient.Name + l0 + 1, Lastname);		// Flawfinder: ignore
 			} else 
-				strncpy(hdr->Patient.Name, Lastname, MAX_LENGTH_NAME); 
+				strncpy(hdr->Patient.Name, Lastname, MAX_LENGTH_NAME+1); 	// Flawfinder: ignore
 			
 		}
 
-		strcpy(fn,hdr->FileName); 
-		tmpstr   = strrchr(fn,FILESEP); 
+		strcpy(fn,hdr->FileName); 		// Flawfinder: ignore
+		tmpstr   = strrchr(fn,FILESEP);
 		f2 = "rawdata";
-		if (tmpstr) 	strcpy(tmpstr+1,f2); 
-		else 	    	strcpy(fn,f2); 
+		if (tmpstr) 	strcpy(tmpstr+1,f2);	// Flawfinder: ignore
+		else 	    	strcpy(fn,f2);		// Flawfinder: ignore
 				
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"rawdata11: %s \n",f2); 
 

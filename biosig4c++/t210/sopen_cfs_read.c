@@ -217,12 +217,12 @@ else if (VERBOSE_LEVEL>7)
 
 					scriptline=(char*)hdr->AS.Header+p3+1;
 					hdr->AS.bci2000=realloc(hdr->AS.bci2000, strlen(hdr->AS.bci2000) + strlen(scriptline) + 1);
-					strcat(hdr->AS.bci2000, scriptline);
+					strcat(hdr->AS.bci2000, scriptline);		// Flawfinder: ignore
 				}
 				else if (!strncmp(desc,"Scriptline",10)) {
 					hdr->AS.bci2000=realloc(hdr->AS.bci2000, strlen(hdr->AS.bci2000) + strlen(scriptline) + 3);
-					strcat(hdr->AS.bci2000, scriptline);
-					strcat(hdr->AS.bci2000, "\n");
+					strcat(hdr->AS.bci2000, scriptline);	// Flawfinder: ignore
+					strcat(hdr->AS.bci2000, "\n");		// Flawfinder: ignore
 				}
 			}
 			if (k==0) {

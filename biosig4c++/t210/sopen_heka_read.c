@@ -737,7 +737,7 @@ if (VERBOSE_LEVEL > 7) fprintf(stdout,"HEKA: 400: %li  %li %li\n",(long)hdr->NRe
 			if (len) 
 				strncpy(WAVENAME, fn, len); 
 			else 
-				strcpy(WAVENAME, fn); 
+				strcpy(WAVENAME, fn); 		// Flawfinder: ignore
 		}
 
 if (VERBOSE_LEVEL>7) hdr2ascii(hdr,stdout,4);

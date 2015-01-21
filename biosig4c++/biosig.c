@@ -3759,7 +3759,6 @@ HDRTYPE* sopen(const char* FileName, const char* MODE, HDRTYPE* hdr)
 //    	uint32_t	k32u;
     	size_t	 	count;
 #ifndef  ONLYGDF
-    	char 		tmp[81];
 //    	double 		Dur;
 	char*		ptr_str;
 	struct tm 	tm_time;
@@ -4079,6 +4078,7 @@ else if (!strncmp(MODE,"r",1)) {
 		if (VERBOSE_LEVEL>8) fprintf(stdout,"[EDF 211] #=%li\nT0=<%16s>",iftell(hdr),Header1+168);
 
 		// TODO: sanity check of T0
+		char tmp[81];
 		memset(tmp,0,9);
 		strncpy(tmp,Header1+168+14,2);
     		tm_time.tm_sec  = atoi(tmp);
@@ -4123,18 +4123,22 @@ else if (!strncmp(MODE,"r",1)) {
 	    		ptr_str = strtok(NULL," ");	// startdate
 	    		char *tmpptr = strtok(NULL," ");
 	    		if ((!hdr->FLAG.ANONYMOUS) && (tmpptr != NULL)) {
-		    		strcpy(hdr->Patient.Name,tmpptr);
+				strncpy(hdr->Patient.Name,tmpptr,MAX_LENGTH_NAME);
+				hdr->Patient.Name[MAX_LENGTH_NAME]=0;
 		    	}
 
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211c] #=%li\n",iftell(hdr));
 
 			if (strlen(ptr_str)==11) {
 				struct tm t1;
-		    		t1.tm_mday = atoi(strtok(ptr_str,"-"));
-		    		strcpy(tmp,strtok(NULL,"-"));
-		    		for (k=0; k<strlen(tmp); ++k) tmp[k]= toupper(tmp[k]);	// convert to uppper case
-		    		t1.tm_year = atoi(strtok(NULL,"- ")) - 1900;
-				t1.tm_mon  = month_string2int(tmp);
+				char *strMDay=strtok(ptr_str,"-");
+				char *strMonth=strtok(NULL,"-");
+				char *strYear=strtok(NULL,"-");
+				for (k=0; strMonth[k]>0; ++k) strMonth[k]= toupper(strMonth[k]);	// convert to uppper case
+
+				t1.tm_mday = atoi(strMDay);
+				t1.tm_mon  = month_string2int(strMonth);
+				t1.tm_year = atoi(strYear) - 1900;
 		    		t1.tm_sec  = 0;
 		    		t1.tm_min  = 0;
 		    		t1.tm_hour = 12;
@@ -4170,7 +4174,7 @@ else if (!strncmp(MODE,"r",1)) {
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211e] <%s>\n",ptr_str);
 					ptr_str = strtok(NULL,"-");
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211f] <%s>\n",ptr_str);
-	    				strcpy(tmp,ptr_str);
+					strcpy(tmp,ptr_str);
 		    			for (k=0; k<strlen(tmp); ++k) tmp[k]=toupper(tmp[k]);	// convert to uppper case
 					m = month_string2int(tmp);
 		if (VERBOSE_LEVEL>7) fprintf(stdout,"[EDF 211g] <%s>\n",tmp);
@@ -4677,6 +4681,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"EDF+ event\n\ts1:\t<%s>\n\ts2:\t<%s>\n\ts3:
 			hc->Transducer[0] = '\0';
 			//CHAN = leu16p(Header2+4);
 			strncpy(hc->Label,(char*)Header2+6,min(MAX_LENGTH_LABEL,40));
+			char tmp[21];
 			strncpy(tmp,(char*)Header2+68,20); tmp[20]=0;
 			if (!strcmp(tmp,"Volts"))
 				hc->PhysDimCode = 4256;
@@ -4771,7 +4776,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 		ifclose(hdr);
 		char *filename = hdr->FileName; // keep input file name
 		char* tmpfile = (char*)calloc(strlen(hdr->FileName)+5,1);
-		strcpy(tmpfile,hdr->FileName);
+		strcpy(tmpfile, hdr->FileName);			// Flawfinder: ignore
 		char* ext = strrchr(tmpfile,'.')+1;
 
 		/* open and read header file */
@@ -4810,7 +4815,7 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 			k = hdr->NS++;
 			hdr->CHANNEL = (CHANNEL_TYPE*) realloc(hdr->CHANNEL,hdr->NS*sizeof(CHANNEL_TYPE));
 			CHANNEL_TYPE *hc = hdr->CHANNEL+k;
-			sprintf(hc->Label,"%s %03i",label,chno2);
+			snprintf(hc->Label, MAX_LENGTH_LABEL+1, "%s %03i",label, chno2);
 
 			hc->LeadIdCode = 0;
 			hc->SPR    = 1;
@@ -4943,9 +4948,9 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 		ifseek(hdr, 0, SEEK_SET); 	
 
 		HDRTYPE H1; 
-		H1.FileName = malloc(strlen(hdr->FileName)+5); 
 		H1.FILE.COMPRESSION = 1; 	// try always with zlib, libz reverts to  no compression anyway. 
-		strcpy(H1.FileName,hdr->FileName); 
+		H1.FileName = malloc(strlen(hdr->FileName)+5);
+		strcpy(H1.FileName, hdr->FileName); 		// Flawfinder: ignore
 		char *e = strrchr(H1.FileName,'.');
 		if (e==NULL) e = H1.FileName+strlen(H1.FileName); 
 		strcpy(e,".set"); 
@@ -5511,6 +5516,8 @@ fprintf(stdout,"ACQ EVENT: %i POS: %i\n",k,POS);
 						memset(t2,' ',3);
 						t2 = strstr(t1,"%20");
 					}
+
+					char tmp[20];
 					int c=sscanf(t1+12,"%03s %03s %2u %2u:%2u:%2u %4u",tmp+10,tmp,&tm_time.tm_mday,&tm_time.tm_hour,&tm_time.tm_min,&tm_time.tm_sec,&tm_time.tm_year);
 					if (c==7) {
 						tm_time.tm_isdst = -1;
@@ -5922,7 +5929,7 @@ if (VERBOSE_LEVEL>8)
 		// ifclose(hdr);
 		char *filename = hdr->FileName; // keep input file name
 		char* tmpfile = (char*)calloc(strlen(hdr->FileName)+5,1);
-		strcpy(tmpfile,hdr->FileName);
+		strcpy(tmpfile, hdr->FileName);		// Flawfinder: ignore
 		hdr->FileName = tmpfile;
 		char* ext = strrchr((char*)hdr->FileName,'.')+1;
 
@@ -6046,17 +6053,17 @@ if (VERBOSE_LEVEL>8)
 
 			else if (seq==1) {
 				if      (!strncmp(t,"DataFile=",9))
-					strcpy(ext,strrchr(t,'.')+1);
+					strcpy(ext, strrchr(t,'.') + 1);
 
 				else if (!strncmp(t,"MarkerFile=",11)) {
 
 					char* mrkfile = (char*)calloc(strlen(hdr->FileName)+strlen(t),1);
 
 					if (strrchr(hdr->FileName,FILESEP)) {
-						strcpy(mrkfile,hdr->FileName);
-						strcpy(strrchr(mrkfile,FILESEP)+1,t+11);
+						strcpy(mrkfile, hdr->FileName);			// Flawfinder: ignore
+						strcpy(strrchr(mrkfile,FILESEP)+1, t+11);	// Flawfinder: ignore
 					} else
-						strcpy(mrkfile,t+11);
+						strcpy(mrkfile,t+11);		// Flawfinder: ignore
 
 					if (VERBOSE_LEVEL>7)
 						fprintf(stdout,"SOPEN marker file <%s>.\n",mrkfile);
@@ -6323,6 +6330,8 @@ if (VERBOSE_LEVEL>8)
 	    	ptr_str = (char*)hdr->AS.Header+137;
 	    	hdr->Patient.Handedness = (ptr_str[0]=='r')*2 + (ptr_str[0]=='R')*2 + (ptr_str[0]=='L') + (ptr_str[0]=='l');
 	    	ptr_str = (char*)hdr->AS.Header+225;
+
+		char tmp[6];
 		tmp[2] = '\0'; 		// make sure tmp is 0-terminated
 	    	tm_time.tm_sec  = atoi(memcpy(tmp,ptr_str+16,2));
     		tm_time.tm_min  = atoi(memcpy(tmp,ptr_str+13,2));
@@ -6498,8 +6507,8 @@ if (VERBOSE_LEVEL>8)
 		hdr->HeadLen    = 1844;
 		char *f0        = hdr->FileName;
 		char *f1 	= (char*)malloc(strlen(f0)+6);
-		strcpy(f1,f0);
-		strcpy(strrchr(f1,'.')+1,"res4");
+		strcpy(f1, f0);				// Flawfinder: ignore
+		strcpy(strrchr(f1,'.')+1,"res4");	// Flawfinder: ignore
 
 		if (VERBOSE_LEVEL>8) fprintf(stdout,"CTF[102]: %s\n\t%s\n",f0,f1);
 
@@ -6580,8 +6589,8 @@ if (VERBOSE_LEVEL>8)
 
 		/********** read marker file **********/
 		char *f2 = (char*)malloc(strlen(f0)+16);
-		strcpy(f2,f0);
-		strcpy(strrchr(f2,FILESEP)+1,"MarkerFile.mrk");
+		strcpy(f2, f0);					// Flawfinder: ignore
+		strcpy(strrchr(f2,FILESEP)+1,"MarkerFile.mrk");	// Flawfinder: ignore
 		hdr->EVENT.SampleRate = hdr->SampleRate;
 		hdr->EVENT.N = 0;
 
@@ -6934,14 +6943,14 @@ if (VERBOSE_LEVEL>8)
 
 
 		char *fn = (char*)malloc((strlen(hdr->FileName)+5)*sizeof(char));
-		strcpy(fn,hdr->FileName);
+		strcpy(fn, hdr->FileName);	// Flawfinder: ignore
 		char *LOG=NULL;
 
 		/* read .pnt */
 			if (strrchr(fn,FILESEP))
-				strcpy(strrchr(fn,FILESEP)+1, (char*)(hdr->AS.Header + 32));
+				strncpy(strrchr(fn,FILESEP)+1, (char*)(hdr->AS.Header + 32), 4);
 			else
-				strcpy(fn, (char*)(hdr->AS.Header + 32));
+				strncpy(fn, (char*)(hdr->AS.Header + 32), 4);
 
 			FILE *fid = fopen(fn,"rb");
 			if (fid != NULL) {
@@ -7516,10 +7525,12 @@ if (VERBOSE_LEVEL>8)
 			len    = min(16,MAX_LENGTH_LABEL);
 			if ( (hdr->AS.Header[1025+k*512]=='E') && strlen(label)<13) {
 				strcpy(hc->Label, "EEG ");
-				strcat(hc->Label, label);
+				strcat(hc->Label, label);		// Flawfinder: ignore
 			}
-			else
+			else {
 				strncpy(hc->Label, label, len);
+				hc->Label[len]=0;
+			}
 		}
 
 		while (1) {
@@ -7647,22 +7658,23 @@ if (VERBOSE_LEVEL>8)
 		    	char *label = (char*)(hdr->AS.Header+1034+k*512);
 		    	len    = min(16,MAX_LENGTH_LABEL);
 			if ( (hdr->AS.Header[1025+k*512]=='E') && strlen(label)<13) {
-			    	strcpy(hc->Label, "EEG ");
-			    	strcat(hc->Label, label);
+				strcpy(hc->Label, "EEG ");
+				strcat(hc->Label, label);	// Flawfinder: ignore
 			} 
-			else
+			else {
 			    	strncpy(hc->Label, label, len);
-
+				hc->Label[len]=0;
+			}
 		}
 
 		/* read event file */
-		char* tmpfile = (char*)calloc(strlen(hdr->FileName)+4,1);
+		char* tmpfile = (char*)calloc(strlen(hdr->FileName)+4, 1);
 		strcpy(tmpfile, hdr->FileName);
 		char* ext = strrchr(tmpfile,'.');
 		if (ext != NULL) 
-			strcpy(ext+1,"LBK");
+			strcpy(ext+1,"LBK");	// Flawfinder: ignore
 		else 		
-			strcat(tmpfile,".LBK");
+			strcat(tmpfile,".LBK");	// Flawfinder: ignore
 
 		FILE *fid = fopen(tmpfile,"rb"); 
 		if (fid==NULL) {
@@ -8127,6 +8139,7 @@ if (VERBOSE_LEVEL>8)
 		hdr->AS.Header[count]=0;
 		hdr->HeadLen = count;
 
+		char tmp[9];
     		tmp[8] = 0;
     		memcpy(tmp, hdr->AS.Header+8, 8);
     		hdr->VERSION = atol(tmp)/100.0;
@@ -8791,6 +8804,7 @@ if (VERBOSE_LEVEL>7) fprintf(stdout,"MFER: TLV %i %i %i %i %i %i %i %g %i %g\n",
 			else if (tag==64)     //0x40
 			{
 				// preamble
+				char tmp[256];
 				curPos += ifread(tmp,1,len,hdr);
 				if (VERBOSE_LEVEL>7) {
 					fprintf(stdout,"Preamble: pos=%i|",curPos);
@@ -9242,19 +9256,19 @@ if (VERBOSE_LEVEL>2)
 		/* MIT: read ATR annotation file */
 		char *f0 = hdr->FileName;
 		char *f1 = (char*) malloc(strlen(hdr->FileName)+5);
-		strcpy(f1,hdr->FileName);
-		strcpy(strrchr(f1,'.')+1,"atr");
+		strcpy(f1,hdr->FileName);		// Flawfinder: ignore
+		strcpy(strrchr(f1,'.')+1,"atr");	// Flawfinder: ignore
 		hdr->FileName = f1;
 
 		hdr   = ifopen(hdr,"r");
 		if (!hdr->FILE.OPEN) {
 			// if no *.atr file, try *.qrs
-			strcpy(strrchr(f1,'.')+1,"qrs");
+			strcpy(strrchr(f1,'.')+1,"qrs");	// Flawfinder: ignore
 			hdr   = ifopen(hdr,"r");
 		}
 		if (!hdr->FILE.OPEN) {
 			// *.ecg
-			strcpy(strrchr(f1,'.')+1,"ecg");
+			strcpy(strrchr(f1,'.')+1,"ecg");	// Flawfinder: ignore
 			hdr   = ifopen(hdr,"r");
 		}
 
@@ -9749,7 +9763,7 @@ if (VERBOSE_LEVEL>2)
 			char *f0 = hdr->FileName;
 			char *f1 = (char*)malloc(strlen(hdr->FileName)+4);
 			strcpy(f1,hdr->FileName);
-			strcpy(strrchr(f1,'.') + 1, "img");
+			strcpy(strrchr(f1,'.') + 1, "img");	// Flawfinder: ignore
 			hdr->FileName = f1;
 			hdr = ifopen(hdr,"r");
 			hdr->FileName = f0;
@@ -10563,6 +10577,7 @@ if (VERBOSE_LEVEL>2)
 			}
 
 			StringLength = hdr->AS.Header[45+217+k*136];
+			char tmp[256];
 			strncpy(tmp, (char*)(hdr->AS.Header+46+217+k*136), StringLength);
 			tmp[StringLength] = 0;
 		    	hc->PhysDimCode = PhysDimCode(tmp);
@@ -11075,7 +11090,7 @@ if (VERBOSE_LEVEL>2)
 		else if (185 <= hdr->CHANNEL[k].LeadIdCode)
 			strcpy(hdr->CHANNEL[k].Label,"(reserved for future expansion)");
 		else if (hdr->CHANNEL[k].LeadIdCode)
-			strcpy(hdr->CHANNEL[k].Label,LEAD_ID_TABLE[hdr->CHANNEL[k].LeadIdCode]);
+			strcpy(hdr->CHANNEL[k].Label,LEAD_ID_TABLE[hdr->CHANNEL[k].LeadIdCode]);	// Flawfinder: ignore
 
 	}
 
@@ -11308,10 +11323,10 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		if (VERBOSE_LEVEL>8) fprintf(stdout,"BVA-write: [210]\n");
 
 		char* tmpfile = (char*)calloc(strlen(hdr->FileName)+6,1);
-		strcpy(tmpfile,hdr->FileName);
+		strcpy(tmpfile,hdr->FileName);			// Flawfinder: ignore
 		char* ext = strrchr(tmpfile,'.');
-		if (ext != NULL) strcpy(ext+1,"vhdr");
-		else 		strcat(tmpfile,".vhdr");
+		if (ext != NULL) strcpy(ext+1,"vhdr");		// Flawfinder: ignore
+		else 		strcat(tmpfile,".vhdr");	// Flawfinder: ignore
 
 		if (VERBOSE_LEVEL>8) fprintf(stdout,"BVA-write: [211]\n");
 
@@ -11364,7 +11379,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 			hdr->CHANNEL[k].SPR = hdr->SPR;
 			hdr->CHANNEL[k].GDFTYP = gdftyp;
     			char Label[MAX_LENGTH_LABEL+1];
-    			strcpy(Label,hdr->CHANNEL[k].Label);
+			strcpy(Label,hdr->CHANNEL[k].Label);			// Flawfinder: ignore
     			size_t k1;
     			for (k1=0; Label[k1]; k1++) if (Label[k1]==',') Label[k1]=1;
 	    		fprintf(fid,"Ch%d=%s,,1,%s\r\n",k+1,Label,PhysDim3(hdr->CHANNEL[k].PhysDimCode));
@@ -11554,6 +11569,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		tt = gdf_time2t_time(hdr->Patient.Birthday);
 		if (hdr->Patient.Birthday>1) strftime(tmp,81,"%d-%b-%Y",localtime(&tt));
 */
+		char tmp[81];
 		struct tm *t = gdf_time2tm_time(hdr->Patient.Birthday);
 		if (hdr->Patient.Birthday>1)
 			strftime(tmp,81,"%02d-%b-%04Y",t);
@@ -11568,9 +11584,9 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		
 	    	char cmd[256];
 		if (!hdr->FLAG.ANONYMOUS)
-			sprintf(cmd,"%s %c %s %s",hdr->Patient.Id,GENDER[hdr->Patient.Sex],tmp,hdr->Patient.Name);
+			snprintf(cmd,MAX_LENGTH_PID+1,"%s %c %s %s",hdr->Patient.Id,GENDER[hdr->Patient.Sex],tmp,hdr->Patient.Name);
 		else
-			sprintf(cmd,"%s %c %s X",hdr->Patient.Id,GENDER[hdr->Patient.Sex],tmp);
+			snprintf(cmd,MAX_LENGTH_PID+1,"%s %c %s X",hdr->Patient.Id,GENDER[hdr->Patient.Sex],tmp);
 
 	     	memcpy(Header1+8, cmd, strlen(cmd));
 
@@ -11581,7 +11597,7 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 
 		char *tmpstr = hdr->ID.Technician;	
 		if (!tmpstr || !strlen(tmp)) tmpstr = "X";
-		size_t len = sprintf(cmd,"Startdate %s X %s ", tmp, tmpstr);
+		size_t len = snprintf(cmd,sizeof(cmd),"Startdate %s X %s ", tmp, tmpstr);
 	     	memcpy(Header1+88, cmd, len);
 	     	memcpy(Header1+88+len, &hdr->ID.Equipment, 8);
 
@@ -11927,8 +11943,8 @@ else if (!strncmp(MODE,"w",1))	 /* --- WRITE --- */
 		// ###FIXME: this belongs into SWRITE
 		// write data file
 		fn2 = (char*) realloc(fn2, strlen(hdr->FileName)+5);
-		strcpy(fn2,hdr->FileName);
-		strcpy(strrchr(fn2,'.'),".asc");
+		strcpy(fn2,hdr->FileName);		// Flawfinder: ignore
+		strcpy(strrchr(fn2,'.'),".asc");	// Flawfinder: ignore
     		// hdr->FileName = fn2;
 	    	fid = fopen(fn2,"wb");
 	    	fprintf(fid,"%d\tHz\n\r\n\rN",hdr->SampleRate);

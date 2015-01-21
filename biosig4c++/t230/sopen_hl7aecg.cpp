@@ -501,7 +501,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 			    	char *strtmp = strdup(id.Element()->Attribute("root"));
 			    	size_t len = strlen(strtmp); 
 				if (len <= MAX_LENGTH_RID) {
-					strcpy(hdr->ID.Recording,strtmp);
+					strcpy(hdr->ID.Recording, strtmp);	// Flawfinder: ignore
 
 					if (strtmp) free(strtmp);
 				    	strtmp = strdup(id.Element()->Attribute("extension"));
@@ -540,11 +540,11 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 					size_t l1 = str1 ? strlen(str1) : 0;
 					size_t l2 = str2 ? strlen(str2) : 0;
 					if (l1 <= MAX_LENGTH_NAME) 
-						strcpy(hdr->Patient.Name, str1);
+						strcpy(hdr->Patient.Name, str1);		// Flawfinder: ignore
 					if (l1+l2+2 <= MAX_LENGTH_NAME) {
-						strcpy(hdr->Patient.Name, str1);
-						strcpy(hdr->Patient.Name+l1, ", ");
-						strcpy(hdr->Patient.Name+l1+2, str2);
+						strcpy(hdr->Patient.Name, str1);		// Flawfinder: ignore
+						strcpy(hdr->Patient.Name+l1, ", ");		// Flawfinder: ignore
+						strcpy(hdr->Patient.Name+l1+2, str2);		// Flawfinder: ignore
 					}
 				}
 				}
@@ -661,7 +661,7 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 		/* non-standard fields height and weight */
 		TiXmlElement *weight = demographic.FirstChild("weight").Element();
 		if (weight) {
-		    uint16_t code = PhysDimCode(strcpy(tmp,weight->Attribute("unit")));	
+		    uint16_t code = PhysDimCode(weight->Attribute("unit"));
 		    if ((code & 0xFFE0) != 1728) 
 		    	fprintf(stderr,"Warning: incorrect weight unit (%s)\n",weight->Attribute("unit"));	
 		    else 	// convert to kilogram
@@ -673,9 +673,9 @@ EXTERN_C int sopen_HL7aECG_read(HDRTYPE* hdr) {
 			fprintf(stdout,"hl7r: [415]\n"); 
 
 		if (height) {
-		    uint16_t code = PhysDimCode(strcpy(tmp,height->Attribute("unit")));	
-		    if ((code & 0xFFE0) != 1280) 
-		    	fprintf(stderr,"Warning: incorrect height unit (%s) %i \n",height->Attribute("unit"),code);	
+		    uint16_t code = PhysDimCode(height->Attribute("unit"));
+		    if ((code & 0xFFE0) != 1280)
+			fprintf(stderr,"Warning: incorrect height unit (%s) %i \n",height->Attribute("unit"),code);
 		    else	// convert to centimeter
 			hdr->Patient.Height = (uint8_t)(atof(height->Attribute("value"))*PhysDimScale(code)*1e+2);
 		}
@@ -1313,11 +1313,12 @@ EXTERN_C int sclose_HL7aECG_write(HDRTYPE* hdr){
 	sequenceCode = new TiXmlElement("code");
 	
 	if (hdr->CHANNEL[i].LeadIdCode) {
-		strcpy(tmp,"MDC_ECG_LEAD_");
-		strcat(tmp,LEAD_ID_TABLE[hdr->CHANNEL[i].LeadIdCode]);
+		strcpy(tmp,"MDC_ECG_LEAD_");				// Flawfinder: ignore
+		strcat(tmp,LEAD_ID_TABLE[hdr->CHANNEL[i].LeadIdCode]);	// Flawfinder: ignore
 	}
 	else 
-		strcpy(tmp,hdr->CHANNEL[i].Label);
+		strcpy(tmp,hdr->CHANNEL[i].Label);			// Flawfinder: ignore
+
 	sequenceCode->SetAttribute("code", tmp);
 
 	sequenceCode->SetAttribute("codeSystem", "2.16.840.1.113883.6.24");
