@@ -39,6 +39,12 @@ add support for zlib-compressed (gzipped) XML data
 
 #include <ctype.h>
 #include <iconv.h>
+#if defined (_LIBICONV_H)
+ #define iconv		libiconv
+ #define iconv_open	libiconv_open
+ #define iconv_close	libiconv_close
+#endif
+
 
 #ifdef TIXML_USE_STL
 #include <sstream>
@@ -1120,7 +1126,7 @@ bool TiXmlDocument::LoadFile( FILE* file, TiXmlEncoding encoding )
 	}
 
 
-#ifdef _ICONV_H
+#if defined(_ICONV_H) || defined (_LIBICONV_H)
 	// convert utf-16 to utf-8 if needed
 
 	const char XML_UTF16LE[] = "\xff\xfe<\0?\0x\0m\0l\0 \0v\0e\0r\0s\0i\0o\0n\0=\0\"\0001\0.\0000\0\"\0 \0e\0n\0c\0o\0d\0i\0n\0g\0=\0\"\0U\0T\0F\0-\0001\0006\0\"\0?\0>\0";

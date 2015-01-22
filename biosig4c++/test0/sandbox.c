@@ -27,8 +27,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <iconv.h>
-
 
 #include "../biosig-dev.h"
 
