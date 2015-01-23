@@ -78,6 +78,11 @@ PathToSigViewer = ../sigviewer
 PathToSigViewerWIN32 = ../sigviewer4win32
 PathToSigViewerWIN64 = ../sigviewer4win64
 
+CFLAGS       += -fstack-protector -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -pipe -fPIC -Wall -fno-builtin-memcmp -O2 -Wextra
+CXXFLAGS      = $(CFLAGS)
+INCPATH       = -I/opt/local/include/
+LFLAGS        = -L/opt/local/lib/
+
 ## TARGET dependencies
 ifeq (,$(TARGET))
 	CC      := gcc	
@@ -85,7 +90,9 @@ ifeq (,$(TARGET))
 	LD      := ld
 	AR      := ar rcs
 	PREFIX  := /usr/bin/
+ifneq (Darwin,$(shell uname))
 	LFLAGS  += -Wl,-z,relro,-z,now
+endif
 else ifeq (intel,$(TARGET))
 	CC      := /opt/intel/bin/icc
 	CXX     := /opt/intel/bin/icc
@@ -108,6 +115,22 @@ else
 		LIBS    += -liconv -liberty -lssp -lws2_32
 	endif
 endif
+
+ifeq (Darwin,$(shell uname))
+	## Homebrew:
+	##	brew tap homebrew/dupes
+	##	brew install libiconv
+	##
+	CFLAGS      += -I/usr/local/Cellar/libiconv/1.14/include
+	#LFLAGS      += -dynamiclib -undefined suppress -flat_namespace
+	LFLAGS      += -L/usr/local/Cellar/libiconv/1.14/lib/
+	LIBS        += -liconv
+	DLEXT        = a
+else
+	LDFLAGS     += -shared -fPIC
+	DLEXT        = so
+endif
+
 
 DEFINES_ALL   = #-D=NDEBUG
 
@@ -142,31 +165,7 @@ DEFINES      += -D=WITH_FEF
 #DEFINES      += -D=WITH_NEV
 DEFINES      += -D=MAKE_EDFLIB
 
-CFLAGS       += -fstack-protector -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -pipe -fPIC -Wall -fno-builtin-memcmp -O2 -Wextra
-#CXXFLAGS      += -pipe -fPIC -Wall -fno-builtin-memcmp -O2 $(DEFINES) -Wextra # -I cntopenlib/include/
-CXXFLAGS      = $(CFLAGS)
-INCPATH       = -I/opt/local/include/
-LINK          = $(LD)
-ifeq (Darwin,$(uname))
-  LDFLAGS     += -dynamiclib -undefined suppress -flat_namespace
-  LDLIBS      += -liconv
-  DLEXT        = dylib
-else
-  LDFLAGS     += -shared -fPIC
-  DLEXT        = so
-endif
 
-LFLAGS_dynamic = -L. -L/opt/local/lib
-LIBS_dynamic  = -lbiosig
-LFLAGS_static = -L/opt/local/lib 
-LIBS_static   = libbiosig.a
-ifeq ($(LIBEXT),so)
-  LFLAGS      += $(LFLAGS_dynamic)
-#  LIBS        += $(LIBS_dynamic)
-else
-  LFLAGS      += $(LFLAGS_static)
-#  LIBS        += $(LIBS_static)
-endif
 
 ifneq (,$(findstring WITH_GDCM, $(DEFINES)))
   INCPATH    += -I$(wildcard /usr/include/gdcm-2*/)
@@ -768,12 +767,12 @@ else
 mex: mex4o mexw32 mexw64
 endif
 
-mex/%.mex: mex/%.cpp Makefile biosig.h biosig-dev.h libbiosig.so
-	$(OCT) $(DEFINES) -v -g --mex "$<" -L. -lbiosig $(LIBS) -o "$@"
+mex/%.mex: mex/%.cpp Makefile biosig.h biosig-dev.h libbiosig.$(DLEXT)
+	$(OCT) $(DEFINES) -v -g --mex "$<" -L. -lbiosig  $(LFLAGS) $(LIBS) -o "$@"
 	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
 
-mex/%.oct: mex/%.cpp Makefile biosig.h biosig-dev.h libbiosig.so
-	$(OCT) $(DEFINES) "$<" -L. -lbiosig $(LIBS) -o "$@"
+mex/%.oct: mex/%.cpp Makefile biosig.h biosig-dev.h libbiosig.$(DLEXT)
+	$(OCT) $(DEFINES) "$<" -L. -lbiosig $(LFLAGS) $(LIBS) -o "$@"
 	-$(COPY) $@ ../biosig4matlab/t200_FileAccess/
 
 mex/%.mexw32: mex/%.cpp Makefile biosig.h biosig-dev.h
